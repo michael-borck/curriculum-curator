@@ -15,37 +15,45 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Topic :: Education",
+    "Topic :: Text Processing",
 ]
 
 dependencies = [
-    "python-frontmatter",
-    "pyyaml",
-    "structlog",
-    "litellm",
-    "backoff",
-    "scikit-learn",
-    "typer[all]",
-    "rich",
-    "markdown",
-    "beautifulsoup4",
+    "python-frontmatter>=1.0.0",
+    "pyyaml>=6.0",
+    "structlog>=23.1.0",
+    "litellm>=1.0.0",
+    "backoff>=2.2.1",
+    "scikit-learn>=1.2.0",
+    "typer[all]>=0.9.0",
+    "rich>=13.3.0",
+    "markdown>=3.4.0",
+    "beautifulsoup4>=4.12.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "ruff",
-    "mkdocs",
-    "mkdocs-material",
+    "pytest>=7.3.1",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.0.262",
+    "mkdocs>=1.4.3",
+    "mkdocs-material>=9.1.8",
+    "twine>=4.0.2",
+    "build>=0.10.0",
 ]
 
 web = [
-    "fasthtml",
+    "fasthtml>=0.2.0",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/example/curriculum-curator"
-"Bug Tracker" = "https://github.com/example/curriculum-curator/issues"
+"Homepage" = "https://github.com/teaching-repositories/curriculum-curator"
+"Bug Tracker" = "https://github.com/teaching-repositories/curriculum-curator/issues"
+"Documentation" = "https://github.com/teaching-repositories/curriculum-curator/blob/main/docs"
 
 [project.scripts]
 curator = "curriculum_curator.cli:main"

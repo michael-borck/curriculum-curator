@@ -4,16 +4,15 @@ import asyncio
 from datetime import datetime
 import backoff
 import structlog
+import litellm
+from typing import Dict, Any, Optional, List, Tuple
 
-# We'll use litellm when fully implementing this
-# import litellm
+from curriculum_curator.utils.exceptions import LLMRequestError
 
 logger = structlog.get_logger()
 
 
-class LLMRequestError(Exception):
-    """Exception raised for errors in LLM requests."""
-    pass
+# We already imported this from utils.exceptions
 
 
 class LLMRequest:
@@ -76,7 +75,7 @@ class LLMManager:
                 if provider != "ollama" and not api_key:
                     logger.warning(f"Missing API key for {provider}", env_var=env_var)
     
-    def _resolve_model_alias(self, model_alias=None):
+    def _resolve_model_alias(self, model_alias: Optional[str] = None) -> Tuple[str, str]:
         """Resolve model alias to provider and model.
         
         Args:
@@ -85,15 +84,41 @@ class LLMManager:
         Returns:
             tuple: (provider, model) pair
         """
-        # This is a placeholder - in the full implementation, we'd resolve the model alias
-        # to a specific provider and model as per the configuration
+        # If no model alias is provided, use the default provider and model
         if model_alias is None:
             default_provider = self.config.get("llm", {}).get("default_provider", "ollama")
             default_model = self.config.get("llm", {}).get("providers", {}).get(default_provider, {}).get("default_model", "llama3")
             return default_provider, default_model
         
-        # Placeholder implementation that returns the default
-        return "ollama", "llama3"
+        # Check if alias directly specifies provider/model format
+        if "/" in model_alias:
+            provider, model = model_alias.split("/", 1)
+            # Verify this provider and model exist in our config
+            if (provider in self.config.get("llm", {}).get("providers", {}) and
+                model in self.config.get("llm", {}).get("providers", {}).get(provider, {}).get("models", {})):
+                return provider, model
+        
+        # Handle named aliases like "default_smart", "fast", etc.
+        aliases = self.config.get("llm", {}).get("aliases", {})
+        if model_alias in aliases:
+            alias_value = aliases[model_alias]
+            if "/" in alias_value:
+                return alias_value.split("/", 1)
+        
+        # Search for the model across all providers
+        for provider, provider_config in self.config.get("llm", {}).get("providers", {}).items():
+            if model_alias in provider_config.get("models", {}):
+                return provider, model_alias
+        
+        # Fall back to default if not found
+        logger.warning(
+            "model_alias_not_resolved",
+            model_alias=model_alias,
+            using_default=f"{self.config.get('llm', {}).get('default_provider', 'ollama')}/{self.config.get('llm', {}).get('providers', {}).get(self.config.get('llm', {}).get('default_provider', 'ollama'), {}).get('default_model', 'llama3')}"
+        )
+        default_provider = self.config.get("llm", {}).get("default_provider", "ollama")
+        default_model = self.config.get("llm", {}).get("providers", {}).get(default_provider, {}).get("default_model", "llama3")
+        return default_provider, default_model
     
     @backoff.on_exception(
         backoff.expo,
@@ -101,8 +126,8 @@ class LLMManager:
         max_tries=3,
         jitter=backoff.full_jitter
     )
-    async def generate(self, prompt, model_alias=None, **params):
-        """Generate text using the specified model or defaults.
+    async def generate(self, prompt: str, model_alias: Optional[str] = None, **params) -> str:
+        """Generate text using the specified model or defaults via LiteLLM.
         
         Args:
             prompt (str): The prompt to send to the LLM
@@ -138,18 +163,45 @@ class LLMManager:
         
         start_time = time.time()
         
-        # This is a placeholder for the actual LLM API call
-        # In a full implementation, we would use litellm here
         try:
-            # Simulate an LLM API call delay
-            await asyncio.sleep(0.5)
+            # Get provider-specific configuration
+            provider_config = self.config.get("llm", {}).get("providers", {}).get(provider, {})
             
-            # Mock response for now
-            # In a real implementation, we would use litellm.acompletion here
+            # Configure API key
+            api_key = provider_config.get("api_key", "")
+            if api_key and api_key.startswith("env(") and api_key.endswith(")"):
+                env_var = api_key[4:-1]
+                api_key = os.getenv(env_var, "")
+            
+            # Configure base URL if needed (for Ollama, etc.)
+            base_url = provider_config.get("base_url", None)
+            
+            # Default parameters for the request
+            default_params = {
+                "max_tokens": 2000,
+                "temperature": 0.7,
+            }
+            
+            # Merge provided params with defaults
+            request_params = {**default_params, **params}
+            
+            # Use LiteLLM to make the actual request
+            # Format model name as provider/model for LiteLLM
+            model_name = f"{provider}/{model}"
+            
+            response = await litellm.acompletion(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                api_key=api_key,
+                base_url=base_url,
+                **request_params
+            )
+            
+            # Process successful response
             request.status = "success"
-            request.completion = f"This is a mock response for the prompt: {prompt[:30]}..."
-            request.input_tokens = len(prompt.split())
-            request.output_tokens = 50
+            request.completion = response.choices[0].message.content
+            request.input_tokens = response.usage.prompt_tokens
+            request.output_tokens = response.usage.completion_tokens
             
             logger.info(
                 "llm_request_completed",

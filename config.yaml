@@ -7,6 +7,15 @@ system:
 # LLM providers configuration
 llm:
   default_provider: "ollama"
+  
+  # Named model aliases for easier reference in workflows
+  aliases:
+    default_smart: "anthropic/claude-3-haiku"
+    default_powerful: "anthropic/claude-3-opus"
+    default_fast: "ollama/llama3"
+    default_balanced: "openai/gpt-3.5-turbo"
+    default_cheap: "groq/llama3-8b-8192"
+  
   providers:
     anthropic:
       api_key: "env(ANTHROPIC_API_KEY)"
