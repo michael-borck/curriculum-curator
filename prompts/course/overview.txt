@@ -1,0 +1,21 @@
+---
+description: Generates a comprehensive course overview.
+requires:
+  - course_title
+  - learning_objectives
+tags:
+  - course
+  - overview
+version: 1.0
+---
+Create a comprehensive overview for a course titled "{course_title}".
+
+The overview should include the following sections:
+1. Course Description
+2. Learning Objectives (based on the provided objectives: {learning_objectives})
+3. Target Audience
+4. Prerequisites
+5. Course Structure
+6. Assessment Methods
+
+Format the output as clean Markdown with appropriate headings, bullet points, and formatting.

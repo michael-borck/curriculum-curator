@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "curriculum-curator"
+version = "0.1.0"
+authors = [
+    {name = "Curriculum Curator Team", email = "example@example.com"},
+]
+description = "An educational content workflow orchestration tool for LLM integration"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "python-frontmatter",
+    "pyyaml",
+    "structlog",
+    "litellm",
+    "backoff",
+    "scikit-learn",
+    "typer[all]",
+    "rich",
+    "markdown",
+    "beautifulsoup4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "mkdocs",
+    "mkdocs-material",
+]
+
+web = [
+    "fasthtml",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/example/curriculum-curator"
+"Bug Tracker" = "https://github.com/example/curriculum-curator/issues"
+
+[project.scripts]
+curator = "curriculum_curator.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

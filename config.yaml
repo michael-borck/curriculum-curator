@@ -1,0 +1,135 @@
+# System configuration
+system:
+  persistence_dir: ".curriculum_curator"
+  output_dir: "output"
+  log_level: "INFO"
+
+# LLM providers configuration
+llm:
+  default_provider: "ollama"
+  providers:
+    anthropic:
+      api_key: "env(ANTHROPIC_API_KEY)"
+      default_model: "claude-3-haiku"
+      cost_per_1k_tokens:
+        input: 0.25
+        output: 0.75
+      models:
+        claude-3-haiku: {}
+        claude-3-opus:
+          cost_per_1k_tokens:
+            input: 15.00
+            output: 75.00
+    
+    openai:
+      api_key: "env(OPENAI_API_KEY)"
+      default_model: "gpt-3.5-turbo"
+      cost_per_1k_tokens:
+        input: 0.50
+        output: 1.50
+      models:
+        gpt-3.5-turbo: {}
+        gpt-4-turbo:
+          cost_per_1k_tokens:
+            input: 10.00
+            output: 30.00
+    
+    ollama:
+      base_url: "http://localhost:11434"
+      default_model: "llama3"
+      cost_per_1k_tokens:
+        input: 0.00
+        output: 0.00
+      models:
+        llama3: {}
+        mistral: {}
+    
+    groq:
+      api_key: "env(GROQ_API_KEY)"
+      default_model: "llama3-8b-8192"
+      cost_per_1k_tokens:
+        input: 0.10
+        output: 0.30
+      models:
+        llama3-8b-8192: {}
+    
+    gemini:
+      api_key: "env(GOOGLE_API_KEY)"
+      default_model: "gemini-pro"
+      cost_per_1k_tokens:
+        input: 0.50
+        output: 1.50
+      models:
+        gemini-pro: {}
+
+# Prompt registry configuration
+prompts:
+  base_path: "./prompts"
+
+# Validation configuration
+validation:
+  similarity:
+    threshold: 0.85
+    model: "all-MiniLM-L6-v2"
+  
+  structure:
+    slides:
+      min_sections: 5
+      required_sections: ["title", "objectives", "summary"]
+  
+  readability:
+    max_avg_sentence_length: 25
+    min_flesch_reading_ease: 60
+
+# Remediation configuration
+remediation:
+  content_merger:
+    similarity_threshold: 0.8
+  
+  sentence_splitter:
+    enabled: true
+
+# Output configuration
+output:
+  html_options: ["--template=default", "--css=styles.css"]
+  pdf_options: ["--pdf-engine=wkhtmltopdf"]
+  docx_options: ["--reference-doc=template.docx"]
+  slides_options: ["--variable=theme:moon"]
+
+# Workflow definitions
+workflows:
+  standard_course:
+    description: "Standard course generation workflow"
+    steps:
+      - name: generate_course_overview
+        type: prompt
+        prompt: course/overview.txt
+        llm_model_alias: default_smart
+        output_variable: course_overview_md
+        output_format: raw
+      
+      - name: generate_module_outlines
+        type: prompt
+        prompt: module/outline.txt
+        llm_model_alias: default_smart
+        output_variable: module_outlines_json
+        output_format: json
+      
+      - name: validate_content
+        type: validation
+        validators: [similarity, structure, readability]
+        targets: [course_overview_md]
+      
+      - name: remediate_content
+        type: remediation
+        remediators: [content_merger, sentence_splitter]
+        targets: [course_overview_md]
+      
+      - name: generate_output
+        type: output
+        formats: [html, pdf]
+        content_variable: course_overview_md
+        metadata:
+          title: "${course_title}"
+          author: "CurriculumCurator"
+          date: "${current_date}"
