@@ -115,12 +115,26 @@ class ValidationReadabilityConfig(BaseModel):
     )
 
 
+class ValidationLanguageConfig(BaseModel):
+    """Configuration for language validation."""
+    
+    expected_language: str = Field(default="en", description="Expected language code")
+    allow_multilingual: bool = Field(default=False, description="Whether to allow mixed languages")
+    confidence_threshold: float = Field(
+        default=0.8, 
+        description="Minimum confidence for language detection",
+        ge=0.0,
+        le=1.0
+    )
+
+
 class ValidationConfig(BaseModel):
     """Validation configuration."""
 
     similarity: Optional[ValidationSimilarityConfig] = None
     structure: Optional[Dict[str, ValidationStructureConfig]] = None
     readability: Optional[ValidationReadabilityConfig] = None
+    language: Optional[ValidationLanguageConfig] = None
 
 
 class FormatCorrectorConfig(BaseModel):
@@ -180,14 +194,32 @@ class FlagForReviewConfig(BaseModel):
     )
 
 
+class TranslatorConfig(BaseModel):
+    """Translator remediator configuration."""
+    
+    target_language: str = Field(default="en", description="Target language code")
+    source_language: str = Field(default="auto", description="Source language code, or 'auto' for auto-detection")
+    use_llm: bool = Field(default=True, description="Whether to use LLM for translation")
+    model_alias: Optional[str] = Field(default=None, description="LLM model to use if use_llm is True")
+    preserve_formatting: bool = Field(default=True, description="Whether to preserve Markdown formatting")
+
+
 class RemediationConfig(BaseModel):
     """Remediation configuration."""
 
+    # AutoFix remediators
     format_corrector: Optional[FormatCorrectorConfig] = None
     sentence_splitter: Optional[SentenceSplitterConfig] = None
     terminology_enforcer: Optional[TerminologyEnforcerConfig] = None
+    
+    # Rewrite remediators
     rephrasing_prompter: Optional[RephrasingPrompterConfig] = None
+    
+    # Workflow remediators
     flag_for_review: Optional[FlagForReviewConfig] = None
+    
+    # Language remediators
+    translator: Optional[TranslatorConfig] = None
 
 
 class OutputConfig(BaseModel):

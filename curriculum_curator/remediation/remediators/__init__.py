@@ -15,6 +15,9 @@ from curriculum_curator.remediation.remediators.rewrite.rephrasing_prompter impo
 # Import Workflow remediators
 from curriculum_curator.remediation.remediators.workflow.flag_for_review import FlagForReview
 
+# Import Language remediators
+from curriculum_curator.remediation.remediators.language.translator import Translator
+
 # Registry of all available remediators
 REMEDIATOR_REGISTRY: Dict[str, Type[BaseRemediator]] = {
     # AutoFix remediators
@@ -27,6 +30,9 @@ REMEDIATOR_REGISTRY: Dict[str, Type[BaseRemediator]] = {
     
     # Workflow remediators
     "flag_for_review": FlagForReview,
+    
+    # Language remediators
+    "translator": Translator,
 }
 
 def get_remediator(remediator_name: str, config):

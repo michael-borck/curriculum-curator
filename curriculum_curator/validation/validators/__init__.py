@@ -9,6 +9,9 @@ from curriculum_curator.validation.validators.quality.similarity import Similari
 from curriculum_curator.validation.validators.quality.structure import StructureValidator
 from curriculum_curator.validation.validators.quality.readability import ReadabilityValidator
 
+# Import Language validators
+from curriculum_curator.validation.validators.language.language_detector import LanguageDetector
+
 # Registry of all available validators
 VALIDATOR_REGISTRY: Dict[str, Type[BaseValidator]] = {
     # Quality validators
@@ -33,6 +36,11 @@ VALIDATOR_REGISTRY: Dict[str, Type[BaseValidator]] = {
     # Style validators
     "bias": None,  # BiasDetectorValidator
     "tone": None,  # ToneValidator
+    
+    # Language validators
+    "language_detector": LanguageDetector,
+    "grammar": None,  # GrammarValidator
+    "spelling": None,  # SpellingValidator
     
     # Safety validators
     "content_safety": None,  # ContentSafetyValidator

@@ -49,6 +49,7 @@ class RemediationManager:
                 "format_corrector": getattr(self.config.remediation, "format_corrector", {}),
                 "sentence_splitter": getattr(self.config.remediation, "sentence_splitter", {}),
                 "flag_for_review": getattr(self.config.remediation, "flag_for_review", {}),
+                "translator": getattr(self.config.remediation, "translator", {}),
             }
             
             # Initialize remediators from registry based on configuration

@@ -114,6 +114,10 @@ class ValidationManager:
             
             if hasattr(self.config.validation, "readability") and self.config.validation.readability:
                 self.validators["readability"] = get_validator("readability", self.config.validation.readability)
+            
+            # Language validators
+            if hasattr(self.config.validation, "language") and self.config.validation.language:
+                self.validators["language_detector"] = get_validator("language_detector", self.config.validation.language)
         
         logger.info(
             "validators_initialized", 
