@@ -1,0 +1,75 @@
+site_name: Curriculum Curator
+site_description: An educational content workflow orchestration tool for LLM integration
+site_author: Curriculum Curator Team
+site_url: https://teaching-repositories.github.io/curriculum-curator
+
+repo_name: teaching-repositories/curriculum-curator
+repo_url: https://github.com/teaching-repositories/curriculum-curator
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - footnotes
+  - attr_list
+  - md_in_html
+  - tables
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+  - User Guides:
+    - Interactive Mode: guides/interactive-mode.md
+    - Workflow Builder: guides/workflow-builder.md
+    - Workflow Validation: guides/workflow-validation.md
+    - Prompt Editor: guides/prompt-editor.md
+    - MVP Workflow: guides/mvp-workflow.md
+    - CLI Reference: guides/cli-reference.md
+  - Concepts:
+    - Architecture: concepts/architecture.md
+    - Workflows: concepts/workflows.md
+    - Prompts: concepts/prompts.md
+    - Validation: concepts/validation.md
+    - Remediation: concepts/remediation.md
+  - API Reference:
+    - Overview: api/overview.md
+    - Core: api/core.md
+    - Config: api/config.md
+    - Workflow: api/workflow.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Publishing: guides/pypi-publishing.md
+  - Architecture Decisions:
+    - Overview: adr/index.md
+    - ADR-0001: adr/0001-record-architecture-decisions.md
+    - ADR-0002: adr/0002-validation-remediation-design.md
+    - ADR-0003: adr/0003-workflow-configuration-format.md
+    - ADR-0004: adr/0004-interactive-workflow-builder.md
+    - ADR-0005: adr/0005-interactive-interfaces.md
+  - Design Documents:
+    - Original Design: design.md
+    - Design Addendum: design-addendum.md

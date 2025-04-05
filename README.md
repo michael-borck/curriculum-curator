@@ -15,6 +15,9 @@ Curriculum Curator is designed around two fundamental principles:
 - **LLM Integration**: Support for multiple providers (Anthropic, OpenAI, Ollama, Groq, Gemini) via LiteLLM
 - **Content Transformation**: Parse and structure raw LLM outputs in various formats
 - **Workflow Engine**: Orchestrate the sequence of content generation, validation, and remediation steps
+- **Interactive Mode**: Complete menu-driven interface for all operations
+- **Interactive Workflow Builder**: Create and edit workflows through a menu-driven interface
+- **Interactive Prompt Editor**: Create and edit prompts with templates and front matter validation
 - **Validation Framework**: Ensure content quality and consistency through a suite of validators
 - **Multiple Output Formats**: Generate HTML, PDF, DOCX, and presentation slide formats
 - **Cost Tracking**: Monitor token usage and associated costs
@@ -48,6 +51,19 @@ curator list-prompts
 
 # List available workflows
 curator list-workflows
+
+# Create a new workflow with the interactive builder
+curator build-workflow my-workflow.yaml
+
+# Edit prompts interactively with templates
+curator edit-prompt
+
+# Launch the fully interactive mode for all operations
+curator interactive
+
+# List available validators and remediators
+curator list-validators
+curator list-remediators
 ```
 
 ## MVP Workflow Ready!
@@ -65,6 +81,7 @@ This workflow is fully configuration-driven and validates against a robust schem
 
 - [MVP Workflow Guide](docs/guides/mvp-workflow.md) - Details on using and extending the workflow
 - [Workflow Validation Guide](docs/guides/workflow-validation.md) - How to validate workflow configurations
+- [Workflow Builder Guide](docs/guides/workflow-builder.md) - How to use the interactive workflow builder
 
 ## Development
 

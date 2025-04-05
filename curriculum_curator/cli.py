@@ -11,6 +11,7 @@ from rich import print
 
 # Import the core functionality
 from curriculum_curator.core import CurriculumCurator
+from curriculum_curator.workflow.builder import WorkflowBuilder
 
 logger = structlog.get_logger()
 
@@ -178,6 +179,194 @@ def list_prompts_command(
     except Exception as e:
         logger.exception("list_prompts_failed", error=str(e))
         print(f"[bold red]Error listing prompts:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="list-validators")
+def list_validators_command():
+    """
+    List available content validators that can be used in workflows.
+    """
+    try:
+        from curriculum_curator.validation.validators import VALIDATOR_REGISTRY
+        
+        print("\n[bold]Available Validators:[/bold]")
+        
+        # Group validators by category
+        categories = {
+            "quality": [],
+            "accuracy": [],
+            "alignment": [],
+            "style": [],
+            "language": [],
+            "safety": []
+        }
+        
+        # Sort validators into categories
+        for name, cls in VALIDATOR_REGISTRY.items():
+            implemented = cls is not None
+            
+            if "quality" in name or name in ["similarity", "structure", "readability", "completeness", "coherence", 
+                                             "consistency", "generic_detector"]:
+                categories["quality"].append((name, implemented))
+            elif "accuracy" in name or name in ["factuality", "references"]:
+                categories["accuracy"].append((name, implemented))
+            elif "alignment" in name or name in ["objectives", "relevance", "age_appropriateness", 
+                                                 "instruction_adherence"]:
+                categories["alignment"].append((name, implemented))
+            elif "style" in name or name in ["bias", "tone"]:
+                categories["style"].append((name, implemented))
+            elif "language" in name or name in ["language_detector", "grammar", "spelling"]:
+                categories["language"].append((name, implemented))
+            elif "safety" in name or name in ["content_safety"]:
+                categories["safety"].append((name, implemented))
+            else:
+                # Default to quality for anything not categorized
+                categories["quality"].append((name, implemented))
+        
+        # Print each category
+        for category, validators in categories.items():
+            if validators:
+                print(f"\n[cyan]{category.title()} Validators:[/cyan]")
+                for name, implemented in sorted(validators):
+                    status = "[green]✓[/green]" if implemented else "[red]✗[/red]"
+                    print(f"  {status} {name}")
+        
+    except Exception as e:
+        logger.exception("list_validators_failed", error=str(e))
+        print(f"[bold red]Error listing validators:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="list-remediators")
+def list_remediators_command():
+    """
+    List available content remediators that can be used in workflows.
+    """
+    try:
+        from curriculum_curator.remediation.remediators import REMEDIATOR_REGISTRY
+        
+        print("\n[bold]Available Remediators:[/bold]")
+        
+        # Group remediators by category
+        categories = {
+            "autofix": [],
+            "rewrite": [],
+            "workflow": [],
+            "language": []
+        }
+        
+        # Sort remediators into categories
+        for name, cls in REMEDIATOR_REGISTRY.items():
+            implemented = cls is not None
+            
+            if "format" in name or "sentence" in name or "terminology" in name:
+                categories["autofix"].append((name, implemented))
+            elif "rewrite" in name or "rephrasing" in name:
+                categories["rewrite"].append((name, implemented))
+            elif "workflow" in name or "flag" in name or "review" in name:
+                categories["workflow"].append((name, implemented))
+            elif "language" in name or "translator" in name:
+                categories["language"].append((name, implemented))
+            else:
+                # Default to autofix for anything not categorized
+                categories["autofix"].append((name, implemented))
+        
+        # Print each category
+        for category, remediators in categories.items():
+            if remediators:
+                print(f"\n[cyan]{category.title()} Remediators:[/cyan]")
+                for name, implemented in sorted(remediators):
+                    status = "[green]✓[/green]" if implemented else "[red]✗[/red]"
+                    print(f"  {status} {name}")
+        
+    except Exception as e:
+        logger.exception("list_remediators_failed", error=str(e))
+        print(f"[bold red]Error listing remediators:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="build-workflow")
+def build_workflow_command(
+    output_file: Path = typer.Argument(..., help="Path to save the workflow configuration"),
+    base_file: Optional[Path] = typer.Option(None, "--base", "-b", help="Base workflow to start from"),
+    config_path: Path = typer.Option("config.yaml", "--config", "-c", help="Path to configuration file."),
+):
+    """
+    Interactive workflow builder to create or edit workflow configurations.
+    
+    This command launches an interactive menu-driven interface to help you build
+    workflow configurations without manually editing YAML files. It guides you through
+    the process of creating each step and validates the workflow as you build it.
+    """
+    try:
+        config = load_config(config_path)
+        builder = WorkflowBuilder(config)
+        
+        if base_file:
+            builder.load_base(base_file)
+        
+        builder.run_interactive()
+        
+    except Exception as e:
+        logger.exception("build_workflow_failed", error=str(e))
+        print(f"[bold red]Error building workflow:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="edit-prompt")
+def edit_prompt_command(
+    prompt_path: Optional[str] = typer.Argument(None, help="Path to the prompt file to edit (optional)"),
+    config_path: Path = typer.Option("config.yaml", "--config", "-c", help="Path to configuration file."),
+):
+    """
+    Interactive prompt editor for creating and editing prompt templates.
+    
+    This command launches an interactive menu-driven interface to help you create
+    and edit prompt templates with proper front matter. If a prompt path is provided,
+    it will directly open that prompt for editing. Otherwise, it will show a menu
+    of options to list existing prompts, create new ones, or install defaults.
+    """
+    try:
+        from curriculum_curator.prompt.editor import edit_prompt
+        
+        config = load_config(config_path)
+        
+        # Get prompt base path from config
+        if hasattr(config, 'prompt_path') and config.prompt_path:
+            prompt_base_path = Path(config.prompt_path)
+        else:
+            # Default to 'prompts' directory if not specified in config
+            prompt_base_path = Path("prompts")
+        
+        edit_prompt(prompt_base_path, prompt_path)
+        
+    except Exception as e:
+        logger.exception("edit_prompt_failed", error=str(e))
+        print(f"[bold red]Error editing prompt:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="interactive")
+def interactive_command(
+    config_path: Path = typer.Option("config.yaml", "--config", "-c", help="Path to configuration file."),
+):
+    """
+    Launch interactive mode with a menu of common operations.
+    
+    This command provides a user-friendly interface for common operations like
+    running workflows, building new workflows, editing prompts, and initializing
+    projects. It's especially useful for new users or those who prefer a guided,
+    menu-driven experience over command-line arguments.
+    """
+    try:
+        from curriculum_curator.interactive import run_interactive
+        
+        run_interactive(config_path)
+        
+    except Exception as e:
+        logger.exception("interactive_mode_failed", error=str(e))
+        print(f"[bold red]Error in interactive mode:[/bold red] {e}")
         raise typer.Exit(code=1)
 
 
