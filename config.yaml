@@ -7,7 +7,7 @@ system:
 # LLM providers configuration
 llm:
   default_provider: "ollama"
-  
+
   # Named model aliases for easier reference in workflows
   aliases:
     default_smart: "anthropic/claude-3-haiku"
@@ -15,7 +15,7 @@ llm:
     default_fast: "ollama/llama3"
     default_balanced: "openai/gpt-3.5-turbo"
     default_cheap: "groq/llama3-8b-8192"
-  
+
   providers:
     anthropic:
       api_key: "env(ANTHROPIC_API_KEY)"
@@ -29,7 +29,7 @@ llm:
           cost_per_1k_tokens:
             input: 15.00
             output: 75.00
-    
+
     openai:
       api_key: "env(OPENAI_API_KEY)"
       default_model: "gpt-3.5-turbo"
@@ -42,7 +42,7 @@ llm:
           cost_per_1k_tokens:
             input: 10.00
             output: 30.00
-    
+
     ollama:
       base_url: "http://localhost:11434"
       default_model: "llama3"
@@ -52,7 +52,7 @@ llm:
       models:
         llama3: {}
         mistral: {}
-    
+
     groq:
       api_key: "env(GROQ_API_KEY)"
       default_model: "llama3-8b-8192"
@@ -61,7 +61,7 @@ llm:
         output: 0.30
       models:
         llama3-8b-8192: {}
-    
+
     gemini:
       api_key: "env(GOOGLE_API_KEY)"
       default_model: "gemini-pro"
@@ -80,12 +80,12 @@ validation:
   similarity:
     threshold: 0.85
     model: "all-MiniLM-L6-v2"
-  
+
   structure:
     slides:
       min_sections: 5
       required_sections: ["title", "objectives", "summary"]
-  
+
   readability:
     max_avg_sentence_length: 25
     min_flesch_reading_ease: 60
@@ -94,7 +94,7 @@ validation:
 remediation:
   content_merger:
     similarity_threshold: 0.8
-  
+
   sentence_splitter:
     enabled: true
 
@@ -116,24 +116,24 @@ workflows:
         llm_model_alias: default_smart
         output_variable: course_overview_md
         output_format: raw
-      
+
       - name: generate_module_outlines
         type: prompt
         prompt: module/outline.txt
         llm_model_alias: default_smart
         output_variable: module_outlines_json
         output_format: json
-      
+
       - name: validate_content
         type: validation
         validators: [similarity, structure, readability]
         targets: [course_overview_md]
-      
+
       - name: remediate_content
         type: remediation
         remediators: [content_merger, sentence_splitter]
         targets: [course_overview_md]
-      
+
       - name: generate_output
         type: output
         formats: [html, pdf]

@@ -43,13 +43,13 @@ The `WorkflowEngine` is the central component that orchestrates the execution of
 class WorkflowEngine:
     def __init__(self, config, llm_manager=None):
         """Initialize a workflow engine with configuration."""
-        
+
     def load_workflow(self, workflow_path):
         """Load a workflow definition from a file."""
-        
+
     def execute(self, workflow, parameters=None):
         """Execute a workflow with optional parameters."""
-        
+
     def execute_stage(self, stage, content=None):
         """Execute a single workflow stage."""
 ```
@@ -62,10 +62,10 @@ The `ValidationManager` handles content validation:
 class ValidationManager:
     def __init__(self, config=None):
         """Initialize the validation manager."""
-        
+
     def validate(self, content, validators=None):
         """Validate content using specified validators."""
-        
+
     def get_validator(self, name):
         """Get a validator by name."""
 ```
@@ -78,10 +78,10 @@ The `RemediationManager` handles automatic content remediation:
 class RemediationManager:
     def __init__(self, config=None):
         """Initialize the remediation manager."""
-        
+
     def remediate(self, content, validation_results, remediators=None):
         """Remediate content based on validation results."""
-        
+
     def get_remediator(self, name):
         """Get a remediator by name."""
 ```
@@ -94,10 +94,10 @@ The `PromptRegistry` manages prompt templates:
 class PromptRegistry:
     def __init__(self, prompt_dirs=None):
         """Initialize the prompt registry."""
-        
+
     def get_prompt(self, template_name):
         """Get a prompt template by name."""
-        
+
     def format_prompt(self, template_name, parameters):
         """Format a prompt template with parameters."""
 ```
@@ -110,10 +110,10 @@ The `LLMManager` provides a unified interface to language models:
 class LLMManager:
     def __init__(self, config=None):
         """Initialize the LLM manager."""
-        
+
     def generate(self, prompt, model=None, parameters=None):
         """Generate content using the specified LLM."""
-        
+
     def get_model(self, name):
         """Get a specific LLM model."""
 ```

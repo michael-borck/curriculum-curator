@@ -53,12 +53,12 @@ stages:
         parameters:
           max_sentence_length: 25
           preserve_technical_terms: true
-      
+
       - name: "format_corrector"
         parameters:
           fix_headers: true
           fix_lists: true
-          
+
       - name: "rephrasing_prompter"
         parameters:
           severity_threshold: "high"

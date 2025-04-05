@@ -52,7 +52,7 @@ llm:
     type: openai
     model: gpt-4-turbo
     api_key: your-api-key-here
-    
+
   default_smart:
     type: anthropic
     model: claude-3-opus-20240229

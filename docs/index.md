@@ -5,19 +5,19 @@ An educational content workflow orchestration tool designed to streamline the cr
 <div class="grid cards" markdown>
 
 - :material-playlist-plus: **Workflow-driven content generation**
-    
+
     Create complete educational modules using configurable, automated workflows.
 
 - :material-chat-processing: **Prompt-centric approach**
-    
+
     All content is derived from well-designed prompts managed within the system.
 
 - :material-check-all: **Content validation and remediation**
-    
+
     Ensure quality through automated validation and remediation steps.
 
 - :material-console: **Interactive interfaces**
-    
+
     Build workflows and edit prompts with menu-driven interfaces.
 
 </div>

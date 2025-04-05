@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Terminal Background -->
+  <rect width="800" height="600" fill="#1E1E1E"/>
+  
+  <!-- Terminal Header -->
+  <rect x="0" y="0" width="800" height="30" fill="#333333"/>
+  <text x="10" y="20" font-family="monospace" font-size="14" fill="#FFFFFF">CurriculumCurator - Terminal User Interface</text>
+  
+  <!-- Main Layout -->
+  <rect x="10" y="40" width="780" height="550" fill="#262626" rx="5"/>
+  
+  <!-- Left Panel - Navigation -->
+  <rect x="15" y="45" width="190" height="540" fill="#2D2D2D" rx="3"/>
+  <text x="25" y="65" font-family="monospace" font-size="14" fill="#FFFFFF">Navigation</text>
+  <line x1="25" y1="70" x2="180" y2="70" stroke="#555555" stroke-width="1"/>
+  
+  <!-- Navigation Items -->
+  <rect x="20" y="80" width="180" height="25" fill="#3C3C3C" rx="2"/>
+  <text x="30" y="97" font-family="monospace" font-size="12" fill="#FFFFFF">→ Dashboard</text>
+  
+  <text x="30" y="127" font-family="monospace" font-size="12" fill="#BBBBBB">Workflows</text>
+  <text x="40" y="147" font-family="monospace" font-size="12" fill="#BBBBBB">  Standard Course</text>
+  <text x="40" y="167" font-family="monospace" font-size="12" fill="#BBBBBB">  Quick Module</text>
+  <text x="40" y="187" font-family="monospace" font-size="12" fill="#BBBBBB">  Assessment Pack</text>
+  
+  <text x="30" y="217" font-family="monospace" font-size="12" fill="#BBBBBB">Prompts</text>
+  <text x="40" y="237" font-family="monospace" font-size="12" fill="#BBBBBB">  Course</text>
+  <text x="40" y="257" font-family="monospace" font-size="12" fill="#BBBBBB">  Module</text>
+  <text x="40" y="277" font-family="monospace" font-size="12" fill="#BBBBBB">  Assessment</text>
+  
+  <text x="30" y="307" font-family="monospace" font-size="12" fill="#BBBBBB">Sessions</text>
+  <text x="30" y="337" font-family="monospace" font-size="12" fill="#BBBBBB">Settings</text>
+  <text x="30" y="367" font-family="monospace" font-size="12" fill="#BBBBBB">Help</text>
+  
+  <!-- Right Panel - Content -->
+  <rect x="210" y="45" width="580" height="540" fill="#2D2D2D" rx="3"/>
+  
+  <!-- Dashboard Header -->
+  <text x="230" y="65" font-family="monospace" font-size="16" fill="#FFFFFF">Dashboard</text>
+  <line x1="230" y1="75" x2="770" y2="75" stroke="#555555" stroke-width="1"/>
+  
+  <!-- Recent Sessions -->
+  <text x="230" y="95" font-family="monospace" font-size="14" fill="#FFFFFF">Recent Sessions</text>
+  
+  <!-- Session Table Header -->
+  <rect x="230" y="105" width="540" height="25" fill="#333333" rx="2"/>
+  <text x="240" y="122" font-family="monospace" font-size="12" fill="#FFFFFF">Session ID</text>
+  <text x="370" y="122" font-family="monospace" font-size="12" fill="#FFFFFF">Workflow</text>
+  <text x="500" y="122" font-family="monospace" font-size="12" fill="#FFFFFF">Status</text>
+  <text x="650" y="122" font-family="monospace" font-size="12" fill="#FFFFFF">Date</text>
+  
+  <!-- Session Rows -->
+  <rect x="230" y="135" width="540" height="25" fill="#2D2D2D" rx="2"/>
+  <text x="240" y="152" font-family="monospace" font-size="12" fill="#FFFFFF">20250405-123456</text>
+  <text x="370" y="152" font-family="monospace" font-size="12" fill="#FFFFFF">Standard Course</text>
+  <text x="500" y="152" font-family="monospace" font-size="12" fill="#33CC33">Completed</text>
+  <text x="650" y="152" font-family="monospace" font-size="12" fill="#FFFFFF">2025-04-05</text>
+  
+  <rect x="230" y="165" width="540" height="25" fill="#333333" rx="2"/>
+  <text x="240" y="182" font-family="monospace" font-size="12" fill="#FFFFFF">20250404-789012</text>
+  <text x="370" y="182" font-family="monospace" font-size="12" fill="#FFFFFF">Assessment Pack</text>
+  <text x="500" y="182" font-family="monospace" font-size="12" fill="#FFCC00">In Progress</text>
+  <text x="650" y="182" font-family="monospace" font-size="12" fill="#FFFFFF">2025-04-04</text>
+  
+  <rect x="230" y="195" width="540" height="25" fill="#2D2D2D" rx="2"/>
+  <text x="240" y="212" font-family="monospace" font-size="12" fill="#FFFFFF">20250403-345678</text>
+  <text x="370" y="212" font-family="monospace" font-size="12" fill="#FFFFFF">Quick Module</text>
+  <text x="500" y="212" font-family="monospace" font-size="12" fill="#33CC33">Completed</text>
+  <text x="650" y="212" font-family="monospace" font-size="12" fill="#FFFFFF">2025-04-03</text>
+  
+  <!-- Token Usage Summary -->
+  <text x="230" y="250" font-family="monospace" font-size="14" fill="#FFFFFF">Token Usage Summary</text>
+  
+  <!-- Token Usage Box -->
+  <rect x="230" y="260" width="540" height="120" fill="#333333" rx="5"/>
+  
+  <!-- Token Usage Content -->
+  <text x="250" y="280" font-family="monospace" font-size="12" fill="#FFFFFF">Provider/Model</text>
+  <text x="400" y="280" font-family="monospace" font-size="12" fill="#FFFFFF">Requests</text>
+  <text x="480" y="280" font-family="monospace" font-size="12" fill="#FFFFFF">Tokens</text>
+  <text x="560" y="280" font-family="monospace" font-size="12" fill="#FFFFFF">Cost</text>
+  <line x1="250" y1="285" x2="750" y2="285" stroke="#555555" stroke-width="1"/>
+  
+  <text x="250" y="305" font-family="monospace" font-size="12" fill="#FFFFFF">anthropic/claude-3-haiku</text>
+  <text x="400" y="305" font-family="monospace" font-size="12" fill="#FFFFFF">12</text>
+  <text x="480" y="305" font-family="monospace" font-size="12" fill="#FFFFFF">45,678</text>
+  <text x="560" y="305" font-family="monospace" font-size="12" fill="#FFFFFF">$2.34</text>
+  
+  <text x="250" y="325" font-family="monospace" font-size="12" fill="#FFFFFF">openai/gpt-3.5-turbo</text>
+  <text x="400" y="325" font-family="monospace" font-size="12" fill="#FFFFFF">8</text>
+  <text x="480" y="325" font-family="monospace" font-size="12" fill="#FFFFFF">32,456</text>
+  <text x="560" y="325" font-family="monospace" font-size="12" fill="#FFFFFF">$1.78</text>
+  
+  <text x="250" y="345" font-family="monospace" font-size="12" fill="#FFFFFF">ollama/llama3</text>
+  <text x="400" y="345" font-family="monospace" font-size="12" fill="#FFFFFF">15</text>
+  <text x="480" y="345" font-family="monospace" font-size="12" fill="#FFFFFF">67,890</text>
+  <text x="560" y="345" font-family="monospace" font-size="12" fill="#FFFFFF">$0.00</text>
+  
+  <line x1="250" y1="350" x2="750" y2="350" stroke="#555555" stroke-width="1"/>
+  <text x="250" y="370" font-family="monospace" font-size="12" font-weight="bold" fill="#FFFFFF">TOTAL</text>
+  <text x="400" y="370" font-family="monospace" font-size="12" font-weight="bold" fill="#FFFFFF">35</text>
+  <text x="480" y="370" font-family="monospace" font-size="12" font-weight="bold" fill="#FFFFFF">146,024</text>
+  <text x="560" y="370" font-family="monospace" font-size="12" font-weight="bold" fill="#FFFFFF">$4.12</text>
+  
+  <!-- Quick Actions -->
+  <text x="230" y="410" font-family="monospace" font-size="14" fill="#FFFFFF">Quick Actions</text>
+  
+  <!-- Action Buttons -->
+  <rect x="230" y="420" width="175" height="30" fill="#0066CC" rx="3"/>
+  <text x="260" y="440" font-family="monospace" font-size="12" fill="#FFFFFF">New Standard Course</text>
+  
+  <rect x="415" y="420" width="175" height="30" fill="#0066CC" rx="3"/>
+  <text x="450" y="440" font-family="monospace" font-size="12" fill="#FFFFFF">New Quick Module</text>
+  
+  <rect x="600" y="420" width="170" height="30" fill="#0066CC" rx="3"/>
+  <text x="625" y="440" font-family="monospace" font-size="12" fill="#FFFFFF">New Assessment</text>
+  
+  <!-- Status Bar -->
+  <rect x="0" y="570" width="800" height="30" fill="#333333"/>
+  <text x="10" y="590" font-family="monospace" font-size="12" fill="#FFFFFF">Status: Ready | LLM: Online | Sessions: 3 | Press ? for help</text>
+</svg>

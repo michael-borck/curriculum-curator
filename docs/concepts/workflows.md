@@ -30,14 +30,14 @@ stages:
     parameters:
       topic: "{topic}"
       learning_level: "{learning_level}"
-      
+
   - name: "Validate Module Outline"
     type: "validation"
     validators:
       - name: "readability"
         parameters:
           min_score: 60
-          
+
   - name: "Auto-Remediate Issues"
     type: "remediation"
     remediators:

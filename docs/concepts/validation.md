@@ -53,11 +53,11 @@ stages:
         parameters:
           min_score: 60
           target_audience: "undergraduate"
-      
+
       - name: "structure"
         parameters:
           required_sections: ["objectives", "content", "assessment"]
-          
+
       - name: "language_detector"
         parameters:
           expected_language: "en"

@@ -26,9 +26,9 @@ steps:
     llm_model_alias: default_smart
     output_format: raw
     output_variable: course_overview
-  
+
   # Additional steps...
-  
+
   - name: generate_outputs
     type: output
     output_mapping:

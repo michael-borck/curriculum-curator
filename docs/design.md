@@ -62,24 +62,24 @@ class PromptRegistry:
     def __init__(self, base_path):
         self.base_path = Path(base_path)
         self.prompt_cache = {}
-    
+
     def get_prompt(self, prompt_path):
         """Get a prompt by its path relative to the base path."""
         if prompt_path in self.prompt_cache:
             return self.prompt_cache[prompt_path]
-        
+
         full_path = self.base_path / prompt_path
         if not full_path.exists():
             raise FileNotFoundError(f"Prompt not found: {prompt_path}")
-        
+
         prompt_data = frontmatter.load(full_path)
         self.prompt_cache[prompt_path] = {
             "content": prompt_data.content,
             "metadata": prompt_data.metadata
         }
-        
+
         return self.prompt_cache[prompt_path]
-    
+
     def list_prompts(self, tag=None):
         """List all prompts, optionally filtered by tag."""
         prompts = []
@@ -94,7 +94,7 @@ class PromptRegistry:
                         prompts.append(str(relative_path))
                 except Exception:
                     continue
-        
+
         return prompts
 ```
 
@@ -120,7 +120,7 @@ llm:
           cost_per_1k_tokens:
             input: 15.00
             output: 75.00
-    
+
     openai:
       api_key: "env(OPENAI_API_KEY)"
       default_model: "gpt-3.5-turbo"
@@ -133,7 +133,7 @@ llm:
           cost_per_1k_tokens:
             input: 10.00
             output: 30.00
-    
+
     ollama:
       base_url: "http://localhost:11434"
       default_model: "llama3"
@@ -143,7 +143,7 @@ llm:
       models:
         llama3: {}
         mistral: {}
-        
+
     groq:
       api_key: "env(GROQ_API_KEY)"
       default_model: "llama3-8b-8192"
@@ -152,7 +152,7 @@ llm:
         output: 0.30
       models:
         llama3-8b-8192: {}
-        
+
     gemini:
       api_key: "env(GOOGLE_API_KEY)"
       default_model: "gemini-pro"
@@ -201,7 +201,7 @@ class LLMManager:
         self.history = []
         self.current_workflow_id = None
         self.current_step_name = None
-        
+
         # Configure API keys from environment variables
         for provider, provider_config in config["llm"]["providers"].items():
             api_key = provider_config.get("api_key", "")
@@ -210,41 +210,41 @@ class LLMManager:
                 api_key = os.getenv(env_var, "")
                 if provider != "ollama" and not api_key:
                     logger.warning(f"Missing API key for {provider}", env_var=env_var)
-    
+
     def _resolve_model_alias(self, model_alias=None):
         """Resolve model alias to provider and model."""
         if model_alias is None:
             default_provider = self.config["llm"]["default_provider"]
             default_model = self.config["llm"]["providers"][default_provider]["default_model"]
             return default_provider, default_model
-        
+
         # Check if alias is in provider/model format
         if "/" in model_alias:
             provider, model = model_alias.split("/", 1)
             if (provider in self.config["llm"]["providers"] and
                 model in self.config["llm"]["providers"][provider]["models"]):
                 return provider, model
-        
+
         # Otherwise, assume it's a direct model reference and search for it
         for provider, provider_config in self.config["llm"]["providers"].items():
             if model_alias in provider_config["models"]:
                 return provider, model_alias
-        
+
         # Fall back to default if not found
         default_provider = self.config["llm"]["default_provider"]
         default_model = self.config["llm"]["providers"][default_provider]["default_model"]
         logger.warning(
-            "model_alias_not_found", 
+            "model_alias_not_found",
             model_alias=model_alias,
             using_default=f"{default_provider}/{default_model}"
         )
         return default_provider, default_model
-    
+
     def _calculate_cost(self, request):
         """Calculate cost based on token counts and configured rates."""
         provider_config = self.config["llm"]["providers"][request.provider]
         model_config = provider_config["models"].get(request.model, {})
-        
+
         # Get costs, checking model-specific, then provider default
         input_cost = model_config.get("cost_per_1k_tokens", {}).get(
             "input", provider_config["cost_per_1k_tokens"]["input"]
@@ -252,14 +252,14 @@ class LLMManager:
         output_cost = model_config.get("cost_per_1k_tokens", {}).get(
             "output", provider_config["cost_per_1k_tokens"]["output"]
         )
-        
+
         # Calculate total cost
         request.cost = (
             (request.input_tokens / 1000) * input_cost +
             (request.output_tokens / 1000) * output_cost
         )
         return request.cost
-    
+
     @backoff.on_exception(
         backoff.expo,
         (Exception),
@@ -270,17 +270,17 @@ class LLMManager:
         """Generate text using the specified model or defaults."""
         # Resolve provider and model from alias or defaults
         provider, model = self._resolve_model_alias(model_alias)
-        
+
         # Create request object for tracking
         request = LLMRequest(
-            prompt=prompt, 
-            provider=provider, 
+            prompt=prompt,
+            provider=provider,
             model=model,
             workflow_id=self.current_workflow_id,
             step_name=self.current_step_name
         )
         self.history.append(request)
-        
+
         logger.info(
             "llm_request_started",
             provider=provider,
@@ -288,21 +288,21 @@ class LLMManager:
             workflow_id=self.current_workflow_id,
             step_name=self.current_step_name
         )
-        
+
         start_time = time.time()
         try:
             # Get provider-specific configuration
             provider_config = self.config["llm"]["providers"][provider]
-            
+
             # Configure API key
             api_key = provider_config.get("api_key", "")
             if api_key.startswith("env(") and api_key.endswith(")"):
                 env_var = api_key[4:-1]
                 api_key = os.getenv(env_var, "")
-            
+
             # Configure base URL if needed (for Ollama, etc.)
             base_url = provider_config.get("base_url", None)
-            
+
             # Use LiteLLM to make the actual request
             response = await litellm.acompletion(
                 model=f"{provider}/{model}",
@@ -311,12 +311,12 @@ class LLMManager:
                 base_url=base_url,
                 **params
             )
-            
+
             request.status = "success"
             request.completion = response.choices[0].message.content
             request.input_tokens = response.usage.prompt_tokens
             request.output_tokens = response.usage.completion_tokens
-            
+
             logger.info(
                 "llm_request_completed",
                 provider=provider,
@@ -326,7 +326,7 @@ class LLMManager:
                 workflow_id=self.current_workflow_id,
                 step_name=self.current_step_name
             )
-            
+
         except Exception as e:
             request.status = "error"
             request.error = str(e)
@@ -343,16 +343,16 @@ class LLMManager:
             request.duration = time.time() - start_time
             if request.input_tokens and request.output_tokens:
                 self._calculate_cost(request)
-        
+
         return request.completion
 
     def generate_usage_report(self, workflow_id=None, step_name=None):
         """Generate a usage report for the specified workflow and/or step."""
         # Filter history by workflow_id and step_name if provided
-        requests = [r for r in self.history 
+        requests = [r for r in self.history
                 if (workflow_id is None or r.workflow_id == workflow_id)
                 and (step_name is None or r.step_name == step_name)]
-        
+
         # Group by provider and model
         by_model = {}
         for r in requests:
@@ -366,7 +366,7 @@ class LLMManager:
                     "errors": 0,
                     "avg_duration": 0,
                 }
-            
+
             entry = by_model[key]
             entry["count"] += 1
             if r.status == "error":
@@ -376,7 +376,7 @@ class LLMManager:
                 entry["output_tokens"] += r.output_tokens or 0
                 entry["cost"] += r.cost or 0
                 entry["avg_duration"] = (entry["avg_duration"] * (entry["count"] - 1) + r.duration) / entry["count"]
-        
+
         # Calculate totals
         totals = {
             "count": sum(m["count"] for m in by_model.values()),
@@ -385,7 +385,7 @@ class LLMManager:
             "cost": sum(m["cost"] for m in by_model.values()),
             "errors": sum(m["errors"] for m in by_model.values()),
         }
-        
+
         return {
             "by_model": by_model,
             "totals": totals,
@@ -408,24 +408,24 @@ from bs4 import BeautifulSoup
 class ContentTransformer:
     def __init__(self):
         pass
-    
+
     def transform(self, raw_content, output_format, transformation_rules=None):
         """Transform raw LLM output into the desired format."""
         if output_format == "raw":
             return raw_content
-        
+
         if output_format == "list":
             return self._extract_list_items(raw_content)
-        
+
         if output_format == "json":
             return self._extract_json(raw_content)
-        
+
         if output_format == "html":
             return self._markdown_to_html(raw_content)
-        
+
         # Default to returning the raw content
         return raw_content
-    
+
     def _extract_list_items(self, content):
         """Extract list items from markdown content."""
         items = []
@@ -434,14 +434,14 @@ class ContentTransformer:
             match = re.match(r'^\s*[-*]\s+(.+)$', line)
             if match:
                 items.append(match.group(1).strip())
-            
+
             # Match numbered list items
             match = re.match(r'^\s*\d+\.\s+(.+)$', line)
             if match:
                 items.append(match.group(1).strip())
-                
+
         return items
-    
+
     def _extract_json(self, content):
         """Extract JSON from the content."""
         # Find content between triple backticks and json
@@ -451,20 +451,20 @@ class ContentTransformer:
                 return json.loads(match.group(1))
             except json.JSONDecodeError:
                 pass
-        
+
         # Try parsing the entire content as JSON
         try:
             return json.loads(content)
         except json.JSONDecodeError:
             pass
-        
+
         # Return empty dict if no valid JSON found
         return {}
-    
+
     def _markdown_to_html(self, content):
         """Convert markdown to HTML."""
         return markdown.markdown(content)
-    
+
     def extract_sections(self, content, section_markers=None):
         """Extract sections from content based on markdown headings."""
         if section_markers is None:
@@ -472,25 +472,25 @@ class ContentTransformer:
             sections = {}
             current_section = None
             current_content = []
-            
+
             for line in content.split('\n'):
                 heading_match = re.match(r'^(#{1,6})\s+(.+)$', line)
                 if heading_match:
                     # Save previous section if exists
                     if current_section:
                         sections[current_section] = '\n'.join(current_content).strip()
-                    
+
                     # Start new section
                     current_section = heading_match.group(2).strip()
                     current_content = []
                 else:
                     if current_section:
                         current_content.append(line)
-                    
+
             # Save the last section
             if current_section:
                 sections[current_section] = '\n'.join(current_content).strip()
-                
+
             return sections
         else:
             # Use custom section markers
@@ -500,7 +500,7 @@ class ContentTransformer:
                 match = re.search(pattern, content)
                 if match:
                     sections[marker] = match.group(1).strip()
-            
+
             return sections
 ```
 
@@ -525,7 +525,7 @@ class WorkflowStep:
     def __init__(self, name, config):
         self.name = name
         self.config = config
-    
+
     async def execute(self, context, prompt_registry, llm_manager, content_transformer):
         """Execute this workflow step."""
         raise NotImplementedError("Subclasses must implement execute()")
@@ -537,12 +537,12 @@ class PromptStep(WorkflowStep):
         prompt_path = self.config.get("prompt")
         if not prompt_path:
             raise WorkflowError(f"Missing prompt path for step {self.name}")
-        
+
         try:
             prompt_data = prompt_registry.get_prompt(prompt_path)
         except FileNotFoundError as e:
             raise WorkflowError(f"Failed to load prompt: {e}")
-        
+
         # Check required variables
         required_vars = prompt_data["metadata"].get("requires", [])
         missing_vars = [var for var in required_vars if var not in context]
@@ -550,46 +550,46 @@ class PromptStep(WorkflowStep):
             raise WorkflowError(
                 f"Missing required variables for prompt {prompt_path}: {', '.join(missing_vars)}"
             )
-        
+
         # Fill in prompt template
         try:
             prompt_content = prompt_data["content"]
             filled_prompt = prompt_content.format(**context)
         except KeyError as e:
             raise WorkflowError(f"Error formatting prompt: {e}")
-        
+
         # Get LLM response
         model_alias = self.config.get("llm_model_alias")
         try:
             response = await llm_manager.generate(filled_prompt, model_alias)
         except Exception as e:
             raise WorkflowError(f"LLM generation failed: {e}")
-        
+
         # Transform content if requested
         output_format = self.config.get("output_format", "raw")
         transformation_rules = self.config.get("transformation_rules", {})
-        
+
         try:
             transformed_content = content_transformer.transform(
                 response, output_format, transformation_rules
             )
         except Exception as e:
             raise WorkflowError(f"Content transformation failed: {e}")
-        
+
         # Store in context under output_variable
         output_variable = self.config.get("output_variable")
         if output_variable:
             context[output_variable] = transformed_content
-        
+
         # Store usage information in context
         usage_stats = llm_manager.generate_usage_report(
             workflow_id=context.get("workflow_id"),
             step_name=self.name
         )
-        
+
         context.setdefault("usage_stats", {})
         context["usage_stats"][self.name] = usage_stats
-        
+
         return transformed_content
 
 class ValidationStep(WorkflowStep):
@@ -611,12 +611,12 @@ class Workflow:
         self.llm_manager = llm_manager
         self.content_transformer = content_transformer
         self.session_dir = None
-    
+
     def _create_step(self, step_config):
         """Create a workflow step from configuration."""
         step_type = step_config.get("type", "prompt")
         step_name = step_config.get("name")
-        
+
         if step_type == "prompt":
             return PromptStep(step_name, step_config)
         elif step_type == "validation":
@@ -625,41 +625,41 @@ class Workflow:
             return OutputStep(step_name, step_config)
         else:
             raise WorkflowError(f"Unknown step type: {step_type}")
-    
+
     def _initialize_session(self, session_id=None):
         """Initialize a new session or load an existing one."""
         if session_id is None:
             session_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
-        
+
         # Create session directory
         base_dir = Path(self.config.get("session_base_dir", ".curriculum_curator/sessions"))
         session_dir = base_dir / session_id
         session_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.session_dir = session_dir
         return session_id
-    
+
     def _save_session_state(self, context):
         """Save the current session state to disk."""
         if not self.session_dir:
             return
-            
+
         # Save config used
         with open(self.session_dir / "config.yaml", "w") as f:
             import yaml
             yaml.dump(self.config, f)
-            
+
         # Save session state (exclude large content)
         sanitized_context = {
-            k: v for k, v in context.items() 
+            k: v for k, v in context.items()
             if isinstance(v, (str, int, float, bool, list, dict))
             and not isinstance(v, str) or len(v) < 10000
         }
-        
+
         with open(self.session_dir / "session.json", "w") as f:
             import json
             json.dump(sanitized_context, f, default=str, indent=2)
-            
+
         # Append to prompt history
         with open(self.session_dir / "prompt_history.jsonl", "a") as f:
             for request in self.llm_manager.history:
@@ -678,32 +678,32 @@ class Workflow:
                         "prompt": request.prompt[:1000] + "..." if len(request.prompt) > 1000 else request.prompt,
                     }
                     f.write(json.dumps(json_record) + "\n")
-    
+
     async def execute(self, workflow_name, initial_context=None, session_id=None):
         """Execute the specified workflow."""
         # Get workflow configuration
         workflow_config = self.config.get("workflows", {}).get(workflow_name)
         if not workflow_config:
             raise WorkflowError(f"Workflow not found: {workflow_name}")
-        
+
         # Initialize context
         context = initial_context or {}
         context["workflow_name"] = workflow_name
         context["workflow_id"] = session_id or str(uuid.uuid4())
         context["start_time"] = datetime.now()
-        
+
         # Initialize session
         session_id = self._initialize_session(session_id)
         context["session_id"] = session_id
-        
+
         # Configure LLM manager with workflow context
         self.llm_manager.current_workflow_id = context["workflow_id"]
-        
+
         # Get workflow steps
         step_configs = workflow_config.get("steps", [])
         if not step_configs:
             raise WorkflowError(f"No steps defined for workflow: {workflow_name}")
-        
+
         # Execute steps
         results = {}
         try:
@@ -711,7 +711,7 @@ class Workflow:
                 step = self._create_step(step_config)
                 context["current_step"] = step.name
                 context["current_step_index"] = i
-                
+
                 logger.info(
                     "workflow_step_started",
                     workflow_name=workflow_name,
@@ -719,18 +719,18 @@ class Workflow:
                     step_name=step.name,
                     step_index=i
                 )
-                
+
                 self.llm_manager.current_step_name = step.name
-                
+
                 try:
                     result = await step.execute(
-                        context, 
+                        context,
                         self.prompt_registry,
                         self.llm_manager,
                         self.content_transformer
                     )
                     results[step.name] = result
-                    
+
                     logger.info(
                         "workflow_step_completed",
                         workflow_name=workflow_name,
@@ -751,22 +751,22 @@ class Workflow:
                     context["failed_step"] = step.name
                     self._save_session_state(context)
                     raise WorkflowError(f"Step {step.name} failed: {e}")
-                
+
                 # Save session state after each step
                 self._save_session_state(context)
-                
+
         finally:
             context["end_time"] = datetime.now()
             context["duration"] = (context["end_time"] - context["start_time"]).total_seconds()
-            
+
             # Generate final usage report
             context["final_usage_report"] = self.llm_manager.generate_usage_report(
                 workflow_id=context["workflow_id"]
             )
-            
+
             # Save final session state
             self._save_session_state(context)
-                
+
         return {
             "results": results,
             "context": context,
@@ -794,14 +794,14 @@ class ValidationIssue:
         self.message = message
         self.location = location  # E.g., "section_name", "line:42"
         self.suggestion = suggestion  # Optional suggestion for fixing
-    
+
     def __str__(self):
         return f"{self.severity.upper()}: {self.message}"
 
 class Validator(ABC):
     def __init__(self, config):
         self.config = config
-    
+
     @abstractmethod
     async def validate(self, content, context=None):
         """Validate content and return a list of validation issues."""
@@ -811,11 +811,11 @@ class SimilarityValidator(Validator):
     def __init__(self, config):
         super().__init__(config)
         self.threshold = config.get("threshold", 0.8)
-    
+
     async def validate(self, content, context=None):
         """Check for content similarity across sections or files."""
         issues = []
-        
+
         if isinstance(content, dict):
             # If content is a dictionary of sections
             sections = list(content.keys())
@@ -827,10 +827,10 @@ class SimilarityValidator(Validator):
         else:
             # Single document, nothing to compare
             return []
-        
+
         if len(texts) < 2:
             return []
-        
+
         # Calculate similarity matrix
         vectorizer = TfidfVectorizer(stop_words='english')
         try:
@@ -843,7 +843,7 @@ class SimilarityValidator(Validator):
                 None
             ))
             return issues
-        
+
         # Check for similarities above threshold
         for i in range(len(texts)):
             for j in range(i+1, len(texts)):
@@ -855,7 +855,7 @@ class SimilarityValidator(Validator):
                         f"{sections[i]},{sections[j]}",
                         "Consider merging or revising the content to reduce duplication."
                     ))
-        
+
         return issues
 
 class StructureValidator(Validator):
@@ -864,18 +864,18 @@ class StructureValidator(Validator):
         self.required_sections = config.get("required_sections", [])
         self.min_sections = config.get("min_sections", 0)
         self.section_pattern = config.get("section_pattern", r'^#{1,3}\s+(.+))
-    
+
     async def validate(self, content, context=None):
         """Validate the structure of the content."""
         issues = []
-        
+
         # Extract sections using regex
         sections = []
         for line in content.split('\n'):
             match = re.match(self.section_pattern, line)
             if match:
                 sections.append(match.group(1).strip())
-        
+
         # Check minimum number of sections
         if len(sections) < self.min_sections:
             issues.append(ValidationIssue(
@@ -884,7 +884,7 @@ class StructureValidator(Validator):
                 None,
                 "Add more sections to fulfill the structural requirements."
             ))
-        
+
         # Check required sections
         for required_section in self.required_sections:
             found = False
@@ -892,7 +892,7 @@ class StructureValidator(Validator):
                 if required_section.lower() in section.lower():
                     found = True
                     break
-            
+
             if not found:
                 issues.append(ValidationIssue(
                     "error",
@@ -900,29 +900,29 @@ class StructureValidator(Validator):
                     None,
                     f"Add a '{required_section}' section to the content."
                 ))
-        
+
         return issues
 
 class ReadabilityValidator(Validator):
     """Validates content for readability metrics."""
-    
+
     def __init__(self, config):
         super().__init__(config)
         self.min_flesch_reading_ease = config.get("min_flesch_reading_ease", 60)  # Higher is easier to read
         self.max_avg_sentence_length = config.get("max_avg_sentence_length", 25)
-    
+
     async def validate(self, content, context=None):
         """Check readability of content."""
         issues = []
-        
+
         # Split content into sentences (basic implementation)
         sentences = re.split(r'[.!?]+\s+', content)
-        
+
         # Calculate average sentence length
         if sentences:
             total_words = sum(len(re.findall(r'\b\w+\b', sentence)) for sentence in sentences)
             avg_sentence_length = total_words / len(sentences)
-            
+
             if avg_sentence_length > self.max_avg_sentence_length:
                 issues.append(ValidationIssue(
                     "warning",
@@ -930,50 +930,50 @@ class ReadabilityValidator(Validator):
                     None,
                     "Consider breaking longer sentences into shorter ones for improved readability."
                 ))
-        
+
         # TODO: Implement Flesch Reading Ease calculation
         # This would typically involve syllable counting which is more complex
-        
+
         return issues
 
 class ValidationManager:
     """Manages and runs multiple validators on content.
-    
+
     This class coordinates the execution of multiple validation checks
     on generated content, collecting and organizing the results.
     """
-    
+
     def __init__(self, config):
         self.config = config
         self.validators = {}
         self._initialize_validators()
-    
+
     def _initialize_validators(self):
         """Initialize validators from configuration."""
         validator_configs = self.config.get("validation", {})
-        
+
         if "similarity" in validator_configs:
             self.validators["similarity"] = SimilarityValidator(validator_configs["similarity"])
-        
+
         if "structure" in validator_configs:
             self.validators["structure"] = StructureValidator(validator_configs["structure"])
-        
+
         if "readability" in validator_configs:
             self.validators["readability"] = ReadabilityValidator(validator_configs["readability"])
-    
+
     async def validate(self, content, validator_names=None, context=None):
         """Run specified validators on content."""
         all_issues = []
-        
+
         # Determine which validators to run
         if validator_names is None:
             validators_to_run = self.validators.values()
         else:
             validators_to_run = [
-                self.validators[name] for name in validator_names 
+                self.validators[name] for name in validator_names
                 if name in self.validators
             ]
-        
+
         # Run each validator
         for validator in validators_to_run:
             validator_name = type(validator).__name__
@@ -983,11 +983,11 @@ class ValidationManager:
                 content_type=type(content).__name__,
                 content_length=len(content) if isinstance(content, str) else "N/A"
             )
-            
+
             try:
                 issues = await validator.validate(content, context)
                 all_issues.extend(issues)
-                
+
                 logger.info(
                     "validator_completed",
                     validator=validator_name,
@@ -999,14 +999,14 @@ class ValidationManager:
                     validator=validator_name,
                     error=str(e)
                 )
-                
+
                 all_issues.append(ValidationIssue(
                     "error",
                     f"Validation failed: {str(e)}",
                     None,
                     None
                 ))
-        
+
         return all_issues
 ```
 
@@ -1261,7 +1261,7 @@ from curriculum_curator import CurriculumCurator
 async def generate_course_materials():
     # Initialize with configuration
     curator = CurriculumCurator(config_path="config.yaml")
-    
+
     # Define course parameters
     course_params = {
         "course_title": "Introduction to Python Programming",
@@ -1272,20 +1272,20 @@ async def generate_course_materials():
         ],
         "num_modules": 4
     }
-    
+
     # Run the course generation workflow
     result = await curator.run_workflow("standard_course", course_params)
-    
+
     # Process the results
     print(f"Course materials generated successfully.")
     print(f"Output files:")
     for format, path in result.get("results", {}).get("output_files", {}).items():
         print(f"  {format}: {path}")
-    
+
     # Get token usage info
     usage = result.get("context", {}).get("final_usage_report", {})
     print(f"Total cost: ${usage.get('totals', {}).get('cost', 0):.4f}")
-    
+
     return result
 
 # Run the example
@@ -1322,7 +1322,7 @@ app, rt = fast_app()
 @rt("/")
 def get():
     """Render the main dashboard."""
-    return Titled("CurriculumCurator Dashboard", 
+    return Titled("CurriculumCurator Dashboard",
         Div(id="workflows"),
         Div(id="usage-stats")
     )
@@ -1332,7 +1332,7 @@ def get():
     """List available workflows."""
     curator = get_curator_instance()
     workflows = curator.list_workflows()
-    
+
     workflow_list = Ul()
     for name, workflow in workflows.items():
         description = workflow.get("description", "No description")
@@ -1340,7 +1340,7 @@ def get():
             A(name, href=f"/workflows/{name}"),
             P(description)
         ))
-    
+
     return Titled("Available Workflows", workflow_list)
 
 @rt("/workflow/{name}")
@@ -1348,19 +1348,19 @@ def get(name: str):
     """Display workflow details and execution options."""
     curator = get_curator_instance()
     workflow = curator.get_workflow(name)
-    
+
     form = Form(
         H2("Run Workflow"),
         Input(id="workflow_name", name="workflow_name", value=name, type="hidden"),
         Input(id="course_title", name="course_title", placeholder="Course Title"),
-        Textarea(id="learning_objectives", name="learning_objectives", 
+        Textarea(id="learning_objectives", name="learning_objectives",
                 placeholder="Learning Objectives (one per line)"),
         Button("Start Workflow", type="submit"),
         hx_post="/api/run-workflow",
         hx_target="#execution-results"
     )
-    
-    return Titled(f"Workflow: {name}", 
+
+    return Titled(f"Workflow: {name}",
         Div(workflow.get("description", "No description")),
         form,
         Div(id="execution-results")
@@ -1370,19 +1370,19 @@ def get(name: str):
 def post(workflow_name: str, course_title: str, learning_objectives: str):
     """Execute a workflow with the provided parameters."""
     curator = get_curator_instance()
-    
+
     # Parse learning objectives into a list
     objectives = [obj.strip() for obj in learning_objectives.split("\n") if obj.strip()]
-    
+
     # Set up the context with the form values
     context = {
         "course_title": course_title,
         "learning_objectives": objectives
     }
-    
+
     # Run the workflow asynchronously
     session_id = curator.start_workflow(workflow_name, context)
-    
+
     # Return a message with the session ID and a refresh trigger
     return Div(
         H3("Workflow Started"),
@@ -1398,7 +1398,7 @@ def get(session_id: str):
     """Get the status of a workflow execution."""
     curator = get_curator_instance()
     status = curator.get_workflow_status(session_id)
-    
+
     if status["completed"]:
         # Show completion details
         results = Div(
@@ -1576,52 +1576,52 @@ This approach allows:
 ```python
 class PersistenceManager:
     """Manages data persistence for curriculum curator."""
-    
+
     def __init__(self, config):
         self.config = config
         self.base_dir = Path(config.get("persistence_dir", ".curriculum_curator"))
         self.sessions_dir = self.base_dir / "sessions"
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def create_session(self, session_id=None):
         """Create a new session directory and return the session ID."""
         if session_id is None:
             from datetime import datetime
             import uuid
             session_id = f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
-        
+
         session_dir = self.sessions_dir / session_id
         session_dir.mkdir(exist_ok=True)
-        
+
         return session_id, session_dir
-    
+
     def save_session_state(self, session_id, context):
         """Save the current session state to disk."""
         session_dir = self.sessions_dir / session_id
-        
+
         # Save context (excluding large content)
         sanitized_context = {
-            k: v for k, v in context.items() 
+            k: v for k, v in context.items()
             if isinstance(v, (str, int, float, bool, list, dict))
             and not isinstance(v, str) or len(v) < 10000
         }
-        
+
         with open(session_dir / "context.json", "w") as f:
             import json
             json.dump(sanitized_context, f, default=str, indent=2)
-    
+
     def save_config(self, session_id, config):
         """Save the configuration used for this session."""
         session_dir = self.sessions_dir / session_id
-        
+
         with open(session_dir / "config.yaml", "w") as f:
             import yaml
             yaml.dump(config, f)
-    
+
     def append_prompt_history(self, session_id, request):
         """Append a prompt request to the prompt history."""
         session_dir = self.sessions_dir / session_id
-        
+
         with open(session_dir / "prompt_history.jsonl", "a") as f:
             import json
             json_record = {
@@ -1637,22 +1637,22 @@ class PersistenceManager:
                 "prompt": request.prompt[:1000] + "..." if len(request.prompt) > 1000 else request.prompt,
             }
             f.write(json.dumps(json_record) + "\n")
-    
+
     def save_usage_report(self, session_id, usage_report):
         """Save the usage report for this session."""
         session_dir = self.sessions_dir / session_id
-        
+
         with open(session_dir / "usage_report.json", "w") as f:
             import json
             json.dump(usage_report, f, default=str, indent=2)
-    
+
     def load_session(self, session_id):
         """Load a session state from disk."""
         session_dir = self.sessions_dir / session_id
-        
+
         if not session_dir.exists():
             raise ValueError(f"Session not found: {session_id}")
-        
+
         # Load context
         context = {}
         context_file = session_dir / "context.json"
@@ -1660,7 +1660,7 @@ class PersistenceManager:
             with open(context_file, "r") as f:
                 import json
                 context = json.load(f)
-        
+
         # Load config
         config = None
         config_file = session_dir / "config.yaml"
@@ -1668,13 +1668,13 @@ class PersistenceManager:
             with open(config_file, "r") as f:
                 import yaml
                 config = yaml.safe_load(f)
-        
+
         return {
             "session_id": session_id,
             "context": context,
             "config": config
         }
-    
+
     def list_sessions(self):
         """List all available sessions."""
         return [d.name for d in self.sessions_dir.iterdir() if d.is_dir()]
@@ -1729,14 +1729,14 @@ workflows:
         llm_model_alias: default_smart
         output_variable: course_overview_md
         output_format: raw
-      
+
       - name: generate_module_outlines
         type: prompt
         prompt: module/outline.txt
         llm_model_alias: default_smart
         output_variable: module_outlines_json
         output_format: json
-      
+
       - name: generate_module_slides
         type: loop
         loop_variable: module
@@ -1748,17 +1748,17 @@ workflows:
             llm_model_alias: default_smart
             output_variable: "module_slides_${module.id}"
             output_format: raw
-      
+
       - name: validate_content
         type: validation
         validators: [similarity, structure, readability]
         targets: [course_overview_md, "module_slides_*"]
-      
+
       - name: remediate_content
         type: remediation
         remediators: [content_merger, sentence_splitter]
         targets: [course_overview_md, "module_slides_*"]
-      
+
       - name: generate_output
         type: output
         formats: [html, pdf, docx, slides]
@@ -1790,24 +1790,24 @@ curriculum_curator/
   __init__.py
   core.py               # Main CurriculumCurator class
   cli.py                # Command-line interface
-  
+
   prompt/
     __init__.py
     registry.py         # Prompt registry implementation
-  
+
   llm/
     __init__.py
     manager.py          # LLM integration layer
-  
+
   content/
     __init__.py
     transformer.py      # Content transformation utilities
-  
+
   workflow/
     __init__.py
     engine.py           # Workflow orchestration
     steps.py            # Step implementations
-  
+
   validation/
     __init__.py
     manager.py          # Validation coordination
@@ -1816,7 +1816,7 @@ curriculum_curator/
       similarity.py
       structure.py
       readability.py
-  
+
   remediation/
     __init__.py
     manager.py          # Remediation coordination
@@ -1824,15 +1824,15 @@ curriculum_curator/
       __init__.py
       content_merger.py
       sentence_splitter.py
-  
+
   output/
     __init__.py
     manager.py          # Output generation
-  
+
   persistence/
     __init__.py
     manager.py          # Data persistence
-  
+
   utils/
     __init__.py
     logging.py          # Logging configuration
@@ -1892,7 +1892,7 @@ llm:
           cost_per_1k_tokens:
             input: 15.00
             output: 75.00
-    
+
     openai:
       api_key: "env(OPENAI_API_KEY)"
       default_model: "gpt-3.5-turbo"
@@ -1905,7 +1905,7 @@ llm:
           cost_per_1k_tokens:
             input: 10.00
             output: 30.00
-    
+
     ollama:
       base_url: "http://localhost:11434"
       default_model: "llama3"
@@ -1915,7 +1915,7 @@ llm:
       models:
         llama3: {}
         mistral: {}
-    
+
     groq:
       api_key: "env(GROQ_API_KEY)"
       default_model: "llama3-8b-8192"
@@ -1924,7 +1924,7 @@ llm:
         output: 0.30
       models:
         llama3-8b-8192: {}
-    
+
     gemini:
       api_key: "env(GOOGLE_API_KEY)"
       default_model: "gemini-pro"
@@ -1943,12 +1943,12 @@ validation:
   similarity:
     threshold: 0.85
     model: "all-MiniLM-L6-v2"
-  
+
   structure:
     slides:
       min_sections: 5
       required_sections: ["title", "objectives", "summary"]
-  
+
   readability:
     max_avg_sentence_length: 25
     min_flesch_reading_ease: 60
@@ -1957,7 +1957,7 @@ validation:
 remediation:
   content_merger:
     similarity_threshold: 0.8
-  
+
   sentence_splitter:
     enabled: true
 
@@ -2150,4 +2150,3 @@ graph TD
 This design document outlines a comprehensive architecture for CurriculumCurator, an educational content workflow orchestration tool. The system leverages the power of Large Language Models while providing a flexible, configurable framework that can be adapted to various educational content creation needs.
 
 The implementation follows modern Python development practices, with clear separation of concerns, robust error handling, and a focus on usability. By combining prompt-centric content generation with workflow-driven processes, CurriculumCurator streamlines the creation of high-quality educational materials while maintaining full control and transparency.# CurriculumCurator: Comprehensive Design Document
-
