@@ -91,22 +91,34 @@ class ValidationManager:
     
     def _initialize_validators(self):
         """Initialize validators from configuration."""
-        # This is a placeholder - in the full implementation, we'd instantiate
-        # the validators based on the configuration
+        from curriculum_curator.validation.validators import VALIDATOR_REGISTRY, get_validator
         
-        # For now, we'll just log that this is a placeholder
-        logger.info("validators_placeholder_only")
+        # Create empty validators dictionary
+        self.validators = {}
         
-        # Example of how we'd instantiate validators with Pydantic models:
-        # if self.config.validation:
-        #     if self.config.validation.similarity:
-        #         self.validators["similarity"] = SimilarityValidator(self.config.validation.similarity)
-        #     
-        #     if self.config.validation.structure:
-        #         self.validators["structure"] = StructureValidator(self.config.validation.structure)
-        #     
-        #     if self.config.validation.readability:
-        #         self.validators["readability"] = ReadabilityValidator(self.config.validation.readability)
+        if self.config.validation:
+            # Initialize validators from registry based on configuration
+            
+            # Quality validators
+            if hasattr(self.config.validation, "similarity") and self.config.validation.similarity:
+                self.validators["similarity"] = get_validator("similarity", self.config.validation.similarity)
+            
+            if hasattr(self.config.validation, "structure") and self.config.validation.structure:
+                # Structure validator can have multiple configurations for different content types
+                if isinstance(self.config.validation.structure, dict):
+                    for content_type, config in self.config.validation.structure.items():
+                        validator_name = f"structure_{content_type}"
+                        self.validators[validator_name] = get_validator("structure", config)
+                else:
+                    self.validators["structure"] = get_validator("structure", self.config.validation.structure)
+            
+            if hasattr(self.config.validation, "readability") and self.config.validation.readability:
+                self.validators["readability"] = get_validator("readability", self.config.validation.readability)
+        
+        logger.info(
+            "validators_initialized", 
+            validators=list(self.validators.keys())
+        )
     
     async def validate(self, content, validator_names=None, context=None):
         """Run specified validators on content.
@@ -117,44 +129,72 @@ class ValidationManager:
             context (dict, optional): Additional context for validation
             
         Returns:
-            list: List of ValidationIssue objects
+            list: List of validation issues
         """
         all_issues = []
         
         # Determine which validators to run
         if validator_names is None:
-            validators_to_run = self.validators.values()
+            validators_to_run = list(self.validators.values())
         else:
             validators_to_run = [
                 self.validators[name] for name in validator_names 
                 if name in self.validators
             ]
         
-        # For the placeholder version, return an empty list
-        logger.info("validation_placeholder_executed", 
-                  content_type=type(content).__name__)
-                  
-        return []
+        # Run each validator
+        for validator in validators_to_run:
+            validator_name = validator.__class__.__name__
+            logger.info(
+                "running_validator",
+                validator=validator_name,
+                content_type=type(content).__name__,
+                content_length=len(content) if isinstance(content, str) else "N/A"
+            )
+            
+            try:
+                result = await validator.validate(content, context)
+                
+                # If validation failed, add the issues to our collection
+                if not result.get("valid", True):
+                    # Convert the validation result to issues
+                    issues = result.get("issues", [])
+                    
+                    # If there are no specific issues but validation failed,
+                    # create a generic issue
+                    if not issues and "reason" in result:
+                        issues = [{
+                            "validator": validator_name,
+                            "message": result["reason"],
+                            "details": result
+                        }]
+                    
+                    # Add validator name to each issue
+                    for issue in issues:
+                        if "validator" not in issue:
+                            issue["validator"] = validator_name
+                    
+                    all_issues.extend(issues)
+                
+                logger.info(
+                    "validator_completed",
+                    validator=validator_name,
+                    valid=result.get("valid", True),
+                    issues_found=len(issues) if not result.get("valid", True) else 0
+                )
+            except Exception as e:
+                logger.exception(
+                    "validator_error",
+                    validator=validator_name,
+                    error=str(e)
+                )
+                all_issues.append({
+                    "validator": validator_name,
+                    "message": f"Validator error: {str(e)}",
+                    "error": str(e)
+                })
         
-        # The real implementation would look like this:
-        # # Run each validator
-        # for validator in validators_to_run:
-        #     validator_name = type(validator).__name__
-        #     logger.info(
-        #         "running_validator",
-        #         validator=validator_name,
-        #         content_type=type(content).__name__,
-        #         content_length=len(content) if isinstance(content, str) else "N/A"
-        #     )
-        #     
-        #     try:
-        #         issues = await validator.validate(content, context)
-        #         all_issues.extend(issues)
-        #         
-        #         logger.info(
-        #             "validator_completed",
-        #             validator=validator_name,
-        #             issues_found=len(issues)
+        return all_issues
         #         )
         #     except Exception as e:
         #         logger.exception(
