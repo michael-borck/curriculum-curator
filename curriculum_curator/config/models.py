@@ -1,7 +1,7 @@
 """Pydantic models for configuration data."""
 
 import os
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -30,7 +30,7 @@ class LLMProviderConfig(BaseModel):
     cost_per_1k_tokens: TokenCostConfig = Field(
         default_factory=TokenCostConfig, description="Default token costs for this provider"
     )
-    models: Dict[str, LLMModelConfig] = Field(
+    models: dict[str, LLMModelConfig] = Field(
         default_factory=dict, description="Available models for this provider"
     )
 
@@ -50,10 +50,10 @@ class LLMConfig(BaseModel):
     """LLM configuration."""
 
     default_provider: str = Field(..., description="Default LLM provider to use")
-    aliases: Dict[str, str] = Field(
+    aliases: dict[str, str] = Field(
         default_factory=dict, description="Model aliases for easier reference"
     )
-    providers: Dict[str, LLMProviderConfig] = Field(
+    providers: dict[str, LLMProviderConfig] = Field(
         default_factory=dict, description="LLM provider configurations"
     )
 
@@ -61,9 +61,7 @@ class LLMConfig(BaseModel):
 class PromptConfig(BaseModel):
     """Prompt registry configuration."""
 
-    base_path: str = Field(
-        default="./prompts", description="Base path for prompt template files"
-    )
+    base_path: str = Field(default="./prompts", description="Base path for prompt template files")
 
 
 class SystemConfig(BaseModel):
@@ -93,10 +91,8 @@ class ValidationSimilarityConfig(BaseModel):
 class ValidationStructureConfig(BaseModel):
     """Configuration for structure validation."""
 
-    min_sections: int = Field(
-        default=0, description="Minimum number of sections required", ge=0
-    )
-    required_sections: List[str] = Field(
+    min_sections: int = Field(default=0, description="Minimum number of sections required", ge=0)
+    required_sections: list[str] = Field(
         default_factory=list, description="List of required section names"
     )
 
@@ -117,14 +113,11 @@ class ValidationReadabilityConfig(BaseModel):
 
 class ValidationLanguageConfig(BaseModel):
     """Configuration for language validation."""
-    
+
     expected_language: str = Field(default="en", description="Expected language code")
     allow_multilingual: bool = Field(default=False, description="Whether to allow mixed languages")
     confidence_threshold: float = Field(
-        default=0.8, 
-        description="Minimum confidence for language detection",
-        ge=0.0,
-        le=1.0
+        default=0.8, description="Minimum confidence for language detection", ge=0.0, le=1.0
     )
 
 
@@ -132,76 +125,94 @@ class ValidationConfig(BaseModel):
     """Validation configuration."""
 
     similarity: Optional[ValidationSimilarityConfig] = None
-    structure: Optional[Dict[str, ValidationStructureConfig]] = None
+    structure: Optional[dict[str, ValidationStructureConfig]] = None
     readability: Optional[ValidationReadabilityConfig] = None
     language: Optional[ValidationLanguageConfig] = None
 
 
 class FormatCorrectorConfig(BaseModel):
     """Format corrector remediator configuration."""
-    
+
     heading_levels: int = Field(default=6, description="Number of heading levels to enforce")
-    enforce_consistency: bool = Field(default=True, description="Whether to enforce consistent formatting")
+    enforce_consistency: bool = Field(
+        default=True, description="Whether to enforce consistent formatting"
+    )
 
 
 class SentenceSplitterConfig(BaseModel):
     """Sentence splitter remediator configuration."""
-    
+
     max_sentence_length: int = Field(default=25, description="Maximum allowed sentence length")
-    split_points: List[str] = Field(
+    split_points: list[str] = Field(
         default_factory=lambda: [
-            r'\s+and\s+', r'\s+but\s+', r'\s+or\s+', r'\s+nor\s+', 
-            r'\s+yet\s+', r'\s+so\s+', r'\s+for\s+', r';'
+            r"\s+and\s+",
+            r"\s+but\s+",
+            r"\s+or\s+",
+            r"\s+nor\s+",
+            r"\s+yet\s+",
+            r"\s+so\s+",
+            r"\s+for\s+",
+            r";",
         ],
-        description="Regular expression patterns for sentence splitting points"
+        description="Regular expression patterns for sentence splitting points",
     )
 
 
 class TerminologyEnforcerConfig(BaseModel):
     """Terminology enforcer remediator configuration."""
-    
-    terminology_map: Dict[str, str] = Field(
+
+    terminology_map: dict[str, str] = Field(
         default_factory=dict, description="Mapping of incorrect terms to preferred terms"
     )
-    case_sensitive: bool = Field(default=False, description="Whether to use case-sensitive matching")
+    case_sensitive: bool = Field(
+        default=False, description="Whether to use case-sensitive matching"
+    )
     whole_word_only: bool = Field(default=True, description="Whether to match only whole words")
 
 
 class RephrasingPrompterConfig(BaseModel):
     """Rephrasing prompter remediator configuration."""
-    
+
     model_alias: Optional[str] = Field(default=None, description="LLM model to use for rewriting")
     max_tokens: int = Field(default=1000, description="Maximum tokens for LLM response")
     temperature: float = Field(default=0.7, description="Temperature for LLM generation")
-    prompt_templates: Dict[str, str] = Field(
+    prompt_templates: dict[str, str] = Field(
         default_factory=lambda: {
             "default": "Rewrite the following text to improve its quality: {text}",
             "readability": "Rewrite the following text to improve readability and make it easier to understand: {text}",
             "similarity": "Rewrite the following text to make it more unique and distinct: {text}",
             "tone": "Rewrite the following text to match a {tone} tone: {text}",
         },
-        description="Templates for different issue types"
+        description="Templates for different issue types",
     )
 
 
 class FlagForReviewConfig(BaseModel):
     """Flag for review remediator configuration."""
-    
-    severity_threshold: str = Field(default="medium", description="Minimum severity level to flag for review")
-    always_flag_validators: List[str] = Field(
+
+    severity_threshold: str = Field(
+        default="medium", description="Minimum severity level to flag for review"
+    )
+    always_flag_validators: list[str] = Field(
         default_factory=lambda: ["FactualityValidator", "SafetyValidator"],
-        description="List of validators whose issues always require review"
+        description="List of validators whose issues always require review",
     )
 
 
 class TranslatorConfig(BaseModel):
     """Translator remediator configuration."""
-    
+
     target_language: str = Field(default="en", description="Target language code")
-    source_language: str = Field(default="auto", description="Source language code, or 'auto' for auto-detection")
+    source_language: str = Field(
+        default="auto", description="Source language code, or 'auto' for auto-detection"
+    )
     use_llm: bool = Field(default=True, description="Whether to use LLM for translation")
-    model_alias: Optional[str] = Field(default=None, description="LLM model to use if use_llm is True")
-    preserve_formatting: bool = Field(default=True, description="Whether to preserve Markdown formatting")
+    model_alias: Optional[str] = Field(
+        default=None, description="LLM model to use if use_llm is True"
+    )
+    preserve_formatting: bool = Field(
+        default=True, description="Whether to preserve Markdown formatting"
+    )
 
 
 class RemediationConfig(BaseModel):
@@ -211,13 +222,13 @@ class RemediationConfig(BaseModel):
     format_corrector: Optional[FormatCorrectorConfig] = None
     sentence_splitter: Optional[SentenceSplitterConfig] = None
     terminology_enforcer: Optional[TerminologyEnforcerConfig] = None
-    
+
     # Rewrite remediators
     rephrasing_prompter: Optional[RephrasingPrompterConfig] = None
-    
+
     # Workflow remediators
     flag_for_review: Optional[FlagForReviewConfig] = None
-    
+
     # Language remediators
     translator: Optional[TranslatorConfig] = None
 
@@ -225,16 +236,16 @@ class RemediationConfig(BaseModel):
 class OutputConfig(BaseModel):
     """Output format configuration."""
 
-    html_options: List[str] = Field(
+    html_options: list[str] = Field(
         default_factory=list, description="HTML output options for pandoc"
     )
-    pdf_options: List[str] = Field(
+    pdf_options: list[str] = Field(
         default_factory=list, description="PDF output options for pandoc"
     )
-    docx_options: List[str] = Field(
+    docx_options: list[str] = Field(
         default_factory=list, description="DOCX output options for pandoc"
     )
-    slides_options: List[str] = Field(
+    slides_options: list[str] = Field(
         default_factory=list, description="Slides output options for pandoc"
     )
 
@@ -259,27 +270,25 @@ class WorkflowStepConfig(BaseModel):
     output_format: Optional[str] = Field(
         default="raw", description="Output format (raw, list, json, html)"
     )
-    transformation_rules: Optional[Dict[str, Any]] = Field(
+    transformation_rules: Optional[dict[str, Any]] = Field(
         default=None, description="Rules for content transformation"
     )
-    validators: Optional[List[str]] = Field(
+    validators: Optional[list[str]] = Field(
         default=None, description="Validators to run (for validation steps)"
     )
-    targets: Optional[List[str]] = Field(
+    targets: Optional[list[str]] = Field(
         default=None, description="Targets to validate or remediate"
     )
-    remediators: Optional[List[str]] = Field(
+    remediators: Optional[list[str]] = Field(
         default=None, description="Remediators to run (for remediation steps)"
     )
-    formats: Optional[List[str]] = Field(
+    formats: Optional[list[str]] = Field(
         default=None, description="Output formats to generate (for output steps)"
     )
     content_variable: Optional[str] = Field(
         default=None, description="Variable containing content to output"
     )
-    metadata: Optional[Dict[str, str]] = Field(
-        default=None, description="Metadata for output"
-    )
+    metadata: Optional[dict[str, str]] = Field(default=None, description="Metadata for output")
 
     @model_validator(mode="after")
     def validate_step_type(self) -> "WorkflowStepConfig":
@@ -297,7 +306,7 @@ class WorkflowConfig(BaseModel):
     """Configuration for a workflow."""
 
     description: str = Field(..., description="Description of the workflow")
-    steps: List[WorkflowStepConfig] = Field(
+    steps: list[WorkflowStepConfig] = Field(
         default_factory=list, description="Steps in the workflow"
     )
 
@@ -311,7 +320,7 @@ class AppConfig(BaseModel):
     validation: Optional[ValidationConfig] = None
     remediation: Optional[RemediationConfig] = None
     output: Optional[OutputConfig] = None
-    workflows: Dict[str, WorkflowConfig] = Field(
+    workflows: dict[str, WorkflowConfig] = Field(
         default_factory=dict, description="Available workflows"
     )
 
@@ -320,6 +329,6 @@ class AppConfig(BaseModel):
         """Load configuration from a YAML file."""
         import yaml
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             config_data = yaml.safe_load(f)
         return cls.model_validate(config_data)

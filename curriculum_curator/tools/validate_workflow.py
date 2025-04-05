@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-"""
-Workflow Configuration Validator
+"""Workflow Configuration Validator
 
 This script validates workflow configuration files using the Pydantic models.
 It provides detailed error messages for invalid configurations.
@@ -10,60 +9,58 @@ Usage:
     python -m curriculum_curator.tools.validate_workflow --all
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
-from typing import List, Optional
-from pydantic import ValidationError
 
-from curriculum_curator.workflow.models import WorkflowConfig
-from curriculum_curator.workflow.workflows import load_workflow_config, find_workflow_configs
+from curriculum_curator.workflow.workflows import load_workflow_config
+
 
 def validate_file(path: str) -> bool:
     """Validate a single workflow configuration file.
-    
+
     Args:
         path (str): Path to the workflow YAML file
-        
+
     Returns:
         bool: True if valid, False otherwise
     """
     print(f"Validating workflow configuration: {path}")
-    
+
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             config_content = f.read()
-            
+
         # First just print the raw content for reference
         print("\nConfiguration content:")
         print("-" * 50)
         print(config_content)
         print("-" * 50)
-        
+
         # Then validate it
         workflow_config = load_workflow_config(path)
-        
+
         if workflow_config:
-            print(f"\n✅ Configuration is valid!")
+            print("\n✅ Configuration is valid!")
             print(f"  - Name: {workflow_config.name}")
             print(f"  - Description: {workflow_config.description}")
             print(f"  - Step count: {len(workflow_config.steps)}")
-            
+
             # Print step types
             step_types = {}
             for step in workflow_config.steps:
                 step_type = step.type
                 step_types[step_type] = step_types.get(step_type, 0) + 1
-                
-            print(f"  - Step types:")
+
+            print("  - Step types:")
             for step_type, count in step_types.items():
                 print(f"      - {step_type}: {count}")
-            
+
             return True
         else:
-            print(f"\n❌ Failed to validate configuration")
+            print("\n❌ Failed to validate configuration")
             return False
-            
+
     except FileNotFoundError:
         print(f"\n❌ File not found: {path}")
         return False
@@ -71,14 +68,15 @@ def validate_file(path: str) -> bool:
         print(f"\n❌ Error validating configuration: {e}")
         return False
 
-def validate_all_workflows() -> List[str]:
+
+def validate_all_workflows() -> list[str]:
     """Validate all discovered workflow configurations.
-    
+
     Returns:
         List[str]: List of invalid workflow paths
     """
     invalid_paths = []
-    
+
     # Check built-in examples
     examples_dir = Path("examples/workflows")
     if examples_dir.exists():
@@ -87,7 +85,7 @@ def validate_all_workflows() -> List[str]:
         for yaml_file in yaml_files:
             if not validate_file(str(yaml_file)):
                 invalid_paths.append(str(yaml_file))
-    
+
     # Check current directory workflows
     workflows_dir = Path("workflows")
     if workflows_dir.exists():
@@ -96,8 +94,9 @@ def validate_all_workflows() -> List[str]:
         for yaml_file in yaml_files:
             if not validate_file(str(yaml_file)):
                 invalid_paths.append(str(yaml_file))
-    
+
     return invalid_paths
+
 
 def main() -> int:
     """Main entry point for the validator."""
@@ -105,12 +104,12 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("file", nargs="?", help="Path to workflow configuration file")
     group.add_argument("--all", action="store_true", help="Validate all discovered workflows")
-    
+
     args = parser.parse_args()
-    
+
     if args.all:
         invalid_paths = validate_all_workflows()
-        
+
         if invalid_paths:
             print(f"\n❌ Found {len(invalid_paths)} invalid workflow configurations:")
             for path in invalid_paths:
@@ -125,6 +124,7 @@ def main() -> int:
             return 0
         else:
             return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
