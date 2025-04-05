@@ -42,6 +42,37 @@ curator list-prompts
 curator list-workflows
 ```
 
+## Development
+
+### Setting up the development environment
+
+```bash
+# Clone the repository
+git clone https://github.com/teaching-repositories/curriculum-curator.git
+cd curriculum-curator
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+```
+
+### Running tests
+
+```bash
+# Run all tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=curriculum_curator
+```
+
 ## Documentation
 
 For detailed documentation, visit the [Curriculum Curator Docs](https://example.com/docs).

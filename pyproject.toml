@@ -10,10 +10,10 @@ authors = [
 ]
 description = "An educational content workflow orchestration tool for LLM integration"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
@@ -40,6 +40,9 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
     "ruff>=0.0.262",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+    "isort>=5.13.2",
     "mkdocs>=1.4.3",
     "mkdocs-material>=9.1.8",
     "twine>=4.0.2",
@@ -58,9 +61,46 @@ web = [
 [project.scripts]
 curator = "curriculum_curator.cli:main"
 
+[tool.setuptools]
+packages = ["curriculum_curator", "curriculum_curator.content", "curriculum_curator.llm", "curriculum_curator.workflow", "curriculum_curator.validation", "curriculum_curator.validation.validators", "curriculum_curator.remediation", "curriculum_curator.remediation.remediators", "curriculum_curator.persistence", "curriculum_curator.prompt", "curriculum_curator.output", "curriculum_curator.utils", "curriculum_curator.core"]
+include-package-data = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+src = ["curriculum_curator"]
+include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "W",   # pycodestyle warnings
+    "C90", # mccabe
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "T10", # flake8-debugger
+    "T20", # flake8-print
+    "SIM", # flake8-simplify
+    "ARG", # flake8-unused-arguments
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D104",  # Missing docstring in public package
+    "D203",  # 1 blank line required before class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
