@@ -1,0 +1,33 @@
+---
+description: Generates assessment questions based on module content.
+requires:
+  - course_title
+  - module_outline
+  - lecture_content
+tags:
+  - assessment
+  - questions
+version: 1.0
+---
+Create a comprehensive assessment for the module on "{module_outline.title}" in the course "{course_title}".
+
+The assessment should evaluate student understanding of the following key concepts and learning objectives:
+- Key concepts: {module_outline.key_concepts}
+- Learning objectives: {module_outline.learning_objectives}
+
+Use the lecture content below as a reference to create relevant assessment questions:
+```
+{lecture_content}
+```
+
+Include a balanced mix of question types:
+1. **Multiple Choice Questions** (5-7 questions, with 4 options each, only one correct answer)
+2. **Short Answer Questions** (3-5 questions requiring brief explanations, 2-3 sentences)
+3. **Long Answer Questions** (1-2 questions requiring detailed explanations, connecting multiple concepts)
+4. **Application Question** (1 scenario-based question where students apply their learning to solve a problem)
+
+For multiple-choice questions, clearly indicate the correct answer.
+
+Format the assessment with clear sections, numbering, and instructions for each question type. Include a header with the course title, module title, and total points.
+
+Format the output as clean Markdown with appropriate headings, lists, and formatting.

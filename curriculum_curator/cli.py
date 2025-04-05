@@ -114,18 +114,45 @@ def list_workflows_command(
     config_path: Path = typer.Option("config.yaml", "--config", "-c", help="Path to configuration file.")
 ):
     """
-    List available workflows defined in the configuration file.
+    List available workflows defined in the configuration file and predefined workflows.
     """
+    # Import workflows module
+    from curriculum_curator.workflow.workflows import get_workflow_config
+    import inspect
+    from curriculum_curator.workflow import workflows as workflows_module
+    
+    # Load config workflows
     config = load_config(config_path)
-    workflows = config.get("workflows", {})
-    if not workflows:
-        print("[yellow]No workflows found in configuration.[/yellow]")
+    config_workflows = {}
+    
+    if hasattr(config, 'workflows'):
+        config_workflows = config.workflows
+    elif isinstance(config, dict) and 'workflows' in config:
+        config_workflows = config['workflows']
+    
+    # Load predefined workflows
+    predefined_workflows = {}
+    for name, value in inspect.getmembers(workflows_module):
+        if isinstance(value, dict) and "name" in value and "description" in value:
+            predefined_workflows[value["name"]] = value
+    
+    if not config_workflows and not predefined_workflows:
+        print("[yellow]No workflows found.[/yellow]")
         return
 
-    print("[bold]Available workflows:[/bold]")
-    for name, workflow_config in workflows.items():
-        description = workflow_config.get("description", "[i]No description[/i]")
-        print(f"  [cyan]{name}[/cyan]: {description}")
+    # Print config workflows
+    if config_workflows:
+        print("[bold]Workflows from configuration:[/bold]")
+        for name, workflow_config in config_workflows.items():
+            description = workflow_config.get("description", "[i]No description[/i]")
+            print(f"  [cyan]{name}[/cyan]: {description}")
+    
+    # Print predefined workflows
+    if predefined_workflows:
+        print("\n[bold]Predefined workflows:[/bold]")
+        for name, workflow_config in predefined_workflows.items():
+            description = workflow_config.get("description", "[i]No description[/i]")
+            print(f"  [cyan]{name}[/cyan]: {description}")
 
 
 @app.command(name="list-prompts")

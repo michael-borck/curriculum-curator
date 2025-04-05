@@ -1,0 +1,32 @@
+---
+description: Generates lecture content based on module outline.
+requires:
+  - course_title
+  - module_outline
+tags:
+  - lecture
+  - content
+version: 1.0
+---
+Create detailed lecture content for a module in the course "{course_title}".
+
+The module outline is as follows:
+```
+{module_outline}
+```
+
+Structure the lecture to:
+1. Start with a brief introduction that explains the module's purpose and how it connects to the broader course objectives
+2. Present the key concepts in a logical, progressive order
+3. Provide clear explanations with examples and illustrations where appropriate
+4. End with a summary that reinforces the main points
+5. Include potential discussion questions to engage learners
+
+Format the content as clean Markdown with appropriate headings, lists, code blocks (if relevant), and emphasis.
+
+Include the following sections:
+- Introduction
+- Main Content (with subsections for each key concept)
+- Summary
+- Discussion Questions
+- Additional Resources (readings, videos, etc.)

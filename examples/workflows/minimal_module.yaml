@@ -1,0 +1,75 @@
+# Minimal Educational Module Workflow
+# This workflow generates a complete educational module with lecture, worksheet, 
+# assessment, and instructor materials
+
+name: minimal_educational_module
+description: "Generates a complete educational module with basic components"
+
+# Global defaults for all steps
+defaults:
+  llm_model_alias: default_smart  # Default LLM model to use
+  output_format: raw  # Default output format for prompt steps
+  validators: ["readability", "structure"]  # Default validators
+
+# Workflow steps
+steps:
+  # Step 1: Generate Course Overview
+  - name: course_overview
+    type: prompt
+    prompt: course/overview.txt
+    output_variable: course_overview
+  
+  # Step 2: Generate Module Outline
+  - name: module_outline
+    type: prompt
+    prompt: module/outline.txt 
+    output_format: json  # Override the default format
+    output_variable: module_outline
+  
+  # Step 3: Generate Lecture Content
+  - name: lecture_content
+    type: prompt
+    prompt: lecture/content.txt
+    output_variable: lecture_content
+  
+  # Step 4: Validate Lecture Content
+  - name: validate_lecture
+    type: validation
+    content_variable: lecture_content
+    output_variable: lecture_validation
+  
+  # Step 5: Remediate Lecture Content if needed
+  - name: remediate_lecture
+    type: remediation
+    content_variable: lecture_content
+    issues_variable: lecture_validation
+    output_variable: remediated_lecture
+  
+  # Step 6: Generate Worksheet
+  - name: worksheet
+    type: prompt
+    prompt: worksheet/activities.txt
+    output_variable: worksheet
+  
+  # Step 7: Generate Assessment
+  - name: assessment
+    type: prompt
+    prompt: assessment/questions.txt
+    output_variable: assessment
+  
+  # Step 8: Generate Instructor Materials
+  - name: instructor_materials
+    type: prompt
+    prompt: instructor/guide.txt
+    output_variable: instructor_materials
+  
+  # Step 9: Generate Output Files
+  - name: generate_outputs
+    type: output
+    output_mapping:
+      course_overview: overview.md
+      remediated_lecture: lecture.md
+      worksheet: worksheet.md
+      assessment: assessment.md
+      instructor_materials: instructor_guide.md
+    output_dir: output/{course_slug}/{module_id}

@@ -32,7 +32,15 @@ pip install curriculum-curator
 # Initialize a new project with example prompts
 curator init
 
-# Run a standard course generation workflow
+# Run the minimal educational module workflow
+curator run minimal_educational_module \
+  --var course_title="Introduction to Python Programming" \
+  --var course_slug="intro-python" \
+  --var module_id="module1" \
+  --var num_modules=4 \
+  --var "learning_objectives=Understand Python basics;Write simple programs"
+
+# Or run the standard course generation workflow
 curator run standard_course --var course_title="Introduction to Python Programming"
 
 # List available prompts
@@ -41,6 +49,22 @@ curator list-prompts
 # List available workflows
 curator list-workflows
 ```
+
+## MVP Workflow Ready!
+
+We've completed our first MVP workflow that generates a complete educational module with:
+
+- Course overview
+- Module outline
+- Lecture content with validation and remediation
+- Worksheet with practice activities
+- Assessment with various question types
+- Instructor guide with teaching suggestions and answer keys
+
+This workflow is fully configuration-driven and validates against a robust schema to catch errors early. See our guides for more details:
+
+- [MVP Workflow Guide](docs/guides/mvp-workflow.md) - Details on using and extending the workflow
+- [Workflow Validation Guide](docs/guides/workflow-validation.md) - How to validate workflow configurations
 
 ## Development
 

@@ -3,6 +3,9 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 import structlog
+from typing import Dict, Any, Optional, Union
+
+from curriculum_curator.workflow.models import WorkflowConfig, StepConfig
 
 logger = structlog.get_logger()
 
@@ -133,9 +136,123 @@ class ValidationStep(WorkflowStep):
         Returns:
             list: Validation issues
         """
-        # This is a placeholder implementation
-        logger.info("validation_step_placeholder")
-        return []
+        # Get content to validate
+        content_variable = self.config.get("content_variable")
+        if not content_variable or content_variable not in context:
+            raise WorkflowError(f"Missing content to validate: {content_variable}")
+        
+        content = context[content_variable]
+        
+        # Get validators to use
+        validator_names = self.config.get("validators", [])
+        if not validator_names:
+            logger.warning("no_validators_specified", step=self.name)
+        
+        # Validate content
+        try:
+            issues = await validation_manager.validate_content(
+                content=content,
+                validator_names=validator_names
+            )
+        except Exception as e:
+            raise WorkflowError(f"Validation failed: {e}")
+        
+        # Store validation issues in context
+        output_variable = self.config.get("output_variable")
+        if output_variable:
+            context[output_variable] = issues
+        
+        logger.info(
+            "content_validation_complete",
+            step=self.name,
+            content_length=len(content),
+            issue_count=len(issues)
+        )
+        
+        return issues
+
+
+class RemediationStep(WorkflowStep):
+    """A workflow step that remediates content issues."""
+    
+    async def execute(self, context, prompt_registry, llm_manager, content_transformer, validation_manager):
+        """Execute a remediation step.
+        
+        Args:
+            context (dict): Workflow context
+            prompt_registry: PromptRegistry instance
+            llm_manager: LLMManager instance
+            content_transformer: ContentTransformer instance
+            validation_manager: ValidationManager instance
+            
+        Returns:
+            str: Remediated content
+        """
+        # Get content to remediate
+        content_variable = self.config.get("content_variable")
+        if not content_variable or content_variable not in context:
+            raise WorkflowError(f"Missing content to remediate: {content_variable}")
+        
+        content = context[content_variable]
+        
+        # Get validation issues
+        issues_variable = self.config.get("issues_variable")
+        issues = []
+        if issues_variable and issues_variable in context:
+            issues = context[issues_variable]
+        
+        if not issues:
+            logger.info("no_issues_to_remediate", step=self.name)
+            # If no issues, just pass through the original content
+            output_variable = self.config.get("output_variable")
+            if output_variable:
+                context[output_variable] = content
+            return content
+        
+        # Get remediation manager from validation manager
+        # In a full implementation, we would inject this as a separate dependency
+        remediation_manager = validation_manager.remediation_manager
+        if not remediation_manager:
+            logger.warning("no_remediation_manager_available", step=self.name)
+            # If no remediation manager, just pass through the original content
+            output_variable = self.config.get("output_variable")
+            if output_variable:
+                context[output_variable] = content
+            return content
+        
+        # Remediate content
+        try:
+            remediation_result = await remediation_manager.remediate_content(
+                content=content,
+                issues=issues,
+                remediation_config=self.config.get("remediation_config", {})
+            )
+            
+            remediated_content = remediation_result.get("content", content)
+            remediation_actions = remediation_result.get("actions", [])
+            
+        except Exception as e:
+            raise WorkflowError(f"Remediation failed: {e}")
+        
+        # Store remediated content in context
+        output_variable = self.config.get("output_variable")
+        if output_variable:
+            context[output_variable] = remediated_content
+        
+        # Store remediation actions in context
+        actions_variable = self.config.get("actions_variable")
+        if actions_variable:
+            context[actions_variable] = remediation_actions
+        
+        logger.info(
+            "content_remediation_complete", 
+            step=self.name,
+            content_length=len(content),
+            remediated_length=len(remediated_content),
+            action_count=len(remediation_actions)
+        )
+        
+        return remediated_content
 
 
 class OutputStep(WorkflowStep):
@@ -154,9 +271,62 @@ class OutputStep(WorkflowStep):
         Returns:
             dict: Output file paths
         """
-        # This is a placeholder implementation
-        logger.info("output_step_placeholder")
-        return {}
+        # Get output directory
+        output_dir = self.config.get("output_dir", "output")
+        
+        # Format the output directory with context variables
+        try:
+            output_dir = output_dir.format(**context)
+        except KeyError as e:
+            raise WorkflowError(f"Error formatting output directory: {e}")
+        
+        # Ensure output directory exists
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        # Get output mapping
+        output_mapping = self.config.get("output_mapping", {})
+        if not output_mapping:
+            logger.warning("no_output_mapping_specified", step=self.name)
+        
+        # Write files
+        output_files = {}
+        for var_name, file_name in output_mapping.items():
+            if var_name not in context:
+                logger.warning("variable_not_in_context", variable=var_name)
+                continue
+                
+            content = context[var_name]
+            file_path = output_path / file_name
+            
+            # Ensure parent directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Write content to file
+            try:
+                with open(file_path, "w") as f:
+                    f.write(content)
+                output_files[var_name] = str(file_path)
+                logger.info(
+                    "wrote_output_file", 
+                    variable=var_name,
+                    file_path=str(file_path),
+                    content_length=len(content)
+                )
+            except Exception as e:
+                logger.exception(
+                    "failed_to_write_output_file",
+                    variable=var_name,
+                    file_path=str(file_path),
+                    error=str(e)
+                )
+        
+        # Store output files in context
+        output_variable = self.config.get("output_variable")
+        if output_variable:
+            context[output_variable] = output_files
+        
+        return output_files
 
 
 class Workflow:
@@ -181,24 +351,36 @@ class Workflow:
         self.persistence_manager = persistence_manager
         self.session_dir = None
     
-    def _create_step(self, step_config):
+    def _create_step(self, step_config, workflow_defaults=None):
         """Create a workflow step from configuration.
         
         Args:
             step_config (dict): Step configuration
+            workflow_defaults (dict, optional): Default values from workflow configuration
             
         Returns:
             WorkflowStep: The created step
         """
-        step_type = step_config.get("type", "prompt")
-        step_name = step_config.get("name")
+        # Apply workflow defaults if they exist
+        if workflow_defaults:
+            # Create a new dict with defaults, then update with step-specific config
+            # This ensures step config overrides defaults
+            effective_config = workflow_defaults.copy()
+            effective_config.update(step_config)
+        else:
+            effective_config = step_config
+        
+        step_type = effective_config.get("type", "prompt")
+        step_name = effective_config.get("name")
         
         if step_type == "prompt":
-            return PromptStep(step_name, step_config)
+            return PromptStep(step_name, effective_config)
         elif step_type == "validation":
-            return ValidationStep(step_name, step_config)
+            return ValidationStep(step_name, effective_config)
+        elif step_type == "remediation":
+            return RemediationStep(step_name, effective_config)
         elif step_type == "output":
-            return OutputStep(step_name, step_config)
+            return OutputStep(step_name, effective_config)
         else:
             raise WorkflowError(f"Unknown step type: {step_type}")
     
@@ -255,6 +437,9 @@ class Workflow:
         # Configure LLM manager with workflow context
         self.llm_manager.current_workflow_id = context["workflow_id"]
         
+        # Get workflow defaults if present
+        workflow_defaults = self.config.get("defaults", {})
+        
         # Get workflow steps
         step_configs = self.config.get("steps", [])
         if not step_configs:
@@ -264,7 +449,7 @@ class Workflow:
         results = {}
         try:
             for i, step_config in enumerate(step_configs):
-                step = self._create_step(step_config)
+                step = self._create_step(step_config, workflow_defaults)
                 context["current_step"] = step.name
                 context["current_step_index"] = i
                 

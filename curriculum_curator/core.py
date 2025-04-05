@@ -11,6 +11,7 @@ from curriculum_curator.content.transformer import ContentTransformer
 from curriculum_curator.workflow.engine import Workflow
 from curriculum_curator.validation.manager import ValidationManager
 from curriculum_curator.persistence.manager import PersistenceManager
+from curriculum_curator.workflow.workflows import get_workflow_config
 
 logger = structlog.get_logger()
 
@@ -57,7 +58,7 @@ class CurriculumCurator:
         return self.prompt_registry.list_prompts(tag)
     
     async def run_workflow(self, workflow_name, variables=None, session_id=None):
-        """Run a workflow defined in the configuration.
+        """Run a workflow defined in the configuration or from predefined workflows.
         
         Args:
             workflow_name (str): Name of the workflow to run
@@ -67,11 +68,18 @@ class CurriculumCurator:
         Returns:
             dict: Results of the workflow execution
         """
-        # Check if workflow exists
-        if workflow_name not in self.config.workflows:
-            raise ValueError(f"Workflow not found: {workflow_name}")
+        # First, try to get workflow from config
+        workflow_config = None
+        if hasattr(self.config, 'workflows') and workflow_name in self.config.workflows:
+            workflow_config = self.config.workflows[workflow_name]
+        
+        # If not found in config, try predefined workflows
+        if not workflow_config:
+            workflow_config = get_workflow_config(workflow_name)
             
-        workflow_config = self.config.workflows[workflow_name]
+        # If still not found, raise error
+        if not workflow_config:
+            raise ValueError(f"Workflow not found: {workflow_name}")
         
         # Create workflow instance
         workflow = Workflow(
@@ -123,10 +131,18 @@ class CurriculumCurator:
         if not workflow_name:
             raise ValueError(f"Invalid session data: missing workflow_name in context")
         
-        # Get workflow configuration
-        workflow_config = self.config.get("workflows", {}).get(workflow_name)
+        # First, try to get workflow from config
+        workflow_config = None
+        if hasattr(self.config, 'workflows') and workflow_name in self.config.workflows:
+            workflow_config = self.config.workflows[workflow_name]
+        
+        # If not found in config, try predefined workflows
         if not workflow_config:
-            raise ValueError(f"Workflow no longer exists in configuration: {workflow_name}")
+            workflow_config = get_workflow_config(workflow_name)
+            
+        # If still not found, raise error
+        if not workflow_config:
+            raise ValueError(f"Workflow not found: {workflow_name}")
         
         # Create workflow instance
         workflow = Workflow(
