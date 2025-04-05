@@ -14,10 +14,18 @@ class PersistenceManager:
         """Initialize the persistence manager.
         
         Args:
-            config (dict): Configuration dictionary
+            config: Configuration (either dict or AppConfig)
         """
-        self.config = config
-        self.base_dir = Path(config.get("system", {}).get("persistence_dir", ".curriculum_curator"))
+        from curriculum_curator.config.models import AppConfig
+        
+        # Convert dict to AppConfig if needed
+        if not isinstance(config, AppConfig):
+            from curriculum_curator.config.models import AppConfig
+            self.config = AppConfig.model_validate(config)
+        else:
+            self.config = config
+            
+        self.base_dir = Path(self.config.system.persistence_dir)
         self.sessions_dir = self.base_dir / "sessions"
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
         

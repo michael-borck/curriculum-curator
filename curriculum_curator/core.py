@@ -22,19 +22,25 @@ class CurriculumCurator:
         """Initialize the CurriculumCurator with configuration.
         
         Args:
-            config (dict): The configuration dictionary loaded from YAML
+            config: The configuration (either dict or AppConfig)
             prompts_base_path (str, optional): Override the base path for prompts
         """
-        self.config = config
+        from curriculum_curator.config.models import AppConfig
+        
+        # Convert dict to AppConfig if needed
+        if not isinstance(config, AppConfig):
+            self.config = AppConfig.model_validate(config)
+        else:
+            self.config = config
         
         # Initialize components
-        prompts_base_path = prompts_base_path or config.get("prompts", {}).get("base_path", "./prompts")
+        prompts_base_path = prompts_base_path or self.config.prompts.base_path
         self.prompt_registry = PromptRegistry(prompts_base_path)
         
-        self.llm_manager = LLMManager(config)
+        self.llm_manager = LLMManager(self.config)
         self.content_transformer = ContentTransformer()
-        self.validation_manager = ValidationManager(config)
-        self.persistence_manager = PersistenceManager(config)
+        self.validation_manager = ValidationManager(self.config)
+        self.persistence_manager = PersistenceManager(self.config)
         
         logger.info("curriculum_curator_initialized", 
                    prompts_base_path=prompts_base_path)
@@ -62,9 +68,10 @@ class CurriculumCurator:
             dict: Results of the workflow execution
         """
         # Check if workflow exists
-        workflow_config = self.config.get("workflows", {}).get(workflow_name)
-        if not workflow_config:
+        if workflow_name not in self.config.workflows:
             raise ValueError(f"Workflow not found: {workflow_name}")
+            
+        workflow_config = self.config.workflows[workflow_name]
         
         # Create workflow instance
         workflow = Workflow(

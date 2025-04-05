@@ -22,9 +22,10 @@ app = typer.Typer(help="CurriculumCurator CLI - Orchestrate educational content 
 
 def load_config(config_path: Path = typer.Option("config.yaml", "--config", "-c", help="Path to configuration file.")):
     """Loads configuration from YAML file."""
+    from curriculum_curator.config.utils import load_config as load_app_config
+    
     try:
-        with open(config_path, "r") as f:
-            return yaml.safe_load(f)
+        return load_app_config(str(config_path))
     except FileNotFoundError:
         print(f"[bold red]Error:[/bold red] Configuration file not found at {config_path}")
         raise typer.Exit(code=1)

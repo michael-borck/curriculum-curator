@@ -70,7 +70,13 @@ class TestLLMManager:
 
     def test_init(self, llm_manager):
         """Test LLMManager initialization."""
-        assert llm_manager.config == TEST_CONFIG
+        # Check specific config values instead of comparing the whole config object
+        assert llm_manager.config.llm.default_provider == TEST_CONFIG["llm"]["default_provider"]
+        assert llm_manager.config.llm.aliases == TEST_CONFIG["llm"]["aliases"]
+        assert llm_manager.config.llm.providers["test_provider"].api_key == TEST_CONFIG["llm"]["providers"]["test_provider"]["api_key"]
+        assert llm_manager.config.llm.providers["test_provider"].default_model == TEST_CONFIG["llm"]["providers"]["test_provider"]["default_model"]
+        
+        # Check other attributes
         assert llm_manager.history == []
         assert llm_manager.current_workflow_id is None
         assert llm_manager.current_step_name is None
@@ -154,6 +160,9 @@ class TestLLMManager:
     @pytest.mark.asyncio
     async def test_generate_error(self, mock_acompletion, llm_manager):
         """Test error handling in generate method."""
+        # Reset the history before test
+        llm_manager.history = []
+        
         # Configure the mock to raise an exception
         mock_acompletion.side_effect = Exception("Test error")
         
@@ -161,11 +170,14 @@ class TestLLMManager:
         with pytest.raises(LLMRequestError):
             await llm_manager.generate("Test prompt")
         
-        # Verify request object is added to history with error status
-        assert len(llm_manager.history) == 1
-        request = llm_manager.history[0]
-        assert request.status == "error"
-        assert request.error == "Test error"
+        # Verify request objects are added to history with error status
+        # Backoff will retry, so we'll have multiple requests in the history
+        assert len(llm_manager.history) > 0
+        
+        # Check the last request
+        last_request = llm_manager.history[-1]
+        assert last_request.status == "error"
+        assert last_request.error == "Test error"
 
     def test_generate_usage_report(self, llm_manager):
         """Test generating usage reports."""
@@ -212,13 +224,13 @@ class TestLLMManager:
         assert by_model["test_provider/test_model"]["count"] == 2
         assert by_model["test_provider/test_model"]["input_tokens"] == 300
         assert by_model["test_provider/test_model"]["output_tokens"] == 150
-        assert by_model["test_provider/test_model"]["cost"] == 0.45
+        assert round(by_model["test_provider/test_model"]["cost"], 2) == 0.45
         
         totals = report["totals"]
         assert totals["count"] == 2
         assert totals["input_tokens"] == 300
         assert totals["output_tokens"] == 150
-        assert totals["cost"] == 0.45
+        assert round(totals["cost"], 2) == 0.45
         assert totals["errors"] == 0
         
         # Generate report filtered by step

@@ -32,6 +32,7 @@ dependencies = [
     "rich>=13.3.0",
     "markdown>=3.4.0",
     "beautifulsoup4>=4.12.0",
+    "pydantic>=2.5.0",
 ]
 
 [project.optional-dependencies]
@@ -104,3 +105,7 @@ quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 docstring-code-format = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"

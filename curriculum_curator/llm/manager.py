@@ -50,18 +50,25 @@ class LLMManager:
         """Initialize the LLM manager.
         
         Args:
-            config (dict): Configuration containing LLM provider settings
+            config: Configuration (either dict or AppConfig)
         """
-        self.config = config
+        from curriculum_curator.config.models import AppConfig
+        
+        # Convert dict to AppConfig if needed
+        if not isinstance(config, AppConfig):
+            from curriculum_curator.config.models import AppConfig
+            self.config = AppConfig.model_validate(config)
+        else:
+            self.config = config
+            
         self.history = []
         self.current_workflow_id = None
         self.current_step_name = None
         
-        # Configure API keys from environment variables (placeholders for now)
-        self._configure_api_keys()
+        # API keys are already resolved by Pydantic validators
         
         logger.info("llm_manager_initialized", 
-                   providers=list(self.config.get("llm", {}).get("providers", {}).keys()))
+                   providers=list(self.config.llm.providers.keys()))
     
     def _configure_api_keys(self):
         """Configure API keys from environment variables."""
@@ -86,38 +93,39 @@ class LLMManager:
         """
         # If no model alias is provided, use the default provider and model
         if model_alias is None:
-            default_provider = self.config.get("llm", {}).get("default_provider", "ollama")
-            default_model = self.config.get("llm", {}).get("providers", {}).get(default_provider, {}).get("default_model", "llama3")
+            default_provider = self.config.llm.default_provider
+            default_model = self.config.llm.providers[default_provider].default_model
             return default_provider, default_model
         
         # Check if alias directly specifies provider/model format
         if "/" in model_alias:
             provider, model = model_alias.split("/", 1)
             # Verify this provider and model exist in our config
-            if (provider in self.config.get("llm", {}).get("providers", {}) and
-                model in self.config.get("llm", {}).get("providers", {}).get(provider, {}).get("models", {})):
+            if (provider in self.config.llm.providers and
+                model in self.config.llm.providers[provider].models):
                 return provider, model
         
         # Handle named aliases like "default_smart", "fast", etc.
-        aliases = self.config.get("llm", {}).get("aliases", {})
-        if model_alias in aliases:
-            alias_value = aliases[model_alias]
+        if model_alias in self.config.llm.aliases:
+            alias_value = self.config.llm.aliases[model_alias]
             if "/" in alias_value:
                 return alias_value.split("/", 1)
         
         # Search for the model across all providers
-        for provider, provider_config in self.config.get("llm", {}).get("providers", {}).items():
-            if model_alias in provider_config.get("models", {}):
+        for provider, provider_config in self.config.llm.providers.items():
+            if model_alias in provider_config.models:
                 return provider, model_alias
         
         # Fall back to default if not found
+        default_provider = self.config.llm.default_provider
+        default_model = self.config.llm.providers[default_provider].default_model
+        
         logger.warning(
             "model_alias_not_resolved",
             model_alias=model_alias,
-            using_default=f"{self.config.get('llm', {}).get('default_provider', 'ollama')}/{self.config.get('llm', {}).get('providers', {}).get(self.config.get('llm', {}).get('default_provider', 'ollama'), {}).get('default_model', 'llama3')}"
+            using_default=f"{default_provider}/{default_model}"
         )
-        default_provider = self.config.get("llm", {}).get("default_provider", "ollama")
-        default_model = self.config.get("llm", {}).get("providers", {}).get(default_provider, {}).get("default_model", "llama3")
+        
         return default_provider, default_model
     
     @backoff.on_exception(
@@ -165,16 +173,13 @@ class LLMManager:
         
         try:
             # Get provider-specific configuration
-            provider_config = self.config.get("llm", {}).get("providers", {}).get(provider, {})
+            provider_config = self.config.llm.providers[provider]
             
-            # Configure API key
-            api_key = provider_config.get("api_key", "")
-            if api_key and api_key.startswith("env(") and api_key.endswith(")"):
-                env_var = api_key[4:-1]
-                api_key = os.getenv(env_var, "")
+            # Get API key (already resolved by Pydantic validator)
+            api_key = provider_config.api_key
             
             # Configure base URL if needed (for Ollama, etc.)
-            base_url = provider_config.get("base_url", None)
+            base_url = provider_config.base_url
             
             # Default parameters for the request
             default_params = {
@@ -241,19 +246,19 @@ class LLMManager:
         Returns:
             float: The calculated cost
         """
-        # This is a placeholder for the cost calculation
-        # In a full implementation, we would look up the cost from the configuration
-        provider_config = self.config.get("llm", {}).get("providers", {}).get(request.provider, {})
-        model_config = provider_config.get("models", {}).get(request.model, {})
+        provider_config = self.config.llm.providers[request.provider]
+        model_config = provider_config.models.get(request.model, None)
         
-        # Get costs, checking model-specific, then provider default
-        cost_per_1k = provider_config.get("cost_per_1k_tokens", {})
-        input_cost = model_config.get("cost_per_1k_tokens", {}).get(
-            "input", cost_per_1k.get("input", 0.0)
-        )
-        output_cost = model_config.get("cost_per_1k_tokens", {}).get(
-            "output", cost_per_1k.get("output", 0.0)
-        )
+        # Get costs, using model-specific costs if available, falling back to provider default
+        provider_cost = provider_config.cost_per_1k_tokens
+        
+        if model_config and model_config.cost_per_1k_tokens:
+            model_cost = model_config.cost_per_1k_tokens
+            input_cost = model_cost.input
+            output_cost = model_cost.output
+        else:
+            input_cost = provider_cost.input
+            output_cost = provider_cost.output
         
         # Calculate total cost
         request.cost = (

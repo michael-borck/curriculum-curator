@@ -72,9 +72,17 @@ class ValidationManager:
         """Initialize the validation manager.
         
         Args:
-            config (dict): Configuration dictionary
+            config: Configuration (either dict or AppConfig)
         """
-        self.config = config
+        from curriculum_curator.config.models import AppConfig
+        
+        # Convert dict to AppConfig if needed
+        if not isinstance(config, AppConfig):
+            from curriculum_curator.config.models import AppConfig
+            self.config = AppConfig.model_validate(config)
+        else:
+            self.config = config
+            
         self.validators = {}
         self._initialize_validators()
         
@@ -89,17 +97,16 @@ class ValidationManager:
         # For now, we'll just log that this is a placeholder
         logger.info("validators_placeholder_only")
         
-        # Example of how we'd instantiate validators:
-        # validator_configs = self.config.get("validation", {})
-        # 
-        # if "similarity" in validator_configs:
-        #     self.validators["similarity"] = SimilarityValidator(validator_configs["similarity"])
-        # 
-        # if "structure" in validator_configs:
-        #     self.validators["structure"] = StructureValidator(validator_configs["structure"])
-        # 
-        # if "readability" in validator_configs:
-        #     self.validators["readability"] = ReadabilityValidator(validator_configs["readability"])
+        # Example of how we'd instantiate validators with Pydantic models:
+        # if self.config.validation:
+        #     if self.config.validation.similarity:
+        #         self.validators["similarity"] = SimilarityValidator(self.config.validation.similarity)
+        #     
+        #     if self.config.validation.structure:
+        #         self.validators["structure"] = StructureValidator(self.config.validation.structure)
+        #     
+        #     if self.config.validation.readability:
+        #         self.validators["readability"] = ReadabilityValidator(self.config.validation.readability)
     
     async def validate(self, content, validator_names=None, context=None):
         """Run specified validators on content.

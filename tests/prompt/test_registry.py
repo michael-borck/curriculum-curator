@@ -25,7 +25,8 @@ class TestPromptRegistry:
         assert prompt_data["metadata"]["description"] == "Test prompt"
         assert prompt_data["metadata"]["requires"] == ["test_var"]
         assert prompt_data["metadata"]["tags"] == ["test"]
-        assert prompt_data["metadata"]["version"] == "1.0"
+        # Handle float or string version - convert both to string for comparison
+        assert str(prompt_data["metadata"]["version"]) == "1.0"
 
     def test_get_prompt_from_cache(self, temp_prompts_dir):
         """Test getting a prompt from cache."""
