@@ -123,15 +123,71 @@ class ValidationConfig(BaseModel):
     readability: Optional[ValidationReadabilityConfig] = None
 
 
+class FormatCorrectorConfig(BaseModel):
+    """Format corrector remediator configuration."""
+    
+    heading_levels: int = Field(default=6, description="Number of heading levels to enforce")
+    enforce_consistency: bool = Field(default=True, description="Whether to enforce consistent formatting")
+
+
+class SentenceSplitterConfig(BaseModel):
+    """Sentence splitter remediator configuration."""
+    
+    max_sentence_length: int = Field(default=25, description="Maximum allowed sentence length")
+    split_points: List[str] = Field(
+        default_factory=lambda: [
+            r'\s+and\s+', r'\s+but\s+', r'\s+or\s+', r'\s+nor\s+', 
+            r'\s+yet\s+', r'\s+so\s+', r'\s+for\s+', r';'
+        ],
+        description="Regular expression patterns for sentence splitting points"
+    )
+
+
+class TerminologyEnforcerConfig(BaseModel):
+    """Terminology enforcer remediator configuration."""
+    
+    terminology_map: Dict[str, str] = Field(
+        default_factory=dict, description="Mapping of incorrect terms to preferred terms"
+    )
+    case_sensitive: bool = Field(default=False, description="Whether to use case-sensitive matching")
+    whole_word_only: bool = Field(default=True, description="Whether to match only whole words")
+
+
+class RephrasingPrompterConfig(BaseModel):
+    """Rephrasing prompter remediator configuration."""
+    
+    model_alias: Optional[str] = Field(default=None, description="LLM model to use for rewriting")
+    max_tokens: int = Field(default=1000, description="Maximum tokens for LLM response")
+    temperature: float = Field(default=0.7, description="Temperature for LLM generation")
+    prompt_templates: Dict[str, str] = Field(
+        default_factory=lambda: {
+            "default": "Rewrite the following text to improve its quality: {text}",
+            "readability": "Rewrite the following text to improve readability and make it easier to understand: {text}",
+            "similarity": "Rewrite the following text to make it more unique and distinct: {text}",
+            "tone": "Rewrite the following text to match a {tone} tone: {text}",
+        },
+        description="Templates for different issue types"
+    )
+
+
+class FlagForReviewConfig(BaseModel):
+    """Flag for review remediator configuration."""
+    
+    severity_threshold: str = Field(default="medium", description="Minimum severity level to flag for review")
+    always_flag_validators: List[str] = Field(
+        default_factory=lambda: ["FactualityValidator", "SafetyValidator"],
+        description="List of validators whose issues always require review"
+    )
+
+
 class RemediationConfig(BaseModel):
     """Remediation configuration."""
 
-    content_merger: Dict[str, Any] = Field(
-        default_factory=dict, description="Content merger configuration"
-    )
-    sentence_splitter: Dict[str, Any] = Field(
-        default_factory=dict, description="Sentence splitter configuration"
-    )
+    format_corrector: Optional[FormatCorrectorConfig] = None
+    sentence_splitter: Optional[SentenceSplitterConfig] = None
+    terminology_enforcer: Optional[TerminologyEnforcerConfig] = None
+    rephrasing_prompter: Optional[RephrasingPrompterConfig] = None
+    flag_for_review: Optional[FlagForReviewConfig] = None
 
 
 class OutputConfig(BaseModel):
