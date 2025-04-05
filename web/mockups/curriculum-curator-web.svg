@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#F5F5F5"/>
+  
+  <!-- Header -->
+  <rect x="0" y="0" width="800" height="60" fill="#2C3E50"/>
+  <text x="20" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#FFFFFF">CurriculumCurator</text>
+  
+  <!-- Navigation Bar -->
+  <rect x="650" y="15" width="130" height="30" fill="#3498DB" rx="15"/>
+  <text x="675" y="35" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF">New Workflow</text>
+  
+  <!-- Left Sidebar -->
+  <rect x="0" y="60" width="200" height="540" fill="#FFFFFF"/>
+  <rect x="0" y="60" width="200" height="540" stroke="#E0E0E0" stroke-width="1" fill-opacity="0"/>
+  
+  <!-- Sidebar Navigation -->
+  <rect x="0" y="60" width="200" height="40" fill="#F8F9FA"/>
+  <text x="15" y="85" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Navigation</text>
+  
+  <!-- Navigation Items -->
+  <rect x="0" y="100" width="200" height="40" fill="#3498DB"/>
+  <text x="15" y="125" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF">Dashboard</text>
+  
+  <rect x="0" y="140" width="200" height="40" fill="#FFFFFF"/>
+  <text x="15" y="165" font-family="Arial, sans-serif" font-size="14" fill="#333333">Workflows</text>
+  
+  <rect x="0" y="180" width="200" height="40" fill="#FFFFFF"/>
+  <text x="15" y="205" font-family="Arial, sans-serif" font-size="14" fill="#333333">Prompts</text>
+  
+  <rect x="0" y="220" width="200" height="40" fill="#FFFFFF"/>
+  <text x="15" y="245" font-family="Arial, sans-serif" font-size="14" fill="#333333">Sessions</text>
+  
+  <rect x="0" y="260" width="200" height="40" fill="#FFFFFF"/>
+  <text x="15" y="285" font-family="Arial, sans-serif" font-size="14" fill="#333333">Settings</text>
+  
+  <!-- Main Content Area -->
+  <rect x="200" y="60" width="600" height="540" fill="#FFFFFF"/>
+  
+  <!-- Dashboard Header -->
+  <text x="230" y="100" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#2C3E50">Dashboard</text>
+  
+  <!-- Stats Cards -->
+  <rect x="230" y="120" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="245" y="145" font-family="Arial, sans-serif" font-size="14" fill="#777777">Total Sessions</text>
+  <text x="245" y="185" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#2C3E50">24</text>
+  
+  <rect x="415" y="120" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="430" y="145" font-family="Arial, sans-serif" font-size="14" fill="#777777">Active Workflows</text>
+  <text x="430" y="185" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#2C3E50">3</text>
+  
+  <rect x="600" y="120" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="615" y="145" font-family="Arial, sans-serif" font-size="14" fill="#777777">Total Cost</text>
+  <text x="615" y="185" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#2C3E50">$12.45</text>
+  
+  <!-- Recent Sessions Table -->
+  <text x="230" y="255" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2C3E50">Recent Sessions</text>
+  
+  <!-- Table Header -->
+  <rect x="230" y="270" width="540" height="40" fill="#F8F9FA" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <text x="245" y="295" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Session ID</text>
+  <text x="365" y="295" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Workflow</text>
+  <text x="485" y="295" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Status</text>
+  <text x="605" y="295" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Date</text>
+  <text x="710" y="295" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333333">Actions</text>
+  
+  <!-- Table Rows -->
+  <rect x="230" y="310" width="540" height="40" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+  <text x="245" y="335" font-family="Arial, sans-serif" font-size="14" fill="#333333">20250405-123456</text>
+  <text x="365" y="335" font-family="Arial, sans-serif" font-size="14" fill="#333333">Standard Course</text>
+  <rect x="485" y="320" width="80" height="20" fill="#28A745" rx="10"/>
+  <text x="500" y="335" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">Completed</text>
+  <text x="605" y="335" font-family="Arial, sans-serif" font-size="14" fill="#333333">2025-04-05</text>
+  <rect x="710" y="320" width="40" height="20" fill="#17A2B8" rx="3"/>
+  <text x="718" y="335" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">View</text>
+  
+  <rect x="230" y="350" width="540" height="40" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+  <text x="245" y="375" font-family="Arial, sans-serif" font-size="14" fill="#333333">20250404-789012</text>
+  <text x="365" y="375" font-family="Arial, sans-serif" font-size="14" fill="#333333">Assessment Pack</text>
+  <rect x="485" y="360" width="80" height="20" fill="#FFC107" rx="10"/>
+  <text x="495" y="375" font-family="Arial, sans-serif" font-size="12" fill="#333333">In Progress</text>
+  <text x="605" y="375" font-family="Arial, sans-serif" font-size="14" fill="#333333">2025-04-04</text>
+  <rect x="710" y="360" width="40" height="20" fill="#17A2B8" rx="3"/>
+  <text x="718" y="375" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">View</text>
+  
+  <rect x="230" y="390" width="540" height="40" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+  <text x="245" y="415" font-family="Arial, sans-serif" font-size="14" fill="#333333">20250403-345678</text>
+  <text x="365" y="415" font-family="Arial, sans-serif" font-size="14" fill="#333333">Quick Module</text>
+  <rect x="485" y="400" width="80" height="20" fill="#28A745" rx="10"/>
+  <text x="500" y="415" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">Completed</text>
+  <text x="605" y="415" font-family="Arial, sans-serif" font-size="14" fill="#333333">2025-04-03</text>
+  <rect x="710" y="400" width="40" height="20" fill="#17A2B8" rx="3"/>
+  <text x="718" y="415" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">View</text>
+  
+  <!-- Available Workflows Section -->
+  <text x="230" y="460" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2C3E50">Available Workflows</text>
+  
+  <!-- Workflow Cards -->
+  <rect x="230" y="480" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <rect x="230" y="480" width="170" height="30" fill="#3498DB" rx="5 5 0 0"/>
+  <text x="250" y="500" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">Standard Course</text>
+  <text x="240" y="530" font-family="Arial, sans-serif" font-size="12" fill="#333333">Complete course with</text>
+  <text x="240" y="550" font-family="Arial, sans-serif" font-size="12" fill="#333333">modules and assessments</text>
+  <rect x="240" y="560" width="80" height="20" fill="#3498DB" rx="3"/>
+  <text x="250" y="575" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">Start</text>
+  
+  <rect x="415" y="480" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <rect x="415" y="480" width="170" height="30" fill="#3498DB" rx="5 5 0 0"/>
+  <text x="445" y="500" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">Quick Module</text>
+  <text x="425" y="530" font-family="Arial, sans-serif" font-size="12" fill="#333333">Single module with</text>
+  <text x="425" y="550" font-family="Arial, sans-serif" font-size="12" fill="#333333">basic content</text>
+  <rect x="425" y="560" width="80" height="20" fill="#3498DB" rx="3"/>
+  <text x="435" y="575" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">Start</text>
+  
+  <rect x="600" y="480" width="170" height="100" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1" rx="5"/>
+  <rect x="600" y="480" width="170" height="30" fill="#3498DB" rx="5 5 0 0"/>
+  <text x="625" y="500" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#FFFFFF">Assessment Pack</text>
+  <text x="610" y="530" font-family="Arial, sans-serif" font-size="12" fill="#333333">Generate comprehensive</text>
+  <text x="610" y="550" font-family="Arial, sans-serif" font-size="12" fill="#333333">assessment materials</text>
+  <rect x="610" y="560" width="80" height="20" fill="#3498DB" rx="3"/>
+  <text x="620" y="575" font-family="Arial, sans-serif" font-size="12" fill="#FFFFFF">Start</text>
+  
+  <!-- Footer -->
+  <rect x="0" y="570" width="800" height="30" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+  <text x="20" y="590" font-family="Arial, sans-serif" font-size="12" fill="#777777">© 2025 CurriculumCurator v1.0.0 | Connected to: Claude-3-Haiku, GPT-3.5-Turbo, Llama3</text>
+</svg>
