@@ -1,0 +1,31 @@
+---
+description: Generates practice worksheet activities based on module content.
+requires:
+  - course_title
+  - module_outline
+  - lecture_content
+tags:
+  - worksheet
+  - activities
+version: 1.0
+---
+Create a comprehensive practice worksheet for the module on "{module_outline.title}" in the course "{course_title}".
+
+The worksheet should reinforce the following key concepts and learning objectives:
+- Key concepts: {module_outline.key_concepts}
+- Learning objectives: {module_outline.learning_objectives}
+
+Use the lecture content below as a reference to create relevant practice activities:
+```
+{lecture_content}
+```
+
+Include the following components:
+1. **Comprehension Questions** (5-7 questions that test basic understanding of concepts)
+2. **Application Exercises** (3-5 activities where students apply the concepts to practical situations)
+3. **Case Study or Scenario** (1-2 real-world scenarios where students analyze and apply their knowledge)
+4. **Reflection Prompts** (2-3 questions asking students to reflect on their learning and potential applications)
+
+Format each question or activity with clear instructions and provide adequate space for answers where appropriate. Number all questions and exercises sequentially.
+
+Format the output as clean Markdown with appropriate headings, lists, tables, and formatting.

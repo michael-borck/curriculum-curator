@@ -1,0 +1,59 @@
+---
+description: Generates instructor guide for teaching a module, including answers to worksheet and assessment.
+requires:
+  - course_title
+  - module_outline
+  - lecture_content
+  - worksheet
+  - assessment
+tags:
+  - instructor
+  - guide
+  - answers
+version: 1.0
+---
+Create a comprehensive instructor guide for teaching the module on "{module_outline.title}" in the course "{course_title}".
+
+Use the following materials as reference:
+- Module outline: {module_outline}
+- Lecture content: The main content to be taught
+- Worksheet: Activities students will complete for practice
+- Assessment: Questions to evaluate student learning
+
+The instructor guide should include:
+
+## 1. Module Overview
+- Brief summary of the module's purpose and place in the curriculum
+- Estimated time required for teaching this module
+- Materials and resources needed
+
+## 2. Teaching Suggestions
+- Key points to emphasize
+- Potential student misconceptions and how to address them
+- Suggested pacing for different sections
+- Tips for engaging students and promoting discussion
+- Alternative teaching approaches for different learning styles
+
+## 3. Worksheet Answer Key
+Provide complete answers to all questions and activities in the student worksheet:
+```
+{worksheet}
+```
+
+## 4. Assessment Answer Key
+Provide complete answers and grading guidelines for all assessment questions:
+```
+{assessment}
+```
+For each question, include:
+- The correct answer
+- Explanation of why it's correct
+- Common incorrect responses and how to provide feedback
+- Suggested point allocation for partial credit (where applicable)
+
+## 5. Additional Resources
+- Supplementary materials to enhance teaching
+- References and sources for further reading
+- Alternative examples or scenarios for reinforcement
+
+Format the guide as clean Markdown with clear sections, headings, and formatting that makes it easy for instructors to reference during teaching.

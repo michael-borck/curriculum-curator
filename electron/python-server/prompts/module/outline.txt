@@ -1,0 +1,36 @@
+---
+description: Generates module outlines for a course.
+requires:
+  - course_title
+  - learning_objectives
+  - num_modules
+tags:
+  - module
+  - outline
+version: 1.0
+---
+Generate a JSON structure for {num_modules} module outlines for the course "{course_title}" that cover the learning objectives: {learning_objectives}.
+
+For each module, include:
+- id: A unique identifier (e.g., "module1")
+- title: A descriptive title for the module
+- description: A brief description of the module content
+- key_concepts: A list of 3-5 key concepts covered in the module
+- learning_objectives: 2-3 specific learning objectives for this module that align with the overall course objectives
+- estimated_duration: Estimated time to complete the module in minutes
+
+Format the output as valid JSON with an array of module objects.
+
+Example format:
+```json
+[
+  {
+    "id": "module1",
+    "title": "Introduction to Python",
+    "description": "This module introduces basic Python syntax and concepts.",
+    "key_concepts": ["Variables", "Data Types", "Control Flow"],
+    "learning_objectives": ["Understand basic Python syntax", "Write simple Python programs"],
+    "estimated_duration": 90
+  }
+]
+```
