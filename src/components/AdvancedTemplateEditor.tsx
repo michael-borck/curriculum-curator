@@ -671,7 +671,7 @@ export function AdvancedTemplateEditor({
                     }}
                   />
                   <p style={{ fontSize: '12px', color: '#6b7280', margin: '8px 0 0 0' }}>
-                    Use Handlebars syntax: <code>{{`{{variable}}`}}</code> for values, <code>{{`{{#if condition}}...{{/if}}`}}</code> for conditionals, <code>{{`{{#each array}}...{{/each}}`}}</code> for loops
+                    Use Handlebars syntax: <code>{'{{variable}}'}</code> for values, <code>{'{{#if condition}}...{{/if}}'}</code> for conditionals, <code>{'{{#each array}}...{{/each}}'}</code> for loops
                   </p>
                 </div>
 
@@ -712,7 +712,7 @@ export function AdvancedTemplateEditor({
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                               <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#1e293b', margin: '0 0 4px 0' }}>
-                                {{`{{${variable.name}}}`}} - {variable.label}
+                                {`{{${variable.name}}}`} - {variable.label}
                               </h5>
                               <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 8px 0' }}>
                                 Type: {variable.type} | Required: {variable.required ? 'Yes' : 'No'}
