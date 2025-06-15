@@ -3,6 +3,7 @@ import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } fro
 import { SettingsPanel } from './components/SettingsPanel';
 import { ContentAIEnhancements } from './components/ContentAIEnhancements';
 import { CustomContentTypeManager } from './components/CustomContentTypeManager';
+import { crossSessionLearning } from './utils/crossSessionLearning';
 import type { QuizType, ContentType, AIContentOptions, CustomContentType } from './types/settings';
 import './App.css';
 
@@ -49,6 +50,29 @@ function App() {
   const [objectiveCount, setObjectiveCount] = useState(4);
   const [showCustomContentManager, setShowCustomContentManager] = useState(false);
   const [customContentTypes, setCustomContentTypes] = useState<CustomContentType[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  // Initialize session tracking on component mount
+  useEffect(() => {
+    const sessionId = crossSessionLearning.startSession({
+      contentTypes: formData.contentTypes,
+      subject: profile?.subject || 'General',
+      complexity: formData.complexity,
+      aiEnhancements: formData.aiEnhancements
+    });
+    setCurrentSessionId(sessionId);
+
+    // Cleanup on unmount
+    return () => {
+      if (sessionId) {
+        crossSessionLearning.endSession({
+          completed: false,
+          contentGenerated: false,
+          errorsEncountered: []
+        });
+      }
+    };
+  }, []);
 
   // Auto-apply settings on load if user preference is set
   useEffect(() => {
@@ -76,6 +100,12 @@ function App() {
         } : prev.instructorGuideOptions
       }));
       setUsingDefaults(true);
+      
+      // Track settings application
+      crossSessionLearning.trackInteraction({
+        type: 'setting_changed',
+        data: { source: 'auto_apply_defaults' }
+      });
     }
   }, [defaults, preferences, usingDefaults]);
 
@@ -280,6 +310,12 @@ function App() {
     }));
     
     setUsingDefaults(true);
+    
+    // Track settings application
+    crossSessionLearning.trackInteraction({
+      type: 'setting_changed',
+      data: { source: 'manual_apply_defaults', contentTypes: defaults.contentTypes }
+    });
   };
 
   const clearDefaults = () => {
@@ -1504,6 +1540,31 @@ function App() {
               {currentStep === 5 && (
                 <button
                   onClick={() => {
+                    // Track content generation attempt
+                    crossSessionLearning.trackInteraction({
+                      type: 'content_generated',
+                      data: {
+                        contentTypes: formData.contentTypes,
+                        complexity: formData.complexity,
+                        duration: formData.duration,
+                        subject: formData.subject
+                      }
+                    });
+                    
+                    // Update session with completion
+                    crossSessionLearning.updateSession({
+                      contentTypes: formData.contentTypes,
+                      complexity: formData.complexity,
+                      aiEnhancements: formData.aiEnhancements
+                    });
+                    
+                    // End session as successful
+                    crossSessionLearning.endSession({
+                      completed: true,
+                      contentGenerated: true,
+                      errorsEncountered: []
+                    });
+                    
                     // In a real implementation, this would trigger content generation
                     alert('Content generation would start here! (Backend integration needed)');
                   }}

@@ -1,6 +1,7 @@
 // Settings Storage Utilities
 
-import type { UserSettings, UserProfile, SettingsStorageOptions, SettingsValidationResult } from '../types/settings';
+import type { UserSettings, UserProfile, SettingsStorageOptions, SettingsValidationResult, LearningInsights } from '../types/settings';
+import { crossSessionLearning } from './crossSessionLearning';
 
 const STORAGE_KEYS = {
   USER_SETTINGS: 'curriculum_curator_settings',
@@ -363,6 +364,131 @@ export class SettingsStorage {
       console.error('Failed to load recent sessions:', error);
       return [];
     }
+  }
+
+  // Get learning-enhanced defaults
+  getLearningEnhancedDefaults(baseProfile?: Partial<UserProfile>): UserSettings {
+    const defaultSettings = this.createDefaultSettings(baseProfile);
+    
+    try {
+      // Get learning insights
+      const insights = crossSessionLearning.getLearningInsights();
+      const adaptedDefaults = crossSessionLearning.getAdaptedDefaults();
+      
+      // Apply learning insights to defaults
+      if (adaptedDefaults.contentTypes && adaptedDefaults.contentTypes.length > 0) {
+        defaultSettings.defaults.contentTypes = adaptedDefaults.contentTypes;
+      }
+      
+      if (adaptedDefaults.complexity) {
+        defaultSettings.defaults.complexity = adaptedDefaults.complexity;
+      }
+      
+      if (adaptedDefaults.duration) {
+        defaultSettings.defaults.duration = adaptedDefaults.duration;
+      }
+      
+      // Apply subject-specific learning if available
+      if (baseProfile?.subject && insights.commonSubjects.includes(baseProfile.subject)) {
+        const subjectSettings = this.getSubjectSettings(baseProfile.subject);
+        if (subjectSettings) {
+          // Merge subject-specific patterns
+          defaultSettings.defaults = {
+            ...defaultSettings.defaults,
+            ...subjectSettings.defaults
+          };
+        }
+      }
+      
+      return defaultSettings;
+    } catch (error) {
+      console.error('Failed to apply learning enhancements:', error);
+      return defaultSettings;
+    }
+  }
+
+  // Save settings with learning tracking
+  saveSettingsWithLearning(settings: UserSettings, options: SettingsStorageOptions = { scope: 'global', autoSave: true }): boolean {
+    const success = this.saveSettings(settings, options);
+    
+    if (success) {
+      // Track settings change
+      crossSessionLearning.trackInteraction({
+        type: 'setting_changed',
+        data: {
+          scope: options.scope,
+          profileSubject: settings.profile.subject,
+          contentTypes: settings.defaults.contentTypes,
+          complexity: settings.defaults.complexity
+        }
+      });
+    }
+    
+    return success;
+  }
+
+  // Get personalized suggestions based on learning data
+  getPersonalizedSuggestions(): string[] {
+    try {
+      const insights = crossSessionLearning.getLearningInsights();
+      return insights.improvementSuggestions;
+    } catch (error) {
+      console.error('Failed to get personalized suggestions:', error);
+      return [
+        'Complete your teaching profile for better personalized defaults',
+        'Try different content types to find what works best for your teaching style',
+        'Use the wizard mode for guided content creation'
+      ];
+    }
+  }
+
+  // Get learning insights for display
+  getLearningInsights(): LearningInsights {
+    return crossSessionLearning.getLearningInsights();
+  }
+
+  // Check if user should see learning-based recommendations
+  shouldShowLearningRecommendations(): boolean {
+    const stats = crossSessionLearning.getLearningStatistics();
+    return stats ? stats.totalSessions >= 3 : false;
+  }
+
+  // Get smart defaults based on context
+  getSmartDefaults(context: { subject?: string; previousSession?: any }): Partial<UserSettings> {
+    const insights = crossSessionLearning.getLearningInsights();
+    const baseDefaults = this.createDefaultSettings();
+    
+    // Context-aware adjustments
+    if (context.subject && insights.commonSubjects.includes(context.subject)) {
+      const subjectSettings = this.getSubjectSettings(context.subject);
+      if (subjectSettings) {
+        return {
+          defaults: {
+            ...baseDefaults.defaults,
+            ...subjectSettings.defaults
+          }
+        };
+      }
+    }
+    
+    // Previous session continuity
+    if (context.previousSession) {
+      return {
+        defaults: {
+          ...baseDefaults.defaults,
+          contentTypes: context.previousSession.contentTypes || baseDefaults.defaults.contentTypes,
+          complexity: context.previousSession.complexity || baseDefaults.defaults.complexity
+        }
+      };
+    }
+    
+    // Apply general learning insights
+    return {
+      defaults: {
+        ...baseDefaults.defaults,
+        ...insights.adaptedDefaults
+      }
+    };
   }
 }
 

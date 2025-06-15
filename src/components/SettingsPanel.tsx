@@ -7,6 +7,7 @@ import { TeachingStyleDetector } from './TeachingStyleDetector';
 import { TeachingStyleResults } from './TeachingStyleResults';
 import { AIIntegrationWizard } from './AIIntegrationWizard';
 import { AdvancedTemplateEditor } from './AdvancedTemplateEditor';
+import { LearningInsights } from './LearningInsights';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [detectionResult, setDetectionResult] = useState<TeachingStyleDetectionResult | null>(null);
   const [showAIWizard, setShowAIWizard] = useState(false);
   const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [showLearningInsights, setShowLearningInsights] = useState(false);
 
   if (!isOpen || !profile || !defaults || !preferences) return null;
 
@@ -717,6 +719,25 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     >
                       🔧 Advanced Template Editor
                     </button>
+                    <button
+                      onClick={() => setShowLearningInsights(true)}
+                      style={{
+                        padding: '12px 16px',
+                        border: '1px solid #8b5cf6',
+                        backgroundColor: '#f3e8ff',
+                        color: '#6b21a8',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      📊 Learning Insights
+                    </button>
                   </div>
                 </div>
               </div>
@@ -828,6 +849,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         contentTypes={['Slides', 'InstructorNotes', 'Worksheet', 'Quiz', 'ActivityGuide']}
         customContentTypes={state.settings?.advanced?.customContentTypes || []}
         onTemplateUpdated={handleTemplateUpdated}
+      />
+
+      <LearningInsights
+        isOpen={showLearningInsights}
+        onClose={() => setShowLearningInsights(false)}
       />
     </div>
   );

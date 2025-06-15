@@ -270,3 +270,56 @@ export interface SettingsValidationResult {
   errors: string[];
   warnings: string[];
 }
+
+// Cross-Session Learning Types
+export interface SessionData {
+  id: string;
+  timestamp: string;
+  duration: number; // in minutes
+  contentTypes: ContentType[];
+  subject: string;
+  complexity: string;
+  aiEnhancements: Record<ContentType, AIContentOptions>;
+  userInteractions: UserInteraction[];
+  outcome: SessionOutcome;
+}
+
+export interface UserInteraction {
+  type: 'setting_changed' | 'content_generated' | 'export_performed' | 'template_used' | 'error_encountered';
+  timestamp: string;
+  data: any;
+}
+
+export interface SessionOutcome {
+  completed: boolean;
+  userSatisfaction?: number; // 1-5 scale
+  contentGenerated: boolean;
+  errorsEncountered: string[];
+  timeToCompletion?: number;
+}
+
+export interface LearningInsights {
+  preferredContentTypes: ContentType[];
+  averageSessionDuration: number;
+  commonSubjects: string[];
+  frequentlyUsedSettings: Partial<ContentDefaults>;
+  errorPatterns: string[];
+  improvementSuggestions: string[];
+  adaptedDefaults: Partial<ContentDefaults>;
+}
+
+export interface BehaviorPattern {
+  pattern: string;
+  frequency: number;
+  confidence: number; // 0-1
+  recommendation: string;
+  lastSeen: Date;
+}
+
+export interface CrossSessionLearningData {
+  totalSessions: number;
+  successfulSessions: number;
+  lastAnalyzed: Date;
+  insights: LearningInsights;
+  behaviorPatterns: BehaviorPattern[];
+}
