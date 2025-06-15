@@ -1,58 +1,54 @@
-# Curriculum Curator - Tauri Implementation
+# React + TypeScript + Vite
 
-A desktop-first, privacy-focused tool for generating weekly educational content using AI. Built with Tauri for native performance and user experience.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Project Status: Phase 2 - PRD Creation
+Currently, two official plugins are available:
 
-This project is currently in the PRD (Product Requirements Document) creation phase using a structured 3-step development methodology.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-### Development Phases
+## Expanding the ESLint configuration
 
-1. ✅ **Phase 1: Knowledge Extraction & Archive** - Complete
-   - Extracted valuable insights from Python/Electron implementation
-   - Archived original code to `reference/` directory
-   - Created comprehensive reference documentation
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-2. 🔄 **Phase 2: PRD Creation** - In Progress
-   - Using structured ai-dev-tasks methodology
-   - Deep thinking and clarifying questions process
-   - Building comprehensive PRD for Tauri implementation
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
 
-3. ⏳ **Phase 3: Tauri Implementation** - Pending
-   - Systematic task-by-task development
-   - Following generated task list with approval checkpoints
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-## Reference Materials
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-The `/reference/` directory contains comprehensive materials from the original implementation:
-
-- **Architecture insights** and proven design patterns
-- **High-value prompt templates** for educational content
-- **Validation/remediation plugin concepts** that worked well
-- **Workflow engine patterns** and configuration examples
-- **LLM integration strategies** with cost tracking
-- **Lessons learned** and pitfalls to avoid
-
-## Technology Vision
-
-### Target Stack
-- **Frontend**: React + TypeScript
-- **Backend**: Rust (via Tauri)
-- **Database**: SQLite (embedded)
-- **UI Framework**: Tauri native components
-- **Architecture**: Desktop-first, offline-capable
-
-### Key Requirements
-- **Weekly content focus** (not full curriculum)
-- **Privacy-first approach** (local processing)
-- **Native desktop performance** (sub-second startup)
-- **Plugin architecture** for extensibility
-- **Cost tracking** for LLM usage
-
-## Getting Started
-
-Currently in planning phase. Once the PRD is complete, development will begin following the systematic task-based methodology defined in `ai-dev-tasks/`.
-
-## Contact
-
-This is a solo development project focused on creating practical tools for educational content creation.
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
+```

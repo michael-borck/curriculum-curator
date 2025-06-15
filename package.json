@@ -1,0 +1,50 @@
+{
+  "name": "curriculum-curator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "frontend:dev": "vite",
+    "frontend:build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev --debug",
+    "tauri:dev:verbose": "RUST_LOG=debug tauri dev --debug",
+    "tauri:build": "tauri build",
+    "tauri:build:debug": "tauri build --debug",
+    "tauri:clean": "tauri clean",
+    "rust:check": "cd src-tauri && cargo check",
+    "rust:test": "cd src-tauri && cargo test",
+    "rust:clippy": "cd src-tauri && cargo clippy -- -D warnings",
+    "rust:fmt": "cd src-tauri && cargo fmt",
+    "dev:check": "npm run type-check && npm run lint && npm run rust:check",
+    "dev:format": "npm run lint:fix && npm run rust:fmt",
+    "dev:full": "npm run dev:check && npm run dev",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/cli": "^2.5.0",
+    "@tauri-apps/plugin-shell": "^2.2.1",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
+  }
+}

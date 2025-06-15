@@ -1,0 +1,109 @@
+/* Sidebar.css */
+.app-sidebar {
+  width: 280px;
+  background-color: #f8fafc;
+  border-right: 1px solid #e5e7eb;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding-top: 73px; /* Account for header height */
+  transition: width 0.3s ease;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.app-sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar-nav {
+  padding: 16px;
+}
+
+.nav-section {
+  margin-bottom: 32px;
+}
+
+.nav-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.app-sidebar.collapsed .nav-section-title {
+  display: none;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  margin-bottom: 4px;
+}
+
+.nav-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.nav-button:hover {
+  background-color: #e2e8f0;
+}
+
+.nav-item.active .nav-button {
+  background-color: #dbeafe;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.app-sidebar.collapsed .nav-button span {
+  display: none;
+}
+
+.app-sidebar.collapsed .nav-button {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+/* Recent sessions styling */
+.nav-button.text-sm {
+  font-size: 13px;
+  padding: 8px 12px;
+  color: #6b7280;
+}
+
+.nav-button.text-sm:hover {
+  color: #374151;
+  background-color: #f1f5f9;
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}
