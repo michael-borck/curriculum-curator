@@ -3,7 +3,12 @@ import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } fro
 import { SettingsPanel } from './components/SettingsPanel';
 import { ContentAIEnhancements } from './components/ContentAIEnhancements';
 import { CustomContentTypeManager } from './components/CustomContentTypeManager';
+import { LiveContentPreview } from './components/LiveContentPreview';
+import { ProgressIndicator } from './components/ProgressIndicator';
+import { StatusFeedback, useStatusFeedback } from './components/StatusFeedback';
 import { crossSessionLearning } from './utils/crossSessionLearning';
+import { generationManager } from './utils/generationManager';
+import type { GenerationProgress, GenerationConfig } from './utils/generationManager';
 import type { QuizType, ContentType, AIContentOptions, CustomContentType } from './types/settings';
 import './App.css';
 
@@ -14,6 +19,7 @@ function App() {
   const [profile] = useUserProfile();
   const [defaults] = useContentDefaults();
   const [preferences] = useUIPreferences();
+  const statusFeedback = useStatusFeedback();
   const [showSettings, setShowSettings] = useState(false);
   const [currentMode, setCurrentMode] = useState<AppMode>('wizard');
   const [currentStep, setCurrentStep] = useState(1);
@@ -51,6 +57,10 @@ function App() {
   const [showCustomContentManager, setShowCustomContentManager] = useState(false);
   const [customContentTypes, setCustomContentTypes] = useState<CustomContentType[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
+  const [previewWidth, setPreviewWidth] = useState(400);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
 
   // Initialize session tracking on component mount
   useEffect(() => {
@@ -106,6 +116,12 @@ function App() {
         type: 'setting_changed',
         data: { source: 'auto_apply_defaults' }
       });
+
+      // Show status feedback
+      statusFeedback.showSuccess(
+        'Settings Applied',
+        `Your default preferences have been automatically applied for ${defaults.contentTypes.length} content types.`
+      );
     }
   }, [defaults, preferences, usingDefaults]);
 
@@ -225,6 +241,12 @@ function App() {
     setAiGenerating(true);
     setShowObjectiveCountModal(false);
     
+    // Show loading feedback
+    const loadingId = statusFeedback.showLoading(
+      'Generating Learning Objectives',
+      `Creating ${count} objectives for ${formData.topic}...`
+    );
+    
     try {
       // Simulate AI generation (in real implementation, this would call the Rust backend)
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -262,9 +284,25 @@ function App() {
           learningObjectives: newObjectives
         }));
       }
+
+      // Dismiss loading and show success
+      statusFeedback.dismissMessage(loadingId);
+      statusFeedback.showSuccess(
+        'Objectives Generated',
+        `Successfully created ${newObjectives.length} learning objectives for ${formData.topic}.`,
+        4000
+      );
+
     } catch (error) {
       console.error('AI generation failed:', error);
-      // Fall back gracefully - could show error message
+      
+      // Dismiss loading and show error
+      statusFeedback.dismissMessage(loadingId);
+      statusFeedback.showError(
+        'Generation Failed',
+        'Unable to generate learning objectives. Please try again or create them manually.',
+        6000
+      );
     } finally {
       setAiGenerating(false);
     }
@@ -316,6 +354,13 @@ function App() {
       type: 'setting_changed',
       data: { source: 'manual_apply_defaults', contentTypes: defaults.contentTypes }
     });
+
+    // Show status feedback
+    statusFeedback.showSuccess(
+      'Settings Applied',
+      `Applied your saved preferences: ${defaults.contentTypes.join(', ')} for ${defaults.duration}.`,
+      3000
+    );
   };
 
   const clearDefaults = () => {
@@ -1304,6 +1349,30 @@ function App() {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
+            onClick={() => {
+              setShowPreview(!showPreview);
+              // Track preview toggle
+              crossSessionLearning.trackInteraction({
+                type: 'setting_changed',
+                data: { action: 'toggle_preview', enabled: !showPreview }
+              });
+            }}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: showPreview ? '#3b82f6' : 'white',
+              color: showPreview ? 'white' : '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            👁️ Preview
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             style={{
               padding: '8px 12px',
@@ -1364,7 +1433,9 @@ function App() {
         backgroundColor: '#f8fafc', 
         flex: 1,
         minHeight: 'calc(100vh - 80px)',
-        overflow: 'auto'
+        overflow: 'auto',
+        marginRight: showPreview ? `${previewWidth}px` : '0',
+        transition: 'margin-right 0.3s ease'
       }}>
         {currentMode === 'wizard' ? (
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -1539,7 +1610,7 @@ function App() {
               
               {currentStep === 5 && (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     // Track content generation attempt
                     crossSessionLearning.trackInteraction({
                       type: 'content_generated',
@@ -1557,16 +1628,82 @@ function App() {
                       complexity: formData.complexity,
                       aiEnhancements: formData.aiEnhancements
                     });
+
+                    // Prepare generation config
+                    const config: GenerationConfig = {
+                      topic: formData.topic,
+                      audience: formData.audience,
+                      subject: formData.subject,
+                      duration: formData.duration,
+                      complexity: formData.complexity,
+                      learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+                      contentTypes: formData.contentTypes,
+                      quizTypes: formData.quizTypes,
+                      additionalOptions: {
+                        includeAnswerKeys: formData.includeAnswerKeys,
+                        includeInstructorGuides: formData.includeInstructorGuides,
+                        accessibility: formData.accessibility,
+                        rubrics: formData.rubrics,
+                        extensions: formData.extensions
+                      }
+                    };
+
+                    // Start generation with progress tracking
+                    setShowProgress(true);
                     
-                    // End session as successful
-                    crossSessionLearning.endSession({
-                      completed: true,
-                      contentGenerated: true,
-                      errorsEncountered: []
-                    });
-                    
-                    // In a real implementation, this would trigger content generation
-                    alert('Content generation would start here! (Backend integration needed)');
+                    try {
+                      const result = await generationManager.startGeneration(
+                        config,
+                        (progress) => {
+                          setGenerationProgress(progress);
+                        },
+                        (error) => {
+                          console.error('Generation error:', error);
+                          statusFeedback.showError(
+                            'Generation Error',
+                            `Error in ${error.stepId}: ${error.message}`,
+                            8000
+                          );
+                        }
+                      );
+
+                      // End session as successful
+                      crossSessionLearning.endSession({
+                        completed: true,
+                        contentGenerated: result.success,
+                        errorsEncountered: result.errors.map(e => e.message)
+                      });
+
+                      // Show completion feedback
+                      if (result.success) {
+                        statusFeedback.showSuccess(
+                          'Content Generated Successfully!',
+                          `Generated ${result.contentFiles.length} content files. You can now download or export your materials.`,
+                          0 // Persistent message
+                        );
+                      } else {
+                        statusFeedback.showWarning(
+                          'Generation Completed with Issues',
+                          `${result.contentFiles.length} files generated, but ${result.errors.length} errors occurred. Review the results.`,
+                          0 // Persistent message
+                        );
+                      }
+
+                    } catch (error) {
+                      console.error('Generation failed:', error);
+                      crossSessionLearning.endSession({
+                        completed: false,
+                        contentGenerated: false,
+                        errorsEncountered: [error instanceof Error ? error.message : 'Unknown error']
+                      });
+
+                      // Show failure feedback
+                      statusFeedback.showError(
+                        'Generation Failed',
+                        error instanceof Error ? error.message : 'An unexpected error occurred during content generation.',
+                        0 // Persistent message
+                      );
+                    }
                   }}
                   style={{
                     padding: '12px 24px',
@@ -1597,6 +1734,44 @@ function App() {
         isOpen={showCustomContentManager} 
         onClose={() => setShowCustomContentManager(false)}
         onContentTypesUpdated={handleCustomContentTypesUpdated}
+      />
+
+      {/* Live Content Preview */}
+      <LiveContentPreview
+        formData={formData}
+        currentStep={currentStep}
+        isVisible={showPreview}
+        onToggleVisibility={() => setShowPreview(!showPreview)}
+        width={previewWidth}
+        onWidthChange={setPreviewWidth}
+      />
+
+      {/* Progress Indicator */}
+      {generationProgress && (
+        <ProgressIndicator
+          isVisible={showProgress}
+          progress={generationProgress}
+          onCancel={() => {
+            generationManager.cancelGeneration();
+            setShowProgress(false);
+            setGenerationProgress(null);
+          }}
+          onRetry={(stepId) => {
+            generationManager.retryStep(stepId);
+          }}
+          onClose={() => {
+            setShowProgress(false);
+            setGenerationProgress(null);
+          }}
+        />
+      )}
+
+      {/* Status Feedback */}
+      <StatusFeedback
+        messages={statusFeedback.messages}
+        onDismiss={statusFeedback.dismissMessage}
+        position="top-right"
+        maxVisible={3}
       />
     </div>
   );
