@@ -1,6 +1,6 @@
 // Settings Storage Utilities
 
-import { UserSettings, UserProfile, SettingsStorageOptions, SettingsValidationResult } from '../types/settings';
+import type { UserSettings, UserProfile, SettingsStorageOptions, SettingsValidationResult } from '../types/settings';
 
 const STORAGE_KEYS = {
   USER_SETTINGS: 'curriculum_curator_settings',
@@ -151,6 +151,7 @@ export class SettingsStorage {
       },
       advanced: {
         customContentTypes: [],
+        customTemplates: [],
         templatePreferences: {
           visualTheme: 'modern-clean',
           contentDepth: 5,

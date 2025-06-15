@@ -56,6 +56,7 @@ export interface UIPreferences {
 
 export interface AdvancedSettings {
   customContentTypes: CustomContentType[];
+  customTemplates: CustomTemplate[];
   templatePreferences: TemplatePreferences;
   aiCustomization: AICustomizationSettings;
   exportSettings: ExportSettings;
@@ -111,10 +112,62 @@ export interface CustomContentType {
   id: string;
   name: string;
   description: string;
+  icon: string;
+  category: 'assessment' | 'instructional' | 'activity' | 'reference' | 'other';
+  defaultAIOptions: AIContentOptions;
+  templateHints: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TemplateVariable {
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'select' | 'textarea';
+  label: string;
+  description?: string;
+  required: boolean;
+  defaultValue?: any;
+  options?: string[];
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+    errorMessage?: string;
+  };
+}
+
+export interface ConditionalSection {
+  id: string;
+  name: string;
+  condition: string;
+  description: string;
+}
+
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  description: string;
+  contentType: ContentType | string;
+  category: 'standard' | 'assessment' | 'activity' | 'reference' | 'custom';
   template: string;
-  includesAnswerKey: boolean;
-  aiEnhanced: boolean;
-  icon?: string;
+  variables: TemplateVariable[];
+  conditionalSections: ConditionalSection[];
+  customPrompts: {
+    systemPrompt?: string;
+    userPrompt?: string;
+    contextPrompt?: string;
+  };
+  metadata: {
+    author: string;
+    version: string;
+    tags: string[];
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    estimatedTime: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  isPublic: boolean;
+  usageCount: number;
 }
 
 export interface TemplatePreferences {

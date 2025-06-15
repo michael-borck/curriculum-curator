@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } from '../contexts/SettingsContext';
-import { TeachingStyle, AIIntegrationPreference, EducationLevel, AnswerKeyOptions, InstructorGuideOptions, TeachingStyleDetectionResult, AICustomizationSettings } from '../types/settings';
+import type { TeachingStyle, AIIntegrationPreference, EducationLevel, AnswerKeyOptions, InstructorGuideOptions, TeachingStyleDetectionResult, AICustomizationSettings, CustomTemplate, ContentType, CustomContentType } from '../types/settings';
 import { TeachingStyleDetector } from './TeachingStyleDetector';
 import { TeachingStyleResults } from './TeachingStyleResults';
 import { AIIntegrationWizard } from './AIIntegrationWizard';
+import { AdvancedTemplateEditor } from './AdvancedTemplateEditor';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [showStyleResults, setShowStyleResults] = useState(false);
   const [detectionResult, setDetectionResult] = useState<TeachingStyleDetectionResult | null>(null);
   const [showAIWizard, setShowAIWizard] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
 
   if (!isOpen || !profile || !defaults || !preferences) return null;
 
@@ -88,6 +90,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       actions.saveSettings(updatedSettings);
     }
     setShowAIWizard(false);
+  };
+
+  const handleTemplateUpdated = (templates: CustomTemplate[]) => {
+    // Templates are already saved in the component, no additional action needed
+    console.log('Templates updated:', templates.length);
   };
 
   return (
@@ -666,6 +673,52 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     </label>
                   </div>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', color: '#374151' }}>
+                    Advanced Tools
+                  </label>
+                  <div style={{ display: 'grid', gap: '12px' }}>
+                    <button
+                      onClick={() => setShowAIWizard(true)}
+                      style={{
+                        padding: '12px 16px',
+                        border: '1px solid #059669',
+                        backgroundColor: '#dcfce7',
+                        color: '#166534',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      🤖 Configure AI Integration
+                    </button>
+                    <button
+                      onClick={() => setShowTemplateEditor(true)}
+                      style={{
+                        padding: '12px 16px',
+                        border: '1px solid #f59e0b',
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      🔧 Advanced Template Editor
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -767,6 +820,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         isOpen={showAIWizard}
         onClose={() => setShowAIWizard(false)}
         onComplete={handleAIIntegrationComplete}
+      />
+
+      <AdvancedTemplateEditor
+        isOpen={showTemplateEditor}
+        onClose={() => setShowTemplateEditor(false)}
+        contentTypes={['Slides', 'InstructorNotes', 'Worksheet', 'Quiz', 'ActivityGuide']}
+        customContentTypes={state.settings?.advanced?.customContentTypes || []}
+        onTemplateUpdated={handleTemplateUpdated}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 // Settings Context for React State Management
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { UserSettings, UserProfile, ContentDefaults, UIPreferences } from '../types/settings';
+import type { UserSettings, UserProfile, ContentDefaults, UIPreferences } from '../types/settings';
 import { settingsStorage } from '../utils/settingsStorage';
 
 // Context State

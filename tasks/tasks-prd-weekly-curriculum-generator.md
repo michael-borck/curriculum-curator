@@ -109,10 +109,10 @@ Based on PRD: `prd-weekly-curriculum-generator.md`
     - [x] 4.5.3 Add automatic answer key and instructor guide generation
     - [x] 4.5.4 Implement teaching style detection and preferences
     - [x] 4.5.5 Create AI integration preference system
-    - [ ] 4.5.6 Add smart defaults with "Use Settings" functionality
-    - [ ] 4.5.7 Implement content-specific AI enhancement options
-    - [ ] 4.5.8 Create custom content type framework
-    - [ ] 4.5.9 Build advanced template editor for power users
+    - [x] 4.5.6 Add smart defaults with "Use Settings" functionality
+    - [x] 4.5.7 Implement content-specific AI enhancement options
+    - [x] 4.5.8 Create custom content type framework
+    - [x] 4.5.9 Build advanced template editor for power users
     - [ ] 4.5.10 Add settings persistence and cross-session learning
   - [ ] 4.6 Create live content preview component with real-time updates
   - [ ] 4.7 Implement progress indicators and status feedback during generation

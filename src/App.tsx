@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useSettings, useUserProfile, useContentDefaults } from './contexts/SettingsContext';
+import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } from './contexts/SettingsContext';
 import { SettingsPanel } from './components/SettingsPanel';
-import { QuizType } from './types/settings';
+import { ContentAIEnhancements } from './components/ContentAIEnhancements';
+import { CustomContentTypeManager } from './components/CustomContentTypeManager';
+import type { QuizType, ContentType, AIContentOptions, CustomContentType } from './types/settings';
 import './App.css';
 
 type AppMode = 'wizard' | 'expert';
-type ContentType = 'Slides' | 'InstructorNotes' | 'Worksheet' | 'Quiz' | 'ActivityGuide';
 type ExpertTab = 'planner' | 'templates' | 'batch' | 'quality';
 
 function App() {
-  const { state: settingsState } = useSettings();
   const [profile] = useUserProfile();
   const [defaults] = useContentDefaults();
+  const [preferences] = useUIPreferences();
   const [showSettings, setShowSettings] = useState(false);
   const [currentMode, setCurrentMode] = useState<AppMode>('wizard');
   const [currentStep, setCurrentStep] = useState(1);
-  const [expertTab, setExpertTab] = useState<ExpertTab>('planner');
+  const [usingDefaults, setUsingDefaults] = useState(false);
   const [formData, setFormData] = useState({
     topic: '',
     audience: '',
@@ -40,17 +41,51 @@ function App() {
       includeGradingTips: true,
       includeDiscussionPrompts: false,
       includeExtensions: false
-    }
+    },
+    aiEnhancements: {} as Record<ContentType, AIContentOptions>
   });
   const [aiGenerating, setAiGenerating] = useState(false);
   const [showObjectiveCountModal, setShowObjectiveCountModal] = useState(false);
   const [objectiveCount, setObjectiveCount] = useState(4);
-  
-  // Progressive disclosure state
-  const [formComplexity, setFormComplexity] = useState<'essential' | 'enhanced' | 'advanced'>('essential');
-  const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
-  const [showExpertContentOptions, setShowExpertContentOptions] = useState(false);
-  const [showAdvancedObjectives, setShowAdvancedObjectives] = useState(false);
+  const [showCustomContentManager, setShowCustomContentManager] = useState(false);
+  const [customContentTypes, setCustomContentTypes] = useState<CustomContentType[]>([]);
+
+  // Auto-apply settings on load if user preference is set
+  useEffect(() => {
+    if (defaults && preferences?.useSettingsByDefault && !usingDefaults) {
+      setFormData(prev => ({
+        ...prev,
+        duration: defaults.duration,
+        complexity: defaults.complexity,
+        contentTypes: [...defaults.contentTypes],
+        quizTypes: [...defaults.quizTypes],
+        includeAnswerKeys: defaults.includeAnswerKeys,
+        includeInstructorGuides: defaults.includeInstructorGuides,
+        rubrics: defaults.includeRubrics,
+        accessibility: defaults.includeAccessibilityFeatures,
+        answerKeyOptions: defaults.answerKeyOptions ? {
+          includeExplanations: defaults.answerKeyOptions.includeExplanations,
+          includeDifficulty: defaults.answerKeyOptions.includeDifficulty,
+          includePoints: defaults.answerKeyOptions.includePoints
+        } : prev.answerKeyOptions,
+        instructorGuideOptions: defaults.instructorGuideOptions ? {
+          includeTiming: defaults.instructorGuideOptions.includeTiming,
+          includeGradingTips: defaults.instructorGuideOptions.includeGradingTips,
+          includeDiscussionPrompts: defaults.instructorGuideOptions.includeDiscussionPrompts,
+          includeExtensions: defaults.instructorGuideOptions.includeExtensions
+        } : prev.instructorGuideOptions
+      }));
+      setUsingDefaults(true);
+    }
+  }, [defaults, preferences, usingDefaults]);
+
+  // Load custom content types from settings
+  const { state } = useSettings();
+  useEffect(() => {
+    if (state.settings?.advanced?.customContentTypes) {
+      setCustomContentTypes(state.settings.advanced.customContentTypes);
+    }
+  }, [state.settings]);
 
   const handleModeSwitch = (mode: AppMode) => {
     setCurrentMode(mode);
@@ -61,6 +96,14 @@ function App() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAIEnhancementsChange = (enhancements: Record<ContentType, AIContentOptions>) => {
+    setFormData(prev => ({ ...prev, aiEnhancements: enhancements }));
+  };
+
+  const handleCustomContentTypesUpdated = (types: CustomContentType[]) => {
+    setCustomContentTypes(types);
   };
 
   const addLearningObjective = () => {
@@ -105,7 +148,7 @@ function App() {
   };
 
   const nextStep = () => {
-    if (currentStep < 5 && canProceed()) {
+    if (currentStep < 6 && canProceed()) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -127,6 +170,8 @@ function App() {
         const hasQuizTypesIfNeeded = !formData.contentTypes.includes('Quiz') || formData.quizTypes.length > 0;
         return hasContentTypes && hasQuizTypesIfNeeded;
       case 4:
+        return true; // AI enhancements are optional
+      case 5:
         return true;
       default:
         return false;
@@ -208,6 +253,62 @@ function App() {
     setShowObjectiveCountModal(true);
   };
 
+  const applyDefaultSettings = () => {
+    if (!defaults) return;
+
+    setFormData(prev => ({
+      ...prev,
+      duration: defaults.duration,
+      complexity: defaults.complexity,
+      contentTypes: [...defaults.contentTypes],
+      quizTypes: [...defaults.quizTypes],
+      includeAnswerKeys: defaults.includeAnswerKeys,
+      includeInstructorGuides: defaults.includeInstructorGuides,
+      rubrics: defaults.includeRubrics,
+      accessibility: defaults.includeAccessibilityFeatures,
+      answerKeyOptions: defaults.answerKeyOptions ? {
+        includeExplanations: defaults.answerKeyOptions.includeExplanations,
+        includeDifficulty: defaults.answerKeyOptions.includeDifficulty,
+        includePoints: defaults.answerKeyOptions.includePoints
+      } : prev.answerKeyOptions,
+      instructorGuideOptions: defaults.instructorGuideOptions ? {
+        includeTiming: defaults.instructorGuideOptions.includeTiming,
+        includeGradingTips: defaults.instructorGuideOptions.includeGradingTips,
+        includeDiscussionPrompts: defaults.instructorGuideOptions.includeDiscussionPrompts,
+        includeExtensions: defaults.instructorGuideOptions.includeExtensions
+      } : prev.instructorGuideOptions
+    }));
+    
+    setUsingDefaults(true);
+  };
+
+  const clearDefaults = () => {
+    setFormData(prev => ({
+      ...prev,
+      duration: '50 minutes',
+      complexity: 'intermediate',
+      contentTypes: [],
+      quizTypes: [],
+      includeAnswerKeys: true,
+      includeInstructorGuides: true,
+      rubrics: false,
+      accessibility: false,
+      answerKeyOptions: {
+        includeExplanations: true,
+        includeDifficulty: true,
+        includePoints: false
+      },
+      instructorGuideOptions: {
+        includeTiming: true,
+        includeGradingTips: true,
+        includeDiscussionPrompts: false,
+        includeExtensions: false
+      }
+    }));
+    
+    setUsingDefaults(false);
+  };
+
   // Rest of the component continues...
   // [I'll continue with the render methods from the original file]
 
@@ -262,6 +363,19 @@ function App() {
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
                 How long is your class session?
+                {usingDefaults && defaults?.duration === formData.duration && (
+                  <span style={{ 
+                    fontSize: '12px', 
+                    color: '#16a34a', 
+                    fontWeight: '400',
+                    marginLeft: '8px',
+                    padding: '2px 6px',
+                    backgroundColor: '#dcfce7',
+                    borderRadius: '4px'
+                  }}>
+                    ⚙️ From Settings
+                  </span>
+                )}
               </label>
               <select
                 value={formData.duration}
@@ -269,10 +383,10 @@ function App() {
                 style={{
                   width: '100%',
                   padding: '12px',
-                  border: '1px solid #d1d5db',
+                  border: `1px solid ${usingDefaults && defaults?.duration === formData.duration ? '#16a34a' : '#d1d5db'}`,
                   borderRadius: '8px',
                   fontSize: '16px',
-                  backgroundColor: 'white'
+                  backgroundColor: usingDefaults && defaults?.duration === formData.duration ? '#f0fdf4' : 'white'
                 }}
               >
                 <option value="30 minutes">30 minutes</option>
@@ -442,51 +556,197 @@ function App() {
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              {(['Slides', 'InstructorNotes', 'Worksheet', 'Quiz', 'ActivityGuide'] as ContentType[]).map((type) => (
-                <div
-                  key={type}
-                  onClick={() => toggleContentType(type)}
+              {(['Slides', 'InstructorNotes', 'Worksheet', 'Quiz', 'ActivityGuide'] as ContentType[]).map((type) => {
+                const isSelected = formData.contentTypes.includes(type);
+                const isFromDefaults = usingDefaults && defaults?.contentTypes.includes(type);
+                const borderColor = isSelected ? (isFromDefaults ? '#16a34a' : '#3b82f6') : '#e5e7eb';
+                const bgColor = isSelected ? (isFromDefaults ? '#dcfce7' : '#dbeafe') : 'white';
+                
+                return (
+                  <div
+                    key={type}
+                    onClick={() => toggleContentType(type)}
+                    style={{
+                      padding: '20px',
+                      border: `2px solid ${borderColor}`,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      backgroundColor: bgColor,
+                      transition: 'all 0.2s',
+                      position: 'relative'
+                    }}
+                  >
+                    {/* Settings indicator badge */}
+                    {isFromDefaults && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        borderRadius: '50%',
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        fontWeight: 'bold'
+                      }}>
+                        ⚙
+                      </div>
+                    )}
+                    
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      margin: '0 auto 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: isSelected ? (isFromDefaults ? '#16a34a' : '#3b82f6') : '#f1f5f9',
+                      borderRadius: '12px',
+                      color: isSelected ? 'white' : '#64748b',
+                      fontSize: '24px'
+                    }}>
+                      {type === 'Slides' && '📊'}
+                      {type === 'InstructorNotes' && '📝'}
+                      {type === 'Worksheet' && '📄'}
+                      {type === 'Quiz' && '❓'}
+                      {type === 'ActivityGuide' && '👥'}
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
+                      {type.replace(/([A-Z])/g, ' $1').trim()}
+                      {isFromDefaults && (
+                        <span style={{ 
+                          fontSize: '11px', 
+                          color: '#16a34a', 
+                          fontWeight: '400',
+                          marginLeft: '4px'
+                        }}>
+                          ⚙️
+                        </span>
+                      )}
+                    </h3>
+                    <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                      {type === 'Slides' && 'Presentation slides with key points'}
+                      {type === 'InstructorNotes' && 'Detailed teaching notes'}
+                      {type === 'Worksheet' && 'Student practice exercises'}
+                      {type === 'Quiz' && 'Assessment questions'}
+                      {type === 'ActivityGuide' && 'Interactive learning activities'}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Custom Content Types Section */}
+            {customContentTypes.length > 0 && (
+              <div style={{ marginTop: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1e293b', margin: 0 }}>
+                    🎨 Custom Content Types
+                  </h3>
+                  <button
+                    onClick={() => setShowCustomContentManager(true)}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid #3b82f6',
+                      backgroundColor: '#dbeafe',
+                      color: '#1e40af',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ⚙️ Manage Custom Types
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  {customContentTypes.map((customType) => {
+                    const isSelected = formData.contentTypes.includes(customType.name as ContentType);
+                    const borderColor = isSelected ? '#3b82f6' : '#e5e7eb';
+                    const bgColor = isSelected ? '#dbeafe' : 'white';
+                    
+                    return (
+                      <div
+                        key={customType.id}
+                        onClick={() => toggleContentType(customType.name as ContentType)}
+                        style={{
+                          padding: '20px',
+                          border: `2px solid ${borderColor}`,
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          backgroundColor: bgColor,
+                          transition: 'all 0.2s',
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{
+                          width: '48px',
+                          height: '48px',
+                          margin: '0 auto 12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: isSelected ? '#3b82f6' : '#f1f5f9',
+                          borderRadius: '12px',
+                          color: isSelected ? 'white' : '#64748b',
+                          fontSize: '24px'
+                        }}>
+                          {customType.icon}
+                        </div>
+                        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
+                          {customType.name}
+                        </h3>
+                        <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                          {customType.description}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Add Custom Content Type Button - Shows when no custom types exist */}
+            {customContentTypes.length === 0 && (
+              <div style={{ 
+                marginTop: '32px',
+                padding: '24px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                border: '2px dashed #cbd5e1',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎨</div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
+                  Need something different?
+                </h3>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
+                  Create custom content types for specialized materials like lab reports, case studies, or project proposals.
+                </p>
+                <button
+                  onClick={() => setShowCustomContentManager(true)}
                   style={{
-                    padding: '20px',
-                    border: `2px solid ${formData.contentTypes.includes(type) ? '#3b82f6' : '#e5e7eb'}`,
-                    borderRadius: '12px',
+                    padding: '12px 24px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    textAlign: 'center',
-                    backgroundColor: formData.contentTypes.includes(type) ? '#dbeafe' : 'white',
-                    transition: 'all 0.2s'
+                    fontSize: '14px',
+                    fontWeight: '500'
                   }}
                 >
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    margin: '0 auto 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: formData.contentTypes.includes(type) ? '#3b82f6' : '#f1f5f9',
-                    borderRadius: '12px',
-                    color: formData.contentTypes.includes(type) ? 'white' : '#64748b',
-                    fontSize: '24px'
-                  }}>
-                    {type === 'Slides' && '📊'}
-                    {type === 'InstructorNotes' && '📝'}
-                    {type === 'Worksheet' && '📄'}
-                    {type === 'Quiz' && '❓'}
-                    {type === 'ActivityGuide' && '👥'}
-                  </div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1e293b', marginBottom: '8px' }}>
-                    {type.replace(/([A-Z])/g, ' $1').trim()}
-                  </h3>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
-                    {type === 'Slides' && 'Presentation slides with key points'}
-                    {type === 'InstructorNotes' && 'Detailed teaching notes'}
-                    {type === 'Worksheet' && 'Student practice exercises'}
-                    {type === 'Quiz' && 'Assessment questions'}
-                    {type === 'ActivityGuide' && 'Interactive learning activities'}
-                  </p>
-                </div>
-              ))}
-            </div>
+                  ➕ Create Custom Content Type
+                </button>
+              </div>
+            )}
             
             {/* Quiz Types Selection - Shows when Quiz is selected */}
             {formData.contentTypes.includes('Quiz') && (
@@ -739,7 +999,158 @@ function App() {
           </div>
         );
 
-      // Continue with cases 4 and 5 from original file...
+      case 4:
+        return (
+          <div>
+            <h2 style={{ marginBottom: '8px', color: '#1e293b' }}>AI Enhancement Options</h2>
+            <p style={{ color: '#64748b', marginBottom: '32px' }}>
+              Configure how AI will enhance each type of content based on your teaching preferences.
+            </p>
+            
+            <ContentAIEnhancements
+              selectedContentTypes={formData.contentTypes}
+              customContentTypes={customContentTypes}
+              onEnhancementsChange={handleAIEnhancementsChange}
+            />
+          </div>
+        );
+
+      case 5:
+        return (
+          <div>
+            <h2 style={{ marginBottom: '8px', color: '#1e293b' }}>Final Settings</h2>
+            <p style={{ color: '#64748b', marginBottom: '32px' }}>
+              Review your settings and configure any final options before generating your curriculum content.
+            </p>
+            
+            <div style={{ display: 'grid', gap: '24px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  Content Complexity
+                  {usingDefaults && defaults?.complexity === formData.complexity && (
+                    <span style={{ 
+                      fontSize: '12px', 
+                      color: '#16a34a', 
+                      fontWeight: '400',
+                      marginLeft: '8px',
+                      padding: '2px 6px',
+                      backgroundColor: '#dcfce7',
+                      borderRadius: '4px'
+                    }}>
+                      ⚙️ From Settings
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={formData.complexity}
+                  onChange={(e) => handleInputChange('complexity', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: `1px solid ${usingDefaults && defaults?.complexity === formData.complexity ? '#16a34a' : '#d1d5db'}`,
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    backgroundColor: usingDefaults && defaults?.complexity === formData.complexity ? '#f0fdf4' : 'white'
+                  }}
+                >
+                  <option value="basic">Basic - Introductory level concepts</option>
+                  <option value="intermediate">Intermediate - Standard course depth</option>
+                  <option value="advanced">Advanced - In-depth analysis and application</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+                  Teaching Style
+                </label>
+                <select
+                  value={formData.style}
+                  onChange={(e) => handleInputChange('style', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px'
+                  }}
+                >
+                  <option value="interactive">Interactive - Engaging activities and discussions</option>
+                  <option value="traditional">Traditional - Lecture-based approach</option>
+                  <option value="hands-on">Hands-on - Practical exercises and labs</option>
+                  <option value="collaborative">Collaborative - Group work and peer learning</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500' }}>
+                  Additional Features
+                </label>
+                <div style={{ display: 'grid', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.accessibility}
+                      onChange={(e) => handleInputChange('accessibility', e.target.checked)}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151' }}>
+                      ♿ Include accessibility features
+                    </span>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.rubrics}
+                      onChange={(e) => handleInputChange('rubrics', e.target.checked)}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151' }}>
+                      📊 Generate assessment rubrics
+                    </span>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.extensions}
+                      onChange={(e) => handleInputChange('extensions', e.target.checked)}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151' }}>
+                      🚀 Include extension activities
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+                  📋 Generation Summary
+                </h3>
+                <div style={{ display: 'grid', gap: '8px', fontSize: '14px', color: '#475569' }}>
+                  <div><strong>Topic:</strong> {formData.topic}</div>
+                  <div><strong>Audience:</strong> {formData.audience}</div>
+                  <div><strong>Duration:</strong> {formData.duration}</div>
+                  <div><strong>Learning Objectives:</strong> {formData.learningObjectives.filter(obj => obj.trim()).length}</div>
+                  <div><strong>Content Types:</strong> {formData.contentTypes.join(', ')}</div>
+                  {formData.contentTypes.includes('Quiz') && (
+                    <div><strong>Quiz Types:</strong> {formData.quizTypes.join(', ')}</div>
+                  )}
+                  <div><strong>Complexity:</strong> {formData.complexity}</div>
+                  <div><strong>AI Enhancements:</strong> {Object.values(formData.aiEnhancements).reduce((total, options) => total + Object.values(options).filter(Boolean).length, 0)} features enabled</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return <div>Step not implemented</div>;
     }
@@ -928,15 +1339,119 @@ function App() {
                   <div style={{ 
                     height: '100%', 
                     backgroundColor: '#3b82f6', 
-                    width: `${(currentStep / 5) * 100}%`,
+                    width: `${(currentStep / 6) * 100}%`,
                     transition: 'width 0.3s ease'
                   }} />
                 </div>
                 <span style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
-                  Step {currentStep} of 5
+                  Step {currentStep} of 6
                 </span>
               </div>
             </div>
+
+            {/* Use Settings Banner */}
+            {defaults && profile && (
+              <div style={{
+                backgroundColor: usingDefaults ? '#dcfce7' : '#f0f9ff',
+                border: `2px solid ${usingDefaults ? '#16a34a' : '#3b82f6'}`,
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ 
+                    fontSize: '16px', 
+                    fontWeight: '600', 
+                    color: usingDefaults ? '#166534' : '#1e40af', 
+                    margin: '0 0 8px 0' 
+                  }}>
+                    {usingDefaults ? '✅ Using Your Settings' : '⚙️ Use Your Saved Settings'}
+                  </h3>
+                  <p style={{ 
+                    fontSize: '14px', 
+                    color: usingDefaults ? '#166534' : '#1e40af', 
+                    margin: '0 0 12px 0' 
+                  }}>
+                    {usingDefaults 
+                      ? `Applied ${profile.name}'s default preferences for ${defaults.contentTypes.length} content types and ${defaults.duration} sessions.`
+                      : `Quickly populate form with your saved preferences: ${defaults.contentTypes.length} content types, ${defaults.duration} duration, and ${defaults.complexity} complexity.`
+                    }
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                    {defaults.contentTypes.length > 0 && (
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        backgroundColor: 'white', 
+                        borderRadius: '12px', 
+                        color: usingDefaults ? '#166534' : '#1e40af',
+                        border: `1px solid ${usingDefaults ? '#16a34a' : '#3b82f6'}`
+                      }}>
+                        📝 {defaults.contentTypes.join(', ')}
+                      </span>
+                    )}
+                    <span style={{ 
+                      padding: '4px 8px', 
+                      backgroundColor: 'white', 
+                      borderRadius: '12px', 
+                      color: usingDefaults ? '#166534' : '#1e40af',
+                      border: `1px solid ${usingDefaults ? '#16a34a' : '#3b82f6'}`
+                    }}>
+                      ⏱️ {defaults.duration}
+                    </span>
+                    <span style={{ 
+                      padding: '4px 8px', 
+                      backgroundColor: 'white', 
+                      borderRadius: '12px', 
+                      color: usingDefaults ? '#166534' : '#1e40af',
+                      border: `1px solid ${usingDefaults ? '#16a34a' : '#3b82f6'}`
+                    }}>
+                      📊 {defaults.complexity}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {!usingDefaults ? (
+                    <button
+                      onClick={applyDefaultSettings}
+                      style={{
+                        padding: '12px 20px',
+                        border: 'none',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      ⚙️ Use Settings
+                    </button>
+                  ) : (
+                    <button
+                      onClick={clearDefaults}
+                      style={{
+                        padding: '12px 20px',
+                        border: '1px solid #16a34a',
+                        backgroundColor: 'white',
+                        color: '#166534',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      🔄 Clear Settings
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Step Content */}
             <div style={{ 
@@ -951,7 +1466,7 @@ function App() {
 
             {/* Navigation */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {currentStep > 1 && currentStep < 5 ? (
+              {currentStep > 1 ? (
                 <button
                   onClick={prevStep}
                   style={{
@@ -968,7 +1483,7 @@ function App() {
                 </button>
               ) : <div />}
               
-              {currentStep < 4 && (
+              {currentStep < 5 && (
                 <button
                   onClick={nextStep}
                   disabled={!canProceed()}
@@ -982,24 +1497,28 @@ function App() {
                     fontSize: '16px'
                   }}
                 >
-                  Next →
+                  {currentStep === 4 ? 'Review →' : 'Next →'}
                 </button>
               )}
               
-              {currentStep === 4 && (
+              {currentStep === 5 && (
                 <button
-                  onClick={nextStep}
+                  onClick={() => {
+                    // In a real implementation, this would trigger content generation
+                    alert('Content generation would start here! (Backend integration needed)');
+                  }}
                   style={{
                     padding: '12px 24px',
                     border: 'none',
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: '#059669',
                     color: 'white',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    fontWeight: '500'
                   }}
                 >
-                  Review →
+                  🚀 Generate Content
                 </button>
               )}
             </div>
@@ -1011,6 +1530,13 @@ function App() {
       
       {/* Settings Panel */}
       <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      
+      {/* Custom Content Type Manager */}
+      <CustomContentTypeManager 
+        isOpen={showCustomContentManager} 
+        onClose={() => setShowCustomContentManager(false)}
+        onContentTypesUpdated={handleCustomContentTypesUpdated}
+      />
     </div>
   );
 }
