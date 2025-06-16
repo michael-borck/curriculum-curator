@@ -6,20 +6,24 @@ import { CustomContentTypeManager } from './components/CustomContentTypeManager'
 import { LiveContentPreview } from './components/LiveContentPreview';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { StatusFeedback, useStatusFeedback } from './components/StatusFeedback';
+import { LLMProviderSetup } from './components/LLMProviderSetup';
+import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
 import type { GenerationProgress, GenerationConfig } from './utils/generationManager';
+import { useDesktopLayout, shouldShowPreviewByDefault, getOptimalWizardLayout } from './utils/desktopLayout';
 import type { QuizType, ContentType, AIContentOptions, CustomContentType } from './types/settings';
 import './App.css';
 
 type AppMode = 'wizard' | 'expert';
-type ExpertTab = 'planner' | 'templates' | 'batch' | 'quality';
 
 function App() {
   const [profile] = useUserProfile();
   const [defaults] = useContentDefaults();
   const [preferences] = useUIPreferences();
   const statusFeedback = useStatusFeedback();
+  const layout = useDesktopLayout();
+  const llm = useLLM();
   const [showSettings, setShowSettings] = useState(false);
   const [currentMode, setCurrentMode] = useState<AppMode>('wizard');
   const [currentStep, setCurrentStep] = useState(1);
@@ -56,11 +60,11 @@ function App() {
   const [objectiveCount, setObjectiveCount] = useState(4);
   const [showCustomContentManager, setShowCustomContentManager] = useState(false);
   const [customContentTypes, setCustomContentTypes] = useState<CustomContentType[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(true);
-  const [previewWidth, setPreviewWidth] = useState(400);
+  const [showPreview, setShowPreview] = useState(() => shouldShowPreviewByDefault(window.innerWidth));
+  const [previewWidth, setPreviewWidth] = useState(() => layout.previewPanelWidth);
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
   const [showProgress, setShowProgress] = useState(false);
+  const [showLLMSetup, setShowLLMSetup] = useState(false);
 
   // Initialize session tracking on component mount
   useEffect(() => {
@@ -70,7 +74,6 @@ function App() {
       complexity: formData.complexity,
       aiEnhancements: formData.aiEnhancements
     });
-    setCurrentSessionId(sessionId);
 
     // Cleanup on unmount
     return () => {
@@ -82,7 +85,7 @@ function App() {
         });
       }
     };
-  }, []);
+  }, [formData.contentTypes, profile?.subject, formData.complexity, formData.aiEnhancements]);
 
   // Auto-apply settings on load if user preference is set
   useEffect(() => {
@@ -123,7 +126,7 @@ function App() {
         `Your default preferences have been automatically applied for ${defaults.contentTypes.length} content types.`
       );
     }
-  }, [defaults, preferences, usingDefaults]);
+  }, [defaults, preferences, usingDefaults, statusFeedback]);
 
   // Load custom content types from settings
   const { state } = useSettings();
@@ -140,7 +143,7 @@ function App() {
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | boolean | Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -211,10 +214,11 @@ function App() {
         return formData.topic.trim() !== '' && formData.audience.trim() !== '';
       case 2:
         return formData.learningObjectives.some(obj => obj.trim() !== '');
-      case 3:
+      case 3: {
         const hasContentTypes = formData.contentTypes.length > 0;
         const hasQuizTypesIfNeeded = !formData.contentTypes.includes('Quiz') || formData.quizTypes.length > 0;
         return hasContentTypes && hasQuizTypesIfNeeded;
+      }
       case 4:
         return true; // AI enhancements are optional
       case 5:
@@ -636,7 +640,11 @@ function App() {
               What types of content would you like to generate?
             </p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: `repeat(${Math.min(layout.gridColumns, 3)}, 1fr)`, 
+              gap: `${layout.spacing.md}px`
+            }}>
               {(['Slides', 'InstructorNotes', 'Worksheet', 'Quiz', 'ActivityGuide'] as ContentType[]).map((type) => {
                 const isSelected = formData.contentTypes.includes(type);
                 const isFromDefaults = usingDefaults && defaults?.contentTypes.includes(type);
@@ -648,7 +656,7 @@ function App() {
                     key={type}
                     onClick={() => toggleContentType(type)}
                     style={{
-                      padding: '20px',
+                      padding: `${layout.spacing.md}px`,
                       border: `2px solid ${borderColor}`,
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -746,7 +754,11 @@ function App() {
                   </button>
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: `repeat(${layout.gridColumns}, 1fr)`, 
+                  gap: `${layout.spacing.md}px`
+                }}>
                   {customContentTypes.map((customType) => {
                     const isSelected = formData.contentTypes.includes(customType.name as ContentType);
                     const borderColor = isSelected ? '#3b82f6' : '#e5e7eb';
@@ -757,7 +769,7 @@ function App() {
                         key={customType.id}
                         onClick={() => toggleContentType(customType.name as ContentType)}
                         style={{
-                          padding: '20px',
+                          padding: `${layout.spacing.md}px`,
                           border: `2px solid ${borderColor}`,
                           borderRadius: '12px',
                           cursor: 'pointer',
@@ -845,7 +857,11 @@ function App() {
                   Select which types of assessment questions to include:
                 </p>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: `repeat(${Math.min(layout.gridColumns, 2)}, 1fr)`, 
+                  gap: `${layout.spacing.sm}px`
+                }}>
                   {[
                     { type: 'multiple-choice', label: 'Multiple Choice', icon: '🔘', desc: 'A, B, C, D options' },
                     { type: 'true-false', label: 'True/False', icon: '✓✗', desc: 'Simple binary questions' },
@@ -1256,10 +1272,11 @@ function App() {
           <div style={{
             backgroundColor: 'white',
             borderRadius: '12px',
-            padding: '32px',
-            maxWidth: '400px',
+            padding: `${layout.spacing.xl}px`,
+            maxWidth: layout.isSmallDesktop ? '350px' : '400px',
             width: '90%',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            fontSize: `${layout.fontSize.base}px`
           }}>
             <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', fontSize: '20px' }}>
               How many learning objectives?
@@ -1373,6 +1390,23 @@ function App() {
             👁️ Preview
           </button>
           <button
+            onClick={() => setShowLLMSetup(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: llm.hasAvailableProvider ? '#dcfce7' : '#fef3c7',
+              color: llm.hasAvailableProvider ? '#166534' : '#92400e',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            {llm.hasAvailableProvider ? '🤖 LLM Ready' : '⚠️ Setup LLM'}
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             style={{
               padding: '8px 12px',
@@ -1429,18 +1463,25 @@ function App() {
 
       {/* Main Content */}
       <main style={{ 
-        padding: '24px', 
+        padding: `${layout.spacing.md}px`, 
         backgroundColor: '#f8fafc', 
         flex: 1,
         minHeight: 'calc(100vh - 80px)',
         overflow: 'auto',
         marginRight: showPreview ? `${previewWidth}px` : '0',
-        transition: 'margin-right 0.3s ease'
+        transition: 'margin-right 0.3s ease',
+        fontSize: `${layout.fontSize.base}px`
       }}>
         {currentMode === 'wizard' ? (
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ 
+            maxWidth: `${layout.contentMaxWidth}px`, 
+            margin: '0 auto',
+            ...getOptimalWizardLayout(layout.windowWidth).containerMaxWidth && {
+              maxWidth: getOptimalWizardLayout(layout.windowWidth).containerMaxWidth
+            }
+          }}>
             {/* Progress Indicator */}
-            <div style={{ marginBottom: '32px' }}>
+            <div style={{ marginBottom: `${layout.spacing.xl}px` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
                 <div style={{ flex: 1, height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
                   <div style={{ 
@@ -1462,8 +1503,8 @@ function App() {
                 backgroundColor: usingDefaults ? '#dcfce7' : '#f0f9ff',
                 border: `2px solid ${usingDefaults ? '#16a34a' : '#3b82f6'}`,
                 borderRadius: '12px',
-                padding: '20px',
-                marginBottom: '24px',
+                padding: `${layout.spacing.md}px`,
+                marginBottom: `${layout.spacing.lg}px`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -1563,7 +1604,7 @@ function App() {
             {/* Step Content */}
             <div style={{ 
               backgroundColor: 'white', 
-              padding: '32px', 
+              padding: `${layout.spacing.xl}px`, 
               borderRadius: '12px',
               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
               marginBottom: '24px'
@@ -1611,6 +1652,17 @@ function App() {
               {currentStep === 5 && (
                 <button
                   onClick={async () => {
+                    // Check if LLM provider is available before starting generation
+                    if (!llm.hasAvailableProvider) {
+                      setShowLLMSetup(true);
+                      statusFeedback.showWarning(
+                        'LLM Provider Required',
+                        'Please configure an LLM provider to generate content.',
+                        5000
+                      );
+                      return;
+                    }
+
                     // Track content generation attempt
                     crossSessionLearning.trackInteraction({
                       type: 'content_generated',
@@ -1765,6 +1817,20 @@ function App() {
           }}
         />
       )}
+
+      {/* LLM Provider Setup */}
+      <LLMProviderSetup
+        isOpen={showLLMSetup}
+        onClose={() => setShowLLMSetup(false)}
+        onProviderReady={(providerId) => {
+          statusFeedback.showSuccess(
+            'LLM Provider Ready',
+            `${providerId} is now configured and ready for content generation.`,
+            4000
+          );
+          setShowLLMSetup(false);
+        }}
+      />
 
       {/* Status Feedback */}
       <StatusFeedback

@@ -1,7 +1,7 @@
 // Teaching Style Detection Results Component
 
 import React from 'react';
-import { TeachingStyleDetectionResult, TeachingStyle } from '../types/settings';
+import type { TeachingStyleDetectionResult, TeachingStyle } from '../types/settings';
 
 interface TeachingStyleResultsProps {
   isOpen: boolean;

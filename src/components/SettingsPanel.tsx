@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } from '../contexts/SettingsContext';
-import type { TeachingStyle, AIIntegrationPreference, EducationLevel, AnswerKeyOptions, InstructorGuideOptions, TeachingStyleDetectionResult, AICustomizationSettings, CustomTemplate, ContentType, CustomContentType } from '../types/settings';
+import type { TeachingStyle, AIIntegrationPreference, EducationLevel, TeachingStyleDetectionResult, AICustomizationSettings, CustomTemplate } from '../types/settings';
 import { TeachingStyleDetector } from './TeachingStyleDetector';
 import { TeachingStyleResults } from './TeachingStyleResults';
 import { AIIntegrationWizard } from './AIIntegrationWizard';
@@ -28,6 +28,36 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [showLearningInsights, setShowLearningInsights] = useState(false);
 
   if (!isOpen || !profile || !defaults || !preferences) return null;
+
+  // Helper function to determine if a section should be visible based on complexity
+  const shouldShowForComplexity = (requiredLevel: 'essential' | 'enhanced' | 'advanced'): boolean => {
+    const complexityOrder = { essential: 0, enhanced: 1, advanced: 2 };
+    const currentLevel = complexityOrder[preferences.formComplexity];
+    const requiredOrderLevel = complexityOrder[requiredLevel];
+    return currentLevel >= requiredOrderLevel;
+  };
+
+  // Get count of hidden features based on current complexity level
+  const getHiddenFeaturesSummary = () => {
+    const hiddenFeatures: string[] = [];
+    
+    if (!shouldShowForComplexity('enhanced')) {
+      hiddenFeatures.push('Email & Institution settings');
+      hiddenFeatures.push('AI Integration preferences');
+      hiddenFeatures.push('Detailed answer key options');
+      hiddenFeatures.push('Instructor guide options');
+      hiddenFeatures.push('AI Configuration wizard');
+    }
+    
+    if (!shouldShowForComplexity('advanced')) {
+      hiddenFeatures.push('Point value suggestions');
+      hiddenFeatures.push('Discussion prompts & extensions');
+      hiddenFeatures.push('Advanced Template Editor');
+      hiddenFeatures.push('Learning Insights dashboard');
+    }
+    
+    return hiddenFeatures;
+  };
 
   const handleSaveAndClose = async () => {
     if (state.settings) {
@@ -159,7 +189,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           ].map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: 1,
                 padding: '16px 24px',
@@ -204,41 +234,45 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={profile.email || ''}
-                    onChange={(e) => updateProfile({ email: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
+                {shouldShowForComplexity('enhanced') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={profile.email || ''}
+                      onChange={(e) => updateProfile({ email: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
-                    Institution
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.institution || ''}
-                    onChange={(e) => updateProfile({ institution: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
+                {shouldShowForComplexity('enhanced') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                      Institution
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.institution || ''}
+                      onChange={(e) => updateProfile({ institution: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
@@ -333,50 +367,57 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   </p>
                 </div>
 
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
-                    AI Integration Preference
-                  </label>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                    <select
-                      value={profile.aiPreference}
-                      onChange={(e) => updateProfile({ aiPreference: e.target.value as AIIntegrationPreference })}
-                      style={{
-                        flex: 1,
-                        padding: '12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '8px',
-                        fontSize: '16px',
-                        backgroundColor: 'white'
-                      }}
-                    >
-                      <option value="ai-enhanced">🚀 AI-Enhanced (Use AI to enhance learning)</option>
-                      <option value="ai-resistant">🛡️ AI-Resistant (Traditional methods emphasized)</option>
-                      <option value="ai-literate">🎓 AI-Literate (Teaching about and with AI)</option>
-                      <option value="mixed-approach">⚖️ Mixed Approach (Context-dependent)</option>
-                      <option value="context-dependent">🎯 Context-Dependent (Varies by lesson)</option>
-                    </select>
-                    <button
-                      onClick={() => setShowAIWizard(true)}
-                      style={{
-                        padding: '12px 16px',
-                        border: '1px solid #059669',
-                        backgroundColor: '#dcfce7',
-                        color: '#166534',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      🤖 Configure AI
-                    </button>
+                {shouldShowForComplexity('enhanced') && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#374151' }}>
+                      AI Integration Preference
+                    </label>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                      <select
+                        value={profile.aiPreference}
+                        onChange={(e) => updateProfile({ aiPreference: e.target.value as AIIntegrationPreference })}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '16px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="ai-enhanced">🚀 AI-Enhanced (Use AI to enhance learning)</option>
+                        <option value="ai-resistant">🛡️ AI-Resistant (Traditional methods emphasized)</option>
+                        <option value="ai-literate">🎓 AI-Literate (Teaching about and with AI)</option>
+                        <option value="mixed-approach">⚖️ Mixed Approach (Context-dependent)</option>
+                        <option value="context-dependent">🎯 Context-Dependent (Varies by lesson)</option>
+                      </select>
+                      {shouldShowForComplexity('advanced') && (
+                        <button
+                          onClick={() => setShowAIWizard(true)}
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #059669',
+                            backgroundColor: '#dcfce7',
+                            color: '#166534',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          🤖 Configure AI
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', margin: '8px 0 0 0' }}>
+                      {shouldShowForComplexity('advanced') 
+                        ? 'Use the configuration wizard to set up detailed AI integration preferences for different content types.'
+                        : 'Choose how you want AI to be integrated into your content generation process.'
+                      }
+                    </p>
                   </div>
-                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px', margin: '8px 0 0 0' }}>
-                    Use the configuration wizard to set up detailed AI integration preferences for different content types.
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -419,7 +460,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   </label>
                   <select
                     value={defaults.complexity}
-                    onChange={(e) => updateDefaults({ complexity: e.target.value as any })}
+                    onChange={(e) => updateDefaults({ complexity: e.target.value as 'basic' | 'intermediate' | 'advanced' })}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -444,10 +485,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                       <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
-                          checked={defaults.contentTypes.includes(type as any)}
+                          checked={defaults.contentTypes.includes(type)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              updateDefaults({ contentTypes: [...defaults.contentTypes, type as any] });
+                              updateDefaults({ contentTypes: [...defaults.contentTypes, type] });
                             } else {
                               updateDefaults({ contentTypes: defaults.contentTypes.filter(t => t !== type) });
                             }
@@ -500,7 +541,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 </div>
 
                 {/* Answer Key Default Options */}
-                {defaults.includeAnswerKeys && (
+                {defaults.includeAnswerKeys && shouldShowForComplexity('enhanced') && (
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', color: '#374151' }}>
                       🔑 Default Answer Key Options
@@ -532,25 +573,27 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         />
                         <span style={{ fontSize: '14px' }}>Mark question difficulty levels</span>
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={defaults.answerKeyOptions?.includePoints ?? false}
-                          onChange={(e) => updateDefaults({ 
-                            answerKeyOptions: { 
-                              ...defaults.answerKeyOptions, 
-                              includePoints: e.target.checked 
-                            } 
-                          })}
-                        />
-                        <span style={{ fontSize: '14px' }}>Suggest point values for each question</span>
-                      </label>
+                      {shouldShowForComplexity('advanced') && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={defaults.answerKeyOptions?.includePoints ?? false}
+                            onChange={(e) => updateDefaults({ 
+                              answerKeyOptions: { 
+                                ...defaults.answerKeyOptions, 
+                                includePoints: e.target.checked 
+                              } 
+                            })}
+                          />
+                          <span style={{ fontSize: '14px' }}>Suggest point values for each question</span>
+                        </label>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Instructor Guide Default Options */}
-                {defaults.includeInstructorGuides && (
+                {defaults.includeInstructorGuides && shouldShowForComplexity('enhanced') && (
                   <div style={{ gridColumn: '1 / -1' }}>
                     <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', color: '#374151' }}>
                       📖 Default Instructor Guide Options
@@ -582,32 +625,36 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         />
                         <span style={{ fontSize: '14px' }}>Grading tips and common mistakes</span>
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={defaults.instructorGuideOptions?.includeDiscussionPrompts ?? false}
-                          onChange={(e) => updateDefaults({ 
-                            instructorGuideOptions: { 
-                              ...defaults.instructorGuideOptions, 
-                              includeDiscussionPrompts: e.target.checked 
-                            } 
-                          })}
-                        />
-                        <span style={{ fontSize: '14px' }}>Discussion prompts for reviewing answers</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={defaults.instructorGuideOptions?.includeExtensions ?? false}
-                          onChange={(e) => updateDefaults({ 
-                            instructorGuideOptions: { 
-                              ...defaults.instructorGuideOptions, 
-                              includeExtensions: e.target.checked 
-                            } 
-                          })}
-                        />
-                        <span style={{ fontSize: '14px' }}>Extension activities for advanced students</span>
-                      </label>
+                      {shouldShowForComplexity('advanced') && (
+                        <>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={defaults.instructorGuideOptions?.includeDiscussionPrompts ?? false}
+                              onChange={(e) => updateDefaults({ 
+                                instructorGuideOptions: { 
+                                  ...defaults.instructorGuideOptions, 
+                                  includeDiscussionPrompts: e.target.checked 
+                                } 
+                              })}
+                            />
+                            <span style={{ fontSize: '14px' }}>Discussion prompts for reviewing answers</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={defaults.instructorGuideOptions?.includeExtensions ?? false}
+                              onChange={(e) => updateDefaults({ 
+                                instructorGuideOptions: { 
+                                  ...defaults.instructorGuideOptions, 
+                                  includeExtensions: e.target.checked 
+                                } 
+                              })}
+                            />
+                            <span style={{ fontSize: '14px' }}>Extension activities for advanced students</span>
+                          </label>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -628,7 +675,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   </label>
                   <select
                     value={preferences.formComplexity}
-                    onChange={(e) => updatePreferences({ formComplexity: e.target.value as any })}
+                    onChange={(e) => updatePreferences({ formComplexity: e.target.value as 'simple' | 'detailed' | 'expert' })}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -642,6 +689,40 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     <option value="enhanced">⚙️ Enhanced - More control</option>
                     <option value="advanced">🔧 Advanced - Full options</option>
                   </select>
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    backgroundColor: preferences.formComplexity === 'essential' ? '#f0fdf4' : 
+                                   preferences.formComplexity === 'enhanced' ? '#fffbeb' : '#fef2f2',
+                    border: `1px solid ${preferences.formComplexity === 'essential' ? '#bbf7d0' : 
+                                        preferences.formComplexity === 'enhanced' ? '#fed7aa' : '#fecaca'}`,
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ 
+                      fontSize: '14px', 
+                      fontWeight: '600', 
+                      color: preferences.formComplexity === 'essential' ? '#166534' : 
+                             preferences.formComplexity === 'enhanced' ? '#92400e' : '#991b1b',
+                      marginBottom: '4px'
+                    }}>
+                      {preferences.formComplexity === 'essential' && 'Essential Mode Active'}
+                      {preferences.formComplexity === 'enhanced' && 'Enhanced Mode Active'}
+                      {preferences.formComplexity === 'advanced' && 'Advanced Mode Active'}
+                    </div>
+                    <div style={{ 
+                      fontSize: '13px', 
+                      color: preferences.formComplexity === 'essential' ? '#166534' : 
+                             preferences.formComplexity === 'enhanced' ? '#92400e' : '#991b1b',
+                      lineHeight: '1.4'
+                    }}>
+                      {preferences.formComplexity === 'essential' && 
+                        'Showing only core settings for quick setup. Switch to Enhanced or Advanced for more options.'}
+                      {preferences.formComplexity === 'enhanced' && 
+                        'Showing additional configuration options. Switch to Advanced for power user features.'}
+                      {preferences.formComplexity === 'advanced' && 
+                        'All settings and advanced tools are available. Perfect for power users who want full control.'}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -676,70 +757,123 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', color: '#374151' }}>
-                    Advanced Tools
-                  </label>
-                  <div style={{ display: 'grid', gap: '12px' }}>
-                    <button
-                      onClick={() => setShowAIWizard(true)}
-                      style={{
-                        padding: '12px 16px',
-                        border: '1px solid #059669',
-                        backgroundColor: '#dcfce7',
-                        color: '#166534',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      🤖 Configure AI Integration
-                    </button>
-                    <button
-                      onClick={() => setShowTemplateEditor(true)}
-                      style={{
-                        padding: '12px 16px',
-                        border: '1px solid #f59e0b',
-                        backgroundColor: '#fef3c7',
-                        color: '#92400e',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      🔧 Advanced Template Editor
-                    </button>
-                    <button
-                      onClick={() => setShowLearningInsights(true)}
-                      style={{
-                        padding: '12px 16px',
-                        border: '1px solid #8b5cf6',
-                        backgroundColor: '#f3e8ff',
-                        color: '#6b21a8',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        textAlign: 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      📊 Learning Insights
-                    </button>
+                {shouldShowForComplexity('enhanced') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', color: '#374151' }}>
+                      Advanced Tools
+                    </label>
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      {shouldShowForComplexity('enhanced') && (
+                        <button
+                          onClick={() => setShowAIWizard(true)}
+                          style={{
+                            padding: '12px 16px',
+                            border: '1px solid #059669',
+                            backgroundColor: '#dcfce7',
+                            color: '#166534',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            textAlign: 'left',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          🤖 Configure AI Integration
+                        </button>
+                      )}
+                      {shouldShowForComplexity('advanced') && (
+                        <>
+                          <button
+                            onClick={() => setShowTemplateEditor(true)}
+                            style={{
+                              padding: '12px 16px',
+                              border: '1px solid #f59e0b',
+                              backgroundColor: '#fef3c7',
+                              color: '#92400e',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              textAlign: 'left',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                          >
+                            🔧 Advanced Template Editor
+                          </button>
+                          <button
+                            onClick={() => setShowLearningInsights(true)}
+                            style={{
+                              padding: '12px 16px',
+                              border: '1px solid #8b5cf6',
+                              backgroundColor: '#f3e8ff',
+                              color: '#6b21a8',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              textAlign: 'left',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}
+                          >
+                            📊 Learning Insights
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Hidden Features Summary */}
+                {preferences.formComplexity !== 'advanced' && (
+                  <div style={{
+                    marginTop: '24px',
+                    padding: '16px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '12px'
+                    }}>
+                      <span style={{ fontSize: '16px' }}>👀</span>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748b' }}>
+                        Hidden Features ({getHiddenFeaturesSummary().length})
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
+                      Switch to Enhanced or Advanced mode to access:
+                    </div>
+                    <div style={{ display: 'grid', gap: '4px' }}>
+                      {getHiddenFeaturesSummary().map((feature, index) => (
+                        <div key={index} style={{
+                          fontSize: '12px',
+                          color: '#9ca3af',
+                          paddingLeft: '12px',
+                          position: 'relative'
+                        }}>
+                          <span style={{
+                            position: 'absolute',
+                            left: '0',
+                            color: '#d1d5db'
+                          }}>
+                            •
+                          </span>
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

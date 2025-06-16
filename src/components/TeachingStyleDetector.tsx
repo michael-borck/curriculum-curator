@@ -1,8 +1,8 @@
 // Teaching Style Detection Component
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useUserProfile } from '../contexts/SettingsContext';
-import { 
+import type { 
   TeachingStyle, 
   TeachingStyleIndicators, 
   TeachingStyleDetectionResult 
@@ -252,7 +252,7 @@ export function TeachingStyleDetector({ isOpen, onClose, onStyleDetected }: Teac
       collaborationEmphasis: 0
     };
 
-    let assessmentCount = { low: 0, medium: 0, high: 0 };
+    const assessmentCount = { low: 0, medium: 0, high: 0 };
     let totalQuestions = 0;
 
     Object.entries(answers).forEach(([questionId, answer]) => {
@@ -267,7 +267,9 @@ export function TeachingStyleDetector({ isOpen, onClose, onStyleDetected }: Teac
         if (key === 'assessmentFrequency') {
           assessmentCount[value as keyof typeof assessmentCount]++;
         } else {
-          (indicators as any)[key] += value as number;
+          if (key in indicators && typeof value === 'number') {
+            (indicators as Record<string, number>)[key] += value;
+          }
         }
       });
     });
@@ -291,7 +293,12 @@ export function TeachingStyleDetector({ isOpen, onClose, onStyleDetected }: Teac
   };
 
   const findBestMatchingStyle = (userIndicators: TeachingStyleIndicators): TeachingStyleDetectionResult => {
-    const scores: Record<TeachingStyle, number> = {} as any;
+    const scores: Record<TeachingStyle, number> = {
+      'traditional': 0,
+      'interactive': 0,
+      'hands-on': 0,
+      'collaborative': 0
+    };
 
     Object.entries(STYLE_MAPPINGS).forEach(([style, styleIndicators]) => {
       let score = 0;
@@ -307,8 +314,8 @@ export function TeachingStyleDetector({ isOpen, onClose, onStyleDetected }: Teac
       };
 
       Object.entries(weights).forEach(([indicator, weight]) => {
-        const userValue = (userIndicators as any)[indicator];
-        const styleValue = (styleIndicators as any)[indicator];
+        const userValue = userIndicators[indicator as keyof TeachingStyleIndicators];
+        const styleValue = styleIndicators[indicator as keyof TeachingStyleIndicators];
         const difference = Math.abs(userValue - styleValue);
         const maxDifference = 10; // max possible difference
         const similarity = (maxDifference - difference) / maxDifference;

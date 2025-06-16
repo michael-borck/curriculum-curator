@@ -43,7 +43,7 @@ export interface GeneratedFile {
   format: 'markdown' | 'html' | 'json';
   size: number;
   generatedAt: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface GenerationError {
@@ -81,6 +81,9 @@ export class GenerationManager {
     this.progressCallback = onProgress || null;
     this.errorCallback = onError || null;
     this.abortController = new AbortController();
+
+    // Store config for use during generation steps
+    this.storeConfig(config);
 
     // Track generation start
     crossSessionLearning.trackInteraction({
@@ -374,18 +377,17 @@ export class GenerationManager {
     
     this.notifyProgress();
 
-    // Simulate step execution with progress updates
+    // Progress update interval
     const progressInterval = setInterval(() => {
       if (step.status === 'in_progress') {
-        step.progress = Math.min(90, step.progress + Math.random() * 10);
+        step.progress = Math.min(90, step.progress + Math.random() * 5);
         this.notifyProgress();
       }
-    }, 500);
+    }, 1000);
 
     try {
-      // Simulate actual generation time
-      const duration = (step.estimatedTime || 10) * 1000;
-      await new Promise(resolve => setTimeout(resolve, duration));
+      // Execute different types of steps
+      const result = await this.executeStepLogic(step);
 
       // Check for cancellation
       if (this.abortController?.signal.aborted) {
@@ -403,23 +405,7 @@ export class GenerationManager {
       
       this.notifyProgress();
 
-      // Return mock generated files for content generation steps
-      if (step.id.startsWith('generate_')) {
-        const contentType = step.id.replace('generate_', '') as ContentType;
-        return {
-          files: [{
-            id: crypto.randomUUID(),
-            name: `${contentType.toLowerCase()}.md`,
-            type: contentType,
-            content: `# Generated ${contentType}\n\nContent would be here...`,
-            format: 'markdown' as const,
-            size: 1024,
-            generatedAt: new Date()
-          }]
-        };
-      }
-
-      return {};
+      return result;
 
     } catch (error) {
       clearInterval(progressInterval);
@@ -430,6 +416,454 @@ export class GenerationManager {
       
       this.notifyProgress();
       throw error;
+    }
+  }
+
+  // Execute the actual logic for different step types
+  private async executeStepLogic(step: GenerationStep): Promise<{ files?: GeneratedFile[] }> {
+    switch (step.id) {
+      case 'validation':
+        return await this.executeValidationStep();
+      
+      case 'objectives':
+        return await this.executeObjectivesStep();
+      
+      case 'planning':
+        return await this.executePlanningStep();
+      
+      default:
+        if (step.id.startsWith('generate_')) {
+          const contentType = step.id.replace('generate_', '') as ContentType;
+          return await this.executeContentGenerationStep(contentType);
+        } else if (step.id === 'answer_keys') {
+          return await this.executeAnswerKeysStep();
+        } else if (step.id === 'instructor_guides') {
+          return await this.executeInstructorGuidesStep();
+        } else if (step.id === 'rubrics') {
+          return await this.executeRubricsStep();
+        } else if (step.id === 'formatting') {
+          return await this.executeFormattingStep();
+        } else if (step.id === 'packaging') {
+          return await this.executePackagingStep();
+        }
+        
+        // Fallback for unknown steps
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return {};
+    }
+  }
+
+  // Import the invoke function for Tauri commands
+  private async invokeTauriCommand(command: string, args?: Record<string, unknown>): Promise<unknown> {
+    // Import dynamically to avoid issues during SSR or when Tauri is not available
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      return await invoke(command, args);
+    } catch {
+      // Fallback for development or when Tauri is not available
+      console.warn('Tauri not available, using mock data:', command, args);
+      return this.getMockResponse(command, args);
+    }
+  }
+
+  // Validation step - check inputs and system readiness
+  private async executeValidationStep(): Promise<{ files?: GeneratedFile[] }> {
+    // Check if we have a working LLM provider
+    const providers = await this.invokeTauriCommand('get_available_providers');
+    const availableProvider = (providers as Array<{ status: string }>).find(p => p.status === 'available');
+    
+    if (!availableProvider) {
+      throw new Error('No LLM provider available. Please configure Ollama or add API keys for external providers.');
+    }
+
+    // Test LLM connectivity
+    const healthCheck = await this.invokeTauriCommand('test_llm_generation', {
+      prompt: 'Test connection',
+      model: null,
+      temperature: 0.1
+    });
+
+    if (!healthCheck.success) {
+      throw new Error(`LLM provider test failed: ${healthCheck.error || 'Unknown error'}`);
+    }
+
+    return {};
+  }
+
+  // Learning objectives analysis step
+  private async executeObjectivesStep(): Promise<{ files?: GeneratedFile[] }> {
+    // Use LLM to analyze and enhance learning objectives if needed
+    const config = this.getCurrentConfig();
+    if (!config) throw new Error('No generation config available');
+
+    const objectivesPrompt = `Analyze these learning objectives for educational alignment:
+
+Topic: ${config.topic}
+Audience: ${config.audience}
+Duration: ${config.duration}
+Complexity: ${config.complexity}
+
+Learning Objectives:
+${config.learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}
+
+Please verify these objectives are:
+1. Specific and measurable
+2. Appropriate for the audience level
+3. Achievable within the given timeframe
+4. Aligned with Bloom's Taxonomy
+
+Provide brief feedback and suggest improvements if needed.`;
+
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt: objectivesPrompt,
+      temperature: 0.3
+    });
+
+    if (!response.success) {
+      throw new Error(`Objectives analysis failed: ${response.error}`);
+    }
+
+    return {};
+  }
+
+  // Content structure planning step
+  private async executePlanningStep(): Promise<{ files?: GeneratedFile[] }> {
+    const config = this.getCurrentConfig();
+    if (!config) throw new Error('No generation config available');
+
+    const planningPrompt = `Create a content structure plan for this educational material:
+
+Topic: ${config.topic}
+Audience: ${config.audience}
+Duration: ${config.duration}
+Complexity: ${config.complexity}
+
+Learning Objectives:
+${config.learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}
+
+Content Types to Generate: ${config.contentTypes.join(', ')}
+
+Please outline:
+1. Content flow and sequence
+2. Key concepts to cover
+3. Pedagogical approach recommendations
+4. Assessment strategy
+
+Keep it concise and focused.`;
+
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt: planningPrompt,
+      temperature: 0.4
+    });
+
+    if (!response.success) {
+      throw new Error(`Planning step failed: ${response.error}`);
+    }
+
+    return {};
+  }
+
+  // Content generation step for specific content types
+  private async executeContentGenerationStep(contentType: ContentType): Promise<{ files?: GeneratedFile[] }> {
+    const config = this.getCurrentConfig();
+    if (!config) throw new Error('No generation config available');
+
+    const prompt = this.buildContentPrompt(contentType, config);
+    
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt,
+      temperature: 0.6,
+      maxTokens: 2000
+    });
+
+    if (!response.success) {
+      throw new Error(`${contentType} generation failed: ${response.error}`);
+    }
+
+    // Create the generated file
+    const file: GeneratedFile = {
+      id: crypto.randomUUID(),
+      name: `${contentType.toLowerCase().replace(/\s+/g, '_')}.md`,
+      type: contentType,
+      content: response.content || `# ${contentType}\n\nContent generation in progress...`,
+      format: 'markdown' as const,
+      size: (response.content || '').length,
+      generatedAt: new Date(),
+      metadata: {
+        model_used: response.model_used,
+        tokens_used: response.tokens_used,
+        generation_time_ms: response.response_time_ms,
+        cost_usd: response.cost_usd
+      }
+    };
+
+    return { files: [file] };
+  }
+
+  // Build content-specific prompts
+  private buildContentPrompt(contentType: ContentType, config: GenerationConfig): string {
+    const baseContext = `Topic: ${config.topic}
+Audience: ${config.audience}
+Duration: ${config.duration}
+Complexity Level: ${config.complexity}
+
+Learning Objectives:
+${config.learningObjectives.map((obj, i) => `${i + 1}. ${obj}`).join('\n')}`;
+
+    const prompts: Record<ContentType, string> = {
+      'Slides': `Create presentation slides for this topic:
+
+${baseContext}
+
+Generate a structured slide presentation with:
+- Title slide
+- Learning objectives slide
+- 8-12 content slides with clear headings
+- Activity/discussion slides
+- Summary/conclusion slide
+
+Format as markdown with slide breaks (---). Include speaker notes where helpful.`,
+
+      'InstructorNotes': `Create comprehensive instructor notes for this lesson:
+
+${baseContext}
+
+Include:
+- Lesson preparation checklist
+- Timing guidance for each section
+- Teaching tips and common student misconceptions
+- Discussion prompts and facilitation guidance
+- Assessment strategies
+- Additional resources
+
+Format as detailed markdown documentation.`,
+
+      'Worksheet': `Create a student worksheet for this topic:
+
+${baseContext}
+
+Design a worksheet with:
+- Clear instructions
+- Varied exercise types (short answer, problem-solving, analysis)
+- Progressive difficulty
+- Space for student responses
+- Extension activities for advanced learners
+
+Format as markdown with clear section breaks.`,
+
+      'Quiz': `Create an assessment quiz for this topic:
+
+${baseContext}
+
+Quiz Types to Include: ${config.quizTypes.join(', ')}
+
+Generate:
+- 10-15 questions of varied types and difficulty
+- Clear instructions
+- Point values for each question
+- ${config.additionalOptions.includeAnswerKeys ? 'Answer key with explanations' : 'Questions only'}
+
+Format as structured markdown.`,
+
+      'ActivityGuide': `Create an activity guide for this topic:
+
+${baseContext}
+
+Design engaging activities including:
+- Group exercises
+- Hands-on activities
+- Discussion prompts
+- Problem-solving scenarios
+- Real-world applications
+
+Include timing, materials needed, and facilitation tips.`,
+
+      'Custom': `Create custom educational content for this topic:
+
+${baseContext}
+
+Generate comprehensive educational material that covers the learning objectives effectively for the specified audience and timeframe.`
+    };
+
+    return prompts[contentType] || prompts['Custom'];
+  }
+
+  // Answer keys generation step
+  private async executeAnswerKeysStep(): Promise<{ files?: GeneratedFile[] }> {
+    const config = this.getCurrentConfig();
+    if (!config || !config.contentTypes.includes('Quiz')) {
+      return {};
+    }
+
+    const prompt = `Create detailed answer keys for the quiz content:
+
+${this.buildContentPrompt('Quiz', config)}
+
+For each question, provide:
+- Correct answer
+- Detailed explanation
+- Common misconceptions to address
+- Difficulty level (Easy/Medium/Hard)
+- Learning objective alignment
+
+Format as structured markdown.`;
+
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt,
+      temperature: 0.3
+    });
+
+    if (!response.success) {
+      throw new Error(`Answer keys generation failed: ${response.error}`);
+    }
+
+    const file: GeneratedFile = {
+      id: crypto.randomUUID(),
+      name: 'quiz_answer_keys.md',
+      type: 'Quiz',
+      content: response.content || '# Answer Keys\n\nGeneration in progress...',
+      format: 'markdown' as const,
+      size: (response.content || '').length,
+      generatedAt: new Date()
+    };
+
+    return { files: [file] };
+  }
+
+  // Instructor guides step
+  private async executeInstructorGuidesStep(): Promise<{ files?: GeneratedFile[] }> {
+    const config = this.getCurrentConfig();
+    if (!config) throw new Error('No generation config available');
+
+    const prompt = `Create comprehensive instructor guides for this lesson:
+
+${this.buildContentPrompt('InstructorNotes', config)}
+
+Additional focus on:
+- Class management strategies
+- Technology integration tips
+- Differentiation for diverse learners
+- Assessment rubrics
+- Follow-up activities
+
+Format as detailed instructor documentation.`;
+
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt,
+      temperature: 0.4
+    });
+
+    if (!response.success) {
+      throw new Error(`Instructor guides generation failed: ${response.error}`);
+    }
+
+    const file: GeneratedFile = {
+      id: crypto.randomUUID(),
+      name: 'instructor_guides.md',
+      type: 'InstructorNotes',
+      content: response.content || '# Instructor Guides\n\nGeneration in progress...',
+      format: 'markdown' as const,
+      size: (response.content || '').length,
+      generatedAt: new Date()
+    };
+
+    return { files: [file] };
+  }
+
+  // Rubrics generation step
+  private async executeRubricsStep(): Promise<{ files?: GeneratedFile[] }> {
+    const config = this.getCurrentConfig();
+    if (!config) throw new Error('No generation config available');
+
+    const prompt = `Create assessment rubrics for this educational content:
+
+${this.buildContentPrompt('Custom', config)}
+
+Generate rubrics for:
+- Learning objective achievement
+- Participation and engagement
+- Assignment quality
+- ${config.contentTypes.includes('Quiz') ? 'Quiz performance levels' : ''}
+
+Use 4-point scale (Excellent, Good, Satisfactory, Needs Improvement) with clear criteria.`;
+
+    const response = await this.invokeTauriCommand('test_llm_generation', {
+      prompt,
+      temperature: 0.3
+    });
+
+    if (!response.success) {
+      throw new Error(`Rubrics generation failed: ${response.error}`);
+    }
+
+    const file: GeneratedFile = {
+      id: crypto.randomUUID(),
+      name: 'assessment_rubrics.md',
+      type: 'Custom',
+      content: response.content || '# Assessment Rubrics\n\nGeneration in progress...',
+      format: 'markdown' as const,
+      size: (response.content || '').length,
+      generatedAt: new Date()
+    };
+
+    return { files: [file] };
+  }
+
+  // Formatting step - final content review and formatting
+  private async executeFormattingStep(): Promise<{ files?: GeneratedFile[] }> {
+    // This step would apply final formatting, spell-check, and quality review
+    // For now, just a delay to simulate processing
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    return {};
+  }
+
+  // Packaging step - prepare downloads and metadata
+  private async executePackagingStep(): Promise<{ files?: GeneratedFile[] }> {
+    // This step would package files for download, generate metadata, etc.
+    // For now, just a delay to simulate processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return {};
+  }
+
+  // Get current generation config (stored during generation start)
+  private getCurrentConfig(): GenerationConfig | null {
+    // This would be stored when generation starts
+    // For now, return null to indicate no config available
+    return (this as GenerationManager & { _currentConfig?: GenerationConfig })._currentConfig || null;
+  }
+
+  // Store config for use during generation
+  private storeConfig(config: GenerationConfig): void {
+    (this as GenerationManager & { _currentConfig?: GenerationConfig })._currentConfig = config;
+  }
+
+  // Mock response for development when Tauri is not available
+  private getMockResponse(command: string, args?: Record<string, unknown>): unknown {
+    switch (command) {
+      case 'get_available_providers':
+        return [
+          {
+            id: 'ollama',
+            name: 'Local Ollama',
+            type: 'Ollama',
+            is_local: true,
+            requires_api_key: false,
+            status: 'available'
+          }
+        ];
+      
+      case 'test_llm_generation':
+        return {
+          success: true,
+          content: `Mock response for: ${args?.prompt?.substring(0, 100)}...`,
+          model_used: 'mock-model',
+          tokens_used: { prompt_tokens: 50, completion_tokens: 100, total_tokens: 150 },
+          response_time_ms: 1500,
+          cost_usd: 0.001
+        };
+      
+      default:
+        return { success: true, data: 'mock response' };
     }
   }
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUserProfile, useSettings } from '../contexts/SettingsContext';
-import { 
+import type { 
   AIIntegrationPreference, 
   AICustomizationSettings, 
   AIContentOptions, 
@@ -173,8 +173,7 @@ const CONTENT_TYPE_DESCRIPTIONS: Record<ContentType, {name: string; aiUseCase: s
 };
 
 export function AIIntegrationWizard({ isOpen, onClose, onComplete }: AIIntegrationWizardProps) {
-  const [profile, updateProfile] = useUserProfile();
-  const { state } = useSettings();
+  const [, updateProfile] = useUserProfile();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPreference, setSelectedPreference] = useState<AIIntegrationPreference | null>(null);
   const [contentOptions, setContentOptions] = useState<Record<ContentType, AIContentOptions>>({
@@ -579,7 +578,7 @@ export function AIIntegrationWizard({ isOpen, onClose, onComplete }: AIIntegrati
                       </label>
                       <select
                         value={promptSettings.promptStyle}
-                        onChange={(e) => setPromptSettings(prev => ({ ...prev, promptStyle: e.target.value as any }))}
+                        onChange={(e) => setPromptSettings(prev => ({ ...prev, promptStyle: e.target.value as 'direct' | 'guided' | 'exploratory' }))}
                         style={{
                           width: '100%',
                           padding: '12px',

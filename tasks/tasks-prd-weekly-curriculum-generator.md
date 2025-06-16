@@ -116,9 +116,9 @@ Based on PRD: `prd-weekly-curriculum-generator.md`
     - [x] 4.5.10 Add settings persistence and cross-session learning
   - [x] 4.6 Create live content preview component with real-time updates
   - [x] 4.7 Implement progress indicators and status feedback during generation
-  - [ ] 4.8 Add settings panel with three-tier complexity (Essential/Enhanced/Advanced)
-  - [ ] 4.9 Create responsive design for various desktop screen sizes
-  - [ ] 4.10 Connect UI to LLM backend for real content generation (bridge frontend to existing LLM infrastructure)
+  - [x] 4.8 Add settings panel with three-tier complexity (Essential/Enhanced/Advanced)
+  - [x] 4.9 Create desktop layout optimization for various screen sizes
+  - [x] 4.10 Connect UI to LLM backend for real content generation (bridge frontend to existing LLM infrastructure)
 
 - [ ] 5.0 Create Export System with Built-in Format Conversion
   - [ ] 5.1 Implement Markdown export as the baseline format

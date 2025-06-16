@@ -39,7 +39,68 @@ body {
   margin-left: 80px;
 }
 
-/* Responsive design */
+/* Desktop Layout Responsive Design */
+@media (min-width: 1024px) and (max-width: 1365px) {
+  /* Small Desktop */
+  .desktop-grid-sm {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+  
+  .desktop-content-sm {
+    max-width: 760px !important;
+  }
+  
+  .desktop-preview-sm {
+    width: 320px !important;
+  }
+}
+
+@media (min-width: 1366px) and (max-width: 1919px) {
+  /* Medium Desktop */
+  .desktop-grid-md {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .desktop-content-md {
+    max-width: 900px !important;
+  }
+  
+  .desktop-preview-md {
+    width: 380px !important;
+  }
+}
+
+@media (min-width: 1920px) and (max-width: 2559px) {
+  /* Large Desktop */
+  .desktop-grid-lg {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .desktop-content-lg {
+    max-width: 1200px !important;
+  }
+  
+  .desktop-preview-lg {
+    width: 420px !important;
+  }
+}
+
+@media (min-width: 2560px) {
+  /* Ultrawide Desktop */
+  .desktop-grid-xl {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  
+  .desktop-content-xl {
+    max-width: 1400px !important;
+  }
+  
+  .desktop-preview-xl {
+    width: 480px !important;
+  }
+}
+
+/* Legacy mobile support (fallback) */
 @media (max-width: 1024px) {
   .app-main {
     margin-left: 0;
