@@ -1,4 +1,4 @@
-use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, MarkdownConverter};
+use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, MarkdownConverter, HtmlConverter, PdfConverter, PowerPointConverter};
 use crate::content::GeneratedContent;
 use anyhow::{Result, Context};
 use std::collections::HashMap;
@@ -13,6 +13,9 @@ impl ExportManager {
         
         // Register available converters
         converters.insert(ExportFormat::Markdown, Box::new(MarkdownConverter::new()));
+        converters.insert(ExportFormat::Html, Box::new(HtmlConverter::new()));
+        converters.insert(ExportFormat::Pdf, Box::new(PdfConverter::new()));
+        converters.insert(ExportFormat::PowerPoint, Box::new(PowerPointConverter::new()));
         
         Self { converters }
     }
@@ -79,7 +82,7 @@ impl Default for ExportManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::content::{ContentType, ContentMetadata};
+    use crate::content::{ContentType, generator::ContentMetadata};
     use std::path::PathBuf;
 
     fn create_test_content() -> GeneratedContent {

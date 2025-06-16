@@ -1,0 +1,126 @@
+[package]
+name = "curriculum-curator"
+version = "0.1.0"
+description = "Weekly curriculum content generation tool with desktop-first Tauri architecture"
+authors = ["Curriculum Curator Team"]
+repository = "https://github.com/michael-borck/curriculum-curator"
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "curriculum_curator_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.1", features = [] }
+
+[dependencies]
+# Core Tauri dependencies
+tauri = { version = "2.5", features = [] }
+tauri-plugin-shell = "2.2"
+tauri-plugin-dialog = "2.2"
+tauri-plugin-fs = "2.2"
+tauri-plugin-store = "2.1"
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+futures-util = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+
+# Database (simplified for now to avoid compile-time query issues)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+
+# HTTP client for LLM providers
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UUID generation
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Configuration management
+config = "0.14"
+dirs = "5.0"
+
+# Template engine for prompts and content
+tera = "1.19"
+handlebars = "5.1"
+
+# Markdown processing
+pulldown-cmark = { version = "0.10", features = ["html"] }
+markdown = "1.0"
+
+# Text processing and validation
+regex = "1.0"
+unicode-segmentation = "1.0"
+
+# Cost tracking and statistics
+rust_decimal = { version = "1.0", features = ["serde"] }
+
+# Secure storage for API keys
+keyring = "3.0"
+
+# File operations and compression
+tar = "0.4"
+flate2 = "1.0"
+zip = "0.6"
+
+# PDF generation (built-in export fallback)
+printpdf = "0.7"
+headless_chrome = { version = "1.0", optional = true }
+
+# HTML to PDF conversion - using alternative
+wkhtmltopdf = { version = "0.4", optional = true }
+
+# Image processing for content
+image = { version = "0.25", optional = true }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+# Optional export features
+chrome-pdf = ["headless_chrome"]
+wkhtml-pdf = ["wkhtmltopdf"]
+image-processing = ["image"]
+
+# Full feature set for advanced users
+full = ["chrome-pdf", "wkhtml-pdf", "image-processing"]
+
+# Development features
+dev = ["tracing/max_level_debug"]
+
+[profile.dev]
+# Enable debug symbols and optimize for debugging
+debug = true
+opt-level = 0
+overflow-checks = true
+
+[profile.release]
+# Optimize for size and performance in release
+debug = false
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Development profile for faster builds with some optimizations
+[profile.dev-opt]
+inherits = "dev"
+opt-level = 1
+debug = true
