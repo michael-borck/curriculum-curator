@@ -284,22 +284,40 @@ pub async fn get_session_content(session_id: String) -> Result<Vec<serde_json::V
     Ok(content_json)
 }
 
-// Validation commands
+// Validation commands - now properly implemented
 #[command]
-pub async fn validate_content(_content: String, _validator_name: String) -> Result<serde_json::Value, AppError> {
-    // Placeholder for validation functionality
-    // Will be implemented when validation system is complete
-    let mock_result = serde_json::json!({
-        "passed": true,
-        "score": 8.5,
-        "issues": [],
-        "suggestions": [
-            "Consider adding more examples",
-            "Break down complex concepts into smaller sections"
-        ]
-    });
+pub async fn validate_content(
+    content: serde_json::Value,
+    validator_names: Option<Vec<String>>,
+) -> Result<serde_json::Value, AppError> {
+    use crate::validation::{ValidationService, commands::ValidateContentRequest};
+    use crate::content::GeneratedContent;
     
-    Ok(mock_result)
+    // Parse content from JSON
+    let generated_content: GeneratedContent = serde_json::from_value(content)
+        .map_err(|e| AppError {
+            message: format!("Invalid content format: {}", e),
+            code: Some("INVALID_CONTENT_FORMAT".to_string()),
+        })?;
+    
+    let request = ValidateContentRequest {
+        content: generated_content,
+        config: None,
+        validator_names,
+    };
+    
+    let validation_service = ValidationService::new();
+    let response = validation_service.validate_content(request).await
+        .map_err(|e| AppError {
+            message: format!("Validation failed: {}", e),
+            code: Some("VALIDATION_ERROR".to_string()),
+        })?;
+    
+    serde_json::to_value(response.report)
+        .map_err(|e| AppError {
+            message: format!("Failed to serialize validation result: {}", e),
+            code: Some("SERIALIZATION_ERROR".to_string()),
+        })
 }
 
 // LLM provider commands
