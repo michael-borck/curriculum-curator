@@ -10,6 +10,13 @@ pub use validators::{
 };
 pub use manager::{ValidationManager, ValidationReport, ValidationSummary, ValidationProgress};
 pub use factory::ValidatorFactory;
+pub use built_in::{
+    ReadabilityConfig, ComplexityLevel, AgeSpecificThresholds, ReadabilityThresholds,
+    SentenceAnalysis, ReadabilityValidator, StructureValidator, CompletenessValidator, GrammarValidator,
+    StructureConfig, PedagogicalPattern, StructureAnalysis, DetectedSection,
+    ContentAlignmentValidator, AlignmentConfig, AlignmentAnalysis, TermInconsistency, 
+    ObjectiveAlignment, TopicAnalysis
+};
 pub use commands::{
     ValidationService, validate_content_command, get_validation_progress_command,
     list_validators_command, get_validation_config_command, auto_fix_issues_command

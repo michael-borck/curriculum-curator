@@ -68,13 +68,15 @@ impl MarkdownConverter {
         
         // Split content into slides (assuming slides are separated by slide markers)
         let slides: Vec<&str> = content.split("---SLIDE---").collect();
+        let mut slide_count = 0;
         
-        for (i, slide) in slides.iter().enumerate() {
+        for slide in slides.iter() {
             if slide.trim().is_empty() {
                 continue;
             }
             
-            formatted.push_str(&format!("### Slide {}\n\n", i + 1));
+            slide_count += 1;
+            formatted.push_str(&format!("### Slide {}\n\n", slide_count));
             formatted.push_str(&slide.trim());
             formatted.push_str("\n\n");
             
@@ -334,8 +336,7 @@ impl FormatConverter for MarkdownConverter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::content::{ContentType, ContentMetadata};
-    use std::path::PathBuf;
+    use crate::content::{ContentType, generator::ContentMetadata};
 
     fn create_test_content() -> GeneratedContent {
         GeneratedContent {
