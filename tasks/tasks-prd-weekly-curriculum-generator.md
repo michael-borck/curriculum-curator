@@ -125,8 +125,8 @@ Based on PRD: `prd-weekly-curriculum-generator.md`
   - [x] 5.2 Create built-in HTML conversion with professional templates
   - [x] 5.3 Add PDF generation using headless browser or PDF libraries
   - [x] 5.4 Implement basic PowerPoint (.pptx) export functionality
-  - [ ] 5.5 Design professional templates for educational content presentation
-  - [ ] 5.6 Add optional Quarto integration for advanced users
+  - [x] 5.5 Design professional templates for educational content presentation
+  - [x] 5.6 Add optional Quarto integration for advanced users
   - [ ] 5.7 Create template customization with branding options (colors, logos)
   - [ ] 5.8 Implement batch export for multiple content types
 

@@ -10,6 +10,19 @@ pub enum ExportFormat {
     Pdf,
     PowerPoint,
     Word,
+    // Quarto formats for advanced users
+    #[cfg(feature = "quarto-integration")]
+    QuartoHtml,
+    #[cfg(feature = "quarto-integration")]
+    QuartoPdf,
+    #[cfg(feature = "quarto-integration")]
+    QuartoPowerPoint,
+    #[cfg(feature = "quarto-integration")]
+    QuartoWord,
+    #[cfg(feature = "quarto-integration")]
+    QuartoBook,
+    #[cfg(feature = "quarto-integration")]
+    QuartoWebsite,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

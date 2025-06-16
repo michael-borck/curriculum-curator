@@ -1,4 +1,6 @@
 use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, MarkdownConverter, HtmlConverter, PdfConverter, PowerPointConverter};
+#[cfg(feature = "quarto-integration")]
+use super::QuartoConverter;
 use crate::content::GeneratedContent;
 use anyhow::{Result, Context};
 use std::collections::HashMap;
@@ -16,6 +18,32 @@ impl ExportManager {
         converters.insert(ExportFormat::Html, Box::new(HtmlConverter::new()));
         converters.insert(ExportFormat::Pdf, Box::new(PdfConverter::new()));
         converters.insert(ExportFormat::PowerPoint, Box::new(PowerPointConverter::new()));
+        
+        // Register Quarto converters if available
+        #[cfg(feature = "quarto-integration")]
+        {
+            if let Ok(quarto_converter) = QuartoConverter::new() {
+                // Create separate converter instances for each Quarto format
+                if let Ok(html_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoHtml, Box::new(html_converter));
+                }
+                if let Ok(pdf_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoPdf, Box::new(pdf_converter));
+                }
+                if let Ok(pptx_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoPowerPoint, Box::new(pptx_converter));
+                }
+                if let Ok(docx_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoWord, Box::new(docx_converter));
+                }
+                if let Ok(book_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoBook, Box::new(book_converter));
+                }
+                if let Ok(website_converter) = QuartoConverter::new() {
+                    converters.insert(ExportFormat::QuartoWebsite, Box::new(website_converter));
+                }
+            }
+        }
         
         Self { converters }
     }
@@ -44,6 +72,19 @@ impl ExportManager {
             ExportFormat::Pdf => "pdf",
             ExportFormat::PowerPoint => "pptx",
             ExportFormat::Word => "docx",
+            // Quarto formats
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoHtml => "html",
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoPdf => "pdf",
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoPowerPoint => "pptx",
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoWord => "docx",
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoBook => "html",
+            #[cfg(feature = "quarto-integration")]
+            ExportFormat::QuartoWebsite => "html",
         }
     }
 
@@ -153,5 +194,16 @@ mod tests {
         assert_eq!(manager.get_default_extension(&ExportFormat::Pdf), "pdf");
         assert_eq!(manager.get_default_extension(&ExportFormat::PowerPoint), "pptx");
         assert_eq!(manager.get_default_extension(&ExportFormat::Word), "docx");
+        
+        // Test Quarto extensions if feature is enabled
+        #[cfg(feature = "quarto-integration")]
+        {
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoHtml), "html");
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoPdf), "pdf");
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoPowerPoint), "pptx");
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoWord), "docx");
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoBook), "html");
+            assert_eq!(manager.get_default_extension(&ExportFormat::QuartoWebsite), "html");
+        }
     }
 }

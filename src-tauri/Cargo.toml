@@ -98,9 +98,10 @@ custom-protocol = ["tauri/custom-protocol"]
 chrome-pdf = ["headless_chrome"]
 wkhtml-pdf = ["wkhtmltopdf"]
 image-processing = ["image"]
+quarto-integration = []
 
 # Full feature set for advanced users
-full = ["chrome-pdf", "wkhtml-pdf", "image-processing"]
+full = ["chrome-pdf", "wkhtml-pdf", "image-processing", "quarto-integration"]
 
 # Development features
 dev = ["tracing/max_level_debug"]
