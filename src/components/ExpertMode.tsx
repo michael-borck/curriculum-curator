@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserProfile, useContentDefaults } from '../contexts/SettingsContext';
 import { useLLM } from '../hooks/useLLM';
+import { useExport } from '../hooks/useExport';
 import { generationManager } from '../utils/generationManager';
 import { useStatusFeedback } from './StatusFeedback';
 import { useDesktopLayout } from '../utils/desktopLayout';
@@ -14,9 +15,11 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
   const [profile] = useUserProfile();
   const [defaults] = useContentDefaults();
   const llm = useLLM();
+  const exportHook = useExport();
   const statusFeedback = useStatusFeedback();
   const layout = useDesktopLayout();
   const [activeTab, setActiveTab] = useState<'planner' | 'workflow' | 'batch' | 'quality'>('planner');
+  const [showExportModal, setShowExportModal] = useState(false);
   const [formData, setFormData] = useState({
     topic: defaults?.topic || '',
     learningObjectives: [''],
@@ -35,6 +38,11 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
     customPrompts: {},
     batchGeneration: false,
   });
+
+  // Load export formats on component mount
+  useEffect(() => {
+    exportHook.loadSupportedFormats();
+  }, [exportHook.loadSupportedFormats]);
 
   const handleInputChange = (field: string, value: string | boolean | string[] | Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -148,6 +156,61 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
     } catch (error) {
       statusFeedback.showError(
         'Generation Failed',
+        error instanceof Error ? error.message : 'An unexpected error occurred.',
+        6000
+      );
+    }
+  };
+
+  const handleExport = async () => {
+    // For now, we'll use a mock session ID - in a real implementation,
+    // this would come from the current active session
+    const mockSessionId = "mock-session-id";
+    
+    if (!exportHook.isMarkdownSupported) {
+      statusFeedback.showWarning(
+        'Export Not Available',
+        'Markdown export is not currently available.',
+        3000
+      );
+      return;
+    }
+
+    try {
+      const timestamp = new Date();
+      const fileName = exportHook.suggestFileName(
+        formData.topic || 'curriculum_export',
+        'Markdown',
+        timestamp
+      );
+
+      // In a real app, you'd show a file picker dialog here
+      // For demo purposes, we'll export to the Downloads folder
+      const outputPath = `${process.env.HOME || process.env.USERPROFILE}/Downloads/${fileName}`;
+
+      statusFeedback.showInfo(
+        'Export Started',
+        'Exporting content to Markdown...'
+      );
+
+      const result = await exportHook.exportContent(mockSessionId, {
+        format: 'Markdown',
+        output_path: outputPath,
+        include_metadata: true,
+      });
+
+      if (result?.success) {
+        statusFeedback.showSuccess(
+          'Export Complete',
+          `Content exported to ${result.output_path}`,
+          5000
+        );
+      } else {
+        throw new Error('Export failed');
+      }
+    } catch (error) {
+      statusFeedback.showError(
+        'Export Failed',
         error instanceof Error ? error.message : 'An unexpected error occurred.',
         6000
       );
@@ -349,8 +412,18 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
             </div>
 
             <div className="planner-actions">
-              <button className="btn secondary">Save Draft</button>
-              <button className="btn secondary">Load Template</button>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn secondary">Save Draft</button>
+                <button className="btn secondary">Load Template</button>
+                <button 
+                  className="btn secondary"
+                  onClick={handleExport}
+                  disabled={exportHook.isExporting || !exportHook.isMarkdownSupported}
+                  title={exportHook.isMarkdownSupported ? 'Export content as Markdown' : 'Export not available'}
+                >
+                  {exportHook.isExporting ? '📤 Exporting...' : '📤 Export'}
+                </button>
+              </div>
               <button 
                 className="btn primary"
                 onClick={() => generateSelectedContent()}
