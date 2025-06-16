@@ -3,6 +3,7 @@ import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } fro
 import { SettingsPanel } from './components/SettingsPanel';
 import { ContentAIEnhancements } from './components/ContentAIEnhancements';
 import { CustomContentTypeManager } from './components/CustomContentTypeManager';
+import { ExpertMode } from './components/ExpertMode';
 import { LiveContentPreview } from './components/LiveContentPreview';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { StatusFeedback, useStatusFeedback } from './components/StatusFeedback';
@@ -1364,7 +1365,53 @@ function App() {
           )}
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {/* Mode Switcher - Make it first and prominent */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '4px', 
+            backgroundColor: '#f1f5f9', 
+            padding: '6px', 
+            borderRadius: '8px',
+            border: '2px solid #3b82f6',
+            minWidth: '240px'
+          }}>
+            <button
+              onClick={() => handleModeSwitch('wizard')}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: currentMode === 'wizard' ? 'white' : 'transparent',
+                color: currentMode === 'wizard' ? '#3b82f6' : '#64748b',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                flex: 1,
+                boxShadow: currentMode === 'wizard' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              🧙‍♂️ Wizard
+            </button>
+            <button
+              onClick={() => handleModeSwitch('expert')}
+              style={{
+                padding: '10px 16px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: currentMode === 'expert' ? 'white' : 'transparent',
+                color: currentMode === 'expert' ? '#3b82f6' : '#64748b',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                flex: 1,
+                boxShadow: currentMode === 'expert' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              🎯 Expert
+            </button>
+          </div>
+
           <button
             onClick={() => {
               setShowPreview(!showPreview);
@@ -1423,41 +1470,6 @@ function App() {
           >
             ⚙️ Settings
           </button>
-          
-          <div style={{ 
-            display: 'flex', 
-            gap: '8px', 
-            backgroundColor: '#f1f5f9', 
-            padding: '4px', 
-            borderRadius: '8px' 
-          }}>
-            <button
-              onClick={() => handleModeSwitch('wizard')}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: currentMode === 'wizard' ? 'white' : 'transparent',
-                color: currentMode === 'wizard' ? '#3b82f6' : '#64748b',
-                cursor: 'pointer'
-              }}
-            >
-              Wizard Mode
-            </button>
-            <button
-              onClick={() => handleModeSwitch('expert')}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '4px',
-                backgroundColor: currentMode === 'expert' ? 'white' : 'transparent',
-                color: currentMode === 'expert' ? '#3b82f6' : '#64748b',
-                cursor: 'pointer'
-              }}
-            >
-              Expert Mode
-            </button>
-          </div>
         </div>
       </header>
 
@@ -1774,7 +1786,9 @@ function App() {
             </div>
           </div>
         ) : (
-          <div>Expert Mode - Coming Soon</div>
+          <ExpertMode 
+            onModeSwitch={(mode) => setCurrentMode(mode)}
+          />
         )}
       </main>
       

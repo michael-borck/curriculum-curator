@@ -1,33 +1,43 @@
 import React, { useState } from 'react';
-import { useAppContext } from '../context/AppContext';
-import { ContentType } from '../types';
-import './ExpertMode.css';
+import { useUserProfile, useContentDefaults } from '../contexts/SettingsContext';
+import { useLLM } from '../hooks/useLLM';
+import { generationManager } from '../utils/generationManager';
+import { useStatusFeedback } from './StatusFeedback';
+import { useDesktopLayout } from '../utils/desktopLayout';
+import type { ContentType, QuizType, AIContentOptions, GenerationConfig } from '../types/settings';
 
-export function ExpertMode() {
-  const { state, setContentRequest } = useAppContext();
-  const [activeTab, setActiveTab] = useState('planner');
+interface ExpertModeProps {
+  onModeSwitch: (mode: 'wizard' | 'expert') => void;
+}
+
+export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
+  const [profile] = useUserProfile();
+  const [defaults] = useContentDefaults();
+  const llm = useLLM();
+  const statusFeedback = useStatusFeedback();
+  const layout = useDesktopLayout();
+  const [activeTab, setActiveTab] = useState<'planner' | 'workflow' | 'batch' | 'quality'>('planner');
   const [formData, setFormData] = useState({
-    topic: '',
+    topic: defaults?.topic || '',
     learningObjectives: [''],
-    duration: '50 minutes',
+    duration: defaults?.duration || '50 minutes',
     audience: '',
-    contentTypes: [] as ContentType[],
+    subject: profile?.subject || '',
+    complexity: defaults?.complexity || 'intermediate',
+    contentTypes: [...(defaults?.contentTypes || [])] as ContentType[],
+    quizTypes: [...(defaults?.quizTypes || [])] as QuizType[],
+    includeAnswerKeys: defaults?.includeAnswerKeys ?? true,
+    includeInstructorGuides: defaults?.includeInstructorGuides ?? true,
+    accessibility: defaults?.includeAccessibilityFeatures ?? false,
+    rubrics: defaults?.includeRubrics ?? false,
+    extensions: false,
+    aiEnhancements: {} as Record<ContentType, AIContentOptions>,
     customPrompts: {},
     batchGeneration: false,
-    qualitySettings: {
-      complexity: 'intermediate',
-      style: 'interactive',
-      accessibility: true,
-      rubrics: false,
-      extensions: false,
-    },
   });
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleInputChange = (field: string, value: string | boolean | string[] | Record<string, unknown>) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const addLearningObjective = () => {
@@ -45,10 +55,12 @@ export function ExpertMode() {
   };
 
   const removeLearningObjective = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      learningObjectives: prev.learningObjectives.filter((_, i) => i !== index),
-    }));
+    if (formData.learningObjectives.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        learningObjectives: prev.learningObjectives.filter((_, i) => i !== index),
+      }));
+    }
   };
 
   const toggleContentType = (contentType: ContentType) => {
@@ -60,46 +72,160 @@ export function ExpertMode() {
     }));
   };
 
-  const handleGenerate = () => {
-    const request = {
+  const toggleQuizType = (quizType: QuizType) => {
+    setFormData(prev => ({
+      ...prev,
+      quizTypes: prev.quizTypes.includes(quizType)
+        ? prev.quizTypes.filter(t => t !== quizType)
+        : [...prev.quizTypes, quizType],
+    }));
+  };
+
+  const generateSelectedContent = async (selectedTypes?: ContentType[]) => {
+    // Check if LLM provider is available
+    if (!llm.hasAvailableProvider) {
+      statusFeedback.showWarning(
+        'LLM Provider Required',
+        'Please configure an LLM provider in settings to generate content.',
+        5000
+      );
+      return;
+    }
+
+    const typesToGenerate = selectedTypes || formData.contentTypes;
+    if (typesToGenerate.length === 0) {
+      statusFeedback.showWarning(
+        'No Content Selected',
+        'Please select at least one content type to generate.',
+        3000
+      );
+      return;
+    }
+
+    const config: GenerationConfig = {
       topic: formData.topic,
-      learningObjectives: formData.learningObjectives.filter(obj => obj.trim() !== ''),
-      duration: formData.duration,
       audience: formData.audience,
-      contentTypes: formData.contentTypes,
+      subject: formData.subject,
+      duration: formData.duration,
+      complexity: formData.complexity,
+      learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+      contentTypes: typesToGenerate,
+      quizTypes: formData.quizTypes,
+      additionalOptions: {
+        includeAnswerKeys: formData.includeAnswerKeys,
+        includeInstructorGuides: formData.includeInstructorGuides,
+        accessibility: formData.accessibility,
+        rubrics: formData.rubrics,
+        extensions: formData.extensions,
+      },
     };
-    setContentRequest(request);
+
+    try {
+      statusFeedback.showInfo(
+        'Generation Started',
+        `Generating ${typesToGenerate.length} content type${typesToGenerate.length > 1 ? 's' : ''}...`
+      );
+
+      await generationManager.startGeneration(
+        config,
+        (progress) => {
+          // Progress tracking handled by generation manager
+        },
+        (error) => {
+          statusFeedback.showError(
+            'Generation Error',
+            `Error in ${error.stepId}: ${error.message}`,
+            6000
+          );
+        }
+      );
+
+      statusFeedback.showSuccess(
+        'Content Generated',
+        `Successfully generated content for ${typesToGenerate.join(', ')}.`,
+        4000
+      );
+    } catch (error) {
+      statusFeedback.showError(
+        'Generation Failed',
+        error instanceof Error ? error.message : 'An unexpected error occurred.',
+        6000
+      );
+    }
   };
 
   return (
-    <div className="expert-mode">
-      <div className="expert-header">
-        <h1>Expert Content Planner</h1>
-        <div className="expert-tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'planner' ? 'active' : ''}`}
-            onClick={() => setActiveTab('planner')}
+    <div style={{ 
+      maxWidth: `${layout.contentMaxWidth}px`, 
+      margin: '0 auto',
+      fontSize: `${layout.fontSize.base}px`
+    }}>
+      {/* Expert Mode Header */}
+      <div style={{
+        backgroundColor: 'white',
+        padding: `${layout.spacing.lg}px`,
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        marginBottom: `${layout.spacing.lg}px`
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h1 style={{ margin: 0, fontSize: '24px', color: '#1e293b', fontWeight: '600' }}>
+            🎯 Expert Mode
+          </h1>
+          <button
+            onClick={() => onModeSwitch('wizard')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: '#475569'
+            }}
           >
-            Content Planner
+            ← Switch to Wizard
           </button>
-          <button 
-            className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
-            onClick={() => setActiveTab('templates')}
-          >
-            Template Editor
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'batch' ? 'active' : ''}`}
-            onClick={() => setActiveTab('batch')}
-          >
-            Batch Generator
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'quality' ? 'active' : ''}`}
-            onClick={() => setActiveTab('quality')}
-          >
-            Quality Control
-          </button>
+        </div>
+        <p style={{ margin: 0, color: '#64748b', fontSize: '16px' }}>
+          Direct workflow control for power users. Generate specific content types, skip steps, or batch create materials.
+        </p>
+
+        {/* Mode Tabs */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          backgroundColor: '#f1f5f9', 
+          padding: '4px', 
+          borderRadius: '8px',
+          marginTop: '20px'
+        }}>
+          {[
+            { id: 'planner', label: '📋 Content Planner', desc: 'Quick content generation' },
+            { id: 'workflow', label: '⚡ Workflow Control', desc: 'Direct step control' },
+            { id: 'batch', label: '🚀 Batch Generator', desc: 'Multiple lessons' },
+            { id: 'quality', label: '✨ Quality Control', desc: 'Validation settings' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: 'none',
+                borderRadius: '4px',
+                backgroundColor: activeTab === tab.id ? 'white' : 'transparent',
+                color: activeTab === tab.id ? '#3b82f6' : '#64748b',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                textAlign: 'center'
+              }}
+              title={tab.desc}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -227,7 +353,7 @@ export function ExpertMode() {
               <button className="btn secondary">Load Template</button>
               <button 
                 className="btn primary"
-                onClick={handleGenerate}
+                onClick={() => generateSelectedContent()}
                 disabled={!formData.topic || formData.contentTypes.length === 0}
               >
                 Generate Content
@@ -236,50 +362,90 @@ export function ExpertMode() {
           </div>
         )}
 
-        {activeTab === 'templates' && (
-          <div className="templates-tab">
-            <div className="templates-header">
-              <h2>Template Editor</h2>
-              <div className="template-actions">
-                <button className="btn secondary">Import Template</button>
-                <button className="btn secondary">Export Template</button>
-                <button className="btn primary">New Template</button>
-              </div>
+        {activeTab === 'workflow' && (
+          <div className="workflow-tab">
+            <div className="workflow-header">
+              <h2>Workflow Control</h2>
+              <p>Execute specific generation steps or skip phases</p>
             </div>
 
-            <div className="templates-content">
-              <div className="template-list">
-                <h3>Available Templates</h3>
-                <div className="template-items">
-                  <div className="template-item active">
-                    <h4>Standard Lecture</h4>
-                    <p>Traditional lecture format with slides and notes</p>
-                    <div className="template-meta">
-                      <span>Modified: 2 days ago</span>
+            <div className="workflow-content">
+              <div className="workflow-steps">
+                <h3>Generation Pipeline</h3>
+                <div className="step-list">
+                  <div className="step-item">
+                    <div className="step-header">
+                      <span className="step-number">1</span>
+                      <h4>Content Planning</h4>
+                      <button className="btn-small primary">Run Step</button>
+                    </div>
+                    <p>Generate learning objectives and content outline</p>
+                    <div className="step-options">
+                      <label><input type="checkbox" defaultChecked /> Use AI suggestions</label>
+                      <label><input type="checkbox" /> Include assessment mapping</label>
                     </div>
                   </div>
-                  <div className="template-item">
-                    <h4>Interactive Workshop</h4>
-                    <p>Activity-focused session with group work</p>
-                    <div className="template-meta">
-                      <span>Modified: 1 week ago</span>
+
+                  <div className="step-item">
+                    <div className="step-header">
+                      <span className="step-number">2</span>
+                      <h4>Material Generation</h4>
+                      <button className="btn-small secondary">Skip</button>
+                    </div>
+                    <p>Create slides, worksheets, and instructor materials</p>
+                    <div className="step-options">
+                      <label><input type="checkbox" defaultChecked /> Generate slides first</label>
+                      <label><input type="checkbox" /> Parallel generation</label>
                     </div>
                   </div>
-                  <div className="template-item">
-                    <h4>Assessment Heavy</h4>
-                    <p>Multiple quizzes and practice exercises</p>
-                    <div className="template-meta">
-                      <span>Modified: 2 weeks ago</span>
+
+                  <div className="step-item">
+                    <div className="step-header">
+                      <span className="step-number">3</span>
+                      <h4>Assessment Creation</h4>
+                      <button className="btn-small primary">Run Step</button>
+                    </div>
+                    <p>Build quizzes, rubrics, and answer keys</p>
+                    <div className="step-options">
+                      <label><input type="checkbox" /> Include difficulty progression</label>
+                      <label><input type="checkbox" defaultChecked /> Auto-generate explanations</label>
+                    </div>
+                  </div>
+
+                  <div className="step-item">
+                    <div className="step-header">
+                      <span className="step-number">4</span>
+                      <h4>Quality Review</h4>
+                      <button className="btn-small secondary">Auto</button>
+                    </div>
+                    <p>Validate content alignment and quality standards</p>
+                    <div className="step-options">
+                      <label><input type="checkbox" defaultChecked /> Objective alignment check</label>
+                      <label><input type="checkbox" /> Readability analysis</label>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="template-editor">
-                <h3>Template Preview</h3>
-                <div className="editor-placeholder">
-                  <p>Select a template to edit or create a new one</p>
-                  <button className="btn primary">Create New Template</button>
+              <div className="workflow-controls">
+                <h3>Quick Actions</h3>
+                <div className="action-grid">
+                  <button className="action-btn">
+                    <span className="action-icon">⚡</span>
+                    <span>Generate Slides Only</span>
+                  </button>
+                  <button className="action-btn">
+                    <span className="action-icon">📝</span>
+                    <span>Create Assessment Suite</span>
+                  </button>
+                  <button className="action-btn">
+                    <span className="action-icon">🎯</span>
+                    <span>Learning Objectives Only</span>
+                  </button>
+                  <button className="action-btn">
+                    <span className="action-icon">📚</span>
+                    <span>Complete Lesson Package</span>
+                  </button>
                 </div>
               </div>
             </div>
