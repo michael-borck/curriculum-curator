@@ -3,7 +3,6 @@ use crate::content::{GeneratedContent, ContentType};
 use anyhow::Result;
 use chrono::Utc;
 use std::collections::HashMap;
-use regex::Regex;
 
 /// Helper trait for string formatting
 trait StringFormatting {
