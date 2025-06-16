@@ -120,15 +120,15 @@ Based on PRD: `prd-weekly-curriculum-generator.md`
   - [x] 4.9 Create desktop layout optimization for various screen sizes
   - [x] 4.10 Connect UI to LLM backend for real content generation (bridge frontend to existing LLM infrastructure)
 
-- [ ] 5.0 Create Export System with Built-in Format Conversion
+- [x] 5.0 Create Export System with Built-in Format Conversion
   - [x] 5.1 Implement Markdown export as the baseline format
   - [x] 5.2 Create built-in HTML conversion with professional templates
   - [x] 5.3 Add PDF generation using headless browser or PDF libraries
   - [x] 5.4 Implement basic PowerPoint (.pptx) export functionality
   - [x] 5.5 Design professional templates for educational content presentation
   - [x] 5.6 Add optional Quarto integration for advanced users
-  - [ ] 5.7 Create template customization with branding options (colors, logos)
-  - [ ] 5.8 Implement batch export for multiple content types
+  - [x] 5.7 Create template customization with branding options (colors, logos)
+  - [x] 5.8 Implement batch export for multiple content types
 
 - [ ] 6.0 Implement Validation and Quality Assurance Framework
   - [ ] 6.1 Create validation plugin architecture with base validator trait

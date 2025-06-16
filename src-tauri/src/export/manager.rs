@@ -159,6 +159,7 @@ mod tests {
             output_path: output_path.clone(),
             template_name: None,
             include_metadata: true,
+            branding_options: None,
         };
 
         let result = manager.export_content(&contents, &options).await;

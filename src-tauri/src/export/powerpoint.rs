@@ -1,4 +1,4 @@
-use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter};
+use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, BrandingOptions};
 use crate::content::GeneratedContent;
 use anyhow::{Result, Context};
 use std::fs;
@@ -47,8 +47,8 @@ impl PowerPointConverter {
         // Add presentation rels
         self.add_presentation_rels(zip, contents)?;
         
-        // Add theme
-        self.add_theme(zip)?;
+        // Add theme with branding
+        self.add_theme(zip, &options.branding_options)?;
         
         // Add slide master
         self.add_slide_master(zip)?;
@@ -187,32 +187,58 @@ impl PowerPointConverter {
         Ok(())
     }
     
-    fn add_theme(&self, zip: &mut ZipWriter<Cursor<&mut Vec<u8>>>) -> Result<()> {
-        let content = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+    fn hex_to_rgb_hex(&self, hex_color: &str) -> String {
+        // Remove # if present and ensure uppercase
+        hex_color.trim_start_matches('#').to_uppercase()
+    }
+
+    fn add_theme(&self, zip: &mut ZipWriter<Cursor<&mut Vec<u8>>>, branding: &Option<BrandingOptions>) -> Result<()> {
+        // Determine colors to use (branding or defaults)
+        let (primary_color, secondary_color, accent_color) = if let Some(branding) = branding {
+            (
+                self.hex_to_rgb_hex(&branding.colors.primary),
+                self.hex_to_rgb_hex(&branding.colors.secondary),
+                self.hex_to_rgb_hex(&branding.colors.accent)
+            )
+        } else {
+            ("4F81BD".to_string(), "1F497D".to_string(), "F79646".to_string())
+        };
+
+        let (heading_font, body_font) = if let Some(branding) = branding {
+            (
+                // Extract just the font family name from CSS font string
+                branding.fonts.heading.split(',').next().unwrap_or("Calibri Light").trim().trim_matches('"'),
+                branding.fonts.body.split(',').next().unwrap_or("Calibri").trim().trim_matches('"')
+            )
+        } else {
+            ("Calibri Light", "Calibri")
+        };
+
+        let content = format!(r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Branded Theme">
     <a:themeElements>
-        <a:clrScheme name="Office">
+        <a:clrScheme name="Custom">
             <a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
             <a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>
-            <a:dk2><a:srgbClr val="1F497D"/></a:dk2>
+            <a:dk2><a:srgbClr val="{}"/></a:dk2>
             <a:lt2><a:srgbClr val="EEECE1"/></a:lt2>
-            <a:accent1><a:srgbClr val="4F81BD"/></a:accent1>
-            <a:accent2><a:srgbClr val="F79646"/></a:accent2>
+            <a:accent1><a:srgbClr val="{}"/></a:accent1>
+            <a:accent2><a:srgbClr val="{}"/></a:accent2>
             <a:accent3><a:srgbClr val="9BBB59"/></a:accent3>
             <a:accent4><a:srgbClr val="8064A2"/></a:accent4>
             <a:accent5><a:srgbClr val="4BACC6"/></a:accent5>
             <a:accent6><a:srgbClr val="F366C7"/></a:accent6>
-            <a:hlink><a:srgbClr val="0000FF"/></a:hlink>
+            <a:hlink><a:srgbClr val="{}"/></a:hlink>
             <a:folHlink><a:srgbClr val="800080"/></a:folHlink>
         </a:clrScheme>
-        <a:fontScheme name="Office">
+        <a:fontScheme name="Custom">
             <a:majorFont>
-                <a:latin typeface="Calibri Light"/>
+                <a:latin typeface="{}"/>
                 <a:ea typeface=""/>
                 <a:cs typeface=""/>
             </a:majorFont>
             <a:minorFont>
-                <a:latin typeface="Calibri"/>
+                <a:latin typeface="{}"/>
                 <a:ea typeface=""/>
                 <a:cs typeface=""/>
             </a:minorFont>
@@ -263,9 +289,11 @@ impl PowerPointConverter {
             </a:bgFillStyleLst>
         </a:fmtScheme>
     </a:themeElements>
-</a:theme>"#;
+</a:theme>"#, 
+            secondary_color, primary_color, accent_color, primary_color, heading_font, body_font
+        );
         
-        self.add_file_to_zip(zip, "ppt/theme/theme1.xml", content)?;
+        self.add_file_to_zip(zip, "ppt/theme/theme1.xml", &content)?;
         Ok(())
     }
     
