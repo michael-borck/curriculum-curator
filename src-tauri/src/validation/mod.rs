@@ -7,6 +7,8 @@ pub mod remediation;
 pub mod remediation_commands;
 pub mod smart_config;
 pub mod smart_config_commands;
+pub mod feedback_system;
+pub mod feedback_commands;
 
 pub use validators::{
     Validator, ExportValidator, ValidationResult, ValidationConfig, ValidationIssue,
@@ -44,4 +46,15 @@ pub use smart_config_commands::{
     SmartConfigService, UserProfile, UsageStatistics, GetSmartConfigRequest,
     SmartConfigResponse, UpdateExperienceLevelRequest, RecordDecisionRequest,
     CreateCustomConfigRequest, ExperienceLevelsResponse, ExperienceLevelInfo
+};
+pub use feedback_system::{
+    FeedbackSystem, UserFriendlyFeedback, OverallSummary, OverallStatus, IssueGroup,
+    IssueCategory, SimplifiedIssue, FriendlySuggestion, ActionableStep, LearningTip,
+    ProgressIndicator, Achievement, Milestone, PersonalizationSettings, IssueExplanation,
+    DifficultyImpact, ImpactLevel, FixDifficulty, Priority
+};
+pub use feedback_commands::{
+    FeedbackService, GenerateFeedbackRequest, FeedbackResponse, FeedbackMetadata,
+    UpdatePersonalizationRequest, GetSuggestionsRequest, SuggestionsResponse,
+    BatchFeedbackRequest, BatchFeedbackResponse, ScoreSnapshot, FeedbackComplexityLevel
 };
