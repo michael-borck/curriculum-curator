@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUserProfile, useContentDefaults } from '../contexts/SettingsContext';
 import { useLLM } from '../hooks/useLLM';
 import { useExport } from '../hooks/useExport';
+import { useFileOperations } from '../hooks/useFileOperations';
 import { generationManager } from '../utils/generationManager';
 import { useStatusFeedback } from './StatusFeedback';
 import { useDesktopLayout } from '../utils/desktopLayout';
@@ -16,10 +17,13 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
   const [defaults] = useContentDefaults();
   const llm = useLLM();
   const exportHook = useExport();
+  const fileOps = useFileOperations();
   const statusFeedback = useStatusFeedback();
   const layout = useDesktopLayout();
   const [activeTab, setActiveTab] = useState<'planner' | 'workflow' | 'batch' | 'quality'>('planner');
   const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedExportFormat, setSelectedExportFormat] = useState('Markdown');
+  const [selectedTemplate, setSelectedTemplate] = useState('default');
   const [formData, setFormData] = useState({
     topic: defaults?.topic || '',
     learningObjectives: [''],
@@ -41,8 +45,12 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
 
   // Load export formats on component mount
   useEffect(() => {
-    exportHook.loadSupportedFormats();
-  }, [exportHook.loadSupportedFormats]);
+    fileOps.getSupportedFormats().then(formats => {
+      if (formats.length > 0) {
+        setSelectedExportFormat(formats[0]);
+      }
+    });
+  }, [fileOps]);
 
   const handleInputChange = (field: string, value: string | boolean | string[] | Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -162,55 +170,82 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format?: string, template?: string) => {
     // For now, we'll use a mock session ID - in a real implementation,
     // this would come from the current active session
     const mockSessionId = "mock-session-id";
+    const exportFormat = format || selectedExportFormat;
+    const templateName = template || selectedTemplate;
     
-    if (!exportHook.isMarkdownSupported) {
-      statusFeedback.showWarning(
-        'Export Not Available',
-        'Markdown export is not currently available.',
-        3000
-      );
-      return;
-    }
-
     try {
-      const timestamp = new Date();
-      const fileName = exportHook.suggestFileName(
-        formData.topic || 'curriculum_export',
-        'Markdown',
-        timestamp
-      );
-
-      // In a real app, you'd show a file picker dialog here
-      // For demo purposes, we'll export to the Downloads folder
-      const outputPath = `${process.env.HOME || process.env.USERPROFILE}/Downloads/${fileName}`;
-
-      statusFeedback.showInfo(
-        'Export Started',
-        'Exporting content to Markdown...'
-      );
-
-      const result = await exportHook.exportContent(mockSessionId, {
-        format: 'Markdown',
-        output_path: outputPath,
+      const result = await fileOps.exportContent(mockSessionId, {
+        format: exportFormat,
         include_metadata: true,
+        template_name: templateName !== 'default' ? templateName : undefined,
       });
 
-      if (result?.success) {
+      if (result.success) {
         statusFeedback.showSuccess(
           'Export Complete',
           `Content exported to ${result.output_path}`,
           5000
         );
       } else {
-        throw new Error('Export failed');
+        throw new Error(result.error || 'Export failed');
       }
     } catch (error) {
       statusFeedback.showError(
         'Export Failed',
+        error instanceof Error ? error.message : 'An unexpected error occurred.',
+        6000
+      );
+    }
+  };
+
+  const handleSaveSession = async () => {
+    const mockSessionId = "mock-session-id";
+    
+    try {
+      const result = await fileOps.saveSession(mockSessionId, {
+        include_content: true,
+        include_metadata: true
+      });
+
+      if (result.success) {
+        statusFeedback.showSuccess(
+          'Session Saved',
+          `Session saved to ${result.output_path}`,
+          4000
+        );
+      } else {
+        throw new Error(result.error || 'Save failed');
+      }
+    } catch (error) {
+      statusFeedback.showError(
+        'Save Failed',
+        error instanceof Error ? error.message : 'An unexpected error occurred.',
+        6000
+      );
+    }
+  };
+
+  const handleLoadSession = async () => {
+    try {
+      const result = await fileOps.loadSession();
+
+      if (result.success) {
+        statusFeedback.showSuccess(
+          'Session Loaded',
+          `Loaded session ${result.sessionId}`,
+          3000
+        );
+        // TODO: Update form data with loaded session
+      } else {
+        throw new Error(result.error || 'Load failed');
+      }
+    } catch (error) {
+      statusFeedback.showError(
+        'Load Failed',
         error instanceof Error ? error.message : 'An unexpected error occurred.',
         6000
       );
@@ -413,16 +448,99 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
 
             <div className="planner-actions">
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn secondary">Save Draft</button>
-                <button className="btn secondary">Load Template</button>
                 <button 
                   className="btn secondary"
-                  onClick={handleExport}
-                  disabled={exportHook.isExporting || !exportHook.isMarkdownSupported}
-                  title={exportHook.isMarkdownSupported ? 'Export content as Markdown' : 'Export not available'}
+                  onClick={handleSaveSession}
+                  disabled={fileOps.isOperating}
                 >
-                  {exportHook.isExporting ? '📤 Exporting...' : '📤 Export'}
+                  {fileOps.isOperating && fileOps.lastOperation === 'save' ? '💾 Saving...' : '💾 Save Session'}
                 </button>
+                <button 
+                  className="btn secondary"
+                  onClick={handleLoadSession}
+                  disabled={fileOps.isOperating}
+                >
+                  {fileOps.isOperating && fileOps.lastOperation === 'load' ? '📁 Loading...' : '📁 Load Session'}
+                </button>
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    className="btn secondary"
+                    onClick={() => setShowExportModal(!showExportModal)}
+                    disabled={fileOps.isOperating}
+                    title="Export content in various formats"
+                  >
+                    {fileOps.isOperating && fileOps.lastOperation === 'export' ? '📤 Exporting...' : '📤 Export ▼'}
+                  </button>
+                  {showExportModal && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      background: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                      padding: '16px',
+                      minWidth: '280px',
+                      zIndex: 1000
+                    }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600' }}>Export Options</h4>
+                      
+                      <div style={{ marginBottom: '12px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>Format:</label>
+                        <select 
+                          value={selectedExportFormat}
+                          onChange={(e) => setSelectedExportFormat(e.target.value)}
+                          style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                        >
+                          {['Markdown', 'HTML', 'PDF', 'PowerPoint', 'Word'].map(format => (
+                            <option key={format} value={format}>
+                              {format}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {selectedExportFormat === 'Html' && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>Template:</label>
+                          <select 
+                            value={selectedTemplate}
+                            onChange={(e) => setSelectedTemplate(e.target.value)}
+                            style={{ width: '100%', padding: '6px', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                          >
+                            <option value="default">Default</option>
+                            <option value="professional">Professional</option>
+                            <option value="academic">Academic</option>
+                            <option value="minimal">Minimal</option>
+                            <option value="presentation">Presentation</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button 
+                          className="btn primary"
+                          onClick={() => {
+                            handleExport();
+                            setShowExportModal(false);
+                          }}
+                          disabled={fileOps.isOperating}
+                          style={{ flex: 1, fontSize: '12px' }}
+                        >
+                          Export
+                        </button>
+                        <button 
+                          className="btn secondary"
+                          onClick={() => setShowExportModal(false)}
+                          style={{ fontSize: '12px' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <button 
                 className="btn primary"

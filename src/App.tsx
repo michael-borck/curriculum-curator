@@ -8,6 +8,9 @@ import { LiveContentPreview } from './components/LiveContentPreview';
 import { ProgressIndicator } from './components/ProgressIndicator';
 import { StatusFeedback, useStatusFeedback } from './components/StatusFeedback';
 import { LLMProviderSetup } from './components/LLMProviderSetup';
+import { FileOperations } from './components/FileOperations';
+import { SessionBrowser } from './components/SessionBrowser';
+import { SessionHistory } from './components/SessionHistory';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
@@ -66,6 +69,11 @@ function App() {
   const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
   const [showProgress, setShowProgress] = useState(false);
   const [showLLMSetup, setShowLLMSetup] = useState(false);
+  const [showFileOperations, setShowFileOperations] = useState(false);
+  const [showSessionBrowser, setShowSessionBrowser] = useState(false);
+  const [showSessionHistory, setShowSessionHistory] = useState(false);
+  const [showSessionsMenu, setShowSessionsMenu] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   // Initialize session tracking on component mount
   useEffect(() => {
@@ -1453,6 +1461,97 @@ function App() {
           >
             {llm.hasAvailableProvider ? '🤖 LLM Ready' : '⚠️ Setup LLM'}
           </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowSessionsMenu(!showSessionsMenu)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                backgroundColor: 'white',
+                color: '#64748b',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              📁 Sessions ▼
+            </button>
+            {showSessionsMenu && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                padding: '8px 0',
+                minWidth: '160px',
+                zIndex: 1000
+              }}>
+                <button
+                  onClick={() => {
+                    setShowSessionBrowser(true);
+                    setShowSessionsMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 16px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  📁 Browse Sessions
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSessionHistory(true);
+                    setShowSessionsMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 16px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  📅 Session History
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setShowFileOperations(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              color: '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            💾 File
+          </button>
           <button
             onClick={() => setShowSettings(true)}
             style={{
@@ -1843,6 +1942,35 @@ function App() {
             4000
           );
           setShowLLMSetup(false);
+        }}
+      />
+
+      {/* File Operations */}
+      <FileOperations
+        isOpen={showFileOperations}
+        onClose={() => setShowFileOperations(false)}
+        sessionId={currentSessionId}
+      />
+
+      {/* Session Browser */}
+      <SessionBrowser
+        isOpen={showSessionBrowser}
+        onClose={() => setShowSessionBrowser(false)}
+        onSessionSelect={(sessionId) => {
+          setCurrentSessionId(sessionId);
+          setShowSessionBrowser(false);
+          statusFeedback.showSuccess('Session Loaded', `Switched to session ${sessionId}`, 3000);
+        }}
+      />
+
+      {/* Session History */}
+      <SessionHistory
+        isOpen={showSessionHistory}
+        onClose={() => setShowSessionHistory(false)}
+        onSessionSelect={(sessionId) => {
+          setCurrentSessionId(sessionId);
+          setShowSessionHistory(false);
+          statusFeedback.showSuccess('Session Loaded', `Switched to session ${sessionId}`, 3000);
         }}
       />
 
