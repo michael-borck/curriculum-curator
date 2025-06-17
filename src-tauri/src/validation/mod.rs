@@ -5,6 +5,8 @@ pub mod factory;
 pub mod commands;
 pub mod remediation;
 pub mod remediation_commands;
+pub mod smart_config;
+pub mod smart_config_commands;
 
 pub use validators::{
     Validator, ExportValidator, ValidationResult, ValidationConfig, ValidationIssue,
@@ -26,10 +28,20 @@ pub use commands::{
 pub use remediation::{
     RemediationManager, RemediationConfig, RemediationSession, RemediationSuggestion,
     SessionStatus, DecisionType, RemediationFixType, ConfidenceLevel, RiskLevel,
-    RemediationPreview, UserDecision, AppliedFix, UserPreferences, ImpactAssessment,
-    AlternativeFix, DiffHighlight, ChangeType
+    RemediationPreview, UserDecision, AppliedFix, ImpactAssessment,
+    AlternativeFix, DiffHighlight, ChangeType, RemediationPreferences
 };
 pub use remediation_commands::{
     RemediationService, GenerateRemediationRequest, RemediationResponse,
     ApplyFixRequest, UserDecisionRequest, SessionStatusResponse, RemediationStatistics
+};
+pub use smart_config::{
+    SmartConfigManager, UserExperienceLevel, UserPreferences, ValidationFocus,
+    ValidationFeature, NotificationLevel, UserAction, SmartRecommendations,
+    ConfigCustomizations, AdaptiveSettings, ValidationPreset
+};
+pub use smart_config_commands::{
+    SmartConfigService, UserProfile, UsageStatistics, GetSmartConfigRequest,
+    SmartConfigResponse, UpdateExperienceLevelRequest, RecordDecisionRequest,
+    CreateCustomConfigRequest, ExperienceLevelsResponse, ExperienceLevelInfo
 };

@@ -5,13 +5,13 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use tauri::{State, ipc::Invoke};
+use tauri::State;
 use uuid::Uuid;
 
 /// Global remediation service state
 pub struct RemediationService {
     manager: Mutex<RemediationManager>,
-    user_preferences: Mutex<HashMap<String, UserPreferences>>,
+    user_preferences: Mutex<HashMap<String, RemediationPreferences>>,
 }
 
 impl RemediationService {
@@ -246,7 +246,7 @@ pub fn get_pending_remediation_sessions(
 pub fn get_user_remediation_preferences(
     user_id: String,
     service: State<'_, RemediationService>,
-) -> Result<Option<UserPreferences>, String> {
+) -> Result<Option<RemediationPreferences>, String> {
     let preferences = service.user_preferences.lock().unwrap();
     Ok(preferences.get(&user_id).cloned())
 }
@@ -255,7 +255,7 @@ pub fn get_user_remediation_preferences(
 #[tauri::command]
 pub fn update_user_remediation_preferences(
     user_id: String,
-    preferences: UserPreferences,
+    preferences: RemediationPreferences,
     service: State<'_, RemediationService>,
 ) -> Result<(), String> {
     service

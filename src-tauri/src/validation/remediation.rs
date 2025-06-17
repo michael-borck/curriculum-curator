@@ -5,6 +5,34 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
+/// Remediation-specific user preferences
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemediationPreferences {
+    pub preferred_fix_types: Vec<RemediationFixType>,
+    pub rejected_fix_types: Vec<RemediationFixType>,
+    pub confidence_threshold: ConfidenceLevel,
+    pub risk_tolerance: RiskLevel,
+    pub auto_apply_preferences: HashMap<RemediationFixType, bool>,
+    pub content_type_preferences: HashMap<ContentType, Vec<RemediationFixType>>,
+}
+
+impl Default for RemediationPreferences {
+    fn default() -> Self {
+        Self {
+            preferred_fix_types: vec![
+                RemediationFixType::FixTypos,
+                RemediationFixType::CorrectCapitalization,
+                RemediationFixType::RemoveDuplicates,
+            ],
+            rejected_fix_types: vec![],
+            confidence_threshold: ConfidenceLevel::Medium,
+            risk_tolerance: RiskLevel::Low,
+            auto_apply_preferences: HashMap::new(),
+            content_type_preferences: HashMap::new(),
+        }
+    }
+}
+
 /// Auto-remediation system with user approval workflow
 #[derive(Debug, Clone)]
 pub struct RemediationManager {
@@ -202,17 +230,6 @@ pub enum DecisionType {
     SkipForNow,
 }
 
-/// User preferences learned from decisions
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserPreferences {
-    pub user_id: String,
-    pub preferred_fix_types: Vec<RemediationFixType>,
-    pub rejected_fix_types: Vec<RemediationFixType>,
-    pub confidence_threshold: ConfidenceLevel,
-    pub risk_tolerance: RiskLevel,
-    pub auto_apply_preferences: HashMap<RemediationFixType, bool>,
-    pub content_type_preferences: HashMap<ContentType, Vec<RemediationFixType>>,
-}
 
 impl Default for RemediationConfig {
     fn default() -> Self {
@@ -250,7 +267,7 @@ impl RemediationManager {
         &mut self,
         content: &GeneratedContent,
         issues: &[ValidationIssue],
-        user_preferences: Option<&UserPreferences>,
+        user_preferences: Option<&RemediationPreferences>,
     ) -> Result<RemediationSession> {
         let session_id = Uuid::new_v4();
         let mut suggested_fixes = Vec::new();
@@ -295,7 +312,7 @@ impl RemediationManager {
         &self,
         content: &GeneratedContent,
         issue: &ValidationIssue,
-        user_preferences: Option<&UserPreferences>,
+        user_preferences: Option<&RemediationPreferences>,
     ) -> Result<Option<Vec<RemediationSuggestion>>> {
         let mut suggestions = Vec::new();
         
@@ -1132,16 +1149,8 @@ impl RemediationManager {
     }
     
     /// Learn from user preferences
-    pub fn update_user_preferences(&mut self, user_id: &str, session: &RemediationSession) -> UserPreferences {
-        let mut preferences = UserPreferences {
-            user_id: user_id.to_string(),
-            preferred_fix_types: Vec::new(),
-            rejected_fix_types: Vec::new(),
-            confidence_threshold: ConfidenceLevel::Medium,
-            risk_tolerance: RiskLevel::Low,
-            auto_apply_preferences: HashMap::new(),
-            content_type_preferences: HashMap::new(),
-        };
+    pub fn update_user_preferences(&mut self, _user_id: &str, session: &RemediationSession) -> RemediationPreferences {
+        let mut preferences = RemediationPreferences::default();
         
         // Analyze user decisions to learn preferences
         for decision in &session.user_decisions {
