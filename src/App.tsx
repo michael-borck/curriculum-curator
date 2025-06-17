@@ -11,6 +11,7 @@ import { LLMProviderSetup } from './components/LLMProviderSetup';
 import { FileOperations } from './components/FileOperations';
 import { SessionBrowser } from './components/SessionBrowser';
 import { SessionHistory } from './components/SessionHistory';
+import { BackupRecovery } from './components/BackupRecovery';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
@@ -72,6 +73,7 @@ function App() {
   const [showFileOperations, setShowFileOperations] = useState(false);
   const [showSessionBrowser, setShowSessionBrowser] = useState(false);
   const [showSessionHistory, setShowSessionHistory] = useState(false);
+  const [showBackupRecovery, setShowBackupRecovery] = useState(false);
   const [showSessionsMenu, setShowSessionsMenu] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
@@ -1532,6 +1534,26 @@ function App() {
                 >
                   📅 Session History
                 </button>
+                <button
+                  onClick={() => {
+                    setShowBackupRecovery(true);
+                    setShowSessionsMenu(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 16px',
+                    border: 'none',
+                    background: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  💾 Backup & Recovery
+                </button>
               </div>
             )}
           </div>
@@ -1972,6 +1994,17 @@ function App() {
           setShowSessionHistory(false);
           statusFeedback.showSuccess('Session Loaded', `Switched to session ${sessionId}`, 3000);
         }}
+      />
+
+      {/* Backup & Recovery */}
+      <BackupRecovery
+        isOpen={showBackupRecovery}
+        onClose={() => setShowBackupRecovery(false)}
+        onSessionRestore={(sessionId) => {
+          setCurrentSessionId(sessionId);
+          statusFeedback.showSuccess('Session Restored', `Session restored and loaded`, 4000);
+        }}
+        currentSessionId={currentSessionId}
       />
 
       {/* Status Feedback */}

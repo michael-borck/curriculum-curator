@@ -1,12 +1,24 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+// Allow warnings for features under development
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
 
+use tauri::Manager;
+use session::SessionService;
+use file_manager::FileService;
+use backup::{BackupService, scheduler::BackupScheduler};
+use std::sync::Arc;
+
+mod backup;
 mod commands;
 mod content;
 mod database;
 mod export;
+mod file_manager;
 mod llm;
 mod session;
 mod validation;
@@ -21,10 +33,42 @@ fn main() {
             commands::health_check,
             commands::create_project_directory,
             
-            // Session management
-            commands::create_new_session,
-            commands::list_sessions,
-            commands::get_session_content,
+            // Session management (updated to use new session commands)
+            session::commands::create_session,
+            session::commands::load_session,
+            session::commands::save_session,
+            session::commands::update_session,
+            session::commands::add_content_to_session,
+            session::commands::list_sessions,
+            session::commands::delete_session,
+            session::commands::get_session_statistics,
+            session::commands::duplicate_session,
+            session::commands::get_session_content,
+            
+            // File management operations
+            file_manager::commands::save_session_to_file,
+            file_manager::commands::export_session_content,
+            file_manager::commands::load_session_from_file,
+            file_manager::commands::get_suggested_filename,
+            file_manager::commands::validate_file_path,
+            file_manager::commands::list_storage_files,
+            file_manager::commands::get_storage_statistics,
+            file_manager::commands::cleanup_storage,
+            file_manager::commands::get_default_storage_paths,
+            file_manager::commands::update_storage_config,
+            file_manager::commands::get_storage_config,
+            
+            // Backup and recovery operations
+            backup::commands::create_manual_backup,
+            backup::commands::restore_from_backup,
+            backup::commands::list_backups,
+            backup::commands::delete_backup,
+            backup::commands::get_backup_statistics,
+            backup::commands::get_backup_config,
+            backup::commands::update_backup_config,
+            backup::commands::cleanup_old_backups,
+            backup::commands::verify_backup_integrity,
+            backup::commands::get_session_backups,
             
             // Content generation
             commands::generate_content,
@@ -85,6 +129,38 @@ fn main() {
             commands::test_offline_generation
         ])
         .setup(|app| {
+            // Initialize session service
+            let session_service = tauri::async_runtime::block_on(async {
+                SessionService::new("./data/sessions.db").await
+                    .expect("Failed to initialize session service")
+            });
+            
+            // Initialize file service
+            let file_service = tauri::async_runtime::block_on(async {
+                FileService::new("./data/sessions.db", None).await
+                    .expect("Failed to initialize file service")
+            });
+            
+            // Initialize backup service
+            let backup_service = Arc::new(BackupService::new(
+                Arc::new(tokio::sync::Mutex::new(session_service.session_manager.clone())),
+                Arc::new(tokio::sync::Mutex::new(file_service.clone()))
+            ));
+            
+            // Initialize backup scheduler
+            let backup_scheduler = Arc::new(BackupScheduler::new(Arc::clone(&backup_service)));
+            
+            // Start backup scheduler
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = backup_scheduler.start().await {
+                    eprintln!("Failed to start backup scheduler: {}", e);
+                }
+            });
+            
+            app.manage(session_service);
+            app.manage(file_service);
+            app.manage(backup_service);
+            
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
                 let window = app.get_webview_window("main").unwrap();
