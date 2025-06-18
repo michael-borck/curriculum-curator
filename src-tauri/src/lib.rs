@@ -1,3 +1,9 @@
+// Allow warnings for features under development
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+
 pub mod llm;
 pub mod content;
 pub mod validation;
@@ -5,11 +11,16 @@ pub mod export;
 pub mod session;
 pub mod commands;
 pub mod database;
+pub mod import;
 
 use commands::*;
 use validation::{
     validate_content_command, get_validation_progress_command, list_validators_command,
     get_validation_config_command, auto_fix_issues_command
+};
+use import::commands::{
+    get_import_config, update_import_config, preview_import_file, import_file,
+    import_file_with_progress, get_supported_file_types, validate_import_file
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -26,11 +37,9 @@ pub fn run() {
             check_file_exists,
             test_llm_connection,
             create_new_session,
-            list_sessions,
             generate_content,
             get_app_config,
             set_app_config,
-            get_session_content,
             validate_content,
             validate_content_command,
             get_validation_progress_command,
@@ -59,7 +68,14 @@ pub fn run() {
             test_external_provider,
             get_external_provider_models,
             estimate_external_provider_cost,
-            setup_provider_from_wizard
+            setup_provider_from_wizard,
+            get_import_config,
+            update_import_config,
+            preview_import_file,
+            import_file,
+            import_file_with_progress,
+            get_supported_file_types,
+            validate_import_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

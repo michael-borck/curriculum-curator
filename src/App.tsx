@@ -12,6 +12,7 @@ import { FileOperations } from './components/FileOperations';
 import { SessionBrowser } from './components/SessionBrowser';
 import { SessionHistory } from './components/SessionHistory';
 import { BackupRecovery } from './components/BackupRecovery';
+import { ImportWizard } from './components/ImportWizard';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
@@ -74,6 +75,7 @@ function App() {
   const [showSessionBrowser, setShowSessionBrowser] = useState(false);
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [showBackupRecovery, setShowBackupRecovery] = useState(false);
+  const [showImportWizard, setShowImportWizard] = useState(false);
   const [showSessionsMenu, setShowSessionsMenu] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
@@ -1558,6 +1560,23 @@ function App() {
             )}
           </div>
           <button
+            onClick={() => setShowImportWizard(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              color: '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            📁 Import
+          </button>
+          <button
             onClick={() => setShowFileOperations(true)}
             style={{
               padding: '8px 12px',
@@ -2005,6 +2024,20 @@ function App() {
           statusFeedback.showSuccess('Session Restored', `Session restored and loaded`, 4000);
         }}
         currentSessionId={currentSessionId}
+      />
+
+      {/* Import Wizard */}
+      <ImportWizard
+        isOpen={showImportWizard}
+        onClose={() => setShowImportWizard(false)}
+        onImportComplete={(sessionId, sessionName) => {
+          setCurrentSessionId(sessionId);
+          statusFeedback.showSuccess(
+            'Import Complete!',
+            `Successfully imported content as "${sessionName}". Session is now active.`,
+            5000
+          );
+        }}
       />
 
       {/* Status Feedback */}

@@ -11,7 +11,9 @@ use tauri::Manager;
 use session::SessionService;
 use file_manager::FileService;
 use backup::{BackupService, scheduler::BackupScheduler};
+use import::{ImportService, ImportConfig};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 mod backup;
 mod commands;
@@ -19,6 +21,7 @@ mod content;
 mod database;
 mod export;
 mod file_manager;
+mod import;
 mod llm;
 mod session;
 mod validation;
@@ -126,7 +129,16 @@ fn main() {
             commands::get_ollama_setup_instructions,
             commands::refresh_provider_capabilities,
             commands::get_best_available_provider,
-            commands::test_offline_generation
+            commands::test_offline_generation,
+            
+            // Import functionality
+            import::commands::get_import_config,
+            import::commands::update_import_config,
+            import::commands::preview_import_file,
+            import::commands::import_file,
+            import::commands::import_file_with_progress,
+            import::commands::get_supported_file_types,
+            import::commands::validate_import_file
         ])
         .setup(|app| {
             // Initialize session service
@@ -157,9 +169,16 @@ fn main() {
                 }
             });
             
+            // Initialize import service
+            let import_service = Arc::new(Mutex::new(ImportService::new(
+                Arc::new(Mutex::new(session_service.session_manager.clone())),
+                Some(Arc::clone(&backup_service))
+            )));
+            
             app.manage(session_service);
             app.manage(file_service);
             app.manage(backup_service);
+            app.manage(import_service);
             
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
