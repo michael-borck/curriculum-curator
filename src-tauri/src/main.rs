@@ -12,6 +12,7 @@ use session::SessionService;
 use file_manager::FileService;
 use backup::{BackupService, scheduler::BackupScheduler};
 use import::{ImportService, ImportConfig};
+use git::{GitService, GitConfig};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -21,6 +22,7 @@ mod content;
 mod database;
 mod export;
 mod file_manager;
+mod git;
 mod import;
 mod llm;
 mod session;
@@ -138,7 +140,23 @@ fn main() {
             import::commands::import_file,
             import::commands::import_file_with_progress,
             import::commands::get_supported_file_types,
-            import::commands::validate_import_file
+            import::commands::validate_import_file,
+            
+            // Git integration
+            git::commands::get_git_config,
+            git::commands::update_git_config,
+            git::commands::detect_git_repository,
+            git::commands::initialize_git_repository,
+            git::commands::get_git_status,
+            git::commands::commit_git_changes,
+            git::commands::get_git_history,
+            git::commands::get_git_diff,
+            git::commands::auto_commit_session,
+            git::commands::auto_commit_content_generation,
+            git::commands::check_git_installation,
+            git::commands::get_git_user_config,
+            git::commands::set_git_user_config,
+            git::commands::validate_repository_path
         ])
         .setup(|app| {
             // Initialize session service
@@ -175,10 +193,15 @@ fn main() {
                 Some(Arc::clone(&backup_service))
             )));
             
+            // Initialize git service
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            let git_service = Arc::new(Mutex::new(GitService::new(current_dir, None)));
+            
             app.manage(session_service);
             app.manage(file_service);
             app.manage(backup_service);
             app.manage(import_service);
+            app.manage(git_service);
             
             #[cfg(debug_assertions)] // only include this code on debug builds
             {

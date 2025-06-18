@@ -13,6 +13,7 @@ import { SessionBrowser } from './components/SessionBrowser';
 import { SessionHistory } from './components/SessionHistory';
 import { BackupRecovery } from './components/BackupRecovery';
 import { ImportWizard } from './components/ImportWizard';
+import { GitIntegration } from './components/GitIntegration';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
@@ -76,6 +77,7 @@ function App() {
   const [showSessionHistory, setShowSessionHistory] = useState(false);
   const [showBackupRecovery, setShowBackupRecovery] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
+  const [showGitIntegration, setShowGitIntegration] = useState(false);
   const [showSessionsMenu, setShowSessionsMenu] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
@@ -1594,6 +1596,23 @@ function App() {
             💾 File
           </button>
           <button
+            onClick={() => setShowGitIntegration(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              color: '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            🔧 Git
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             style={{
               padding: '8px 12px',
@@ -2038,6 +2057,12 @@ function App() {
             5000
           );
         }}
+      />
+
+      {/* Git Integration */}
+      <GitIntegration
+        isOpen={showGitIntegration}
+        onClose={() => setShowGitIntegration(false)}
       />
 
       {/* Status Feedback */}
