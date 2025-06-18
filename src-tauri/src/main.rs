@@ -13,12 +13,14 @@ use file_manager::FileService;
 use backup::{BackupService, scheduler::BackupScheduler};
 use import::{ImportService, ImportConfig};
 use git::{GitService, GitConfig};
+use data_export::{DataExportService, DataExportConfig};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 mod backup;
 mod commands;
 mod content;
+mod data_export;
 mod database;
 mod export;
 mod file_manager;
@@ -156,7 +158,18 @@ fn main() {
             git::commands::check_git_installation,
             git::commands::get_git_user_config,
             git::commands::set_git_user_config,
-            git::commands::validate_repository_path
+            git::commands::validate_repository_path,
+            
+            // Data export functionality
+            data_export::commands::get_data_export_config,
+            data_export::commands::update_data_export_config,
+            data_export::commands::export_data,
+            data_export::commands::export_data_with_progress,
+            data_export::commands::get_export_formats,
+            data_export::commands::validate_export_request,
+            data_export::commands::preview_export_contents,
+            data_export::commands::get_recent_exports,
+            data_export::commands::cleanup_old_exports
         ])
         .setup(|app| {
             // Initialize session service
@@ -197,11 +210,19 @@ fn main() {
             let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
             let git_service = Arc::new(Mutex::new(GitService::new(current_dir, None)));
             
+            // Initialize data export service
+            let data_export_service = Arc::new(Mutex::new(DataExportService::new(
+                Arc::new(Mutex::new(session_service.session_manager.clone())),
+                Some(Arc::clone(&backup_service)),
+                None
+            )));
+            
             app.manage(session_service);
             app.manage(file_service);
             app.manage(backup_service);
             app.manage(import_service);
             app.manage(git_service);
+            app.manage(data_export_service);
             
             #[cfg(debug_assertions)] // only include this code on debug builds
             {

@@ -14,6 +14,7 @@ import { SessionHistory } from './components/SessionHistory';
 import { BackupRecovery } from './components/BackupRecovery';
 import { ImportWizard } from './components/ImportWizard';
 import { GitIntegration } from './components/GitIntegration';
+import { DataExportWizard } from './components/DataExportWizard';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
@@ -78,6 +79,7 @@ function App() {
   const [showBackupRecovery, setShowBackupRecovery] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [showGitIntegration, setShowGitIntegration] = useState(false);
+  const [showDataExportWizard, setShowDataExportWizard] = useState(false);
   const [showSessionsMenu, setShowSessionsMenu] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
@@ -1613,6 +1615,23 @@ function App() {
             🔧 Git
           </button>
           <button
+            onClick={() => setShowDataExportWizard(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              color: '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            📤 Export
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             style={{
               padding: '8px 12px',
@@ -2063,6 +2082,19 @@ function App() {
       <GitIntegration
         isOpen={showGitIntegration}
         onClose={() => setShowGitIntegration(false)}
+      />
+
+      {/* Data Export Wizard */}
+      <DataExportWizard
+        isOpen={showDataExportWizard}
+        onClose={() => setShowDataExportWizard(false)}
+        onExportComplete={(result) => {
+          statusFeedback.showSuccess(
+            'Export Complete!',
+            `Successfully exported ${result.sessions_exported} sessions. File saved to ${result.output_path}`,
+            5000
+          );
+        }}
       />
 
       {/* Status Feedback */}
