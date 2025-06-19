@@ -272,7 +272,8 @@ impl DataExportService {
             });
 
             // Add session content
-            let content = session_manager.get_session_content(session.id).await?;
+            let session_uuid = Uuid::parse_str(&session.id)?;
+            let content = session_manager.get_session_content(session_uuid).await?;
             for (content_idx, content_item) in content.iter().enumerate() {
                 let content_file = format!("{}content_{:03}_{}.md", 
                     session_folder, content_idx, content_item.content_type.to_string());
@@ -406,7 +407,8 @@ impl DataExportService {
             tar_builder.append_data(&mut header, &metadata_path, metadata_json.as_bytes())?;
 
             // Add session content
-            let content = session_manager.get_session_content(session.id).await?;
+            let session_uuid = Uuid::parse_str(&session.id)?;
+            let content = session_manager.get_session_content(session_uuid).await?;
             for (content_idx, content_item) in content.iter().enumerate() {
                 let content_file = format!("{}content_{:03}_{}.md", 
                     session_folder, content_idx, content_item.content_type.to_string());

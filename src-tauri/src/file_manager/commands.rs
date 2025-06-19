@@ -188,6 +188,7 @@ pub async fn export_session_content(
             ExportFormat::Html => Some("html"),
             ExportFormat::Pdf => Some("pdf"),
             ExportFormat::PowerPoint => Some("powerpoint"),
+            ExportFormat::Word => Some("word"),
             #[cfg(feature = "quarto-integration")]
             ExportFormat::Quarto => Some("quarto"),
         };

@@ -436,7 +436,7 @@ impl MaintenanceService {
             items_cleaned: 0,
             space_reclaimed_mb: 0.0,
             duration_ms: 0,
-            errors: if !success { vec![result] } else { vec![] },
+            errors: if !success { vec![result.clone()] } else { vec![] },
             warnings: vec![],
             details: {
                 let mut details = HashMap::new();

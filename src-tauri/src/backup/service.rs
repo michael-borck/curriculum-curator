@@ -1,5 +1,6 @@
 use super::{BackupConfig, BackupMetadata, BackupType, BackupListItem, BackupFilter, BackupStatistics};
-use crate::session::SessionManager;
+use crate::session::{SessionManager, Session};
+use crate::content::GeneratedContent;
 use crate::file_manager::FileService;
 use anyhow::{Result, Context};
 use serde_json;
@@ -93,7 +94,8 @@ impl BackupService {
 
         // Load session data
         let session_manager = self.session_manager.lock().await;
-        let session = session_manager.load_session(session_id).await
+        let session_uuid = Uuid::parse_str(session_id).context("Invalid session ID format")?;
+        let session = session_manager.load_session(session_uuid).await
             .context("Failed to load session for backup")?;
 
         // Generate backup ID and paths
@@ -103,7 +105,7 @@ impl BackupService {
         
         let backup_filename = format!(
             "{}_{}_backup_{}.json",
-            session.name.replace(" ", "_"),
+            session.as_ref().map(|s| s.name.replace(" ", "_")).unwrap_or_else(|| "unknown".to_string()),
             session_id,
             backup_id
         );
@@ -118,9 +120,9 @@ impl BackupService {
             "backup_id": backup_id,
             "session_id": session_id,
             "session": session,
-            "content": session_manager.get_session_content(session_id).await?,
+            "content": session_manager.get_session_content(session_uuid).await?,
             "created_at": Utc::now(),
-            "backup_type": backup_type,
+            "backup_type": &backup_type,
             "version": "1.0"
         });
 
@@ -143,14 +145,14 @@ impl BackupService {
         let metadata = BackupMetadata {
             id: backup_id.clone(),
             session_id: session_id.to_string(),
-            session_name: session.name.clone(),
+            session_name: session.as_ref().map(|s| s.name.clone()).unwrap_or_else(|| "Unknown Session".to_string()),
             created_at: Utc::now(),
             backup_type,
             file_path: backup_path,
             file_size,
             checksum,
-            content_count: session_manager.get_session_content(session_id).await?.len() as u32,
-            auto_generated: matches!(backup_type, BackupType::Automatic | BackupType::OnSessionClose | BackupType::OnContentGeneration),
+            content_count: session_manager.get_session_content(session_uuid).await?.len() as u32,
+            auto_generated: matches!(&backup_type, BackupType::Automatic | BackupType::OnSessionClose | BackupType::OnContentGeneration),
         };
 
         // Store metadata
@@ -186,15 +188,17 @@ impl BackupService {
             .context("Failed to parse backup file")?;
 
         // Extract session data
-        let session = backup_data["session"].clone();
-        let content = backup_data["content"].clone();
+        let session: Session = serde_json::from_value(backup_data["session"].clone())
+            .context("Failed to parse session from backup")?;
+        let content: Vec<GeneratedContent> = serde_json::from_value(backup_data["content"].clone())
+            .context("Failed to parse content from backup")?;
 
         // Create new session from backup
         let session_manager = self.session_manager.lock().await;
         let new_session_id = session_manager.create_session_from_backup(session, content).await
             .context("Failed to restore session from backup")?;
 
-        Ok(new_session_id)
+        Ok(new_session_id.to_string())
     }
 
     pub async fn list_backups(&self, filter: Option<BackupFilter>) -> Result<Vec<BackupListItem>> {

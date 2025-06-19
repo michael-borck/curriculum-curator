@@ -113,10 +113,12 @@ impl GitService {
         let mut commit_args = vec!["commit", "-m", &options.message];
 
         // Add author information if provided
+        let author_string;
         if let Some(author_name) = &options.author_name {
             commit_args.push("--author");
             if let Some(author_email) = &options.author_email {
-                commit_args.push(&format!("{} <{}>", author_name, author_email));
+                author_string = format!("{} <{}>", author_name, author_email);
+                commit_args.push(&author_string);
             } else {
                 commit_args.push(author_name);
             }
