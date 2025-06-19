@@ -1,6 +1,6 @@
 use super::*;
 use crate::data_export::service::DataExportService;
-use tauri::State;
+use tauri::{State, Emitter};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use anyhow::Result;

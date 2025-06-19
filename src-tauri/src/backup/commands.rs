@@ -1,4 +1,5 @@
-use super::{BackupService, BackupConfig, BackupType, BackupFilter, BackupListItem, BackupStatistics};
+use super::{BackupConfig, BackupType, BackupFilter, BackupListItem, BackupStatistics};
+use super::service::BackupService;
 use tauri::State;
 use std::sync::Arc;
 

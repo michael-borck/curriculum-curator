@@ -1,4 +1,5 @@
-use super::{BackupService, BackupConfig, BackupInterval, BackupType};
+use super::{BackupConfig, BackupInterval, BackupType};
+use super::service::BackupService;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time::{interval, Duration};

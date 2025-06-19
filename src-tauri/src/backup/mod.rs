@@ -6,6 +6,8 @@ pub mod service;
 pub mod scheduler;
 pub mod commands;
 
+pub use service::BackupService;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupConfig {
     pub enabled: bool,

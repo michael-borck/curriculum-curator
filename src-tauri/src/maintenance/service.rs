@@ -13,7 +13,7 @@ use crate::maintenance::{
     MaintenanceProgress, IssueSeverity, CleanupPolicy, RetentionPolicy
 };
 use crate::session::SessionManager;
-use crate::backup::BackupService;
+use crate::backup::service::BackupService;
 
 /// Service for managing session data cleanup and maintenance
 pub struct MaintenanceService {

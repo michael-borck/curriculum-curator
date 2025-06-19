@@ -1,6 +1,6 @@
 use super::*;
 use crate::session::SessionManager;
-use crate::backup::BackupService;
+use crate::backup::service::BackupService;
 use anyhow::{Result, Context};
 use std::path::{Path, PathBuf};
 use std::fs::{self, File};
@@ -129,7 +129,7 @@ impl DataExportService {
             ExportSessionFilter::All => all_sessions,
             ExportSessionFilter::SelectedSessions(session_ids) => {
                 all_sessions.into_iter()
-                    .filter(|session| session_ids.contains(&session.id))
+                    .filter(|session| session_ids.contains(&session.id.to_string()))
                     .collect()
             }
             ExportSessionFilter::DateRange { start, end } => {
@@ -149,9 +149,9 @@ impl DataExportService {
         // Convert to session summaries
         let mut summaries = Vec::new();
         for session in filtered_sessions {
-            let content = session_manager.get_session_content(&session.id).await?;
+            let content = session_manager.get_session_content(session.id).await?;
             let content_types: Vec<String> = content.iter()
-                .map(|c| c.content_type.clone())
+                .map(|c| c.content_type.to_string())
                 .collect::<std::collections::HashSet<_>>()
                 .into_iter()
                 .collect();
@@ -162,7 +162,7 @@ impl DataExportService {
                 .sum();
 
             summaries.push(SessionSummary {
-                id: session.id,
+                id: session.id.to_string(),
                 name: session.name,
                 created_at: session.created_at,
                 content_count: content.len() as u32,
@@ -251,7 +251,7 @@ impl DataExportService {
             
             // Add session metadata
             let session_metadata = serde_json::json!({
-                "id": session.id,
+                "id": session.id.to_string(),
                 "name": session.name,
                 "created_at": session.created_at,
                 "content_count": session.content_count,
@@ -272,10 +272,10 @@ impl DataExportService {
             });
 
             // Add session content
-            let content = session_manager.get_session_content(&session.id).await?;
+            let content = session_manager.get_session_content(session.id).await?;
             for (content_idx, content_item) in content.iter().enumerate() {
                 let content_file = format!("{}content_{:03}_{}.md", 
-                    session_folder, content_idx, content_item.content_type);
+                    session_folder, content_idx, content_item.content_type.to_string());
                 
                 zip.start_file(&content_file, options)?;
                 zip.write_all(content_item.content.as_bytes())?;
@@ -285,11 +285,11 @@ impl DataExportService {
                     file_type: FileType::ContentFile,
                     size_bytes: content_item.content.len() as u64,
                     checksum: Some(format!("{:x}", Sha256::digest(content_item.content.as_bytes()))),
-                    created_at: content_item.created_at,
+                    created_at: Utc::now(), // Use current time since created_at field doesn't exist
                     metadata: {
                         let mut meta = HashMap::new();
                         meta.insert("content_type".to_string(), 
-                            serde_json::Value::String(content_item.content_type.clone()));
+                            serde_json::Value::String(content_item.content_type.to_string()));
                         meta.insert("title".to_string(), 
                             serde_json::Value::String(content_item.title.clone()));
                         meta
@@ -390,7 +390,7 @@ impl DataExportService {
             
             // Add session metadata
             let session_metadata = serde_json::json!({
-                "id": session.id,
+                "id": session.id.to_string(),
                 "name": session.name,
                 "created_at": session.created_at,
                 "content_count": session.content_count,
@@ -406,10 +406,10 @@ impl DataExportService {
             tar_builder.append_data(&mut header, &metadata_path, metadata_json.as_bytes())?;
 
             // Add session content
-            let content = session_manager.get_session_content(&session.id).await?;
+            let content = session_manager.get_session_content(session.id).await?;
             for (content_idx, content_item) in content.iter().enumerate() {
                 let content_file = format!("{}content_{:03}_{}.md", 
-                    session_folder, content_idx, content_item.content_type);
+                    session_folder, content_idx, content_item.content_type.to_string());
                 
                 let mut header = Header::new_gnu();
                 header.set_size(content_item.content.len() as u64);
@@ -513,10 +513,10 @@ impl DataExportService {
         let mut content_items_exported = 0;
 
         for (session_idx, session) in sessions.iter().enumerate() {
-            let content = session_manager.get_session_content(&session.id).await?;
+            let content = session_manager.get_session_content(session.id).await?;
             
             let session_data = serde_json::json!({
-                "id": session.id,
+                "id": session.id.to_string(),
                 "name": session.name,
                 "created_at": session.created_at,
                 "content": content
