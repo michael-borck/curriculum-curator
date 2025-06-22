@@ -71,11 +71,16 @@ pub async fn create_new_session(name: String) -> Result<String, AppError> {
         })?;
     
     let db_path = app_data_dir.join("sessions.db");
-    let session_manager = SessionManager::new(db_path.to_str().unwrap()).await
+    
+    // Create shared database
+    use crate::database::Database;
+    let shared_db = Database::create_shared(db_path.to_str().unwrap()).await
         .map_err(|e| AppError {
-            message: format!("Failed to initialize session manager: {}", e),
+            message: format!("Failed to initialize database: {}", e),
             code: Some("DB_INIT_ERROR".to_string()),
         })?;
+    
+    let session_manager = SessionManager::new(shared_db);
     
     let session = session_manager.create_session(name).await
         .map_err(|e| AppError {
@@ -86,43 +91,6 @@ pub async fn create_new_session(name: String) -> Result<String, AppError> {
     Ok(session.id.to_string())
 }
 
-#[command]
-pub async fn list_sessions() -> Result<Vec<serde_json::Value>, AppError> {
-    use crate::session::SessionManager;
-    
-    let app_data_dir = dirs::config_dir()
-        .ok_or_else(|| AppError {
-            message: "Could not get app data directory".to_string(),
-            code: Some("CONFIG_DIR_ERROR".to_string()),
-        })?
-        .join("curriculum-curator");
-    
-    let db_path = app_data_dir.join("sessions.db");
-    let session_manager = SessionManager::new(db_path.to_str().unwrap()).await
-        .map_err(|e| AppError {
-            message: format!("Failed to initialize session manager: {}", e),
-            code: Some("DB_INIT_ERROR".to_string()),
-        })?;
-    
-    let sessions = session_manager.list_sessions().await
-        .map_err(|e| AppError {
-            message: format!("Failed to list sessions: {}", e),
-            code: Some("SESSION_LIST_ERROR".to_string()),
-        })?;
-    
-    let session_summaries: Vec<serde_json::Value> = sessions.iter().map(|session| {
-        serde_json::json!({
-            "id": session.id.to_string(),
-            "name": session.name,
-            "created_at": session.created_at,
-            "updated_at": session.updated_at,
-            "has_content_request": session.content_request.is_some(),
-            "content_count": session.generated_content.len()
-        })
-    }).collect();
-    
-    Ok(session_summaries)
-}
 
 // Content generation commands
 #[command]
@@ -240,49 +208,6 @@ pub async fn set_app_config(key: String, value: String) -> Result<(), AppError> 
     Ok(())
 }
 
-// Session content commands
-#[command]
-pub async fn get_session_content(session_id: String) -> Result<Vec<serde_json::Value>, AppError> {
-    use uuid::Uuid;
-    use crate::database::Database;
-    
-    let session_uuid = Uuid::parse_str(&session_id)
-        .map_err(|e| AppError {
-            message: format!("Invalid session ID: {}", e),
-            code: Some("INVALID_SESSION_ID".to_string()),
-        })?;
-    
-    let app_data_dir = dirs::config_dir()
-        .ok_or_else(|| AppError {
-            message: "Could not get app data directory".to_string(),
-            code: Some("CONFIG_DIR_ERROR".to_string()),
-        })?
-        .join("curriculum-curator");
-    
-    let db_path = app_data_dir.join("sessions.db");
-    let db = Database::new(db_path.to_str().unwrap()).await
-        .map_err(|e| AppError {
-            message: format!("Failed to initialize database: {}", e),
-            code: Some("DB_INIT_ERROR".to_string()),
-        })?;
-    
-    let content = db.get_session_content(session_uuid).await
-        .map_err(|e| AppError {
-            message: format!("Failed to get session content: {}", e),
-            code: Some("SESSION_CONTENT_ERROR".to_string()),
-        })?;
-    
-    let content_json: Vec<serde_json::Value> = content.iter().map(|c| {
-        serde_json::json!({
-            "content_type": format!("{:?}", c.content_type),
-            "title": c.title,
-            "content": c.content,
-            "metadata": c.metadata
-        })
-    }).collect();
-    
-    Ok(content_json)
-}
 
 // Validation commands - now properly implemented
 #[command]
@@ -780,11 +705,16 @@ pub async fn batch_export_content(
         .join("curriculum-curator");
 
     let db_path = app_data_dir.join("sessions.db");
-    let session_manager = SessionManager::new(db_path.to_str().unwrap()).await
+    
+    // Create shared database
+    use crate::database::Database;
+    let shared_db = Database::create_shared(db_path.to_str().unwrap()).await
         .map_err(|e| AppError {
-            message: format!("Failed to initialize session manager: {}", e),
+            message: format!("Failed to initialize database: {}", e),
             code: Some("DB_INIT_ERROR".to_string()),
         })?;
+    
+    let session_manager = SessionManager::new(shared_db);
 
     // Create batch export manager
     let batch_manager = BatchExportManager::new(session_manager);

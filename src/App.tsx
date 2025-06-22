@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings, useUserProfile, useContentDefaults, useUIPreferences } from './contexts/SettingsContext';
 import { SettingsPanel } from './components/SettingsPanel';
 import { ContentAIEnhancements } from './components/ContentAIEnhancements';
@@ -15,10 +15,12 @@ import { BackupRecovery } from './components/BackupRecovery';
 import { ImportWizard } from './components/ImportWizard';
 import { GitIntegration } from './components/GitIntegration';
 import { DataExportWizard } from './components/DataExportWizard';
+import { MaintenanceCenter } from './components/MaintenanceCenter';
 import { useLLM } from './hooks/useLLM';
 import { crossSessionLearning } from './utils/crossSessionLearning';
 import { generationManager } from './utils/generationManager';
-import type { GenerationProgress, GenerationConfig } from './utils/generationManager';
+import type { GenerationProgress } from './components/ProgressIndicator';
+import type { GenerationConfig } from './utils/generationManager';
 import { useDesktopLayout, shouldShowPreviewByDefault, getOptimalWizardLayout } from './utils/desktopLayout';
 import type { QuizType, ContentType, AIContentOptions, CustomContentType } from './types/settings';
 import './App.css';
@@ -39,6 +41,7 @@ function App() {
   const [formData, setFormData] = useState({
     topic: '',
     audience: '',
+    subject: '',
     duration: '50 minutes',
     learningObjectives: [''],
     contentTypes: [] as ContentType[],
@@ -80,6 +83,7 @@ function App() {
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [showGitIntegration, setShowGitIntegration] = useState(false);
   const [showDataExportWizard, setShowDataExportWizard] = useState(false);
+  const [showMaintenanceCenter, setShowMaintenanceCenter] = useState(false);
   const [showSessionsMenu, setShowSessionsMenu] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
@@ -1632,6 +1636,23 @@ function App() {
             📤 Export
           </button>
           <button
+            onClick={() => setShowMaintenanceCenter(true)}
+            style={{
+              padding: '8px 12px',
+              border: '1px solid #d1d5db',
+              backgroundColor: 'white',
+              color: '#64748b',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            🔧 Maintenance
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
             style={{
               padding: '8px 12px',
@@ -2028,7 +2049,7 @@ function App() {
       <FileOperations
         isOpen={showFileOperations}
         onClose={() => setShowFileOperations(false)}
-        sessionId={currentSessionId}
+        sessionId={currentSessionId || undefined}
       />
 
       {/* Session Browser */}
@@ -2061,7 +2082,7 @@ function App() {
           setCurrentSessionId(sessionId);
           statusFeedback.showSuccess('Session Restored', `Session restored and loaded`, 4000);
         }}
-        currentSessionId={currentSessionId}
+        currentSessionId={currentSessionId || undefined}
       />
 
       {/* Import Wizard */}
@@ -2095,6 +2116,12 @@ function App() {
             5000
           );
         }}
+      />
+
+      {/* Maintenance Center */}
+      <MaintenanceCenter
+        isOpen={showMaintenanceCenter}
+        onClose={() => setShowMaintenanceCenter(false)}
       />
 
       {/* Status Feedback */}

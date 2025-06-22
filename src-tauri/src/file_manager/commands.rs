@@ -25,8 +25,8 @@ pub struct FileService {
 }
 
 impl FileService {
-    pub async fn new(db_path: &str, storage_config: Option<StorageConfig>) -> Result<Self> {
-        let session_manager = SessionManager::new(db_path).await?;
+    pub fn new(shared_db: crate::database::SharedDatabase, storage_config: Option<StorageConfig>) -> Result<Self> {
+        let session_manager = SessionManager::new(shared_db);
         let export_manager = ExportManager::new();
         let storage = FileStorage::new(storage_config.unwrap_or_default())?;
         let save_location = storage.get_location_path(&StorageLocation::Sessions);

@@ -22,7 +22,7 @@ impl PdfConverter {
         );
         
         let mut current_layer = doc.get_page(page1).get_layer(layer1);
-        let mut current_page = page1;
+        let mut _current_page = page1;
         let mut y_position = Mm(280.0); // Start near top of page
         
         // Load fonts
@@ -38,7 +38,7 @@ impl PdfConverter {
             if y_position < Mm(50.0) {
                 let (new_page, new_layer) = doc.add_page(Mm(210.0), Mm(297.0), "Content Layer");
                 current_layer = doc.get_page(new_page).get_layer(new_layer);
-                current_page = new_page;
+                _current_page = new_page;
                 y_position = Mm(280.0);
             }
             

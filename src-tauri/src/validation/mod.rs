@@ -9,6 +9,8 @@ pub mod smart_config;
 pub mod smart_config_commands;
 pub mod feedback_system;
 pub mod feedback_commands;
+pub mod dry_run;
+pub mod dry_run_commands;
 
 pub use validators::{
     Validator, ExportValidator, ValidationResult, ValidationConfig, ValidationIssue,
@@ -57,4 +59,15 @@ pub use feedback_commands::{
     FeedbackService, GenerateFeedbackRequest, FeedbackResponse, FeedbackMetadata,
     UpdatePersonalizationRequest, GetSuggestionsRequest, SuggestionsResponse,
     BatchFeedbackRequest, BatchFeedbackResponse, ScoreSnapshot, FeedbackComplexityLevel
+};
+pub use dry_run::{
+    DryRunManager, DryRunConfig, DryRunSession, DryRunResults, DryRunSummary,
+    ChangeGroup, ChangeCategory, ProposedChange, ImpactAnalysis, PreviewMode,
+    UserGuidance, SafetyAssessment, QualityImprovement, TimeEstimate, OverallRecommendation,
+    DryRunSessionSummary, DryRunSessionStatus, ApplyMode
+};
+pub use dry_run_commands::{
+    DryRunService, CreateDryRunRequest, DryRunResponse, SessionMetadata,
+    UpdateDryRunConfigRequest, GetChangeGroupPreviewRequest, ChangeGroupPreviewResponse,
+    ApplyDryRunChangesRequest, ApplyChangesResponse
 };

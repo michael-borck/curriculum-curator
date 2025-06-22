@@ -435,7 +435,7 @@ pub fn get_feedback_history(
 #[tauri::command]
 pub fn analyze_batch_feedback(
     request: BatchFeedbackRequest,
-    service: State<'_, FeedbackService>,
+    _service: State<'_, FeedbackService>,
 ) -> Result<BatchFeedbackResponse, String> {
     let mut total_score = 0.0;
     let mut content_summaries = Vec::new();

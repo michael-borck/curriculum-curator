@@ -1,7 +1,7 @@
 use super::*;
 use crate::session::SessionManager;
-use crate::backup::BackupService;
-use tauri::State;
+use crate::import::service::ImportService;
+use tauri::{State, Emitter};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::path::PathBuf;

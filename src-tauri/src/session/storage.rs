@@ -32,20 +32,19 @@ impl Default for SessionConfig {
     }
 }
 
-use crate::database::Database;
+use crate::database::{Database, SharedDatabase};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 pub struct SessionManager {
-    db: Arc<Mutex<Database>>,
+    db: SharedDatabase,
 }
 
 impl SessionManager {
-    pub async fn new(db_path: &str) -> Result<Self> {
-        let db = Database::new(db_path).await?;
-        Ok(Self { 
-            db: Arc::new(Mutex::new(db))
-        })
+    pub fn new(shared_db: SharedDatabase) -> Self {
+        Self { 
+            db: shared_db
+        }
     }
 
     pub async fn create_session(&self, name: String) -> Result<Session> {
@@ -59,23 +58,22 @@ impl SessionManager {
             config: SessionConfig::default(),
         };
         
-        {
-            let mut db = self.db.lock().await;
-            db.create_session(&session).await?;
-        }
+        // Use Arc to clone and avoid async mutation issues
+        let mut db_clone = (*self.db).clone();
+        db_clone.create_session(&session).await?;
         Ok(session)
     }
 
     pub async fn save_session(&self, session: &Session) -> Result<()> {
-        let mut db = self.db.lock().await;
-        db.update_session(session).await
+        let mut db_clone = (*self.db).clone();
+        db_clone.update_session(session).await
     }
 
     pub async fn load_session(&self, id: Uuid) -> Result<Option<Session>> {
-        let db = self.db.lock().await;
-        if let Some(mut session) = db.get_session(id).await? {
+        let db_clone = (*self.db).clone();
+        if let Some(mut session) = db_clone.get_session(id).await? {
             // Load generated content for the session
-            session.generated_content = db.get_session_content(id).await?;
+            session.generated_content = db_clone.get_session_content(id).await?;
             Ok(Some(session))
         } else {
             Ok(None)
@@ -83,41 +81,41 @@ impl SessionManager {
     }
 
     pub async fn list_sessions(&self) -> Result<Vec<Session>> {
-        let db = self.db.lock().await;
-        db.list_sessions().await
+        let db_clone = (*self.db).clone();
+        db_clone.list_sessions().await
     }
 
     pub async fn delete_session(&self, id: Uuid) -> Result<()> {
-        let mut db = self.db.lock().await;
-        db.delete_session(id).await
+        let mut db_clone = (*self.db).clone();
+        db_clone.delete_session(id).await
     }
 
     pub async fn add_content_to_session(&self, session_id: Uuid, content: &GeneratedContent) -> Result<String> {
-        let mut db = self.db.lock().await;
-        db.save_generated_content(session_id, content).await
+        let mut db_clone = (*self.db).clone();
+        db_clone.save_generated_content(session_id, content).await
     }
 
     pub async fn get_session_cost(&self, session_id: Uuid) -> Result<f64> {
-        let db = self.db.lock().await;
-        db.get_total_cost(Some(session_id)).await
+        let db_clone = (*self.db).clone();
+        db_clone.get_total_cost(Some(session_id)).await
     }
 
     pub async fn get_session(&self, id: Uuid) -> Result<Option<Session>> {
-        let db = self.db.lock().await;
-        db.get_session(id).await
+        let db_clone = (*self.db).clone();
+        db_clone.get_session(id).await
     }
 
     pub async fn get_session_content(&self, session_id: Uuid) -> Result<Vec<GeneratedContent>> {
-        let db = self.db.lock().await;
-        db.get_session_content(session_id).await
+        let db_clone = (*self.db).clone();
+        db_clone.get_session_content(session_id).await
     }
 
     pub async fn get_multiple_sessions(&self, session_ids: &[Uuid]) -> Result<Vec<Session>> {
-        let db = self.db.lock().await;
+        let db_clone = (*self.db).clone();
         let mut sessions = Vec::new();
         
         for &session_id in session_ids {
-            if let Some(session) = db.get_session(session_id).await? {
+            if let Some(session) = db_clone.get_session(session_id).await? {
                 sessions.push(session);
             }
         }
@@ -126,12 +124,12 @@ impl SessionManager {
     }
 
     pub async fn get_content_for_sessions(&self, session_ids: &[Uuid]) -> Result<Vec<(Session, Vec<GeneratedContent>)>> {
-        let db = self.db.lock().await;
+        let db_clone = (*self.db).clone();
         let mut result = Vec::new();
         
         for &session_id in session_ids {
-            if let Some(session) = db.get_session(session_id).await? {
-                let content = db.get_session_content(session_id).await?;
+            if let Some(session) = db_clone.get_session(session_id).await? {
+                let content = db_clone.get_session_content(session_id).await?;
                 result.push((session, content));
             }
         }
@@ -148,9 +146,9 @@ impl SessionManager {
         new_session.created_at = chrono::Utc::now();
         new_session.updated_at = chrono::Utc::now();
 
-        let mut db = self.db.lock().await;
+        let mut db_clone = (*self.db).clone();
         // For now, just create a basic session - proper implementation would save the full session
-        let _session = db.create_session(&new_session).await?;
+        let _session = db_clone.create_session(&new_session).await?;
         
         // Content adding would need proper database method implementation
         // For now, skip content restoration to get compilation working

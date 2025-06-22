@@ -1,17 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
-export interface BackupConfig {
-  enabled: boolean;
-  auto_backup_interval: BackupInterval;
-  backup_on_session_close: boolean;
-  backup_on_content_generation: boolean;
-  max_backups_per_session: number;
-  max_total_backups: number;
-  compress_backups: boolean;
-  backup_location?: string;
-}
-
+// Define base types first
 export interface BackupInterval {
   Never: null;
   EverySession: null;
@@ -30,6 +20,17 @@ export interface BackupType {
   BeforeImport: null;
 }
 
+// Export types that depend on base types
+export interface BackupFilter {
+  session_id?: string;
+  backup_type?: BackupType;
+  start_date?: string;
+  end_date?: string;
+  auto_generated_only?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
 export interface BackupListItem {
   id: string;
   session_id: string;
@@ -42,15 +43,18 @@ export interface BackupListItem {
   is_recoverable: boolean;
 }
 
-export interface BackupFilter {
-  session_id?: string;
-  backup_type?: BackupType;
-  start_date?: string;
-  end_date?: string;
-  auto_generated_only?: boolean;
-  limit?: number;
-  offset?: number;
+export interface BackupConfig {
+  enabled: boolean;
+  auto_backup_interval: BackupInterval;
+  backup_on_session_close: boolean;
+  backup_on_content_generation: boolean;
+  max_backups_per_session: number;
+  max_total_backups: number;
+  compress_backups: boolean;
+  backup_location?: string;
 }
+
+// BackupInterval, BackupType, BackupListItem and BackupFilter already defined above
 
 export interface BackupStatistics {
   total_backups: number;

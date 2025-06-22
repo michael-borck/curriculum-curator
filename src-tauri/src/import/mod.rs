@@ -59,6 +59,7 @@ pub struct ImportedContent {
     pub content: String,
     pub metadata: ContentMetadata,
     pub order: u32,
+    pub word_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

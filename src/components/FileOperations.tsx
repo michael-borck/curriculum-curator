@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useFileOperations } from '../hooks/useFileOperations';
-import { useSession } from '../hooks/useSession';
 import { useStatusFeedback } from './StatusFeedback';
 
 interface FileOperationsProps {

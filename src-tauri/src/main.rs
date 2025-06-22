@@ -183,30 +183,47 @@ fn main() {
             maintenance::commands::get_available_maintenance_operations,
             maintenance::commands::get_maintenance_recommendations,
             maintenance::commands::estimate_maintenance_impact,
-            maintenance::commands::get_system_health_summary
+            maintenance::commands::get_system_health_summary,
+            
+            // Backup functionality
+            backup::commands::create_manual_backup,
+            backup::commands::restore_from_backup,
+            backup::commands::list_backups,
+            backup::commands::delete_backup,
+            backup::commands::get_backup_statistics,
+            backup::commands::get_backup_config,
+            backup::commands::update_backup_config
         ])
         .setup(|app| {
-            // Initialize session service
-            let session_service = tauri::async_runtime::block_on(async {
-                SessionService::new("./data/sessions.db").await
-                    .expect("Failed to initialize session service")
+            // Initialize shared database
+            let shared_db = tauri::async_runtime::block_on(async {
+                // Use app data directory for database
+                let app_data_dir = app.path().app_data_dir().expect("Failed to get app data directory");
+                std::fs::create_dir_all(&app_data_dir).expect("Failed to create app data directory");
+                let db_path = app_data_dir.join("curriculum_curator.db");
+                crate::database::Database::create_shared(db_path.to_str().unwrap()).await
+                    .expect("Failed to initialize database")
             });
+            
+            // Initialize session service
+            let session_service = SessionService::new(Arc::clone(&shared_db));
             
             // Initialize file service
-            let file_service = tauri::async_runtime::block_on(async {
-                FileService::new("./data/sessions.db", None).await
-                    .expect("Failed to initialize file service")
-            });
+            let file_service = FileService::new(Arc::clone(&shared_db), None)
+                .expect("Failed to initialize file service");
+            let file_service_arc = Arc::new(Mutex::new(file_service));
             
-            // For now, create stub services with placeholder data to fix compilation
-            // These will be properly implemented in future updates
-            
-            // Initialize backup service (placeholder implementation)
-            let backup_service = Arc::new(std::marker::PhantomData::<BackupService>);
+            // Initialize backup service
+            let backup_session_manager = crate::session::SessionManager::new(Arc::clone(&shared_db));
+            let backup_service = Arc::new(crate::backup::service::BackupService::new(
+                Arc::new(Mutex::new(backup_session_manager)),
+                Arc::clone(&file_service_arc)
+            ));
             
             // Initialize import service
+            let session_manager = crate::session::SessionManager::new(Arc::clone(&shared_db));
             let import_service = Arc::new(Mutex::new(ImportService::new(
-                Arc::new(std::marker::PhantomData),
+                Arc::new(Mutex::new(session_manager)),
                 None
             )));
             
@@ -215,21 +232,23 @@ fn main() {
             let git_service = Arc::new(Mutex::new(GitService::new(current_dir, None)));
             
             // Initialize data export service
+            let session_manager2 = crate::session::SessionManager::new(Arc::clone(&shared_db));
             let data_export_service = Arc::new(Mutex::new(DataExportService::new(
-                Arc::new(std::marker::PhantomData),
+                Arc::new(Mutex::new(session_manager2)),
                 None,
                 None
             )));
             
             // Initialize maintenance service
+            let session_manager3 = crate::session::SessionManager::new(Arc::clone(&shared_db));
             let maintenance_service = Arc::new(Mutex::new(MaintenanceService::new(
-                Arc::new(std::marker::PhantomData),
-                Arc::new(std::marker::PhantomData),
+                Arc::clone(&shared_db),
+                Arc::new(Mutex::new(session_manager3)),
                 None
             )));
             
             app.manage(session_service);
-            app.manage(file_service);
+            app.manage(file_service_arc);
             app.manage(backup_service);
             app.manage(import_service);
             app.manage(git_service);

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
-import { save, open } from '@tauri-apps/api/dialog';
+import { invoke } from '@tauri-apps/api/core';
+import { save, open } from '@tauri-apps/plugin-dialog';
 
 interface ExportOptions {
   format: string;

@@ -73,6 +73,18 @@ pub struct ExportOptions {
     pub branding_options: Option<BrandingOptions>,
 }
 
+impl Default for ExportOptions {
+    fn default() -> Self {
+        Self {
+            format: ExportFormat::Markdown,
+            output_path: PathBuf::new(),
+            template_name: None,
+            include_metadata: true,
+            branding_options: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExportResult {
     pub success: bool,

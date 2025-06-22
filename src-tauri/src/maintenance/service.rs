@@ -14,10 +14,11 @@ use crate::maintenance::{
 };
 use crate::session::SessionManager;
 use crate::backup::service::BackupService;
+use crate::database::SharedDatabase;
 
 /// Service for managing session data cleanup and maintenance
 pub struct MaintenanceService {
-    db: Pool<Sqlite>,
+    db: SharedDatabase,
     config: Arc<Mutex<MaintenanceConfig>>,
     session_manager: Arc<Mutex<SessionManager>>,
     backup_service: Option<Arc<BackupService>>,
@@ -27,7 +28,7 @@ pub struct MaintenanceService {
 impl MaintenanceService {
     /// Create new maintenance service
     pub fn new(
-        db: Pool<Sqlite>,
+        db: SharedDatabase,
         session_manager: Arc<Mutex<SessionManager>>,
         backup_service: Option<Arc<BackupService>>,
     ) -> Self {
@@ -164,7 +165,7 @@ impl MaintenanceService {
              LEFT JOIN generated_content gc ON vr.content_id = gc.id 
              WHERE gc.id IS NULL"
         )
-        .fetch_one(&self.db)
+        .fetch_one(self.db.pool())
         .await?
         .get::<i64, _>("count") as u32;
 
@@ -189,7 +190,7 @@ impl MaintenanceService {
              LEFT JOIN sessions s ON lu.session_id = s.id 
              WHERE s.id IS NULL"
         )
-        .fetch_one(&self.db)
+        .fetch_one(self.db.pool())
         .await?
         .get::<i64, _>("count") as u32;
 
@@ -215,7 +216,7 @@ impl MaintenanceService {
                  SELECT 1 FROM sessions s WHERE s.id = eh.session_id
              )"
         )
-        .fetch_one(&self.db)
+        .fetch_one(self.db.pool())
         .await?
         .get::<i64, _>("count") as u32;
 
@@ -248,7 +249,7 @@ impl MaintenanceService {
                 freelist_count * page_size / 1024.0 / 1024.0 as free_mb
              FROM pragma_page_count(), pragma_page_size(), pragma_freelist_count()"
         )
-        .fetch_one(&self.db)
+        .fetch_one(self.db.pool())
         .await?;
 
         let size_mb = db_stats.get::<f64, _>("size_mb");
@@ -272,7 +273,7 @@ impl MaintenanceService {
 
         // Check for missing or outdated statistics
         let stats_age = sqlx::query("SELECT datetime('now') - datetime(last_analyze) as age_days FROM pragma_stats")
-            .fetch_optional(&self.db)
+            .fetch_optional(self.db.pool())
             .await?;
 
         if let Some(stats) = stats_age {
@@ -336,7 +337,7 @@ impl MaintenanceService {
             "SELECT COUNT(*) as count FROM llm_usage WHERE timestamp < ?"
         )
         .bind(cutoff_date.timestamp())
-        .fetch_one(&self.db)
+        .fetch_one(self.db.pool())
         .await?
         .get::<i64, _>("count") as u32;
 
@@ -373,7 +374,7 @@ impl MaintenanceService {
                 current_item: "Reclaiming unused space".to_string(),
             }).await;
 
-            sqlx::query("VACUUM").execute(&self.db).await?;
+            sqlx::query("VACUUM").execute(self.db.pool()).await?;
             
             self.emit_progress(MaintenanceProgress {
                 operation: MaintenanceOperation::DatabaseVacuum,
@@ -385,7 +386,7 @@ impl MaintenanceService {
                 current_item: "Updating statistics".to_string(),
             }).await;
 
-            sqlx::query("PRAGMA optimize").execute(&self.db).await?;
+            sqlx::query("PRAGMA optimize").execute(self.db.pool()).await?;
         }
 
         let end_size = self.get_database_size().await?;
@@ -423,7 +424,7 @@ impl MaintenanceService {
         }).await;
 
         let integrity_result = sqlx::query("PRAGMA integrity_check")
-            .fetch_one(&self.db)
+            .fetch_one(self.db.pool())
             .await?;
 
         let result = integrity_result.get::<String, _>(0);
@@ -454,10 +455,10 @@ impl MaintenanceService {
         // Clean orphaned validation results
         let orphaned_validations = if dry_run {
             sqlx::query("SELECT COUNT(*) as count FROM validation_results vr LEFT JOIN generated_content gc ON vr.content_id = gc.id WHERE gc.id IS NULL")
-                .fetch_one(&self.db).await?.get::<i64, _>("count") as u32
+                .fetch_one(self.db.pool()).await?.get::<i64, _>("count") as u32
         } else {
             let result = sqlx::query("DELETE FROM validation_results WHERE content_id NOT IN (SELECT id FROM generated_content)")
-                .execute(&self.db).await?;
+                .execute(self.db.pool()).await?;
             result.rows_affected() as u32
         };
 
@@ -466,10 +467,10 @@ impl MaintenanceService {
         // Clean orphaned LLM usage records
         let orphaned_llm_usage = if dry_run {
             sqlx::query("SELECT COUNT(*) as count FROM llm_usage lu LEFT JOIN sessions s ON lu.session_id = s.id WHERE s.id IS NULL")
-                .fetch_one(&self.db).await?.get::<i64, _>("count") as u32
+                .fetch_one(self.db.pool()).await?.get::<i64, _>("count") as u32
         } else {
             let result = sqlx::query("DELETE FROM llm_usage WHERE session_id NOT IN (SELECT id FROM sessions)")
-                .execute(&self.db).await?;
+                .execute(self.db.pool()).await?;
             result.rows_affected() as u32
         };
 
@@ -503,11 +504,11 @@ impl MaintenanceService {
         let old_llm_usage = if dry_run {
             sqlx::query("SELECT COUNT(*) as count FROM llm_usage WHERE timestamp < ?")
                 .bind(cutoff_date.timestamp())
-                .fetch_one(&self.db).await?.get::<i64, _>("count") as u32
+                .fetch_one(self.db.pool()).await?.get::<i64, _>("count") as u32
         } else {
             let result = sqlx::query("DELETE FROM llm_usage WHERE timestamp < ?")
                 .bind(cutoff_date.timestamp())
-                .execute(&self.db).await?;
+                .execute(self.db.pool()).await?;
             result.rows_affected() as u32
         };
 
@@ -551,8 +552,8 @@ impl MaintenanceService {
     /// Maintain database indexes
     async fn maintain_database_indexes(&self, dry_run: bool) -> Result<MaintenanceResult> {
         if !dry_run {
-            sqlx::query("PRAGMA optimize").execute(&self.db).await?;
-            sqlx::query("REINDEX").execute(&self.db).await?;
+            sqlx::query("PRAGMA optimize").execute(self.db.pool()).await?;
+            sqlx::query("REINDEX").execute(self.db.pool()).await?;
         }
 
         Ok(MaintenanceResult {
@@ -603,7 +604,7 @@ impl MaintenanceService {
     /// Helper methods
     async fn get_database_size(&self) -> Result<u64> {
         let result = sqlx::query("SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()")
-            .fetch_one(&self.db)
+            .fetch_one(self.db.pool())
             .await?;
         Ok(result.get::<i64, _>("size") as u64)
     }

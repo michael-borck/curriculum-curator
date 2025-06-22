@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useBackup, BackupListItem, BackupFilter } from '../hooks/useBackup';
+import { useBackup, type BackupListItem, type BackupFilter } from '../hooks/useBackup';
 import { useStatusFeedback } from './StatusFeedback';
 import { useDesktopLayout } from '../utils/desktopLayout';
 

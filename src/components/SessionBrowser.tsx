@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSessionManagement, SessionListItem } from '../hooks/useSessionManagement';
+import { useSessionManagement, type SessionListItem } from '../hooks/useSessionManagement';
 import { useStatusFeedback } from './StatusFeedback';
 import { useDesktopLayout } from '../utils/desktopLayout';
 

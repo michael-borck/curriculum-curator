@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AppMode } from './types';
+import { useState } from 'react';
+import type { AppMode } from './types';
 import './App.css';
 
 function SimpleApp() {
