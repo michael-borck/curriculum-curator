@@ -156,6 +156,14 @@ fn main() {
             commands::get_best_available_provider,
             commands::test_offline_generation,
             
+            // Provider routing and management commands
+            commands::get_provider_health_status,
+            commands::get_routing_metrics,
+            commands::set_routing_strategy,
+            commands::get_rate_limit_status,
+            commands::get_connectivity_status,
+            commands::get_optimization_recommendations,
+            
             // Import functionality
             import::commands::get_import_config,
             import::commands::update_import_config,

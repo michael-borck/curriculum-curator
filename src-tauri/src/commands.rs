@@ -1,6 +1,8 @@
 use tauri::command;
 use serde::{Deserialize, Serialize};
 use crate::state::AppState;
+use crate::llm::{ProviderType, RoutingStrategy, RoutingConfig, ConnectivityStatus};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppError {
@@ -1612,4 +1614,127 @@ pub async fn test_offline_generation(prompt: String, prefer_offline: bool) -> Re
             }))
         }
     }
+}
+
+// Provider routing and management commands
+#[command]
+pub async fn get_provider_health_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<HashMap<String, serde_json::Value>, AppError> {
+    let llm_manager = state.llm_manager.lock().await;
+    let health_results = llm_manager.health_check_all().await;
+    
+    let mut status_map = HashMap::new();
+    for (provider_type, health_result) in health_results {
+        let status = match health_result {
+            Ok(is_healthy) => serde_json::json!({
+                "healthy": is_healthy,
+                "provider": format!("{:?}", provider_type),
+                "message": if is_healthy { "Provider is healthy" } else { "Provider is unhealthy" }
+            }),
+            Err(e) => serde_json::json!({
+                "healthy": false,
+                "provider": format!("{:?}", provider_type),
+                "message": format!("Health check failed: {}", e)
+            })
+        };
+        status_map.insert(format!("{:?}", provider_type), status);
+    }
+    
+    Ok(status_map)
+}
+
+#[command]
+pub async fn get_routing_metrics(
+    state: tauri::State<'_, AppState>,
+) -> Result<HashMap<String, serde_json::Value>, AppError> {
+    let llm_manager = state.llm_manager.lock().await;
+    let metrics = llm_manager.get_routing_metrics().await;
+    
+    let mut result = HashMap::new();
+    for (provider_type, metrics_json) in metrics {
+        result.insert(format!("{:?}", provider_type), metrics_json);
+    }
+    
+    Ok(result)
+}
+
+#[command]
+pub async fn set_routing_strategy(
+    strategy: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), AppError> {
+    let routing_strategy = match strategy.to_lowercase().as_str() {
+        "cost_optimal" => RoutingStrategy::CostOptimal,
+        "fastest_first" => RoutingStrategy::FastestFirst,
+        "highest_reliability" => RoutingStrategy::HighestReliability,
+        "round_robin" => RoutingStrategy::RoundRobin,
+        "capability_based" => RoutingStrategy::CapabilityBased,
+        "smart" => RoutingStrategy::Smart,
+        _ => return Err(AppError {
+            message: format!("Unknown routing strategy: {}", strategy),
+            code: Some("INVALID_ROUTING_STRATEGY".to_string()),
+        })
+    };
+    
+    let llm_manager = state.llm_manager.lock().await;
+    llm_manager.set_routing_strategy(routing_strategy).await;
+    
+    Ok(())
+}
+
+#[command]
+pub async fn get_rate_limit_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<HashMap<String, serde_json::Value>, AppError> {
+    let llm_manager = state.llm_manager.lock().await;
+    let status = llm_manager.get_rate_limit_status().await;
+    
+    let mut result = HashMap::new();
+    for (provider_type, status_json) in status {
+        result.insert(format!("{:?}", provider_type), status_json);
+    }
+    
+    Ok(result)
+}
+
+#[command]
+pub async fn get_connectivity_status(
+    state: tauri::State<'_, AppState>,
+) -> Result<serde_json::Value, AppError> {
+    let llm_manager = state.llm_manager.lock().await;
+    let connectivity = llm_manager.get_connectivity_status().await
+        .map_err(|e| AppError {
+            message: format!("Failed to get connectivity status: {}", e),
+            code: Some("CONNECTIVITY_ERROR".to_string()),
+        })?;
+    
+    Ok(serde_json::json!({
+        "status": format!("{:?}", connectivity),
+        "online": matches!(connectivity, ConnectivityStatus::Online),
+        "offline": matches!(connectivity, ConnectivityStatus::Offline),
+        "limited": matches!(connectivity, ConnectivityStatus::Limited),
+    }))
+}
+
+
+#[command]
+pub async fn get_optimization_recommendations(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<serde_json::Value>, AppError> {
+    let llm_manager = state.llm_manager.lock().await;
+    let recommendations = llm_manager.get_optimization_recommendations().await;
+    
+    let serialized_recommendations: Vec<serde_json::Value> = recommendations
+        .into_iter()
+        .map(|rec| serde_json::json!({
+            "priority": format!("{:?}", rec.priority),
+            "category": format!("{:?}", rec.category),
+            "title": rec.title,
+            "description": rec.description,
+            "potential_savings": rec.potential_savings
+        }))
+        .collect();
+    
+    Ok(serialized_recommendations)
 }

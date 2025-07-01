@@ -24,6 +24,8 @@ tauri-plugin-store = "2.1"
 
 # Async runtime
 tokio = { version = "1.0", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["io-util"] }
+tokio-util = { version = "0.7", features = ["io"] }
 futures = "0.3"
 async-trait = "0.1"
 futures-util = "0.3"
@@ -82,7 +84,7 @@ keyring = "3.0"
 # File operations and compression
 tar = "0.4"
 flate2 = "1.0"
-zip = "0.6"
+zip = { version = "0.6", default-features = false, features = ["deflate", "bzip2", "time"] }
 
 # PDF generation (built-in export fallback)
 printpdf = "0.7"

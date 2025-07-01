@@ -295,6 +295,94 @@ impl LLMManager {
         Err(last_error.unwrap_or_else(|| LLMError::Provider("All providers failed".to_string())))
     }
 
+    /// Generate streaming content with routing and fallback support
+    pub async fn generate_stream(&self, request: &LLMRequest) -> LLMResult<Box<dyn futures::Stream<Item = LLMResult<String>> + Send + Unpin>> {
+        self.generate_stream_with_options(request, &GenerationOptions::default()).await
+    }
+
+    /// Generate streaming content with options
+    pub async fn generate_stream_with_options(
+        &self,
+        request: &LLMRequest,
+        options: &GenerationOptions,
+    ) -> LLMResult<Box<dyn futures::Stream<Item = LLMResult<String>> + Send + Unpin>> {
+        // Get routing order from router
+        let available_providers: Vec<ProviderType> = self.providers.keys().copied().collect();
+        let routing_order = {
+            let mut router = self.router.lock().await;
+            router.route_request(request, &available_providers, options.priority.clone())?
+        };
+
+        if routing_order.is_empty() {
+            return Err(LLMError::Config("No providers available for routing".to_string()));
+        }
+
+        let mut last_error = None;
+
+        // Try providers in routing order
+        for (index, provider_type) in routing_order.iter().enumerate() {
+            // Check rate limiting
+            if let Some(rate_limiter) = self.rate_limiters.get(provider_type) {
+                let mut limiter = rate_limiter.lock().await;
+                if !limiter.try_acquire(1.0) {
+                    let wait_time = limiter.time_until_available(1.0);
+                    if wait_time > Duration::from_secs(5) {
+                        // Skip provider if wait time is too long
+                        continue;
+                    }
+                    // Wait for rate limit to reset
+                    tokio::time::sleep(wait_time).await;
+                    if !limiter.try_acquire(1.0) {
+                        continue; // Still can't acquire, skip
+                    }
+                }
+            }
+
+            match self.try_generate_stream_with_provider(request, provider_type).await {
+                Ok(stream) => {
+                    return Ok(stream);
+                }
+                Err(error) => {
+                    // Record failure in router
+                    {
+                        let mut router = self.router.lock().await;
+                        router.record_failure(*provider_type);
+                    }
+                    
+                    last_error = Some(error);
+                    
+                    // If not using fallback or this is the last provider, return error
+                    if !options.enable_fallback || index == routing_order.len() - 1 {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // All providers failed
+        Err(last_error.unwrap_or_else(|| LLMError::Provider("All providers failed for streaming".to_string())))
+    }
+
+    async fn try_generate_stream_with_provider(
+        &self,
+        request: &LLMRequest,
+        provider_type: &ProviderType,
+    ) -> LLMResult<Box<dyn futures::Stream<Item = LLMResult<String>> + Send + Unpin>> {
+        let provider = self.providers.get(provider_type)
+            .ok_or_else(|| LLMError::Config(format!("Provider {:?} not configured", provider_type)))?;
+        
+        // Validate request
+        provider.validate_request(request)?;
+        
+        // Check if provider supports streaming
+        if !provider.config().supports_streaming {
+            return Err(LLMError::Provider(format!("Provider {:?} does not support streaming", provider_type)));
+        }
+        
+        // Generate streaming response
+        provider.generate_stream(request).await
+    }
+
     async fn try_generate_with_provider(
         &self,
         request: &LLMRequest,
