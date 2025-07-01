@@ -12,6 +12,7 @@ pub mod session;
 pub mod commands;
 pub mod database;
 pub mod import;
+pub mod state;
 
 use commands::*;
 use validation::{

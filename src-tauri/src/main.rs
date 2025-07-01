@@ -16,8 +16,11 @@ use import::service::ImportService;
 use git::service::GitService;
 use data_export::service::DataExportService;
 use maintenance::service::MaintenanceService;
+use llm::LLMManager;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+use crate::state::AppState;
 
 mod backup;
 mod commands;
@@ -31,6 +34,7 @@ mod import;
 mod llm;
 mod maintenance;
 mod session;
+mod state;
 mod validation;
 
 fn main() {
@@ -82,6 +86,20 @@ fn main() {
             
             // Content generation
             commands::generate_content,
+            
+            // Workflow commands
+            content::workflow_commands::create_workflow,
+            content::workflow_commands::execute_workflow_step,
+            content::workflow_commands::get_workflow_status,
+            content::workflow_commands::execute_quick_action,
+            
+            // Batch content generation commands
+            content::batch_commands::create_batch_generation,
+            content::batch_commands::execute_batch_generation,
+            content::batch_commands::get_batch_status,
+            content::batch_commands::cancel_batch_generation,
+            content::batch_commands::list_batch_generations,
+            content::batch_commands::export_batch_results,
             
             // Configuration
             commands::get_app_config,
@@ -205,6 +223,62 @@ fn main() {
                     .expect("Failed to initialize database")
             });
             
+            // Initialize LLM manager and add providers
+            let mut llm_manager = LLMManager::new();
+            
+            // Add Ollama provider (always available for local use)
+            let ollama_provider = Arc::new(crate::llm::ollama::OllamaProvider::new(None));
+            tauri::async_runtime::block_on(async {
+                llm_manager.add_provider(ollama_provider).await;
+            });
+            
+            // Check for stored API keys and initialize providers
+            let secure_storage = crate::llm::SecureStorage::new();
+            
+            // Check OpenAI
+            if let Ok(openai_config) = secure_storage.get_api_key_config(&crate::llm::ProviderType::OpenAI) {
+                if openai_config.enabled && !openai_config.api_key.is_empty() {
+                    let openai_provider = Arc::new(crate::llm::OpenAIProvider::new(
+                        openai_config.api_key,
+                        openai_config.base_url,
+                    ));
+                    tauri::async_runtime::block_on(async {
+                        llm_manager.add_provider(openai_provider).await;
+                    });
+                }
+            }
+            
+            // Check Claude
+            if let Ok(claude_config) = secure_storage.get_api_key_config(&crate::llm::ProviderType::Claude) {
+                if claude_config.enabled && !claude_config.api_key.is_empty() {
+                    let claude_provider = Arc::new(crate::llm::ClaudeProvider::new(
+                        claude_config.api_key,
+                        claude_config.base_url,
+                    ));
+                    tauri::async_runtime::block_on(async {
+                        llm_manager.add_provider(claude_provider).await;
+                    });
+                }
+            }
+            
+            // Check Gemini
+            if let Ok(gemini_config) = secure_storage.get_api_key_config(&crate::llm::ProviderType::Gemini) {
+                if gemini_config.enabled && !gemini_config.api_key.is_empty() {
+                    let gemini_provider = Arc::new(crate::llm::GeminiProvider::new(
+                        gemini_config.api_key,
+                        gemini_config.base_url,
+                    ));
+                    tauri::async_runtime::block_on(async {
+                        llm_manager.add_provider(gemini_provider).await;
+                    });
+                }
+            }
+            
+            // Create app state
+            let app_state = AppState {
+                llm_manager: Arc::new(Mutex::new(llm_manager)),
+            };
+            
             // Initialize session service
             let session_service = SessionService::new(Arc::clone(&shared_db));
             
@@ -247,6 +321,7 @@ fn main() {
                 None
             )));
             
+            app.manage(app_state);
             app.manage(session_service);
             app.manage(file_service_arc);
             app.manage(backup_service);

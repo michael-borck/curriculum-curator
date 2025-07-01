@@ -1,10 +1,20 @@
 use tauri::command;
 use serde::{Deserialize, Serialize};
+use crate::state::AppState;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppError {
     pub message: String,
     pub code: Option<String>,
+}
+
+impl AppError {
+    pub fn GenerationError(message: String) -> Self {
+        AppError {
+            message,
+            code: Some("GENERATION_ERROR".to_string()),
+        }
+    }
 }
 
 impl From<anyhow::Error> for AppError {
@@ -101,9 +111,10 @@ pub async fn generate_content(
     duration: String,
     audience: String,
     content_types: Vec<String>,
+    state: tauri::State<'_, AppState>,
 ) -> Result<Vec<serde_json::Value>, AppError> {
     use uuid::Uuid;
-    use crate::content::{ContentRequest, ContentType};
+    use crate::content::{ContentRequest, ContentType, ContentGenerator};
     
     // Parse session ID
     let _session_uuid = Uuid::parse_str(&session_id)
@@ -135,22 +146,31 @@ pub async fn generate_content(
         content_types: parsed_content_types?,
     };
 
-    // Placeholder for actual content generation
-    // Will be implemented when LLM integration is complete
-    let mock_content = content_request.content_types.iter().map(|ct| {
+    // Use real content generator with LLM
+    let llm_manager = state.llm_manager.clone();
+    let generator = ContentGenerator::new(llm_manager);
+    
+    let generated_content = generator.generate(&content_request).await
+        .map_err(|e| AppError {
+            message: format!("Failed to generate content: {}", e),
+            code: Some("CONTENT_GENERATION_ERROR".to_string()),
+        })?;
+
+    // Convert to JSON values
+    let json_content = generated_content.iter().map(|gc| {
         serde_json::json!({
-            "content_type": format!("{:?}", ct),
-            "title": format!("{} for {}", format!("{:?}", ct), content_request.topic),
-            "content": format!("Generated {} content for topic: {}", format!("{:?}", ct), content_request.topic),
+            "content_type": format!("{:?}", gc.content_type),
+            "title": gc.title,
+            "content": gc.content,
             "metadata": {
-                "word_count": 500,
-                "estimated_duration": content_request.duration,
-                "difficulty_level": "Intermediate"
+                "word_count": gc.metadata.word_count,
+                "estimated_duration": gc.metadata.estimated_duration,
+                "difficulty_level": gc.metadata.difficulty_level
             }
         })
     }).collect();
 
-    Ok(mock_content)
+    Ok(json_content)
 }
 
 // Configuration commands
@@ -247,49 +267,61 @@ pub async fn validate_content(
 
 // LLM provider commands
 #[command]
-pub async fn get_available_providers() -> Result<Vec<serde_json::Value>, AppError> {
-    use crate::llm::LLMFactory;
+pub async fn get_available_providers(state: tauri::State<'_, AppState>) -> Result<Vec<serde_json::Value>, AppError> {
+    use crate::llm::{LLMFactory, SecureStorage, ProviderType};
     
     let mut providers = vec![];
+    let storage = SecureStorage::new();
+    let llm_manager = state.llm_manager.lock().await;
+    let active_providers = llm_manager.list_providers();
     
     // Check Ollama availability
     let ollama_available = LLMFactory::is_ollama_available(None).await;
+    let ollama_active = active_providers.contains(&ProviderType::Ollama);
     providers.push(serde_json::json!({
         "id": "ollama",
         "name": "Local Ollama",
         "type": "Ollama",
         "is_local": true,
         "requires_api_key": false,
-        "status": if ollama_available { "available" } else { "not_installed" },
+        "status": if ollama_active { "available" } else if ollama_available { "ready" } else { "not_installed" },
         "base_url": LLMFactory::default_ollama_url()
     }));
     
-    // Add other providers (not implemented yet)
+    // Check OpenAI
+    let openai_configured = storage.has_api_key(&ProviderType::OpenAI);
+    let openai_active = active_providers.contains(&ProviderType::OpenAI);
     providers.push(serde_json::json!({
         "id": "openai",
         "name": "OpenAI GPT",
         "type": "OpenAI",
         "is_local": false,
         "requires_api_key": true,
-        "status": "not_configured"
+        "status": if openai_active { "available" } else if openai_configured { "configured" } else { "not_configured" }
     }));
     
+    // Check Claude
+    let claude_configured = storage.has_api_key(&ProviderType::Claude);
+    let claude_active = active_providers.contains(&ProviderType::Claude);
     providers.push(serde_json::json!({
         "id": "claude",
         "name": "Anthropic Claude",
         "type": "Claude",
         "is_local": false,
         "requires_api_key": true,
-        "status": "not_configured"
+        "status": if claude_active { "available" } else if claude_configured { "configured" } else { "not_configured" }
     }));
     
+    // Check Gemini
+    let gemini_configured = storage.has_api_key(&ProviderType::Gemini);
+    let gemini_active = active_providers.contains(&ProviderType::Gemini);
     providers.push(serde_json::json!({
         "id": "gemini",
         "name": "Google Gemini",
         "type": "Gemini",
         "is_local": false,
         "requires_api_key": true,
-        "status": "not_configured"
+        "status": if gemini_active { "available" } else if gemini_configured { "configured" } else { "not_configured" }
     }));
     
     Ok(providers)
@@ -831,8 +863,10 @@ pub async fn store_api_key(
     api_key: String,
     base_url: Option<String>,
     rate_limit: Option<u32>,
+    state: tauri::State<'_, AppState>,
 ) -> Result<(), AppError> {
     use crate::llm::{SecureStorage, ApiKeyConfig, ProviderType};
+    use std::sync::Arc;
     
     let provider_type: ProviderType = provider.parse()
         .map_err(|_| AppError {
@@ -849,9 +883,9 @@ pub async fn store_api_key(
             code: Some("INVALID_API_KEY_FORMAT".to_string()),
         })?;
     
-    let mut config = ApiKeyConfig::new(provider_type, api_key);
+    let mut config = ApiKeyConfig::new(provider_type.clone(), api_key.clone());
     
-    if let Some(url) = base_url {
+    if let Some(url) = base_url.clone() {
         config = config.with_base_url(url);
     }
     
@@ -864,6 +898,30 @@ pub async fn store_api_key(
             message: format!("Failed to store API key: {}", e),
             code: Some("KEYRING_STORE_ERROR".to_string()),
         })?;
+    
+    // Add the provider to the LLM manager
+    let mut llm_manager = state.llm_manager.lock().await;
+    
+    match provider_type {
+        ProviderType::OpenAI => {
+            let provider = Arc::new(crate::llm::OpenAIProvider::new(api_key, base_url));
+            llm_manager.add_provider(provider).await;
+        }
+        ProviderType::Claude => {
+            let provider = Arc::new(crate::llm::ClaudeProvider::new(api_key, base_url));
+            llm_manager.add_provider(provider).await;
+        }
+        ProviderType::Gemini => {
+            let provider = Arc::new(crate::llm::GeminiProvider::new(api_key, base_url));
+            llm_manager.add_provider(provider).await;
+        }
+        _ => {
+            return Err(AppError {
+                message: format!("Provider {} not supported for API key storage", provider),
+                code: Some("UNSUPPORTED_PROVIDER".to_string()),
+            });
+        }
+    }
     
     Ok(())
 }
@@ -910,7 +968,10 @@ pub async fn get_api_key_config(provider: String) -> Result<serde_json::Value, A
 }
 
 #[command]
-pub async fn remove_api_key(provider: String) -> Result<(), AppError> {
+pub async fn remove_api_key(
+    provider: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), AppError> {
     use crate::llm::{SecureStorage, ProviderType};
     
     let provider_type: ProviderType = provider.parse()
@@ -926,6 +987,10 @@ pub async fn remove_api_key(provider: String) -> Result<(), AppError> {
             message: format!("Failed to remove API key: {}", e),
             code: Some("KEYRING_REMOVE_ERROR".to_string()),
         })?;
+    
+    // Remove the provider from LLM manager
+    let mut llm_manager = state.llm_manager.lock().await;
+    llm_manager.remove_provider(&provider_type);
     
     Ok(())
 }

@@ -3,6 +3,8 @@ import { useUserProfile, useContentDefaults } from '../contexts/SettingsContext'
 import { useLLM } from '../hooks/useLLM';
 import { useExport } from '../hooks/useExport';
 import { useFileOperations } from '../hooks/useFileOperations';
+import { useWorkflow } from '../hooks/useWorkflow';
+import { useBatchGeneration } from '../hooks/useBatchGeneration';
 import { generationManager } from '../utils/generationManager';
 import { useStatusFeedback } from './StatusFeedback';
 import { useDesktopLayout } from '../utils/desktopLayout';
@@ -18,12 +20,26 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
   const llm = useLLM();
   const exportHook = useExport();
   const fileOps = useFileOperations();
+  const workflow = useWorkflow();
+  const batchGeneration = useBatchGeneration();
   const statusFeedback = useStatusFeedback();
   const layout = useDesktopLayout();
   const [activeTab, setActiveTab] = useState<'planner' | 'workflow' | 'batch' | 'quality'>('planner');
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedExportFormat, setSelectedExportFormat] = useState('Markdown');
   const [selectedTemplate, setSelectedTemplate] = useState('default');
+  const [batchFormData, setBatchFormData] = useState({
+    courseName: '',
+    numberOfLessons: 5,
+    selectedContentTypes: [] as ContentType[],
+    lessons: [] as Array<{
+      topic: string;
+      learningObjectives: string[];
+      duration: string;
+      audience: string;
+    }>,
+  });
+  
   const [formData, setFormData] = useState({
     topic: defaults?.topic || '',
     learningObjectives: [''],
@@ -249,6 +265,172 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
         error instanceof Error ? error.message : 'An unexpected error occurred.',
         6000
       );
+    }
+  };
+
+  const getStepDescription = (stepName: string): string => {
+    switch (stepName) {
+      case 'Content Planning':
+        return 'Generate learning objectives and content outline';
+      case 'Material Generation':
+        return 'Create slides, worksheets, and instructor materials';
+      case 'Assessment Creation':
+        return 'Build quizzes, rubrics, and answer keys';
+      case 'Quality Review':
+        return 'Validate content alignment and quality standards';
+      default:
+        return '';
+    }
+  };
+
+  const handleBatchFormChange = (field: string, value: any) => {
+    setBatchFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateBatchLessons = () => {
+    const lessons = [];
+    for (let i = 0; i < batchFormData.numberOfLessons; i++) {
+      lessons.push({
+        topic: `${batchFormData.courseName} - Lesson ${i + 1}`,
+        learningObjectives: [''],
+        duration: '50 minutes',
+        audience: formData.audience || 'Students',
+      });
+    }
+    setBatchFormData(prev => ({ ...prev, lessons }));
+  };
+
+  const updateBatchLesson = (index: number, field: string, value: string | string[]) => {
+    setBatchFormData(prev => ({
+      ...prev,
+      lessons: prev.lessons.map((lesson, i) => 
+        i === index ? { ...lesson, [field]: value } : lesson
+      ),
+    }));
+  };
+
+  const startBatchGeneration = async () => {
+    if (!llm.hasAvailableProvider) {
+      statusFeedback.showWarning(
+        'LLM Provider Required',
+        'Please configure an LLM provider in settings to generate content.',
+        5000
+      );
+      return;
+    }
+
+    if (batchFormData.lessons.length === 0) {
+      statusFeedback.showWarning(
+        'No Lessons Configured',
+        'Please configure lessons before starting batch generation.',
+        3000
+      );
+      return;
+    }
+
+    if (batchFormData.selectedContentTypes.length === 0) {
+      statusFeedback.showWarning(
+        'No Content Types Selected',
+        'Please select at least one content type for batch generation.',
+        3000
+      );
+      return;
+    }
+
+    try {
+      statusFeedback.showInfo(
+        'Starting Batch Generation',
+        `Generating content for ${batchFormData.lessons.length} lessons...`
+      );
+
+      const batchId = await batchGeneration.createBatch(
+        batchFormData.courseName || 'Unnamed Course',
+        batchFormData.lessons.map(lesson => ({
+          topic: lesson.topic,
+          learningObjectives: lesson.learningObjectives.filter(obj => obj.trim()),
+          duration: lesson.duration,
+          audience: lesson.audience,
+          contentTypes: batchFormData.selectedContentTypes,
+          priority: 'normal' as const,
+        })),
+        {
+          parallelGeneration: true,
+          maxParallelJobs: 3,
+          continueOnError: true,
+          savePartialResults: true,
+          retryFailedItems: true,
+          maxRetries: 2,
+        }
+      );
+
+      const result = await batchGeneration.executeBatch(
+        batchId,
+        batchFormData.courseName || 'Unnamed Course',
+        batchFormData.lessons.map(lesson => ({
+          topic: lesson.topic,
+          learningObjectives: lesson.learningObjectives.filter(obj => obj.trim()),
+          duration: lesson.duration,
+          audience: lesson.audience,
+          contentTypes: batchFormData.selectedContentTypes,
+          priority: 'normal' as const,
+        }))
+      );
+
+      statusFeedback.showSuccess(
+        'Batch Generation Complete',
+        `Generated content for ${result.successfulItems}/${result.totalItems} lessons.`,
+        5000
+      );
+    } catch (error) {
+      statusFeedback.showError(
+        'Batch Generation Failed',
+        error instanceof Error ? error.message : 'An unexpected error occurred.',
+        6000
+      );
+    }
+  };
+
+  const toggleBatchContentType = (contentType: ContentType) => {
+    setBatchFormData(prev => ({
+      ...prev,
+      selectedContentTypes: prev.selectedContentTypes.includes(contentType)
+        ? prev.selectedContentTypes.filter(t => t !== contentType)
+        : [...prev.selectedContentTypes, contentType],
+    }));
+  };
+
+  const getStepOptions = (stepName: string): React.ReactNode => {
+    switch (stepName) {
+      case 'Content Planning':
+        return (
+          <>
+            <label><input type="checkbox" defaultChecked /> Use AI suggestions</label>
+            <label><input type="checkbox" /> Include assessment mapping</label>
+          </>
+        );
+      case 'Material Generation':
+        return (
+          <>
+            <label><input type="checkbox" defaultChecked /> Generate slides first</label>
+            <label><input type="checkbox" /> Parallel generation</label>
+          </>
+        );
+      case 'Assessment Creation':
+        return (
+          <>
+            <label><input type="checkbox" /> Include difficulty progression</label>
+            <label><input type="checkbox" defaultChecked /> Auto-generate explanations</label>
+          </>
+        );
+      case 'Quality Review':
+        return (
+          <>
+            <label><input type="checkbox" defaultChecked /> Objective alignment check</label>
+            <label><input type="checkbox" /> Readability analysis</label>
+          </>
+        );
+      default:
+        return null;
     }
   };
 
@@ -563,77 +745,134 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
             <div className="workflow-content">
               <div className="workflow-steps">
                 <h3>Generation Pipeline</h3>
+                {workflow.state.error && (
+                  <div className="error-message">{workflow.state.error}</div>
+                )}
                 <div className="step-list">
-                  <div className="step-item">
-                    <div className="step-header">
-                      <span className="step-number">1</span>
-                      <h4>Content Planning</h4>
-                      <button className="btn-small primary">Run Step</button>
+                  {workflow.state.steps.map((step, index) => (
+                    <div key={index} className={`step-item ${step.status}`}>
+                      <div className="step-header">
+                        <span className="step-number">{index + 1}</span>
+                        <h4>{step.name}</h4>
+                        {step.status === 'pending' && (
+                          <button 
+                            className="btn-small primary"
+                            onClick={async () => {
+                              if (!workflow.state.workflowId) {
+                                const contentRequest = {
+                                  topic: formData.topic,
+                                  learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+                                  duration: formData.duration,
+                                  audience: formData.audience,
+                                  contentTypes: formData.contentTypes,
+                                };
+                                await workflow.createWorkflow(contentRequest);
+                              }
+                              await workflow.executeStep(index);
+                            }}
+                            disabled={workflow.state.isRunning}
+                          >
+                            Run Step
+                          </button>
+                        )}
+                        {step.status === 'running' && (
+                          <span className="status-badge">Running...</span>
+                        )}
+                        {step.status === 'completed' && (
+                          <span className="status-badge success">✓ Complete</span>
+                        )}
+                        {step.status === 'failed' && (
+                          <span className="status-badge error">✗ Failed</span>
+                        )}
+                        {step.status === 'pending' && index < 3 && (
+                          <button 
+                            className="btn-small secondary"
+                            onClick={() => workflow.skipStep(index)}
+                          >
+                            Skip
+                          </button>
+                        )}
+                      </div>
+                      <p>{getStepDescription(step.name)}</p>
+                      {step.error && (
+                        <div className="step-error">{step.error}</div>
+                      )}
+                      <div className="step-options">
+                        {getStepOptions(step.name)}
+                      </div>
                     </div>
-                    <p>Generate learning objectives and content outline</p>
-                    <div className="step-options">
-                      <label><input type="checkbox" defaultChecked /> Use AI suggestions</label>
-                      <label><input type="checkbox" /> Include assessment mapping</label>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-header">
-                      <span className="step-number">2</span>
-                      <h4>Material Generation</h4>
-                      <button className="btn-small secondary">Skip</button>
-                    </div>
-                    <p>Create slides, worksheets, and instructor materials</p>
-                    <div className="step-options">
-                      <label><input type="checkbox" defaultChecked /> Generate slides first</label>
-                      <label><input type="checkbox" /> Parallel generation</label>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-header">
-                      <span className="step-number">3</span>
-                      <h4>Assessment Creation</h4>
-                      <button className="btn-small primary">Run Step</button>
-                    </div>
-                    <p>Build quizzes, rubrics, and answer keys</p>
-                    <div className="step-options">
-                      <label><input type="checkbox" /> Include difficulty progression</label>
-                      <label><input type="checkbox" defaultChecked /> Auto-generate explanations</label>
-                    </div>
-                  </div>
-
-                  <div className="step-item">
-                    <div className="step-header">
-                      <span className="step-number">4</span>
-                      <h4>Quality Review</h4>
-                      <button className="btn-small secondary">Auto</button>
-                    </div>
-                    <p>Validate content alignment and quality standards</p>
-                    <div className="step-options">
-                      <label><input type="checkbox" defaultChecked /> Objective alignment check</label>
-                      <label><input type="checkbox" /> Readability analysis</label>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
               <div className="workflow-controls">
                 <h3>Quick Actions</h3>
                 <div className="action-grid">
-                  <button className="action-btn">
+                  <button 
+                    className="action-btn"
+                    onClick={async () => {
+                      const result = await workflow.executeQuickAction('slides_only', {
+                        topic: formData.topic,
+                        learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+                        duration: formData.duration,
+                        audience: formData.audience,
+                        contentTypes: ['Slides'],
+                      });
+                      statusFeedback.showSuccess('Slides generated successfully!');
+                    }}
+                    disabled={workflow.state.isRunning}
+                  >
                     <span className="action-icon">⚡</span>
                     <span>Generate Slides Only</span>
                   </button>
-                  <button className="action-btn">
+                  <button 
+                    className="action-btn"
+                    onClick={async () => {
+                      const result = await workflow.executeQuickAction('assessment_suite', {
+                        topic: formData.topic,
+                        learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+                        duration: formData.duration,
+                        audience: formData.audience,
+                        contentTypes: ['Quiz', 'ActivityGuide'],
+                      });
+                      statusFeedback.showSuccess('Assessment suite created!');
+                    }}
+                    disabled={workflow.state.isRunning}
+                  >
                     <span className="action-icon">📝</span>
                     <span>Create Assessment Suite</span>
                   </button>
-                  <button className="action-btn">
+                  <button 
+                    className="action-btn"
+                    onClick={async () => {
+                      const result = await workflow.executeQuickAction('learning_objectives', {
+                        topic: formData.topic,
+                        learningObjectives: [],
+                        duration: formData.duration,
+                        audience: formData.audience,
+                        contentTypes: [],
+                      });
+                      statusFeedback.showSuccess('Learning objectives generated!');
+                    }}
+                    disabled={workflow.state.isRunning}
+                  >
                     <span className="action-icon">🎯</span>
                     <span>Learning Objectives Only</span>
                   </button>
-                  <button className="action-btn">
+                  <button 
+                    className="action-btn"
+                    onClick={async () => {
+                      const result = await workflow.executeQuickAction('complete_package', {
+                        topic: formData.topic,
+                        learningObjectives: formData.learningObjectives.filter(obj => obj.trim()),
+                        duration: formData.duration,
+                        audience: formData.audience,
+                        contentTypes: formData.contentTypes,
+                      });
+                      statusFeedback.showSuccess('Complete lesson package generated!');
+                    }}
+                    disabled={workflow.state.isRunning}
+                  >
                     <span className="action-icon">📚</span>
                     <span>Complete Lesson Package</span>
                   </button>
@@ -650,41 +889,203 @@ export function ExpertMode({ onModeSwitch }: ExpertModeProps) {
               <p>Generate content for multiple lessons at once</p>
             </div>
 
+            {batchGeneration.state.isRunning && (
+              <div style={{
+                backgroundColor: '#eff6ff',
+                border: '1px solid #3b82f6',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '20px',
+              }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#1e40af' }}>Batch Generation in Progress</h4>
+                <p style={{ margin: '0', color: '#3730a3' }}>
+                  Generating content for {batchFormData.lessons.length} lessons...
+                </p>
+                {batchGeneration.state.progress && (
+                  <div style={{ marginTop: '12px' }}>
+                    <div style={{
+                      backgroundColor: '#dbeafe',
+                      borderRadius: '4px',
+                      height: '8px',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        backgroundColor: '#3b82f6',
+                        height: '100%',
+                        width: `${batchGeneration.state.progress.progressPercent}%`,
+                        transition: 'width 0.3s ease',
+                      }} />
+                    </div>
+                    <p style={{ fontSize: '12px', margin: '4px 0 0 0', color: '#6b7280' }}>
+                      {batchGeneration.state.progress.completedItems}/{batchGeneration.state.progress.totalItems} completed
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="batch-content">
               <div className="batch-setup">
                 <h3>Batch Configuration</h3>
                 <div className="form-group">
                   <label>Course Name</label>
-                  <input type="text" placeholder="e.g., Introduction to Psychology" className="form-input" />
+                  <input 
+                    type="text" 
+                    placeholder="e.g., Introduction to Psychology" 
+                    className="form-input"
+                    value={batchFormData.courseName}
+                    onChange={(e) => handleBatchFormChange('courseName', e.target.value)}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Number of Lessons</label>
-                  <input type="number" placeholder="12" min="1" max="50" className="form-input" />
+                  <input 
+                    type="number" 
+                    placeholder="12" 
+                    min="1" 
+                    max="50" 
+                    className="form-input"
+                    value={batchFormData.numberOfLessons}
+                    onChange={(e) => handleBatchFormChange('numberOfLessons', parseInt(e.target.value) || 1)}
+                  />
                 </div>
                 <div className="form-group">
                   <label>Content Types (for all lessons)</label>
                   <div className="checkbox-group">
-                    <label><input type="checkbox" /> Slides</label>
-                    <label><input type="checkbox" /> Instructor Notes</label>
-                    <label><input type="checkbox" /> Worksheets</label>
-                    <label><input type="checkbox" /> Quizzes</label>
+                    {(['Slides', 'InstructorNotes', 'Worksheet', 'Quiz'] as ContentType[]).map((type) => (
+                      <label key={type}>
+                        <input 
+                          type="checkbox" 
+                          checked={batchFormData.selectedContentTypes.includes(type)}
+                          onChange={() => toggleBatchContentType(type)}
+                        />
+                        {type.replace(/([A-Z])/g, ' $1').trim()}
+                      </label>
+                    ))}
                   </div>
+                </div>
+                <div className="form-group">
+                  <button 
+                    type="button" 
+                    className="btn secondary"
+                    onClick={generateBatchLessons}
+                    disabled={!batchFormData.courseName || batchFormData.numberOfLessons < 1}
+                  >
+                    Generate Lesson Structure
+                  </button>
                 </div>
               </div>
 
               <div className="batch-preview">
-                <h3>Batch Preview</h3>
-                <div className="batch-placeholder">
-                  <p>Configure your batch settings to see a preview</p>
-                </div>
+                <h3>Lesson Preview ({batchFormData.lessons.length} lessons)</h3>
+                {batchFormData.lessons.length > 0 ? (
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {batchFormData.lessons.map((lesson, index) => (
+                      <div key={index} style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        marginBottom: '8px',
+                        backgroundColor: '#fafafa',
+                      }}>
+                        <div className="form-group" style={{ marginBottom: '8px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: '500' }}>Lesson {index + 1} Topic:</label>
+                          <input
+                            type="text"
+                            value={lesson.topic}
+                            onChange={(e) => updateBatchLesson(index, 'topic', e.target.value)}
+                            className="form-input"
+                            style={{ fontSize: '14px', padding: '6px 8px' }}
+                          />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          <div className="form-group">
+                            <label style={{ fontSize: '12px', fontWeight: '500' }}>Duration:</label>
+                            <select
+                              value={lesson.duration}
+                              onChange={(e) => updateBatchLesson(index, 'duration', e.target.value)}
+                              className="form-select"
+                              style={{ fontSize: '14px', padding: '6px 8px' }}
+                            >
+                              <option value="30 minutes">30 minutes</option>
+                              <option value="50 minutes">50 minutes</option>
+                              <option value="75 minutes">75 minutes</option>
+                              <option value="90 minutes">90 minutes</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label style={{ fontSize: '12px', fontWeight: '500' }}>Audience:</label>
+                            <input
+                              type="text"
+                              value={lesson.audience}
+                              onChange={(e) => updateBatchLesson(index, 'audience', e.target.value)}
+                              className="form-input"
+                              style={{ fontSize: '14px', padding: '6px 8px' }}
+                              placeholder="e.g., High school students"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="batch-placeholder">
+                    <p>Configure your batch settings and click "Generate Lesson Structure" to see a preview</p>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="batch-actions">
-              <button className="btn secondary">Import CSV</button>
-              <button className="btn secondary">Save Configuration</button>
-              <button className="btn primary">Start Batch Generation</button>
+              <button className="btn secondary" disabled>Import CSV (Coming Soon)</button>
+              <button className="btn secondary" disabled>Save Configuration (Coming Soon)</button>
+              <button 
+                className="btn primary"
+                onClick={startBatchGeneration}
+                disabled={
+                  batchGeneration.state.isRunning || 
+                  batchFormData.lessons.length === 0 ||
+                  batchFormData.selectedContentTypes.length === 0 ||
+                  !llm.hasAvailableProvider
+                }
+              >
+                {batchGeneration.state.isRunning ? 'Generating...' : 'Start Batch Generation'}
+              </button>
             </div>
+
+            {batchGeneration.state.result && (
+              <div style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #16a34a',
+                borderRadius: '8px',
+                padding: '16px',
+                marginTop: '20px',
+              }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#15803d' }}>Batch Generation Complete</h4>
+                <p style={{ margin: '0', color: '#166534' }}>
+                  Successfully generated content for {batchGeneration.state.result.successfulItems} out of {batchGeneration.state.result.totalItems} lessons
+                  ({Math.round((batchGeneration.state.result.totalElapsedTime / 1000) * 100) / 100}s total time)
+                </p>
+                {batchGeneration.state.result.failedItems > 0 && (
+                  <p style={{ margin: '8px 0 0 0', color: '#dc2626' }}>
+                    {batchGeneration.state.result.failedItems} lesson(s) failed to generate
+                  </p>
+                )}
+              </div>
+            )}
+
+            {batchGeneration.state.error && (
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #dc2626',
+                borderRadius: '8px',
+                padding: '16px',
+                marginTop: '20px',
+              }}>
+                <h4 style={{ margin: '0 0 8px 0', color: '#dc2626' }}>Batch Generation Error</h4>
+                <p style={{ margin: '0', color: '#991b1b' }}>{batchGeneration.state.error}</p>
+              </div>
+            )}
           </div>
         )}
 
