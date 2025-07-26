@@ -1,4 +1,4 @@
-use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, MarkdownConverter, HtmlConverter, PdfConverter, PowerPointConverter};
+use super::{ExportFormat, ExportOptions, ExportResult, FormatConverter, MarkdownConverter, HtmlConverter, PdfConverter, PowerPointConverter, WordConverter};
 #[cfg(feature = "quarto-integration")]
 use super::QuartoConverter;
 use crate::content::GeneratedContent;
@@ -18,6 +18,7 @@ impl ExportManager {
         converters.insert(ExportFormat::Html, Box::new(HtmlConverter::new()));
         converters.insert(ExportFormat::Pdf, Box::new(PdfConverter::new()));
         converters.insert(ExportFormat::PowerPoint, Box::new(PowerPointConverter::new()));
+        converters.insert(ExportFormat::Word, Box::new(WordConverter::new()));
         
         // Register Quarto converters if available
         #[cfg(feature = "quarto-integration")]

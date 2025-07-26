@@ -7,7 +7,7 @@ export default defineConfig({
   
   // Tauri expects a fixed port in development
   server: {
-    port: 5173,
+    port: 5174,
     strictPort: true,
     watch: {
       // Watch all files for hot reload
