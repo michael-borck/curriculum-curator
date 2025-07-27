@@ -1,0 +1,10 @@
+# Virtual environment
+venv/
+
+# Keep test files but not the scripts
+*.py
+
+# But keep the generated test files for testing
+!*.pptx
+!*.docx
+!*.md

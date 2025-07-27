@@ -1,0 +1,81 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "Curriculum Curator",
+  "version": "0.1.0",
+  "identifier": "com.curriculum-curator.app",
+  "build": {
+    "devUrl": "http://localhost:5174",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run frontend:dev",
+    "beforeBuildCommand": "npm run frontend:build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Curriculum Curator",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 768,
+        "maxWidth": 2560,
+        "maxHeight": 1600,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": true,
+        "transparent": false,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "center": true,
+        "skipTaskbar": false,
+        "theme": "Light"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com http://localhost:11434; font-src 'self'; img-src 'self' data: blob:;"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "copyright": "Copyright © 2024 Curriculum Curator Team",
+    "licenseFile": "../LICENSE",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "shortDescription": "Weekly curriculum content generation tool",
+    "longDescription": "A desktop-first, privacy-focused tool for generating weekly educational content using AI. Built with Tauri for native performance and user experience.",
+    "resources": [],
+    "externalBin": [],
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "fs": {},
+    "store": {
+      "default": true
+    }
+  }
+}

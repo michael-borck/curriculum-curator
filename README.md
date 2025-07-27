@@ -15,6 +15,7 @@ Curriculum Curator is a powerful desktop application that helps educators create
 ### Key Features
 
 - **🤖 Multiple AI Providers**: Supports OpenAI, Claude, Gemini, and Ollama (for offline use)
+- **📥 Document Import**: Import existing PowerPoint and Word documents for curation and enhancement
 - **📝 Comprehensive Content Generation**: Create slides, instructor notes, worksheets, quizzes, and activity guides
 - **🎨 Dual Interface Modes**: Wizard mode for guided creation and Expert mode for advanced users
 - **💾 Session Management**: Save, load, and organize your curriculum sessions
@@ -23,6 +24,7 @@ Curriculum Curator is a powerful desktop application that helps educators create
 - **🔄 Version Control**: Built-in Git integration for tracking changes
 - **💼 Backup & Recovery**: Automatic and manual backup options
 - **🌐 Offline Capable**: Works with local LLMs via Ollama
+- **🔍 Content Analysis**: Automatic detection of learning objectives and content classification
 
 ## Installation
 
@@ -66,20 +68,28 @@ npm run build
    - Choose your provider (OpenAI, Claude, Gemini, or Ollama)
    - Enter your API key (stored securely)
 
-3. **Create Content**:
-   - **Wizard Mode** (Default): Follow the step-by-step guide
-   - **Expert Mode**: Access all features from a single interface
+3. **Import or Create Content**:
+   - **Import Existing**: Upload PowerPoint (.pptx) or Word (.docx) files for enhancement
+   - **Create New**: Use Wizard Mode for guided creation or Expert Mode for advanced users
 
-4. **Generate Materials**: 
+4. **Generate/Enhance Materials**: 
    - Define your topic and audience
    - Set learning objectives
    - Select content types
    - Configure AI enhancements
-   - Click "Generate Content"
+   - Click "Generate Content" or "Enhance Imported Content"
 
 5. **Export Results**: Save your generated content in your preferred format
 
 ## Features in Detail
+
+### Document Import & Enhancement
+
+- **📥 PowerPoint Import**: Extract slides, titles, content, and speaker notes from .pptx files
+- **📄 Word Document Import**: Parse document structure and classify content types
+- **🔍 Content Analysis**: Automatic detection of learning objectives, assessments, and activities
+- **📊 Import Preview**: Review imported content before processing
+- **🎯 Smart Classification**: AI-powered content type detection and organization
 
 ### Content Types
 
@@ -147,9 +157,11 @@ curriculum-curator/
 ├── src-tauri/           # Rust backend
 │   ├── src/
 │   │   ├── content/     # Content generation
+│   │   ├── import/      # Document import & parsing
 │   │   ├── llm/        # LLM providers
 │   │   ├── export/     # Export functionality
 │   │   ├── session/    # Session management
+│   │   ├── validation/  # Content validation
 │   │   └── database/   # SQLite integration
 │   └── Cargo.toml
 ├── package.json
@@ -196,6 +208,11 @@ npm run type-check    # TypeScript checking
 - Ensure sufficient disk space
 - Verify export path exists
 
+**Import not working**
+- Verify file format is supported (.pptx, .docx)
+- Check file is not corrupted
+- Ensure file size is under 50MB
+
 **Ollama not detected**
 - Install Ollama from [ollama.ai](https://ollama.ai)
 - Ensure Ollama service is running
@@ -223,9 +240,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Roadmap
 
+### Phase 1: Import Foundation ✅ Completed
+- [x] PowerPoint (.pptx) import functionality
+- [x] Word (.docx) import functionality  
+- [x] Content analysis and classification
+- [x] XML parsing infrastructure
+
+### Phase 2: Content Enhancement (In Progress)
+- [ ] AI-powered content improvement suggestions
+- [ ] Side-by-side comparison views
+- [ ] Learning objective extraction and enhancement
+- [ ] Content gap analysis
+
+### Phase 3: Advanced Features (Planned)
+- [ ] PDF import support
+- [ ] Markdown import/export
+- [ ] Template marketplace
 - [ ] Cloud sync capabilities
 - [ ] Collaborative editing features
-- [ ] Template marketplace
+
+### Phase 4: Platform Expansion (Future)
 - [ ] Mobile companion app
 - [ ] Advanced analytics dashboard
 - [ ] Plugin system for extensions

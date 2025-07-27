@@ -5,6 +5,8 @@ use chrono::{DateTime, Utc};
 pub mod service;
 pub mod parsers;
 pub mod commands;
+pub mod analysis;
+pub mod enhancement;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportConfig {

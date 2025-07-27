@@ -139,3 +139,87 @@ SQLite database (`curriculum_curator.db`) with key tables:
 - Database encryption not implemented (local-only app)
 - No network requests except to LLM providers
 - File system access restricted to app directories by default
+
+## Development Workflow
+
+### Task-Based Development
+We follow a methodical, task-by-task approach:
+
+1. **One Task at a Time**: Work on single TODO items sequentially
+2. **Test Before Proceed**: Run tests after each task completion
+3. **Confirmation Required**: Get explicit approval before starting next task
+4. **Check off Progress**: Mark tasks as completed in TodoWrite
+
+### Testing Strategy
+
+#### Automated Tests (Rust Backend)
+```bash
+# Run all backend tests
+cd src-tauri && cargo test
+
+# Run specific test module
+cargo test import::tests
+
+# Run tests with output
+cargo test -- --nocapture
+
+# Run tests for specific feature
+cargo test --features import-office-docs
+```
+
+#### Frontend Tests (when available)
+```bash
+# Run React component tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+```
+
+#### Manual Testing (GUI/Integration)
+- Import workflow testing with sample files
+- UI component interaction testing
+- End-to-end workflow validation
+- Cross-platform testing (Windows/Mac/Linux)
+
+### Current Phase 1 Implementation Plan
+
+**Phase 1 Goal**: Fix Core Import/Export functionality
+
+**Next Task**: Add XML parsing dependencies to Cargo.toml
+- Task ID: Fix XML parsing for Office documents (first subtask)
+- Expected outcome: Compilation errors resolved, dependencies available
+- Test: `cargo check` should pass without XML-related errors
+
+**Testing for Phase 1**:
+- **Backend Tests**: Unit tests for each parser (PowerPoint, Word, Markdown)
+- **Integration Tests**: End-to-end import workflow tests
+- **Manual Tests**: GUI testing of import/preview/analysis workflow
+- **Sample Files**: Use test files in `test_files/` directory
+
+### File Structure for Phase 1
+```
+src-tauri/src/
+├── import/               # New import functionality
+│   ├── mod.rs           # Module definitions
+│   ├── parsers.rs       # Parser implementations (currently disabled)
+│   ├── powerpoint.rs    # PowerPoint parser
+│   ├── word.rs          # Word document parser
+│   ├── markdown.rs      # Markdown parser
+│   ├── analysis.rs      # Content analysis engine
+│   ├── errors.rs        # Import error types
+│   └── tests.rs         # Import tests
+├── commands/
+│   └── import.rs        # Tauri commands for import
+└── test_files/          # Sample files for testing
+    ├── sample.pptx
+    ├── sample.docx
+    └── sample.md
+```
+
+### Development Rules
+1. **NEVER** skip tests - always run `cargo test` after changes
+2. **ALWAYS** check compilation with `cargo check` before committing
+3. **CONFIRM** each task completion before proceeding
+4. **UPDATE** TodoWrite to track progress accurately
+5. **ASK** before making architectural decisions
