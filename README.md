@@ -366,3 +366,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ by educators, for educators
+# Repository Status
+Current implementation: FastAPI + React full-stack application
