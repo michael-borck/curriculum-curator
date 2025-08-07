@@ -26,25 +26,37 @@ cd frontend && npm run preview
 
 ### Code Quality Commands
 ```bash
-# Backend linting and formatting
+# Backend linting and formatting (modern tools)
 cd backend
-black app/
-flake8 app/
-mypy app/
+ruff check .              # Fast linting
+ruff format .             # Fast formatting
+basedpyright             # Type checking
 
-# Frontend linting
+# Legacy alternatives (if modern tools not available)
+# black app/ && flake8 app/ && mypy app/
+
+# Frontend linting and formatting  
 cd frontend
-npm run lint
-npm run format
+npm run lint              # ESLint checking
+npm run lint:fix          # Auto-fix ESLint issues
+npm run format            # Prettier formatting
+npm run format:check      # Check formatting without changes
 ```
 
 ### Testing Commands
 ```bash
-# Backend tests
-cd backend && pytest
+# Backend tests with coverage
+cd backend
+pytest                   # Run all tests
+pytest -v                # Verbose output
+pytest --cov=app         # With coverage report
+pytest -m "not slow"     # Skip slow tests
 
-# Frontend tests
-cd frontend && npm test
+# Frontend tests (Vitest + React Testing Library)
+cd frontend
+npm test                 # Run tests in watch mode
+npm run test:coverage    # Run tests with coverage report  
+npm run test:ui          # Run tests with UI interface
 ```
 
 ## Architecture Overview
@@ -53,17 +65,21 @@ cd frontend && npm test
 
 ### Backend Architecture (`/backend/app/`)
 - **FastAPI REST API** with JWT authentication
+- **Modern Python tooling**: uv (package manager), ruff (linting/formatting), basedpyright (type checking), pytest (testing)
 - **Plugin architecture** for content validation/remediation (`plugins/`)
 - **LLM service integration** supporting OpenAI, Anthropic with streaming (`services/llm_service.py`)
 - **Modular API routes** by domain: auth, courses, content, llm (`api/routes/`)
 - **SQLAlchemy + Alembic** ready (database models not yet implemented)
+- **pyproject.toml** for modern dependency management
 
 ### Frontend Architecture (`/src/`)
+- **Modern React tooling**: ESLint (linting), Prettier (formatting), Vitest (testing)
 - **Feature-based structure**: `features/{auth,content,courses}/`
 - **Shared components**: `components/{Editor,Layout,Wizard}/`
 - **Zustand state management** (minimal, auth only)
 - **TipTap rich text editor** with table/code block support
 - **Tailwind CSS** styling
+- **Vite** for fast development and building
 
 ## Key Components
 
@@ -142,7 +158,7 @@ VITE_ENABLE_AI_FEATURES=true
 - Database models and relationships (SQLAlchemy models are empty)
 - Plugin validators/remediators (base classes exist, implementations needed) 
 - File upload processing (endpoints exist, processing incomplete)
-- Test suites (pytest for backend, npm test for frontend not implemented)
+- Test suites (pytest configured but tests not written, npm test for frontend not implemented)
 - Production deployment configuration (Docker setup mentioned in README)
 
 ## Common Patterns
@@ -161,6 +177,24 @@ VITE_ENABLE_AI_FEATURES=true
 
 ### LLM Provider Integration
 Extend `LLMService` class in `backend/app/services/llm_service.py` following the existing OpenAI/Anthropic pattern.
+
+## Modern Python Tooling
+
+This project uses modern Python tools for better performance and developer experience:
+
+- **uv**: Ultra-fast Python package manager and resolver (replaces pip/pip-tools)
+- **ruff**: Extremely fast Python linter and formatter (replaces black, flake8, isort)
+- **basedpyright**: Fast type checker (replaces mypy)
+- **pytest**: Testing framework with extensive configuration
+- **pyproject.toml**: Modern project configuration (replaces requirements.txt, setup.py, tox.ini, etc.)
+
+### Installation Commands
+```bash
+# Install modern tools globally
+curl -LsSf https://astral.sh/uv/install.sh | sh  # uv
+uv tool install ruff                              # ruff
+uv tool install basedpyright                     # basedpyright
+```
 
 ## Database Notes
 

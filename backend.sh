@@ -86,34 +86,31 @@ if [ "$PACKAGE_MANAGER" = "pip" ]; then
 fi
 
 # Install or update dependencies
-if [ -f "requirements.txt" ]; then
-    log_info "Installing/updating dependencies..."
+if [ -f "pyproject.toml" ]; then
+    log_info "Installing/updating dependencies from pyproject.toml..."
     
     if [ "$PACKAGE_MANAGER" = "uv" ]; then
-        # Use uv pip install instead of sync to avoid removing needed packages
-        uv pip install -r requirements.txt
+        # Use uv to install dependencies with development extras
+        uv pip install -e ".[dev]"
     else
-        # Check if requirements are already satisfied
-        if pip freeze | grep -q "fastapi"; then
-            log_info "Dependencies detected. Checking for updates..."
-            pip install -r requirements.txt --upgrade
-        else
-            log_info "Installing dependencies for the first time..."
-            pip install -r requirements.txt
-        fi
+        # Fallback to pip with pyproject.toml support
+        pip install -e ".[dev]"
     fi
     
-    # Verify critical packages are installed
+    log_success "Dependencies ready"
+elif [ -f "requirements.txt" ]; then
+    log_warning "Found requirements.txt but pyproject.toml expected. Consider migrating."
+    log_info "Installing/updating dependencies from requirements.txt..."
+    
     if [ "$PACKAGE_MANAGER" = "uv" ]; then
-        if ! uv pip show click &> /dev/null; then
-            log_warning "Installing missing critical dependencies..."
-            uv pip install click h11 httptools websockets watchfiles uvloop
-        fi
+        uv pip install -r requirements.txt
+    else
+        pip install -r requirements.txt --upgrade
     fi
     
     log_success "Dependencies ready"
 else
-    log_error "requirements.txt not found!"
+    log_error "Neither pyproject.toml nor requirements.txt found!"
     exit 1
 fi
 

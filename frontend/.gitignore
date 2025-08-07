@@ -30,6 +30,12 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Vitest
+.vitest/
+
+# ESLint cache
+.eslintcache
+
 # Grunt intermediate storage
 .grunt
 
