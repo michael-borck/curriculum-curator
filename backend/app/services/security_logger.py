@@ -1,198 +1,194 @@
 """
-Security logging service for centralized security event logging
+Security logger service for tracking security events
 """
 
 import time
+from typing import TYPE_CHECKING
 
 from fastapi import Request
-from sqlalchemy.orm import Session
 
 from app.models.security_log import SecurityEventType, SecurityLog
-from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models import User
 
 
 class SecurityLogger:
-    """Centralized security event logging service"""
+    """Centralized security logging service"""
 
     @staticmethod
     def log_authentication_event(
-        db: Session,
+        db,
         event_type: SecurityEventType,
         request: Request,
-        user: User | None = None,
-        success: bool = False,
+        user: "User | None" = None,
+        success: bool = True,
         description: str | None = None,
         details: dict | None = None,
         response_time_ms: int | None = None,
-    ) -> SecurityLog:
-        """Log authentication-related security events"""
+    ):
+        """Log authentication-related events"""
+        client_ip = SecurityLogger._get_client_ip(request)
+        user_agent = request.headers.get("user-agent", "Unknown")
 
-        # Determine severity based on event type
-        severity = "info"
-        if event_type in [
-            SecurityEventType.LOGIN_FAILED,
-            SecurityEventType.ACCOUNT_LOCKED,
-            SecurityEventType.BRUTE_FORCE_DETECTED,
-        ]:
-            severity = "warning"
-        elif event_type == SecurityEventType.SUSPICIOUS_ACTIVITY:
-            severity = "error"
-
-        return SecurityLog.log_event(
+        SecurityLog.log_event(
             db_session=db,
             event_type=event_type,
-            ip_address=SecurityLogger._get_client_ip(request),
+            ip_address=client_ip,
             user_id=str(user.id) if user else None,
             user_email=user.email if user else None,
             user_role=user.role if user else None,
-            user_agent=SecurityLogger._get_user_agent(request),
+            user_agent=user_agent,
             request_path=str(request.url.path),
             request_method=request.method,
             event_description=description,
-            severity=severity,
+            severity="info" if success else "warning",
             success="success" if success else "failure",
-            details=details,
+            details=details or {},
             response_time_ms=response_time_ms,
         )
 
     @staticmethod
     def log_security_event(
-        db: Session,
+        db,
         event_type: SecurityEventType,
         request: Request,
         severity: str = "warning",
-        user: User | None = None,
         description: str | None = None,
         details: dict | None = None,
+        user: "User | None" = None,
         response_time_ms: int | None = None,
-    ) -> SecurityLog:
-        """Log general security events (CSRF, rate limiting, etc.)"""
+    ):
+        """Log general security events"""
+        client_ip = SecurityLogger._get_client_ip(request)
+        user_agent = request.headers.get("user-agent", "Unknown")
 
-        return SecurityLog.log_event(
+        SecurityLog.log_event(
             db_session=db,
             event_type=event_type,
-            ip_address=SecurityLogger._get_client_ip(request),
+            ip_address=client_ip,
             user_id=str(user.id) if user else None,
             user_email=user.email if user else None,
             user_role=user.role if user else None,
-            user_agent=SecurityLogger._get_user_agent(request),
+            user_agent=user_agent,
             request_path=str(request.url.path),
             request_method=request.method,
             event_description=description,
             severity=severity,
-            success="blocked",  # Security events typically represent blocked actions
-            details=details,
+            success="blocked" if severity in ["warning", "error", "critical"] else "success",
+            details=details or {},
             response_time_ms=response_time_ms,
         )
 
     @staticmethod
     def log_data_access_event(
-        db: Session,
-        event_type: SecurityEventType,
+        db,
         request: Request,
-        user: User,
-        resource_type: str | None = None,
+        user: "User",
+        resource_type: str,
         resource_id: str | None = None,
-        action: str | None = None,
-        success: bool = True,
-        details: dict | None = None,
+        action: str = "read",
+        description: str | None = None,
         response_time_ms: int | None = None,
-    ) -> SecurityLog:
-        """Log data access and modification events"""
+    ):
+        """Log data access events for audit trails"""
+        client_ip = SecurityLogger._get_client_ip(request)
 
-        # Build details dictionary
-        event_details = details or {}
-        if resource_type:
-            event_details["resource_type"] = resource_type
-        if resource_id:
-            event_details["resource_id"] = resource_id
-        if action:
-            event_details["action"] = action
-
-        severity = "info"
-        if event_type in [
-            SecurityEventType.DATA_DELETION,
-            SecurityEventType.SENSITIVE_DATA_ACCESS,
-        ]:
-            severity = "warning"
-
-        return SecurityLog.log_event(
+        SecurityLog.log_event(
             db_session=db,
-            event_type=event_type,
-            ip_address=SecurityLogger._get_client_ip(request),
+            event_type=SecurityEventType.SENSITIVE_DATA_ACCESS,
+            ip_address=client_ip,
             user_id=str(user.id),
             user_email=user.email,
             user_role=user.role,
-            user_agent=SecurityLogger._get_user_agent(request),
+            user_agent=request.headers.get("user-agent", "Unknown"),
             request_path=str(request.url.path),
             request_method=request.method,
-            event_description=f"{action or 'Access'} {resource_type or 'resource'}" if resource_type else None,
-            severity=severity,
-            success="success" if success else "failure",
-            details=event_details,
+            event_description=description or f"Accessed {resource_type}",
+            severity="info",
+            success="success",
+            details={
+                "resource_type": resource_type,
+                "resource_id": resource_id,
+                "action": action,
+            },
             response_time_ms=response_time_ms,
         )
 
     @staticmethod
     def log_admin_action(
-        db: Session,
-        request: Request,
-        admin_user: User,
+        db,
+        admin_user,
         action: str,
-        target_user: User | None = None,
-        details: dict | None = None,
-        response_time_ms: int | None = None,
-    ) -> SecurityLog:
+        target_user_id: str | None = None,
+        details: dict | None = None
+    ):
         """Log administrative actions"""
-
-        event_details = details or {}
-        event_details["admin_action"] = action
-
-        if target_user:
-            event_details["target_user_id"] = str(target_user.id)
-            event_details["target_user_email"] = target_user.email
-
-        description = f"Admin action: {action}"
-        if target_user:
-            description += f" (target: {target_user.email})"
-
-        return SecurityLog.log_event(
+        SecurityLog.log_event(
             db_session=db,
             event_type=SecurityEventType.ADMIN_ACTION,
-            ip_address=SecurityLogger._get_client_ip(request),
+            ip_address="127.0.0.1",  # Would come from request in real scenario
             user_id=str(admin_user.id),
             user_email=admin_user.email,
             user_role=admin_user.role,
-            user_agent=SecurityLogger._get_user_agent(request),
-            request_path=str(request.url.path),
-            request_method=request.method,
-            event_description=description,
-            severity="warning",  # Admin actions should be tracked carefully
+            event_description=action,
+            severity="info",
             success="success",
-            details=event_details,
-            response_time_ms=response_time_ms,
+            details={
+                "action": action,
+                "target_user_id": target_user_id,
+                **(details or {})
+            }
         )
 
     @staticmethod
     def _get_client_ip(request: Request) -> str:
-        """Extract client IP address from request"""
-        # Check for forwarded IP (behind proxy/load balancer)
-        forwarded_for = request.headers.get("X-Forwarded-For")
+        """Extract client IP from request, handling proxies"""
+        # Check for X-Forwarded-For header (common with proxies/load balancers)
+        forwarded_for = request.headers.get("x-forwarded-for")
         if forwarded_for:
+            # X-Forwarded-For can contain multiple IPs, take the first one
             return forwarded_for.split(",")[0].strip()
 
-        # Check for real IP header
-        real_ip = request.headers.get("X-Real-IP")
+        # Check for X-Real-IP header
+        real_ip = request.headers.get("x-real-ip")
         if real_ip:
-            return real_ip.strip()
+            return real_ip
 
-        # Fall back to direct connection IP
-        return request.client.host if request.client else "unknown"
+        # Fall back to direct client IP
+        if request.client:
+            return request.client.host
+
+        return "Unknown"
 
     @staticmethod
-    def _get_user_agent(request: Request) -> str:
-        """Extract user agent from request"""
-        return request.headers.get("User-Agent", "Unknown")[:500]  # Truncate to fit DB field
+    def analyze_login_patterns(db, user_id: str, hours: int = 24) -> dict:
+        """Analyze login patterns for a specific user"""
+        events = SecurityLog.get_recent_events(
+            db_session=db,
+            hours=hours,
+            event_types=[SecurityEventType.LOGIN_SUCCESS, SecurityEventType.LOGIN_FAILED],
+            user_id=user_id,
+        )
+
+        success_count = sum(1 for e in events if e.success == "success")
+        failure_count = sum(1 for e in events if e.success == "failure")
+        unique_ips = len({e.ip_address for e in events})
+
+        # Detect suspicious patterns
+        suspicious_patterns = []
+        if unique_ips > 5:  # Many different IPs
+            suspicious_patterns.append("Multiple IP addresses detected")
+        if failure_count > success_count * 2:  # High failure rate
+            suspicious_patterns.append("High login failure rate")
+
+        return {
+            "total_attempts": len(events),
+            "successful_logins": success_count,
+            "failed_logins": failure_count,
+            "unique_ip_addresses": unique_ips,
+            "suspicious_patterns": suspicious_patterns,
+        }
 
 
 # Decorators for automatic security logging

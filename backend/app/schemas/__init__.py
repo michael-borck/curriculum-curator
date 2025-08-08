@@ -2,6 +2,17 @@
 Pydantic schemas for API request/response models
 """
 
+from .admin import (
+    AuditLogResponse,
+    DatabaseBackupResponse,
+    EmailWhitelistCreate,
+    EmailWhitelistResponse,
+    EmailWhitelistUpdate,
+    SystemSettingsResponse,
+    SystemSettingsUpdate,
+    UserListResponse,
+    UserStatsResponse,
+)
 from .auth import (
     EmailVerificationRequest,
     EmailVerificationResponse,
@@ -18,8 +29,15 @@ from .auth import (
 )
 
 __all__ = [
+    # Admin schemas
+    "AuditLogResponse",
+    "DatabaseBackupResponse",
+    # Auth schemas
     "EmailVerificationRequest",
     "EmailVerificationResponse",
+    "EmailWhitelistCreate",
+    "EmailWhitelistResponse",
+    "EmailWhitelistUpdate",
     "ForgotPasswordRequest",
     "ForgotPasswordResponse",
     "LoginResponse",
@@ -27,7 +45,11 @@ __all__ = [
     "ResendVerificationResponse",
     "ResetPasswordRequest",
     "ResetPasswordResponse",
+    "SystemSettingsResponse",
+    "SystemSettingsUpdate",
+    "UserListResponse",
     "UserRegistrationRequest",
     "UserRegistrationResponse",
     "UserResponse",
+    "UserStatsResponse",
 ]

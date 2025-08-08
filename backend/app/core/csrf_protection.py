@@ -27,7 +27,7 @@ csrf_protect = CsrfProtect()
 def init_csrf_protection():
     """Initialize CSRF protection with settings"""
     @csrf_protect.load_config
-    def get_config():
+    def get_config():  # type: ignore[reportUnusedFunction]
         return CsrfSettings()
 
 

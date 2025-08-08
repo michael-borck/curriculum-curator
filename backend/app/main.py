@@ -95,9 +95,10 @@ app.add_middleware(
 
 # Import and include routers with error handling
 try:
-    from app.api.routes import auth, content, courses, llm
+    from app.api.routes import admin, auth, content, courses, llm
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+    app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
