@@ -36,7 +36,7 @@ class EmailService:
             MAIL_SSL_TLS=False,
             USE_CREDENTIALS=True,
             VALIDATE_CERTS=True,
-            TEMPLATE_FOLDER=template_dir
+            TEMPLATE_FOLDER=template_dir,
         )
 
         self.fast_mail = FastMail(self.config)
@@ -45,7 +45,7 @@ class EmailService:
     def generate_verification_code(length: int = 6) -> str:
         """Generate a random verification code"""
         digits = string.digits
-        return ''.join(secrets.choice(digits) for _ in range(length))
+        return "".join(secrets.choice(digits) for _ in range(length))
 
     def get_verification_email_template(self) -> str:
         """Get email verification template"""
@@ -150,7 +150,9 @@ class EmailService:
         </html>
         """
 
-    async def send_verification_email(self, user: User, verification_code: str, expires_minutes: int = 15) -> bool:
+    async def send_verification_email(
+        self, user: User, verification_code: str, expires_minutes: int = 15
+    ) -> bool:
         """Send email verification code to user"""
         try:
             template = Template(self.get_verification_email_template())
@@ -160,7 +162,7 @@ class EmailService:
                 user_name=user.name,
                 user_email=user.email,
                 verification_code=verification_code,
-                expiry_minutes=expires_minutes
+                expiry_minutes=expires_minutes,
             )
 
             # Plain text version for email clients that don't support HTML
@@ -186,7 +188,7 @@ The {settings.APP_NAME} Team
                 recipients=[user.email],
                 body=text_body,
                 html=html_body,
-                subtype=MessageType.html
+                subtype=MessageType.html,
             )
 
             await self.fast_mail.send_message(message)
@@ -196,7 +198,9 @@ The {settings.APP_NAME} Team
             print(f"❌ Failed to send verification email to {user.email}: {e}")
             return False
 
-    async def send_password_reset_email(self, user: User, reset_code: str, expires_minutes: int = 30) -> bool:
+    async def send_password_reset_email(
+        self, user: User, reset_code: str, expires_minutes: int = 30
+    ) -> bool:
         """Send password reset code to user"""
         try:
             template = Template(self.get_password_reset_email_template())
@@ -206,7 +210,7 @@ The {settings.APP_NAME} Team
                 user_name=user.name,
                 user_email=user.email,
                 reset_code=reset_code,
-                expiry_minutes=expires_minutes
+                expiry_minutes=expires_minutes,
             )
 
             # Plain text version
@@ -232,7 +236,7 @@ The {settings.APP_NAME} Security Team
                 recipients=[user.email],
                 body=text_body,
                 html=html_body,
-                subtype=MessageType.html
+                subtype=MessageType.html,
             )
 
             await self.fast_mail.send_message(message)
@@ -290,10 +294,7 @@ The {settings.APP_NAME} Security Team
             """
 
             template = Template(welcome_template)
-            html_body = template.render(
-                app_name=settings.APP_NAME,
-                user_name=user.name
-            )
+            html_body = template.render(app_name=settings.APP_NAME, user_name=user.name)
 
             text_body = f"""
 Account Activated - {settings.APP_NAME}
@@ -313,7 +314,7 @@ The {settings.APP_NAME} Team
                 recipients=[user.email],
                 body=text_body,
                 html=html_body,
-                subtype=MessageType.html
+                subtype=MessageType.html,
             )
 
             await self.fast_mail.send_message(message)

@@ -15,6 +15,7 @@ from app.models.user import GUID
 
 class EmailWhitelist(Base):
     """Email whitelist model for controlling registration access"""
+
     __tablename__ = "email_whitelist"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
@@ -24,12 +25,14 @@ class EmailWhitelist(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     def __repr__(self):
         return f"<EmailWhitelist(id={self.id}, pattern='{self.pattern}', active={self.is_active})>"
 
-    @validates('pattern')
+    @validates("pattern")
     def validate_pattern(self, key, value):
         """Validate email pattern format"""
         if not value:
@@ -39,21 +42,21 @@ class EmailWhitelist(Base):
         value = value.lower().strip()
 
         # Check if it's a valid email pattern (either full email or domain)
-        if '@' in value and not value.startswith('@'):
+        if "@" in value and not value.startswith("@"):
             # Full email address (contains @ but doesn't start with it)
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
             if not re.match(email_pattern, value):
                 raise ValueError("Invalid email address format")
         else:
             # Domain pattern (should start with @ or be just domain)
-            if not value.startswith('@'):
-                value = '@' + value
+            if not value.startswith("@"):
+                value = "@" + value
 
             # Allow localhost for development, otherwise require standard domain format
-            if value == '@localhost':
+            if value == "@localhost":
                 pass  # Allow localhost
-            elif value.startswith('@'):
-                domain_pattern = r'^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            elif value.startswith("@"):
+                domain_pattern = r"^@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
                 if not re.match(domain_pattern, value):
                     raise ValueError(f"Invalid domain pattern format: {value}")
             else:
@@ -69,11 +72,11 @@ class EmailWhitelist(Base):
         email = email.lower().strip()
 
         # If pattern is a full email, do exact match
-        if '@' in self.pattern and not self.pattern.startswith('@'):
+        if "@" in self.pattern and not self.pattern.startswith("@"):
             return email == self.pattern
 
         # If pattern is a domain (@example.com), check if email ends with it
-        if self.pattern.startswith('@'):
+        if self.pattern.startswith("@"):
             return email.endswith(self.pattern)
 
         return False
@@ -97,11 +100,11 @@ class EmailWhitelist(Base):
             {
                 "pattern": "@example.com",
                 "description": "Example domain - replace with your organization's domain",
-                "is_active": False
+                "is_active": False,
             },
             {
                 "pattern": "@localhost",
                 "description": "Localhost domain for development",
-                "is_active": True
-            }
+                "is_active": True,
+            },
         ]

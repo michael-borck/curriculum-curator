@@ -31,7 +31,7 @@ def seed_admin_user(db: Session):
         name="System Administrator",
         role=UserRole.ADMIN.value,
         is_verified=True,
-        is_active=True
+        is_active=True,
     )
 
     try:
@@ -54,9 +54,11 @@ def seed_system_settings(db: Session):
 
     for setting_data in default_settings:
         # Check if setting already exists
-        existing = db.query(SystemSettings).filter(
-            SystemSettings.key == setting_data["key"]
-        ).first()
+        existing = (
+            db.query(SystemSettings)
+            .filter(SystemSettings.key == setting_data["key"])
+            .first()
+        )
 
         if existing:
             print(f"⚠️  Setting already exists: {setting_data['key']}")
@@ -67,7 +69,7 @@ def seed_system_settings(db: Session):
             id=uuid.uuid4(),
             key=setting_data["key"],
             value=setting_data["value"],
-            description=setting_data["description"]
+            description=setting_data["description"],
         )
 
         try:
@@ -91,9 +93,11 @@ def seed_email_whitelist(db: Session):
 
     for whitelist_data in default_whitelist:
         # Check if entry already exists
-        existing = db.query(EmailWhitelist).filter(
-            EmailWhitelist.pattern == whitelist_data["pattern"]
-        ).first()
+        existing = (
+            db.query(EmailWhitelist)
+            .filter(EmailWhitelist.pattern == whitelist_data["pattern"])
+            .first()
+        )
 
         if existing:
             print(f"⚠️  Whitelist entry already exists: {whitelist_data['pattern']}")
@@ -105,7 +109,7 @@ def seed_email_whitelist(db: Session):
                 id=uuid.uuid4(),
                 pattern=whitelist_data["pattern"],
                 description=whitelist_data["description"],
-                is_active=whitelist_data["is_active"]
+                is_active=whitelist_data["is_active"],
             )
             print(f"✓ Created whitelist entry: {whitelist_data['pattern']}")
         except ValueError as e:

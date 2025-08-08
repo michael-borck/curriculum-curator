@@ -32,10 +32,10 @@ from app.utils.auth_helpers import auth_helpers
 
 router = APIRouter()
 
+
 @router.post("/register", response_model=UserRegistrationResponse)
 async def register(
-    request: UserRegistrationRequest,
-    db: Session = Depends(deps.get_db)
+    request: UserRegistrationRequest, db: Session = Depends(deps.get_db)
 ):
     """Register a new user with email verification"""
 
@@ -43,7 +43,7 @@ async def register(
     if not EmailWhitelist.is_email_whitelisted(db, request.email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email address is not authorized for registration. Please contact your administrator."
+            detail="Email address is not authorized for registration. Please contact your administrator.",
         )
 
     # Check if user already exists
@@ -52,7 +52,7 @@ async def register(
         if existing_user.is_verified:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists"
+                detail="An account with this email already exists",
             )
         # User exists but not verified - resend verification
         success, verification_code = await auth_helpers.create_and_send_verification(
@@ -61,11 +61,11 @@ async def register(
         if success:
             return UserRegistrationResponse(
                 message="Verification email sent. Please check your inbox for the 6-digit code.",
-                user_email=existing_user.email
+                user_email=existing_user.email,
             )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification email. Please try again."
+            detail="Failed to send verification email. Please try again.",
         )
 
     try:
@@ -77,7 +77,7 @@ async def register(
             name=request.name.strip(),
             role=UserRole.USER.value,
             is_verified=False,
-            is_active=True
+            is_active=True,
         )
 
         db.add(new_user)
@@ -92,28 +92,27 @@ async def register(
         if success:
             return UserRegistrationResponse(
                 message="Registration successful! Please check your email for the verification code.",
-                user_email=new_user.email
+                user_email=new_user.email,
             )
         # Registration failed - remove user
         db.delete(new_user)
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed. Could not send verification email."
+            detail="Registration failed. Could not send verification email.",
         )
 
     except Exception:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed. Please try again."
+            detail="Registration failed. Please try again.",
         )
 
 
 @router.post("/verify-email", response_model=EmailVerificationResponse)
 async def verify_email(
-    request: EmailVerificationRequest,
-    db: Session = Depends(deps.get_db)
+    request: EmailVerificationRequest, db: Session = Depends(deps.get_db)
 ):
     """Verify email with 6-digit code"""
 
@@ -124,7 +123,7 @@ async def verify_email(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_message or "Email verification failed"
+            detail=error_message or "Email verification failed",
         )
 
     # Send welcome email
@@ -134,7 +133,7 @@ async def verify_email(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": str(user.id), "email": user.email},
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
 
     return EmailVerificationResponse(
@@ -146,15 +145,14 @@ async def verify_email(
             role=user.role,
             is_verified=user.is_verified,
             is_active=user.is_active,
-            created_at=user.created_at.isoformat()
-        )
+            created_at=user.created_at.isoformat(),
+        ),
     )
 
 
 @router.post("/resend-verification", response_model=ResendVerificationResponse)
 async def resend_verification(
-    request: ResendVerificationRequest,
-    db: Session = Depends(deps.get_db)
+    request: ResendVerificationRequest, db: Session = Depends(deps.get_db)
 ):
     """Resend verification email"""
 
@@ -168,10 +166,12 @@ async def resend_verification(
     if user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This account is already verified"
+            detail="This account is already verified",
         )
 
-    success, verification_code = await auth_helpers.create_and_send_verification(db, user)
+    success, verification_code = await auth_helpers.create_and_send_verification(
+        db, user
+    )
 
     return ResendVerificationResponse(
         message="If an account with this email exists and is unverified, a verification code has been sent."
@@ -180,8 +180,7 @@ async def resend_verification(
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(deps.get_db)
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(deps.get_db)
 ):
     """OAuth2 compatible token login"""
 
@@ -196,21 +195,20 @@ async def login(
 
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is disabled"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled"
         )
 
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email address not verified. Please check your email for the verification code."
+            detail="Email address not verified. Please check your email for the verification code.",
         )
 
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": str(user.id), "email": user.email},
-        expires_delta=access_token_expires
+        expires_delta=access_token_expires,
     )
 
     return LoginResponse(
@@ -222,27 +220,28 @@ async def login(
             role=user.role,
             is_verified=user.is_verified,
             is_active=user.is_active,
-            created_at=user.created_at.isoformat()
-        )
+            created_at=user.created_at.isoformat(),
+        ),
     )
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
 async def forgot_password(
-    request: ForgotPasswordRequest,
-    db: Session = Depends(deps.get_db)
+    request: ForgotPasswordRequest, db: Session = Depends(deps.get_db)
 ):
     """Send password reset code to email"""
 
     user = db.query(User).filter(User.email == request.email.lower()).first()
 
     if user and user.is_verified and user.is_active:
-        success, reset_code = await auth_helpers.create_and_send_password_reset(db, user)
+        success, reset_code = await auth_helpers.create_and_send_password_reset(
+            db, user
+        )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send password reset email. Please try again."
+                detail="Failed to send password reset email. Please try again.",
             )
 
     # Always return success message to prevent email enumeration
@@ -253,8 +252,7 @@ async def forgot_password(
 
 @router.post("/reset-password", response_model=ResetPasswordResponse)
 async def reset_password(
-    request: ResetPasswordRequest,
-    db: Session = Depends(deps.get_db)
+    request: ResetPasswordRequest, db: Session = Depends(deps.get_db)
 ):
     """Reset password with verification code"""
 
@@ -265,7 +263,7 @@ async def reset_password(
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_message or "Invalid or expired reset code"
+            detail=error_message or "Invalid or expired reset code",
         )
 
     try:
@@ -285,14 +283,12 @@ async def reset_password(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reset password. Please try again."
+            detail="Failed to reset password. Please try again.",
         )
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_user_profile(
-    current_user: User = Depends(deps.get_current_active_user)
-):
+async def get_user_profile(current_user: User = Depends(deps.get_current_active_user)):
     """Get current user information"""
     return UserResponse(
         id=str(current_user.id),
@@ -301,5 +297,5 @@ async def get_user_profile(
         role=current_user.role,
         is_verified=current_user.is_verified,
         is_active=current_user.is_active,
-        created_at=current_user.created_at.isoformat()
+        created_at=current_user.created_at.isoformat(),
     )

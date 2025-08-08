@@ -13,6 +13,7 @@ from app.core.database import init_db
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -25,11 +26,12 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("Shutting down...")
 
+
 app = FastAPI(
     title="Curriculum Curator",
     description="Pedagogically-aware course content platform",
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS configuration
@@ -44,6 +46,7 @@ app.add_middleware(
 # Import and include routers with error handling
 try:
     from app.api.routes import auth, content, courses, llm
+
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
@@ -51,14 +54,16 @@ try:
 except ImportError as e:
     logger.warning(f"Some routes not loaded: {e}")
 
+
 @app.get("/")
 async def root():
     return {
         "message": "Curriculum Curator API",
         "version": "0.1.0",
         "docs": "/docs",
-        "redoc": "/redoc"
+        "redoc": "/redoc",
     }
+
 
 @app.get("/health")
 async def health_check():

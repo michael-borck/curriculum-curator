@@ -14,6 +14,7 @@ from app.models.user import GUID
 
 class PasswordReset(Base):
     """Password reset model for secure password recovery"""
+
     __tablename__ = "password_resets"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
@@ -35,7 +36,9 @@ class PasswordReset(Base):
         self.expires_at = datetime.utcnow() + timedelta(minutes=expires_minutes)
 
     def __repr__(self):
-        return f"<PasswordReset(id={self.id}, user_id={self.user_id}, used={self.used})>"
+        return (
+            f"<PasswordReset(id={self.id}, user_id={self.user_id}, used={self.used})>"
+        )
 
     @property
     def is_expired(self) -> bool:

@@ -13,10 +13,12 @@ class ContentGenerationRequest(BaseModel):
     context: dict[str, Any]
     stream: bool = False
 
+
 class ContentEnhanceRequest(BaseModel):
     content: str
     pedagogy_style: str
     suggestions: list | None = None
+
 
 class ContentValidationResponse(BaseModel):
     is_valid: bool

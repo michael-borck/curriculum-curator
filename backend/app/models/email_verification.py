@@ -14,6 +14,7 @@ from app.models.user import GUID
 
 class EmailVerification(Base):
     """Email verification model for user registration"""
+
     __tablename__ = "email_verifications"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)

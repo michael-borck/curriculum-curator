@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import CHAR, TypeDecorator
@@ -19,18 +19,19 @@ class GUID(TypeDecorator):
 
     Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
     """
+
     impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
         return dialect.type_descriptor(CHAR(36))
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return str(value)
         if not isinstance(value, uuid.UUID):
             return str(uuid.UUID(value))
@@ -46,29 +47,47 @@ class GUID(TypeDecorator):
 
 class UserRole(str, Enum):
     """User role enumeration"""
+
     ADMIN = "admin"
-    USER = "user"
+    LECTURER = "lecturer"
+    STUDENT = "student"
 
 
 class User(Base):
     """User model for authentication and profile management"""
+
     __tablename__ = "users"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)
-    role = Column(String(20), default=UserRole.USER.value, nullable=False)
+    role = Column(String(20), default=UserRole.LECTURER.value, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 
+    # Institution and academic details
+    institution = Column(String(255), nullable=True)
+    department = Column(String(255), nullable=True)
+    position_title = Column(String(255), nullable=True)
+
+    # Teaching preferences and LLM configuration (JSON fields)
+    teaching_preferences = Column(JSON, nullable=True)  # pedagogy style, preferences
+    llm_config = Column(JSON, nullable=True)  # API keys (encrypted), model preferences
+    content_generation_context = Column(Text, nullable=True)  # Default context for LLM
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     # Relationships
     email_verifications = relationship("EmailVerification", back_populates="user")
     password_resets = relationship("PasswordReset", back_populates="user")
+    owned_units = relationship(
+        "Unit", foreign_keys="Unit.owner_id", back_populates="owner"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
@@ -77,3 +96,13 @@ class User(Base):
     def is_admin(self) -> bool:
         """Check if user has admin role"""
         return self.role == UserRole.ADMIN.value
+
+    @property
+    def is_lecturer(self) -> bool:
+        """Check if user has lecturer role"""
+        return self.role == UserRole.LECTURER.value
+
+    @property
+    def is_student(self) -> bool:
+        """Check if user has student role"""
+        return self.role == UserRole.STUDENT.value

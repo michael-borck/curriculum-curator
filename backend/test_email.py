@@ -23,7 +23,10 @@ async def test_email_service():
     print(f"📧 From Email: {settings.BREVO_FROM_EMAIL}")
     print(f"📧 From Name: {settings.BREVO_FROM_NAME}")
 
-    if not settings.BREVO_API_KEY or settings.BREVO_API_KEY == "your_brevo_api_key_here":
+    if (
+        not settings.BREVO_API_KEY
+        or settings.BREVO_API_KEY == "your_brevo_api_key_here"
+    ):
         print("❌ BREVO_API_KEY not configured! Please update your .env file.")
         print("   Get your API key from: https://app.brevo.com/settings/keys/api")
         return False
@@ -31,26 +34,24 @@ async def test_email_service():
     print(f"🔑 API Key: {'✅ Configured' if settings.BREVO_API_KEY else '❌ Missing'}")
 
     # Test email address - change this to your email
-    test_email = input("Enter your email address to test (or press Enter to skip): ").strip()
+    test_email = input(
+        "Enter your email address to test (or press Enter to skip): "
+    ).strip()
 
     if not test_email:
         print("⏭️  Skipping email test")
         return True
 
     # Create a test user object
-    test_user = type('TestUser', (), {
-        'id': '12345',
-        'name': 'Test User',
-        'email': test_email
-    })()
+    test_user = type(
+        "TestUser", (), {"id": "12345", "name": "Test User", "email": test_email}
+    )()
 
     print(f"\n📤 Sending test verification email to {test_email}...")
 
     try:
         success = await email_service.send_verification_email(
-            user=test_user,
-            verification_code="123456",
-            expires_minutes=15
+            user=test_user, verification_code="123456", expires_minutes=15
         )
 
         if success:
@@ -63,6 +64,7 @@ async def test_email_service():
     except Exception as e:
         print(f"❌ Error sending email: {e}")
         return False
+
 
 if __name__ == "__main__":
     print("=" * 60)

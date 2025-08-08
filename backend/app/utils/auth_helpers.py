@@ -19,19 +19,17 @@ class AuthHelpers:
     def generate_verification_code(length: int = 6) -> str:
         """Generate a secure random verification code"""
         digits = string.digits
-        return ''.join(secrets.choice(digits) for _ in range(length))
+        return "".join(secrets.choice(digits) for _ in range(length))
 
     @staticmethod
     def generate_secure_token(length: int = 32) -> str:
         """Generate a secure random token"""
         chars = string.ascii_letters + string.digits
-        return ''.join(secrets.choice(chars) for _ in range(length))
+        return "".join(secrets.choice(chars) for _ in range(length))
 
     @staticmethod
     async def create_and_send_verification(
-        db: Session,
-        user: User,
-        expires_minutes: int = 15
+        db: Session, user: User, expires_minutes: int = 15
     ) -> tuple[bool, str | None]:
         """
         Create email verification record and send verification email
@@ -43,9 +41,7 @@ class AuthHelpers:
 
             # Create verification record
             verification = EmailVerification(
-                user_id=user.id,
-                code=verification_code,
-                expires_minutes=expires_minutes
+                user_id=user.id, code=verification_code, expires_minutes=expires_minutes
             )
 
             db.add(verification)
@@ -70,9 +66,7 @@ class AuthHelpers:
 
     @staticmethod
     async def create_and_send_password_reset(
-        db: Session,
-        user: User,
-        expires_minutes: int = 30
+        db: Session, user: User, expires_minutes: int = 30
     ) -> tuple[bool, str | None]:
         """
         Create password reset record and send reset email
@@ -83,19 +77,18 @@ class AuthHelpers:
             reset_code = AuthHelpers.generate_verification_code()
 
             # Invalidate any existing password resets for this user
-            existing_resets = db.query(PasswordReset).filter(
-                PasswordReset.user_id == user.id,
-                not PasswordReset.used
-            ).all()
+            existing_resets = (
+                db.query(PasswordReset)
+                .filter(PasswordReset.user_id == user.id, not PasswordReset.used)
+                .all()
+            )
 
             for reset in existing_resets:
                 reset.used = True
 
             # Create new password reset record
             password_reset = PasswordReset(
-                user_id=user.id,
-                token=reset_code,
-                expires_minutes=expires_minutes
+                user_id=user.id, token=reset_code, expires_minutes=expires_minutes
             )
 
             db.add(password_reset)
@@ -120,9 +113,7 @@ class AuthHelpers:
 
     @staticmethod
     def verify_email_code(
-        db: Session,
-        email: str,
-        code: str
+        db: Session, email: str, code: str
     ) -> tuple[bool, User | None, str | None]:
         """
         Verify email verification code
@@ -135,11 +126,16 @@ class AuthHelpers:
                 return False, None, "User not found"
 
             # Find valid verification code
-            verification = db.query(EmailVerification).filter(
-                EmailVerification.user_id == user.id,
-                EmailVerification.code == code,
-                not EmailVerification.used
-            ).order_by(EmailVerification.created_at.desc()).first()
+            verification = (
+                db.query(EmailVerification)
+                .filter(
+                    EmailVerification.user_id == user.id,
+                    EmailVerification.code == code,
+                    not EmailVerification.used,
+                )
+                .order_by(EmailVerification.created_at.desc())
+                .first()
+            )
 
             if not verification:
                 return False, None, "Invalid verification code"
@@ -161,9 +157,7 @@ class AuthHelpers:
 
     @staticmethod
     def verify_reset_code(
-        db: Session,
-        email: str,
-        code: str
+        db: Session, email: str, code: str
     ) -> tuple[bool, User | None, str | None]:
         """
         Verify password reset code
@@ -176,11 +170,16 @@ class AuthHelpers:
                 return False, None, "User not found"
 
             # Find valid reset code
-            reset = db.query(PasswordReset).filter(
-                PasswordReset.user_id == user.id,
-                PasswordReset.token == code,
-                not PasswordReset.used
-            ).order_by(PasswordReset.created_at.desc()).first()
+            reset = (
+                db.query(PasswordReset)
+                .filter(
+                    PasswordReset.user_id == user.id,
+                    PasswordReset.token == code,
+                    not PasswordReset.used,
+                )
+                .order_by(PasswordReset.created_at.desc())
+                .first()
+            )
 
             if not reset:
                 return False, None, "Invalid reset code"
@@ -202,11 +201,15 @@ class AuthHelpers:
             if not user:
                 return False
 
-            reset = db.query(PasswordReset).filter(
-                PasswordReset.user_id == user.id,
-                PasswordReset.token == code,
-                not PasswordReset.used
-            ).first()
+            reset = (
+                db.query(PasswordReset)
+                .filter(
+                    PasswordReset.user_id == user.id,
+                    PasswordReset.token == code,
+                    not PasswordReset.used,
+                )
+                .first()
+            )
 
             if reset:
                 reset.mark_as_used()
@@ -230,17 +233,21 @@ class AuthHelpers:
             current_time = datetime.utcnow()
 
             # Remove expired verifications
-            expired_verifications = db.query(EmailVerification).filter(
-                EmailVerification.expires_at < current_time
-            ).all()
+            expired_verifications = (
+                db.query(EmailVerification)
+                .filter(EmailVerification.expires_at < current_time)
+                .all()
+            )
 
             for verification in expired_verifications:
                 db.delete(verification)
 
             # Remove expired password resets
-            expired_resets = db.query(PasswordReset).filter(
-                PasswordReset.expires_at < current_time
-            ).all()
+            expired_resets = (
+                db.query(PasswordReset)
+                .filter(PasswordReset.expires_at < current_time)
+                .all()
+            )
 
             for reset in expired_resets:
                 db.delete(reset)
@@ -251,7 +258,9 @@ class AuthHelpers:
             reset_count = len(expired_resets)
 
             if ver_count > 0 or reset_count > 0:
-                print(f"🧹 Cleaned up {ver_count} expired verifications and {reset_count} expired resets")
+                print(
+                    f"🧹 Cleaned up {ver_count} expired verifications and {reset_count} expired resets"
+                )
 
             return ver_count, reset_count
 

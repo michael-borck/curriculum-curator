@@ -10,6 +10,7 @@ class PluginResult(BaseModel):
     data: dict[str, Any] | None = None
     suggestions: list | None = None
 
+
 class ValidatorPlugin(ABC):
     """Base class for content validators"""
 
@@ -26,6 +27,7 @@ class ValidatorPlugin(ABC):
     @abstractmethod
     async def validate(self, content: str, metadata: dict[str, Any]) -> PluginResult:
         """Validate content and return results"""
+
 
 class RemediatorPlugin(ABC):
     """Base class for content remediators"""
