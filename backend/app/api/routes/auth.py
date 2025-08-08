@@ -5,14 +5,19 @@ Authentication routes with complete user registration and verification system
 import uuid
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core import security
 from app.core.config import settings
+from app.core.password_validator import PasswordValidator
+from app.core.rate_limiter import RateLimits, limiter
+from app.core.security_utils import SecurityManager
 from app.models import EmailWhitelist, User, UserRole
+from app.models.security_log import SecurityEventType
 from app.schemas import (
     EmailVerificationRequest,
     EmailVerificationResponse,
@@ -28,26 +33,58 @@ from app.schemas import (
     UserResponse,
 )
 from app.services.email_service import email_service
+from app.services.security_logger import SecurityLogger
 from app.utils.auth_helpers import auth_helpers
 
 router = APIRouter()
 
 
 @router.post("/register", response_model=UserRegistrationResponse)
+@limiter.limit(RateLimits.REGISTER)
 async def register(
-    request: UserRegistrationRequest, db: Session = Depends(deps.get_db)
+    request: Request,
+    user_request: UserRegistrationRequest,
+    db: Session = Depends(deps.get_db),
+    csrf_protect: CsrfProtect = Depends()
 ):
     """Register a new user with email verification"""
 
+    # CSRF Protection
+    await csrf_protect.validate_csrf(request)
+
     # Check if email is whitelisted
-    if not EmailWhitelist.is_email_whitelisted(db, request.email):
+    if not EmailWhitelist.is_email_whitelisted(db, user_request.email):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email address is not authorized for registration. Please contact your administrator.",
         )
 
+    # Enhanced password validation
+    is_valid, password_errors = PasswordValidator.validate_password(
+        user_request.password,
+        user_request.name,
+        user_request.email
+    )
+
+    if not is_valid:
+        # Calculate password strength for user feedback
+        strength_score, strength_desc = PasswordValidator.get_password_strength_score(user_request.password)
+        suggestions = PasswordValidator.suggest_improvements(user_request.password, password_errors)
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Password validation failed",
+                "issues": password_errors,
+                "suggestions": suggestions,
+                "strength_score": strength_score,
+                "strength": strength_desc,
+                "message": "Password does not meet security requirements. Please choose a stronger password."
+            }
+        )
+
     # Check if user already exists
-    existing_user = db.query(User).filter(User.email == request.email.lower()).first()
+    existing_user = db.query(User).filter(User.email == user_request.email.lower()).first()
     if existing_user:
         if existing_user.is_verified:
             raise HTTPException(
@@ -72,10 +109,10 @@ async def register(
         # Create new user
         new_user = User(
             id=uuid.uuid4(),
-            email=request.email.lower().strip(),
-            password_hash=security.get_password_hash(request.password),
-            name=request.name.strip(),
-            role=UserRole.USER.value,
+            email=user_request.email.lower().strip(),
+            password_hash=security.get_password_hash(user_request.password),
+            name=user_request.name.strip(),
+            role=UserRole.LECTURER.value,
             is_verified=False,
             is_active=True,
         )
@@ -90,6 +127,16 @@ async def register(
         )
 
         if success:
+            # Log successful registration
+            SecurityLogger.log_authentication_event(
+                db=db,
+                event_type=SecurityEventType.LOGIN_SUCCESS,  # Registration is a form of account creation
+                request=request,
+                user=new_user,
+                success=True,
+                description=f"User registration successful for {new_user.email}",
+            )
+
             return UserRegistrationResponse(
                 message="Registration successful! Please check your email for the verification code.",
                 user_email=new_user.email,
@@ -111,13 +158,16 @@ async def register(
 
 
 @router.post("/verify-email", response_model=EmailVerificationResponse)
+@limiter.limit(RateLimits.VERIFY_EMAIL)
 async def verify_email(
-    request: EmailVerificationRequest, db: Session = Depends(deps.get_db)
+    request: Request,
+    verification_request: EmailVerificationRequest,
+    db: Session = Depends(deps.get_db)
 ):
     """Verify email with 6-digit code"""
 
     success, user, error_message = auth_helpers.verify_email_code(
-        db, request.email, request.code
+        db, verification_request.email, verification_request.code
     )
 
     if not success:
@@ -151,12 +201,15 @@ async def verify_email(
 
 
 @router.post("/resend-verification", response_model=ResendVerificationResponse)
+@limiter.limit(RateLimits.RESEND_VERIFICATION)
 async def resend_verification(
-    request: ResendVerificationRequest, db: Session = Depends(deps.get_db)
+    request: Request,
+    resend_request: ResendVerificationRequest,
+    db: Session = Depends(deps.get_db)
 ):
     """Resend verification email"""
 
-    user = db.query(User).filter(User.email == request.email.lower()).first()
+    user = db.query(User).filter(User.email == resend_request.email.lower()).first()
     if not user:
         # Don't reveal if user exists or not for security
         return ResendVerificationResponse(
@@ -179,14 +232,70 @@ async def resend_verification(
 
 
 @router.post("/login", response_model=LoginResponse)
+@limiter.limit(RateLimits.LOGIN)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(deps.get_db)
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(deps.get_db),
+    csrf_protect: CsrfProtect = Depends()
 ):
     """OAuth2 compatible token login"""
 
-    user = db.query(User).filter(User.email == form_data.username.lower()).first()
+    # CSRF Protection
+    await csrf_protect.validate_csrf(request)
 
-    if not user or not security.verify_password(form_data.password, user.password_hash):
+    # Get client information for security tracking
+    client_ip = SecurityManager.get_client_ip(request)
+    user_agent = SecurityManager.get_user_agent(request)
+    email = form_data.username.lower().strip()
+
+    # Check for account lockout or IP rate limiting
+    is_locked, lockout_reason, minutes_remaining = SecurityManager.check_account_lockout(
+        db, email, client_ip
+    )
+
+    if is_locked:
+        lockout_message = SecurityManager.get_lockout_status_message(
+            is_locked, lockout_reason, minutes_remaining
+        )
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=lockout_message,
+            headers={"Retry-After": str((minutes_remaining or 15) * 60)},
+        )
+
+    # Check for suspicious activity
+    is_suspicious, suspicion_reason = SecurityManager.is_suspicious_activity(
+        db, email, client_ip, user_agent
+    )
+
+    user = db.query(User).filter(User.email == email).first()
+    login_success = user and security.verify_password(form_data.password, user.password_hash)
+
+    # Record login attempt (success or failure)
+    SecurityManager.record_login_attempt(
+        db=db,
+        email=email,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        success=login_success,
+        user=user,
+        failure_reason="Invalid credentials" if not login_success else None,
+    )
+
+    if not login_success:
+        # Log failed login attempt
+        SecurityLogger.log_authentication_event(
+            db=db,
+            event_type=SecurityEventType.LOGIN_FAILED,
+            request=request,
+            user=user,
+            success=False,
+            description=f"Login failed for {email}",
+            details={"reason": "Invalid credentials", "email": email},
+        )
+
+        # Use generic message to prevent user enumeration
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -204,11 +313,25 @@ async def login(
             detail="Email address not verified. Please check your email for the verification code.",
         )
 
-    # Create access token
+    # Create access token with enhanced security
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": str(user.id), "email": user.email},
         expires_delta=access_token_expires,
+        client_ip=client_ip,
+        user_role=user.role,
+        session_id=None,  # Could be generated if needed
+    )
+
+    # Log successful login
+    SecurityLogger.log_authentication_event(
+        db=db,
+        event_type=SecurityEventType.LOGIN_SUCCESS,
+        request=request,
+        user=user,
+        success=True,
+        description=f"Login successful for {user.email}",
+        details={"user_role": user.role},
     )
 
     return LoginResponse(
@@ -226,12 +349,15 @@ async def login(
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
+@limiter.limit(RateLimits.FORGOT_PASSWORD)
 async def forgot_password(
-    request: ForgotPasswordRequest, db: Session = Depends(deps.get_db)
+    request: Request,
+    forgot_request: ForgotPasswordRequest,
+    db: Session = Depends(deps.get_db)
 ):
     """Send password reset code to email"""
 
-    user = db.query(User).filter(User.email == request.email.lower()).first()
+    user = db.query(User).filter(User.email == forgot_request.email.lower()).first()
 
     if user and user.is_verified and user.is_active:
         success, reset_code = await auth_helpers.create_and_send_password_reset(
@@ -251,13 +377,16 @@ async def forgot_password(
 
 
 @router.post("/reset-password", response_model=ResetPasswordResponse)
+@limiter.limit(RateLimits.RESET_PASSWORD)
 async def reset_password(
-    request: ResetPasswordRequest, db: Session = Depends(deps.get_db)
+    request: Request,
+    reset_request: ResetPasswordRequest,
+    db: Session = Depends(deps.get_db)
 ):
     """Reset password with verification code"""
 
     success, user, error_message = auth_helpers.verify_reset_code(
-        db, request.email, request.code
+        db, reset_request.email, reset_request.code
     )
 
     if not success:
@@ -268,10 +397,10 @@ async def reset_password(
 
     try:
         # Update password
-        user.password_hash = security.get_password_hash(request.new_password)
+        user.password_hash = security.get_password_hash(reset_request.new_password)
 
         # Mark reset code as used
-        auth_helpers.mark_reset_code_used(db, request.email, request.code)
+        auth_helpers.mark_reset_code_used(db, reset_request.email, reset_request.code)
 
         db.commit()
 

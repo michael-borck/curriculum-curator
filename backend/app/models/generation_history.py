@@ -88,7 +88,8 @@ class GenerationHistory(Base):
     @property
     def has_token_usage(self) -> bool:
         """Check if token usage information is available"""
-        return self.token_usage is not None
+        token_usage = self.token_usage  # type: ignore[assignment]
+        return token_usage is not None and len(token_usage) > 0  # type: ignore[arg-type]
 
     @property
     def total_tokens(self) -> int:

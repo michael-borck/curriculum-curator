@@ -13,8 +13,10 @@ from .email_whitelist import EmailWhitelist
 
 # Generation tracking
 from .generation_history import GenerationHistory, GenerationType
+from .login_attempt import LoginAttempt, LoginAttemptType
 from .password_reset import PasswordReset
 from .quiz_question import QuestionType, QuizQuestion
+from .security_log import SecurityEventType, SecurityLog
 from .system_settings import SystemSettings
 
 # Core academic models
@@ -60,4 +62,9 @@ __all__ = [
     # Generation tracking
     "GenerationHistory",
     "GenerationType",
+    # Security
+    "LoginAttempt",
+    "LoginAttemptType",
+    "SecurityLog",
+    "SecurityEventType",
 ]

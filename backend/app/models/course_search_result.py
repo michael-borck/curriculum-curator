@@ -57,12 +57,14 @@ class CourseSearchResult(Base):
     @property
     def has_results(self) -> bool:
         """Check if search returned results"""
-        return self.results is not None and len(self.results) > 0
+        results = self.results  # type: ignore[assignment]
+        return results is not None and len(results) > 0  # type: ignore[arg-type]
 
     @property
     def has_summary(self) -> bool:
         """Check if search has generated summary"""
-        return self.summary is not None and len(self.summary.strip()) > 0
+        summary = self.summary  # type: ignore[assignment]
+        return summary is not None and len(summary.strip()) > 0  # type: ignore[union-attr]
 
     @property
     def result_count(self) -> int:

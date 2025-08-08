@@ -72,7 +72,8 @@ class ValidationResult(Base):
     @property
     def has_suggestions(self) -> bool:
         """Check if validation result has suggestions"""
-        return self.suggestions is not None and len(self.suggestions) > 0
+        suggestions = self.suggestions  # type: ignore[assignment]
+        return suggestions is not None and len(suggestions) > 0  # type: ignore[arg-type]
 
     @property
     def suggestion_count(self) -> int:

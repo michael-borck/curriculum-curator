@@ -5,10 +5,26 @@ Curriculum Curator - Main FastAPI Application
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi_csrf_protect.exceptions import CsrfProtectError
+from slowapi.errors import RateLimitExceeded
 
-from app.core.database import init_db
+from app.core.csrf_protection import (
+    csrf_exception_handler,
+    csrf_protect,
+    init_csrf_protection,
+)
+from app.core.database import SessionLocal, init_db
+from app.core.password_validator import PasswordValidator
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
+from app.core.security_middleware import (
+    RequestValidationMiddleware,
+    SecurityHeadersMiddleware,
+    TrustedProxyMiddleware,
+)
+from app.core.security_utils import SecurityManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +36,8 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Curriculum Curator...")
     try:
         init_db()
+        init_csrf_protection()
+        logger.info("✅ CSRF protection initialized")
     except Exception as e:
         logger.warning(f"Database initialization warning: {e}")
     yield
@@ -34,7 +52,39 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration
+# Add rate limiting to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Add CSRF protection to app
+app.state.csrf_protect = csrf_protect
+
+app.add_exception_handler(CsrfProtectError, csrf_exception_handler)
+
+# Security middleware (order matters - add from outermost to innermost)
+# 1. Trusted host validation (first line of defense)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1", "*.localhost", "*.edu", "*"]  # Adjust for production
+)
+
+# 2. Request validation and basic security checks
+app.add_middleware(
+    RequestValidationMiddleware,
+    max_request_size=10 * 1024 * 1024,  # 10MB limit
+    require_user_agent=False  # Set to True for stricter validation
+)
+
+# 3. Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 4. Trusted proxy handling (for load balancers/reverse proxies)
+app.add_middleware(
+    TrustedProxyMiddleware,
+    trusted_proxies=["127.0.0.1", "::1"]  # Add your proxy IPs here
+)
+
+# 5. CORS configuration (should be last middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000"],
@@ -68,3 +118,42 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "curriculum-curator"}
+
+
+@app.get("/security/stats")
+async def security_stats():
+    """Get basic security statistics (admin only in production)"""
+
+    db = SessionLocal()
+    try:
+        return SecurityManager.get_security_stats(db, hours=24)
+    finally:
+        db.close()
+
+
+@app.get("/csrf-token")
+async def get_csrf_token(request: Request):
+    """Get CSRF token for form submissions"""
+    token = csrf_protect.generate_csrf(request)
+    return {"csrf_token": token}
+
+
+@app.post("/password-strength")
+async def check_password_strength(request: Request):
+    """Check password strength (for real-time frontend feedback)"""
+    body = await request.json()
+    password = body.get("password", "")
+    name = body.get("name", "")
+    email = body.get("email", "")
+
+    is_valid, errors = PasswordValidator.validate_password(password, name, email)
+    strength_score, strength_desc = PasswordValidator.get_password_strength_score(password)
+    suggestions = PasswordValidator.suggest_improvements(password, errors) if not is_valid else []
+
+    return {
+        "is_valid": is_valid,
+        "errors": errors,
+        "suggestions": suggestions,
+        "strength_score": strength_score,
+        "strength": strength_desc
+    }

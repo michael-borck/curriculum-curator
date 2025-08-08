@@ -88,7 +88,8 @@ class QuizQuestion(Base):
     @property
     def has_partial_credit(self) -> bool:
         """Check if question supports partial credit"""
-        return self.partial_credit is not None and len(self.partial_credit) > 0
+        partial_credit = self.partial_credit  # type: ignore[assignment]
+        return partial_credit is not None and len(partial_credit) > 0  # type: ignore[arg-type]
 
     @property
     def option_count(self) -> int:
