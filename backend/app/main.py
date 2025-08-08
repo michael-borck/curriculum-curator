@@ -2,12 +2,12 @@
 Curriculum Curator - Main FastAPI Application
 """
 
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import logging
 
-from app.core.config import settings
 from app.core.database import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -43,7 +43,7 @@ app.add_middleware(
 
 # Import and include routers with error handling
 try:
-    from app.api.routes import auth, courses, content, llm
+    from app.api.routes import auth, content, courses, llm
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])

@@ -2,9 +2,7 @@
 Course management routes
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List
-from app.api import deps
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
@@ -51,7 +49,7 @@ async def get_course(course_id: int):
             "progress": 75,
             "description": "An introduction to the fundamental concepts of computer science."
         }
-    
+
     raise HTTPException(status_code=404, detail="Course not found")
 
 @router.post("/")

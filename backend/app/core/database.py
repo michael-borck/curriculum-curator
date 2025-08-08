@@ -2,10 +2,11 @@
 Database configuration and session management for Curriculum Curator
 """
 
+from collections.abc import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
 
 from app.core.config import settings
 
@@ -38,8 +39,15 @@ def init_db():
     Called on application startup.
     """
     # Import all models here to ensure they're registered with Base
-    # from app.models import user, course, content  # noqa
-    
+    # These imports are used by SQLAlchemy to register models with Base.metadata
+    from app.models import (  # pyright: ignore[reportUnusedImport]
+        EmailVerification,
+        EmailWhitelist,
+        PasswordReset,
+        SystemSettings,
+        User,
+    )
+
     # Create all tables
     Base.metadata.create_all(bind=engine)
     print("✅ Database initialized")

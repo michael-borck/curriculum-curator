@@ -2,8 +2,8 @@
 Content management routes
 """
 
+
 from fastapi import APIRouter, File, UploadFile
-from typing import Optional
 
 router = APIRouter()
 
@@ -39,5 +39,5 @@ async def get_content_template(content_type: str):
             "structure": ["title", "instructions", "questions", "scoring"]
         }
     }
-    
+
     return templates.get(content_type, {})

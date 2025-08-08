@@ -1,12 +1,14 @@
-from typing import AsyncGenerator, Dict, Any, Optional
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
+import asyncio
+from collections.abc import AsyncGenerator
+from typing import Any
+
 from langchain.callbacks import AsyncIteratorCallbackHandler
 from langchain.schema import HumanMessage, SystemMessage
-import asyncio
-import json
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 
 from app.core.config import settings
+
 
 class LLMService:
     def __init__(self):
@@ -22,42 +24,42 @@ class LLMService:
                 api_key=settings.ANTHROPIC_API_KEY,
                 model="claude-3-opus-20240229"
             )
-    
+
     async def generate_content(
         self,
         content_type: str,
         pedagogy_style: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         stream: bool = False
     ) -> AsyncGenerator[str, None]:
         """Generate content with pedagogical awareness"""
-        
+
         system_prompt = self._build_pedagogy_prompt(pedagogy_style)
         user_prompt = self._build_content_prompt(content_type, context)
-        
+
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt)
         ]
-        
+
         if stream:
             callback = AsyncIteratorCallbackHandler()
             model = self.models.get('openai')
             model.callbacks = [callback]
-            
+
             task = asyncio.create_task(
                 model.agenerate(messages=[messages])
             )
-            
+
             async for token in callback.aiter():
                 yield token
-            
+
             await task
         else:
             model = self.models.get('openai')
             response = await model.agenerate(messages=[messages])
             yield response.generations[0][0].text
-    
+
     def _build_pedagogy_prompt(self, style: str) -> str:
         """Build system prompt based on pedagogical style"""
         styles = {
@@ -71,33 +73,32 @@ class LLMService:
             "constructivist": "Build on prior knowledge and encourage meaning-making.",
             "experiential": "Focus on learning through experience and reflection."
         }
-        
-        base_prompt = f"""You are an expert educational content creator specializing in {style} learning.
+
+        return f"""You are an expert educational content creator specializing in {style} learning.
         {styles.get(style, '')}
         Create content that aligns with this pedagogical approach."""
-        
-        return base_prompt
-    
-    def _build_content_prompt(self, content_type: str, context: Dict) -> str:
+
+
+    def _build_content_prompt(self, content_type: str, context: dict) -> str:
         """Build user prompt for specific content type"""
-        
+
         prompts = {
             "lecture": f"""Create a lecture on {context.get('topic', 'the topic')}.
                 Learning objectives: {context.get('objectives', [])}
                 Duration: {context.get('duration', '50 minutes')}
                 Include: introduction, main content, examples, and summary.""",
-            
+
             "worksheet": f"""Create a worksheet on {context.get('topic', 'the topic')}.
                 Difficulty: {context.get('difficulty', 'intermediate')}
                 Question types: {context.get('question_types', [])}
                 Number of questions: {context.get('num_questions', 10)}""",
-            
+
             "quiz": f"""Create a quiz on {context.get('topic', 'the topic')}.
                 Format: {context.get('format', 'multiple choice')}
                 Questions: {context.get('num_questions', 10)}
                 Include answer key."""
         }
-        
+
         return prompts.get(content_type, "Create educational content.")
 
 llm_service = LLMService()

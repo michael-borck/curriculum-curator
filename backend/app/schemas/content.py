@@ -2,19 +2,21 @@
 Pydantic schemas for content-related requests/responses
 """
 
+from typing import Any
+
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+
 
 class ContentGenerationRequest(BaseModel):
     content_type: str
     pedagogy_style: str
-    context: Dict[str, Any]
+    context: dict[str, Any]
     stream: bool = False
 
 class ContentEnhanceRequest(BaseModel):
     content: str
     pedagogy_style: str
-    suggestions: Optional[list] = None
+    suggestions: list | None = None
 
 class ContentValidationResponse(BaseModel):
     is_valid: bool
