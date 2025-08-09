@@ -5,7 +5,8 @@ Curriculum Curator - Main FastAPI Application
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi_csrf_protect.exceptions import CsrfProtectError
@@ -135,7 +136,7 @@ async def security_stats():
 @app.get("/csrf-token")
 async def get_csrf_token(request: Request):
     """Get CSRF token for form submissions"""
-    token = csrf_protect.generate_csrf(request)
+    token = csrf_protect.generate_csrf_tokens(request)
     return {"csrf_token": token}
 
 
@@ -157,4 +158,16 @@ async def check_password_strength(request: Request):
         "suggestions": suggestions,
         "strength_score": strength_score,
         "strength": strength_desc
+    }
+
+
+# Debug endpoint for testing
+@app.post("/test-form")
+async def test_form_endpoint(form_data: OAuth2PasswordRequestForm = Depends()):
+    """Test endpoint to debug form data"""
+    return {
+        "username": form_data.username,
+        "password": "hidden",
+        "grant_type": form_data.grant_type,
+        "scopes": form_data.scopes
     }

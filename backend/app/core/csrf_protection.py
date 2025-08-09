@@ -63,7 +63,7 @@ def get_csrf_token(request: Request, csrf_protect_instance: CsrfProtect) -> str:
     Returns:
         str: CSRF token
     """
-    return csrf_protect_instance.generate_csrf(request)
+    return csrf_protect_instance.generate_csrf_tokens(request)
 
 
 # Exception handler for CSRF errors

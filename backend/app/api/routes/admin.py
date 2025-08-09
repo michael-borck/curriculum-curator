@@ -40,7 +40,7 @@ def get_current_admin_user(
 
 
 @router.get("/users", response_model=UserListResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -100,7 +100,7 @@ async def list_users(
 
 
 @router.post("/users/{user_id}/toggle-status")
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def toggle_user_status(
     user_id: str,
     db: Session = Depends(deps.get_db),
@@ -139,7 +139,7 @@ async def toggle_user_status(
 
 
 @router.delete("/users/{user_id}")
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def delete_user(
     user_id: str,
     db: Session = Depends(deps.get_db),
@@ -176,7 +176,7 @@ async def delete_user(
 
 
 @router.get("/users/stats", response_model=UserStatsResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def get_user_statistics(
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(get_current_admin_user)
@@ -213,7 +213,7 @@ async def get_user_statistics(
 
 # Email Whitelist CRUD endpoints
 @router.get("/whitelist", response_model=list[EmailWhitelistResponse])
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def list_email_whitelist(
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(get_current_admin_user)
@@ -234,7 +234,7 @@ async def list_email_whitelist(
 
 
 @router.post("/whitelist", response_model=EmailWhitelistResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def create_whitelist_pattern(
     pattern_data: EmailWhitelistCreate,
     db: Session = Depends(deps.get_db),
@@ -280,7 +280,7 @@ async def create_whitelist_pattern(
 
 
 @router.put("/whitelist/{pattern_id}", response_model=EmailWhitelistResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def update_whitelist_pattern(
     pattern_id: str,
     pattern_data: EmailWhitelistUpdate,
@@ -327,7 +327,7 @@ async def update_whitelist_pattern(
 
 
 @router.delete("/whitelist/{pattern_id}")
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def delete_whitelist_pattern(
     pattern_id: str,
     db: Session = Depends(deps.get_db),
@@ -360,7 +360,7 @@ async def delete_whitelist_pattern(
 
 # System settings endpoints (placeholder for now)
 @router.get("/settings", response_model=SystemSettingsResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def get_system_settings(
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(get_current_admin_user)
@@ -382,7 +382,7 @@ async def get_system_settings(
 
 
 @router.put("/settings", response_model=SystemSettingsResponse)
-@limiter.limit(RateLimits.DEFAULT)
+# @limiter.limit(RateLimits.DEFAULT)
 async def update_system_settings(
     settings_data: SystemSettingsUpdate,
     db: Session = Depends(deps.get_db),

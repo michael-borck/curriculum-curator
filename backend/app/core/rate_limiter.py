@@ -68,6 +68,7 @@ class RateLimits:
     RESET_PASSWORD = "5/minute"  # 5 password reset attempts per minute
 
     # General API endpoints (less restrictive)
+    DEFAULT = "60/minute"        # Default rate limit
     API_READ = "60/minute"       # 60 read operations per minute
     API_WRITE = "30/minute"      # 30 write operations per minute
     API_DELETE = "10/minute"     # 10 delete operations per minute
