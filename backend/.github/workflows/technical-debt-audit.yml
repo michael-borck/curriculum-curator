@@ -1,0 +1,58 @@
+name: Technical Debt Audit
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggers
+  pull_request:
+    paths:
+      - 'backend/**/*.py'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Run Technical Debt Audit
+      run: |
+        cd backend
+        chmod +x scripts/audit_exceptions.sh
+        ./scripts/audit_exceptions.sh > debt_report.txt
+        
+    - name: Upload Audit Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: technical-debt-report
+        path: backend/debt_report.txt
+        
+    - name: Comment PR (if applicable)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('backend/debt_report.txt', 'utf8');
+          const riskLine = report.match(/### Risk Level: .*/);
+          const summary = riskLine ? riskLine[0] : 'Risk assessment unavailable';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## Technical Debt Audit\n\n${summary}\n\n<details>\n<summary>Full Report</summary>\n\n\`\`\`\n${report}\n\`\`\`\n</details>`
+          })
+    
+    - name: Fail if Critical
+      run: |
+        if grep -q "CRITICAL" backend/debt_report.txt; then
+          echo "❌ Technical debt has reached CRITICAL level!"
+          exit 1
+        fi

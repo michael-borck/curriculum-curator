@@ -115,4 +115,4 @@ celerybeat.pid
 /site
 
 # Pytest
-.pytest_cache/
+.pytest_cache/technical_debt.json
