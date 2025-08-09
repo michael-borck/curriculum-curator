@@ -3,9 +3,8 @@ Pytest configuration and fixtures for test suite
 """
 
 import asyncio
-import os
 import sys
-from typing import AsyncGenerator, Generator
+from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,13 +14,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Mock the langchain modules BEFORE importing app
-sys.modules['langchain'] = MagicMock()
-sys.modules['langchain.callbacks'] = MagicMock()
-sys.modules['langchain.schema'] = MagicMock()
-sys.modules['langchain_anthropic'] = MagicMock()
-sys.modules['langchain_openai'] = MagicMock()
+sys.modules["langchain"] = MagicMock()
+sys.modules["langchain.callbacks"] = MagicMock()
+sys.modules["langchain.schema"] = MagicMock()
+sys.modules["langchain_anthropic"] = MagicMock()
+sys.modules["langchain_openai"] = MagicMock()
 
-from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import get_password_hash
 from app.main import app
@@ -156,7 +154,7 @@ def email_whitelist(db: Session) -> EmailWhitelist:
 def auth_headers(client: TestClient, test_user: User) -> dict[str, str]:
     """
     Get authentication headers for a regular user.
-    
+
     NOTE: This fixture will fail due to OAuth2PasswordRequestForm expecting
     form-encoded data which TestClient doesn't handle well. In production,
     the login endpoint works correctly with proper form data.
@@ -177,7 +175,7 @@ def auth_headers(client: TestClient, test_user: User) -> dict[str, str]:
 def admin_auth_headers(client: TestClient, test_admin: User) -> dict[str, str]:
     """
     Get authentication headers for an admin user.
-    
+
     NOTE: This fixture will fail due to OAuth2PasswordRequestForm expecting
     form-encoded data which TestClient doesn't handle well. In production,
     the login endpoint works correctly with proper form data.
@@ -198,33 +196,49 @@ def admin_auth_headers(client: TestClient, test_admin: User) -> dict[str, str]:
 @pytest.fixture(autouse=True)
 def mock_email_service(monkeypatch):
     """Mock email service to prevent sending actual emails during tests."""
+
     async def mock_send_verification_email(*args, **kwargs):
         return True
-    
+
     async def mock_send_password_reset_email(*args, **kwargs):
         return True
-    
+
     async def mock_send_welcome_email(*args, **kwargs):
         return True
-    
+
     # Mock the email service methods
-    monkeypatch.setattr("app.services.email_service.EmailService.send_verification_email", mock_send_verification_email)
-    monkeypatch.setattr("app.services.email_service.EmailService.send_password_reset_email", mock_send_password_reset_email)
-    monkeypatch.setattr("app.services.email_service.EmailService.send_welcome_email", mock_send_welcome_email)
+    monkeypatch.setattr(
+        "app.services.email_service.EmailService.send_verification_email",
+        mock_send_verification_email,
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.EmailService.send_password_reset_email",
+        mock_send_password_reset_email,
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.EmailService.send_welcome_email",
+        mock_send_welcome_email,
+    )
 
 
 # Mock CSRF protection for tests
 @pytest.fixture(autouse=True)
 def disable_csrf_protection(monkeypatch):
     """Disable CSRF protection for tests."""
+
     async def mock_validate_csrf(*args, **kwargs):
         pass
-    
+
     def mock_generate_csrf_tokens(*args, **kwargs):
         return "test-csrf-token"
-    
-    monkeypatch.setattr("app.core.csrf_protection.csrf_protect.validate_csrf", mock_validate_csrf)
-    monkeypatch.setattr("app.core.csrf_protection.csrf_protect.generate_csrf_tokens", mock_generate_csrf_tokens)
+
+    monkeypatch.setattr(
+        "app.core.csrf_protection.csrf_protect.validate_csrf", mock_validate_csrf
+    )
+    monkeypatch.setattr(
+        "app.core.csrf_protection.csrf_protect.generate_csrf_tokens",
+        mock_generate_csrf_tokens,
+    )
 
 
 # Disable rate limiting for tests
@@ -232,6 +246,7 @@ def disable_csrf_protection(monkeypatch):
 def disable_rate_limiting():
     """Disable rate limiting for tests."""
     from app.core.rate_limiter import limiter
+
     limiter.enabled = False
     yield
     limiter.enabled = True
@@ -242,4 +257,5 @@ def disable_rate_limiting():
 def mock_llm_service(monkeypatch):
     """Replace LLM service with mock for tests."""
     from tests.test_mocks import mock_llm_service
+
     monkeypatch.setattr("app.services.llm_service.llm_service", mock_llm_service)

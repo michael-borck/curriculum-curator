@@ -75,7 +75,9 @@ class SecurityLogger:
             request_method=request.method,
             event_description=description,
             severity=severity,
-            success="blocked" if severity in ["warning", "error", "critical"] else "success",
+            success="blocked"
+            if severity in ["warning", "error", "critical"]
+            else "success",
             details=details or {},
             response_time_ms=response_time_ms,
         )
@@ -121,7 +123,7 @@ class SecurityLogger:
         admin_user,
         action: str,
         target_user_id: str | None = None,
-        details: dict | None = None
+        details: dict | None = None,
     ):
         """Log administrative actions"""
         SecurityLog.log_event(
@@ -137,8 +139,8 @@ class SecurityLogger:
             details={
                 "action": action,
                 "target_user_id": target_user_id,
-                **(details or {})
-            }
+                **(details or {}),
+            },
         )
 
     @staticmethod
@@ -167,7 +169,10 @@ class SecurityLogger:
         events = SecurityLog.get_recent_events(
             db_session=db,
             hours=hours,
-            event_types=[SecurityEventType.LOGIN_SUCCESS, SecurityEventType.LOGIN_FAILED],
+            event_types=[
+                SecurityEventType.LOGIN_SUCCESS,
+                SecurityEventType.LOGIN_FAILED,
+            ],
             user_id=user_id,
         )
 
@@ -194,6 +199,7 @@ class SecurityLogger:
 # Decorators for automatic security logging
 def log_security_event(event_type: SecurityEventType, severity: str = "warning"):
     """Decorator to automatically log security events"""
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             request = None
@@ -204,14 +210,14 @@ def log_security_event(event_type: SecurityEventType, severity: str = "warning")
             for arg in args:
                 if isinstance(arg, Request):
                     request = arg
-                elif hasattr(arg, 'query'):  # SQLAlchemy session
+                elif hasattr(arg, "query"):  # SQLAlchemy session
                     db = arg
 
             # Look in kwargs as well
             if not request:
-                request = kwargs.get('request')
+                request = kwargs.get("request")
             if not db:
-                db = kwargs.get('db')
+                db = kwargs.get("db")
 
             try:
                 return await func(*args, **kwargs)
@@ -229,12 +235,15 @@ def log_security_event(event_type: SecurityEventType, severity: str = "warning")
                         response_time_ms=response_time,
                     )
                 raise
+
         return wrapper
+
     return decorator
 
 
 def log_authentication_event(event_type: SecurityEventType):
     """Decorator to automatically log authentication events"""
+
     def decorator(func):
         async def wrapper(*args, **kwargs):
             request = None
@@ -245,14 +254,14 @@ def log_authentication_event(event_type: SecurityEventType):
             for arg in args:
                 if isinstance(arg, Request):
                     request = arg
-                elif hasattr(arg, 'query'):  # SQLAlchemy session
+                elif hasattr(arg, "query"):  # SQLAlchemy session
                     db = arg
 
             # Look in kwargs as well
             if not request:
-                request = kwargs.get('request')
+                request = kwargs.get("request")
             if not db:
-                db = kwargs.get('db')
+                db = kwargs.get("db")
 
             try:
                 result = await func(*args, **kwargs)
@@ -284,5 +293,7 @@ def log_authentication_event(event_type: SecurityEventType):
                         response_time_ms=response_time,
                     )
                 raise
+
         return wrapper
+
     return decorator

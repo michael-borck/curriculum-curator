@@ -24,7 +24,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         frame_options: str = "DENY",
         content_type_options: str = "nosniff",
         referrer_policy: str = "strict-origin-when-cross-origin",
-        permissions_policy: str | None = None
+        permissions_policy: str | None = None,
     ):
         super().__init__(app)
         self.hsts_max_age = hsts_max_age
@@ -32,7 +32,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         self.frame_options = frame_options
         self.content_type_options = content_type_options
         self.referrer_policy = referrer_policy
-        self.permissions_policy = permissions_policy or self._default_permissions_policy()
+        self.permissions_policy = (
+            permissions_policy or self._default_permissions_policy()
+        )
 
     def _default_csp_policy(self) -> str:
         """Default Content Security Policy"""
@@ -80,12 +82,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    def _add_security_headers(self, response: Response, request: Request, start_time: float, request_id: str):
+    def _add_security_headers(
+        self, response: Response, request: Request, start_time: float, request_id: str
+    ):
         """Add all security headers to the response"""
 
         # Strict Transport Security (HTTPS only)
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = f"max-age={self.hsts_max_age}; includeSubDomains; preload"
+            response.headers["Strict-Transport-Security"] = (
+                f"max-age={self.hsts_max_age}; includeSubDomains; preload"
+            )
 
         # Content Security Policy
         response.headers["Content-Security-Policy"] = self.csp_policy
@@ -132,11 +138,13 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         max_request_size: int = 10 * 1024 * 1024,  # 10MB
         blocked_user_agents: list | None = None,
         blocked_paths: list | None = None,
-        require_user_agent: bool = False
+        require_user_agent: bool = False,
     ):
         super().__init__(app)
         self.max_request_size = max_request_size
-        self.blocked_user_agents = blocked_user_agents or self._default_blocked_user_agents()
+        self.blocked_user_agents = (
+            blocked_user_agents or self._default_blocked_user_agents()
+        )
         self.blocked_paths = blocked_paths or []
         self.require_user_agent = require_user_agent
 
@@ -178,29 +186,32 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
                 status_code=413,
                 content={
                     "error": "Request too large",
-                    "message": f"Request size exceeds {self.max_request_size} bytes"
-                }
+                    "message": f"Request size exceeds {self.max_request_size} bytes",
+                },
             )
 
         # Check for blocked user agents
         user_agent = request.headers.get("user-agent", "").lower()
-        if any(blocked_agent in user_agent for blocked_agent in self.blocked_user_agents):
+        if any(
+            blocked_agent in user_agent for blocked_agent in self.blocked_user_agents
+        ):
             return JSONResponse(
                 status_code=403,
-                content={
-                    "error": "Forbidden",
-                    "message": "Access denied"
-                }
+                content={"error": "Forbidden", "message": "Access denied"},
             )
 
         # Require user agent for certain endpoints (optional)
-        if self.require_user_agent and not user_agent and request.url.path.startswith("/api/"):
+        if (
+            self.require_user_agent
+            and not user_agent
+            and request.url.path.startswith("/api/")
+        ):
             return JSONResponse(
                 status_code=400,
                 content={
                     "error": "Bad Request",
-                    "message": "User-Agent header is required"
-                }
+                    "message": "User-Agent header is required",
+                },
             )
 
         # Check for blocked paths
@@ -209,18 +220,15 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
                 status_code=404,
                 content={
                     "error": "Not Found",
-                    "message": "The requested resource was not found"
-                }
+                    "message": "The requested resource was not found",
+                },
             )
 
         # Basic path traversal protection
         if ".." in request.url.path or "//" in request.url.path:
             return JSONResponse(
                 status_code=400,
-                content={
-                    "error": "Bad Request",
-                    "message": "Invalid path"
-                }
+                content={"error": "Bad Request", "message": "Invalid path"},
             )
 
         return None  # No validation errors
@@ -247,7 +255,7 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
 
         if client_ip not in self.trusted_proxies:
             # Remove potentially spoofed headers from untrusted sources
-            request.headers.__dict__.get('_list', []).clear()
+            request.headers.__dict__.get("_list", []).clear()
             return
 
         # Process X-Forwarded-For header
@@ -257,4 +265,3 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
             original_ip = forwarded_for.split(",")[0].strip()
             # Store in request state for use by rate limiter
             request.state.original_client_ip = original_ip
-

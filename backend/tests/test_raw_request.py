@@ -11,8 +11,7 @@ def test_raw_form_request(client: TestClient):
     # Using httpx directly to ensure form data is sent correctly
     with httpx.Client(base_url="http://testserver", app=client.app) as http_client:
         response = http_client.post(
-            "/test-form",
-            data={"username": "test@example.com", "password": "testpass"}
+            "/test-form", data={"username": "test@example.com", "password": "testpass"}
         )
         print(f"Raw request status: {response.status_code}")
         print(f"Raw request headers: {dict(response.request.headers)}")
@@ -26,15 +25,14 @@ def test_inspect_middleware(client: TestClient):
     print("\nApp middleware stack:")
     for middleware in client.app.middleware_stack:
         print(f"  - {middleware}")
-    
+
     # Try a simple GET request first
     response = client.get("/")
     print(f"\nGET / status: {response.status_code}")
-    
+
     # Try the test-form endpoint
     response = client.post(
-        "/test-form",
-        data={"username": "test@example.com", "password": "testpass"}
+        "/test-form", data={"username": "test@example.com", "password": "testpass"}
     )
     print(f"\nPOST /test-form status: {response.status_code}")
     if response.status_code != 200:

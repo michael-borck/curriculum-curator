@@ -12,6 +12,7 @@ from app.core.config import settings
 
 class CsrfSettings(BaseSettings):
     """CSRF protection settings"""
+
     secret_key: str = settings.SECRET_KEY
     cookie_secure: bool = False  # Set to True in production with HTTPS
     cookie_samesite: str = "lax"
@@ -26,6 +27,7 @@ csrf_protect = CsrfProtect()
 
 def init_csrf_protection():
     """Initialize CSRF protection with settings"""
+
     @csrf_protect.load_config
     def get_config():  # type: ignore[reportUnusedFunction]
         return CsrfSettings()
@@ -48,7 +50,7 @@ async def validate_csrf_token(request: Request, csrf_protect_instance: CsrfProte
         raise HTTPException(
             status_code=403,
             detail=f"CSRF validation failed: {e!s}",
-            headers={"WWW-Authenticate": "CSRF"}
+            headers={"WWW-Authenticate": "CSRF"},
         )
 
 
@@ -74,6 +76,6 @@ def csrf_exception_handler(request: Request, exc: CsrfProtectError):
         detail={
             "error": "CSRF Protection",
             "message": "CSRF token validation failed. Please refresh the page and try again.",
-            "type": "csrf_error"
-        }
+            "type": "csrf_error",
+        },
     )

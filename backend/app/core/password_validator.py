@@ -6,15 +6,63 @@ import re
 
 # Common weak passwords list (subset - in production, load from file)
 COMMON_PASSWORDS = {
-    "123456", "password", "123456789", "12345678", "12345", "1234567",
-    "qwerty", "abc123", "password123", "admin", "letmein", "welcome",
-    "monkey", "1234567890", "dragon", "iloveyou", "princess", "sunshine",
-    "master", "123123", "football", "baseball", "superman", "computer",
-    "michael", "jordan", "matrix", "money", "freedom", "hello", "batman",
-    "trustno1", "hunter", "ranger", "buster", "thomas", "tigger",
-    "robert", "access", "love", "internet", "service", "cookie", "test",
-    "guest", "honda", "shadow", "mustang", "secret", "summer", "spider",
-    "michelle", "whatever", "chicken", "startrek", "orange", "mercedes",
+    "123456",
+    "password",
+    "123456789",
+    "12345678",
+    "12345",
+    "1234567",
+    "qwerty",
+    "abc123",
+    "password123",
+    "admin",
+    "letmein",
+    "welcome",
+    "monkey",
+    "1234567890",
+    "dragon",
+    "iloveyou",
+    "princess",
+    "sunshine",
+    "master",
+    "123123",
+    "football",
+    "baseball",
+    "superman",
+    "computer",
+    "michael",
+    "jordan",
+    "matrix",
+    "money",
+    "freedom",
+    "hello",
+    "batman",
+    "trustno1",
+    "hunter",
+    "ranger",
+    "buster",
+    "thomas",
+    "tigger",
+    "robert",
+    "access",
+    "love",
+    "internet",
+    "service",
+    "cookie",
+    "test",
+    "guest",
+    "honda",
+    "shadow",
+    "mustang",
+    "secret",
+    "summer",
+    "spider",
+    "michelle",
+    "whatever",
+    "chicken",
+    "startrek",
+    "orange",
+    "mercedes",
 }
 
 
@@ -37,10 +85,7 @@ class PasswordValidator:
 
     @classmethod
     def validate_password(  # noqa: PLR0912
-        cls,
-        password: str,
-        user_name: str = "",
-        user_email: str = ""
+        cls, password: str, user_name: str = "", user_email: str = ""
     ) -> tuple[bool, list[str]]:
         """
         Validate password against all security requirements
@@ -70,17 +115,23 @@ class PasswordValidator:
             errors.append("Password must contain at least one number")
 
         if cls.require_special and not any(c in cls.special_chars for c in password):
-            errors.append(f"Password must contain at least one special character: {cls.special_chars}")
+            errors.append(
+                f"Password must contain at least one special character: {cls.special_chars}"
+            )
 
         # Common password check
         if cls.prevent_common_passwords:
             password_lower = password.lower()
             if password_lower in COMMON_PASSWORDS:
-                errors.append("Password is too common. Please choose a more unique password")
+                errors.append(
+                    "Password is too common. Please choose a more unique password"
+                )
 
             # Check for common patterns
             if cls._is_common_pattern(password):
-                errors.append("Password follows a common pattern. Please choose a more complex password")
+                errors.append(
+                    "Password follows a common pattern. Please choose a more complex password"
+                )
 
         # Personal information check
         if cls.prevent_personal_info:
@@ -89,19 +140,27 @@ class PasswordValidator:
 
         # Character diversity checks
         if len(set(password)) < cls.min_unique_chars:
-            errors.append(f"Password must contain at least {cls.min_unique_chars} unique characters")
+            errors.append(
+                f"Password must contain at least {cls.min_unique_chars} unique characters"
+            )
 
         # Repeated character check
         if cls._has_excessive_repeats(password):
-            errors.append(f"Password cannot have more than {cls.max_repeated_chars} consecutive identical characters")
+            errors.append(
+                f"Password cannot have more than {cls.max_repeated_chars} consecutive identical characters"
+            )
 
         # Keyboard pattern check
         if cls._has_keyboard_pattern(password):
-            errors.append("Password cannot contain keyboard patterns (e.g., qwerty, asdf)")
+            errors.append(
+                "Password cannot contain keyboard patterns (e.g., qwerty, asdf)"
+            )
 
         # Sequential pattern check
         if cls._has_sequential_pattern(password):
-            errors.append("Password cannot contain sequential patterns (e.g., 123456, abcdef)")
+            errors.append(
+                "Password cannot contain sequential patterns (e.g., 123456, abcdef)"
+            )
 
         return len(errors) == 0, errors
 
@@ -111,25 +170,27 @@ class PasswordValidator:
         password_lower = password.lower()
 
         # Check for years (1900-2099)
-        if re.search(r'(19|20)\d{2}', password):
+        if re.search(r"(19|20)\d{2}", password):
             return True
 
         # Check for simple substitutions (@ for a, 3 for e, etc.)
-        common_subs = str.maketrans('aeilost', '@3!10$7')
+        common_subs = str.maketrans("aeilost", "@3!10$7")
         transformed = password_lower.translate(common_subs)
         if transformed in COMMON_PASSWORDS:
             return True
 
         # Check for passwords with numbers/symbols just at the end
-        if re.match(r'^[a-zA-Z]+[0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$', password):
-            word_part = re.match(r'^[a-zA-Z]+', password_lower).group()
+        if re.match(r"^[a-zA-Z]+[0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$", password):
+            word_part = re.match(r"^[a-zA-Z]+", password_lower).group()
             if len(word_part) >= 4 and word_part in COMMON_PASSWORDS:
                 return True
 
         return False
 
     @classmethod
-    def _check_personal_info(cls, password: str, user_name: str, user_email: str) -> list[str]:
+    def _check_personal_info(
+        cls, password: str, user_name: str, user_email: str
+    ) -> list[str]:
         """Check if password contains personal information"""
         errors = []
         password_lower = password.lower()
@@ -144,13 +205,13 @@ class PasswordValidator:
 
         # Check email components
         if user_email:
-            email_user = user_email.split('@')[0].lower()
+            email_user = user_email.split("@")[0].lower()
             if len(email_user) >= 3 and email_user in password_lower:
                 errors.append("Password cannot contain parts of your email address")
 
             # Check domain name (without TLD)
-            if '@' in user_email:
-                domain = user_email.split('@')[1].split('.')[0].lower()
+            if "@" in user_email:
+                domain = user_email.split("@")[1].split(".")[0].lower()
                 if len(domain) >= 3 and domain in password_lower:
                     errors.append("Password cannot contain your email domain")
 
@@ -161,7 +222,7 @@ class PasswordValidator:
         """Check for excessive repeated characters"""
         count = 1
         for i in range(1, len(password)):
-            if password[i] == password[i-1]:
+            if password[i] == password[i - 1]:
                 count += 1
                 if count > cls.max_repeated_chars:
                     return True
@@ -177,7 +238,7 @@ class PasswordValidator:
             "asdfghjkl",
             "zxcvbnm",
             "1234567890",
-            "!@#$%^&*()"
+            "!@#$%^&*()",
         ]
 
         password_lower = password.lower()
@@ -186,7 +247,7 @@ class PasswordValidator:
             # Check forward and backward patterns
             for direction in [row, row[::-1]]:
                 for i in range(len(direction) - 3):  # Minimum 4 character pattern
-                    pattern = direction[i:i+4]
+                    pattern = direction[i : i + 4]
                     if pattern in password_lower:
                         return True
 
@@ -197,7 +258,7 @@ class PasswordValidator:
         """Check for sequential character patterns"""
         # Check for ascending/descending sequences
         for i in range(len(password) - 3):  # Minimum 4 character sequence
-            substr = password[i:i+4]
+            substr = password[i : i + 4]
 
             # Check numeric sequences
             if substr.isdigit():
@@ -308,6 +369,8 @@ class PasswordValidator:
             suggestions.append("Use a more unique combination of words or phrases")
 
         if "personal" in " ".join(errors).lower():
-            suggestions.append("Avoid using personal information like names or email parts")
+            suggestions.append(
+                "Avoid using personal information like names or email parts"
+            )
 
         return suggestions

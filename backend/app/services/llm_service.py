@@ -2,24 +2,46 @@ import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from langchain.callbacks import AsyncIteratorCallbackHandler
-from langchain.schema import HumanMessage, SystemMessage
-from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
-
 from app.core.config import settings
+
+# Optional imports for LLM providers
+HAS_LANGCHAIN = False
+HAS_OPENAI = False
+HAS_ANTHROPIC = False
+
+try:
+    from langchain.callbacks import AsyncIteratorCallbackHandler
+    from langchain.schema import HumanMessage, SystemMessage
+
+    HAS_LANGCHAIN = True
+
+    try:
+        from langchain_openai import ChatOpenAI
+
+        HAS_OPENAI = True
+    except ImportError:
+        pass
+
+    try:
+        from langchain_anthropic import ChatAnthropic
+
+        HAS_ANTHROPIC = True
+    except ImportError:
+        pass
+except ImportError:
+    pass
 
 
 class LLMService:
     def __init__(self):
         self.models = {}
-        if settings.OPENAI_API_KEY:
+        if settings.OPENAI_API_KEY and HAS_OPENAI:
             self.models["openai"] = ChatOpenAI(
                 api_key=settings.OPENAI_API_KEY,
                 model=settings.DEFAULT_LLM_MODEL,
                 streaming=True,
             )
-        if settings.ANTHROPIC_API_KEY:
+        if settings.ANTHROPIC_API_KEY and HAS_ANTHROPIC:
             self.models["anthropic"] = ChatAnthropic(
                 api_key=settings.ANTHROPIC_API_KEY, model="claude-3-opus-20240229"
             )
@@ -33,17 +55,34 @@ class LLMService:
     ) -> AsyncGenerator[str, None]:
         """Generate content with pedagogical awareness"""
 
+        # If no LLM providers are available, return a placeholder
+        if not self.models:
+            yield "[LLM Service Not Available - Install langchain_openai or langchain_anthropic]\n\n"
+            yield f"Content Type: {content_type}\n"
+            yield f"Pedagogy Style: {pedagogy_style}\n"
+            yield f"Context: {context}\n"
+            return
+
         system_prompt = self._build_pedagogy_prompt(pedagogy_style)
         user_prompt = self._build_content_prompt(content_type, context)
+
+        if not HAS_LANGCHAIN:
+            yield "[Langchain not installed - LLM features disabled]"
+            return
 
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ]
 
+        # Get first available model
+        model = next(iter(self.models.values())) if self.models else None
+        if not model:
+            yield "[No LLM model available]"
+            return
+
         if stream:
             callback = AsyncIteratorCallbackHandler()
-            model = self.models.get("openai")
             model.callbacks = [callback]
 
             task = asyncio.create_task(model.agenerate(messages=[messages]))
@@ -53,7 +92,6 @@ class LLMService:
 
             await task
         else:
-            model = self.models.get("openai")
             response = await model.agenerate(messages=[messages])
             yield response.generations[0][0].text
 

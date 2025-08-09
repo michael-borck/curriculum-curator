@@ -2,8 +2,6 @@
 User-related Pydantic schemas
 """
 
-from datetime import datetime
-
 from pydantic import BaseModel, EmailStr
 
 
@@ -28,6 +26,6 @@ class UserResponse(UserBase):
     is_verified: bool
     is_active: bool
     created_at: str
-    
+
     class Config:
         from_attributes = True

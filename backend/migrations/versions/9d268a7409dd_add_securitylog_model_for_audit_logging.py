@@ -5,6 +5,7 @@ Revises: fc3324a1b32f
 Create Date: 2025-08-09 00:10:56.985808
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '9d268a7409dd'
-down_revision: str | Sequence[str] | None = 'fc3324a1b32f'
+revision: str = "9d268a7409dd"
+down_revision: str | Sequence[str] | None = "fc3324a1b32f"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -29,19 +29,15 @@ def create_test_token(user_id: str, email: str, role: str = "LECTURER") -> str:
 def auth_headers_workaround(test_user) -> dict[str, str]:
     """Authentication headers that bypass login endpoint"""
     token = create_test_token(
-        user_id=str(test_user.id),
-        email=test_user.email,
-        role=test_user.role
+        user_id=str(test_user.id), email=test_user.email, role=test_user.role
     )
     return {"Authorization": f"Bearer {token}"}
 
 
-@pytest.fixture  
+@pytest.fixture
 def admin_auth_headers_workaround(test_admin) -> dict[str, str]:
     """Admin authentication headers that bypass login endpoint"""
     token = create_test_token(
-        user_id=str(test_admin.id),
-        email=test_admin.email,
-        role=test_admin.role
+        user_id=str(test_admin.id), email=test_admin.email, role=test_admin.role
     )
     return {"Authorization": f"Bearer {token}"}

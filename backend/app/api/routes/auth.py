@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.core import security
 from app.core.config import settings
+from app.core.csrf_middleware import validate_csrf_if_required
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
 from app.core.security_utils import SecurityManager
@@ -45,12 +46,13 @@ async def register(
     request: Request,
     user_request: UserRegistrationRequest,
     db: Session = Depends(deps.get_db),
-    csrf_protect: CsrfProtect = Depends()
+    csrf_protect: CsrfProtect = Depends(),
 ):
     """Register a new user with email verification"""
 
-    # CSRF Protection
-    await csrf_protect.validate_csrf(request)
+    # CSRF Protection - API-friendly approach
+    # JSON requests are protected by CORS, form submissions need CSRF
+    await validate_csrf_if_required(request, csrf_protect)
 
     # Check if email is whitelisted
     if not EmailWhitelist.is_email_whitelisted(db, user_request.email):
@@ -61,15 +63,17 @@ async def register(
 
     # Enhanced password validation
     is_valid, password_errors = PasswordValidator.validate_password(
-        user_request.password,
-        user_request.name,
-        user_request.email
+        user_request.password, user_request.name, user_request.email
     )
 
     if not is_valid:
         # Calculate password strength for user feedback
-        strength_score, strength_desc = PasswordValidator.get_password_strength_score(user_request.password)
-        suggestions = PasswordValidator.suggest_improvements(user_request.password, password_errors)
+        strength_score, strength_desc = PasswordValidator.get_password_strength_score(
+            user_request.password
+        )
+        suggestions = PasswordValidator.suggest_improvements(
+            user_request.password, password_errors
+        )
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -79,12 +83,14 @@ async def register(
                 "suggestions": suggestions,
                 "strength_score": strength_score,
                 "strength": strength_desc,
-                "message": "Password does not meet security requirements. Please choose a stronger password."
-            }
+                "message": "Password does not meet security requirements. Please choose a stronger password.",
+            },
         )
 
     # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_request.email.lower()).first()
+    existing_user = (
+        db.query(User).filter(User.email == user_request.email.lower()).first()
+    )
     if existing_user:
         if existing_user.is_verified:
             raise HTTPException(
@@ -162,7 +168,7 @@ async def register(
 async def verify_email(
     request: Request,
     verification_request: EmailVerificationRequest,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ):
     """Verify email with 6-digit code"""
 
@@ -205,7 +211,7 @@ async def verify_email(
 async def resend_verification(
     request: Request,
     resend_request: ResendVerificationRequest,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ):
     """Resend verification email"""
 
@@ -237,12 +243,13 @@ async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(deps.get_db),
-    csrf_protect: CsrfProtect = Depends()
+    csrf_protect: CsrfProtect = Depends(),
 ):
     """OAuth2 compatible token login"""
 
-    # CSRF Protection
-    await csrf_protect.validate_csrf(request)
+    # CSRF Protection - API-friendly approach
+    # JSON requests are protected by CORS, form submissions need CSRF
+    await validate_csrf_if_required(request, csrf_protect)
 
     # Get client information for security tracking
     client_ip = SecurityManager.get_client_ip(request)
@@ -250,8 +257,8 @@ async def login(
     email = form_data.username.lower().strip()
 
     # Check for account lockout or IP rate limiting
-    is_locked, lockout_reason, minutes_remaining = SecurityManager.check_account_lockout(
-        db, email, client_ip
+    is_locked, lockout_reason, minutes_remaining = (
+        SecurityManager.check_account_lockout(db, email, client_ip)
     )
 
     if is_locked:
@@ -270,7 +277,9 @@ async def login(
     )
 
     user = db.query(User).filter(User.email == email).first()
-    login_success = user and security.verify_password(form_data.password, user.password_hash)
+    login_success = user and security.verify_password(
+        form_data.password, user.password_hash
+    )
 
     # Record login attempt (success or failure)
     SecurityManager.record_login_attempt(
@@ -353,7 +362,7 @@ async def login(
 async def forgot_password(
     request: Request,
     forgot_request: ForgotPasswordRequest,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ):
     """Send password reset code to email"""
 
@@ -381,7 +390,7 @@ async def forgot_password(
 async def reset_password(
     request: Request,
     reset_request: ResetPasswordRequest,
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ):
     """Reset password with verification code"""
 

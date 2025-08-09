@@ -35,7 +35,9 @@ class LoginAttempt(Base):
     user_agent = Column(String(500), nullable=True)
 
     # Attempt tracking
-    attempt_type = Column(String(30), nullable=False, index=True)  # LoginAttemptType enum
+    attempt_type = Column(
+        String(30), nullable=False, index=True
+    )  # LoginAttemptType enum
     failed_attempts = Column(Integer, default=0, nullable=False)
     consecutive_failures = Column(Integer, default=0, nullable=False)
 
@@ -105,7 +107,9 @@ class LoginAttempt(Base):
             # 5-6 failures: 30 minute lockout
             self.apply_lockout(minutes=30, reason=f"Failed login attempts: {reason}")
 
-    def apply_lockout(self, minutes: int = 0, hours: int = 0, reason: str | None = None):
+    def apply_lockout(
+        self, minutes: int = 0, hours: int = 0, reason: str | None = None
+    ):
         """Apply account lockout for specified duration"""
         lockout_duration = timedelta(minutes=minutes, hours=hours)
         self.is_locked = True
@@ -163,7 +167,13 @@ class LoginAttempt(Base):
         return attempt
 
     @classmethod
-    def is_ip_rate_limited(cls, db_session, ip_address: str, max_attempts: int = 20, window_minutes: int = 15) -> bool:
+    def is_ip_rate_limited(
+        cls,
+        db_session,
+        ip_address: str,
+        max_attempts: int = 20,
+        window_minutes: int = 15,
+    ) -> bool:
         """Check if IP address should be rate limited based on recent attempts"""
         cutoff_time = datetime.utcnow() - timedelta(minutes=window_minutes)
 
@@ -188,11 +198,10 @@ class LoginAttempt(Base):
                 or_(
                     cls.consecutive_failures >= 3,
                     cls.is_locked,
-                    cls.attempt_type == LoginAttemptType.SUSPICIOUS_ACTIVITY.value
+                    cls.attempt_type == LoginAttemptType.SUSPICIOUS_ACTIVITY.value,
                 )
             )
             .order_by(cls.last_attempt.desc())
             .limit(100)
             .all()
         )
-

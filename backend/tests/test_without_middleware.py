@@ -16,27 +16,26 @@ def test_login_without_middleware():
     """Test login endpoint without middleware"""
     # Create a minimal app without middleware
     app = FastAPI()
-    
+
     @app.post("/test-login")
     async def test_login(form_data: OAuth2PasswordRequestForm = Depends()):
         return {
             "username": form_data.username,
             "password": "hidden",
             "access_token": "test-token",
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
-    
+
     client = TestClient(app)
-    
+
     # Test form data
     response = client.post(
-        "/test-login",
-        data={"username": "test@example.com", "password": "testpass"}
+        "/test-login", data={"username": "test@example.com", "password": "testpass"}
     )
-    
+
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}")
-    
+
     assert response.status_code == 200
     assert response.json()["username"] == "test@example.com"
 
@@ -50,22 +49,20 @@ def test_actual_login_simplified(db: Session):
         name="Test User",
         role=UserRole.LECTURER.value,
         is_verified=True,
-        is_active=True
+        is_active=True,
     )
     db.add(user)
-    
+
     # Create whitelist
     whitelist = EmailWhitelist(
-        pattern="@example.com",
-        description="Test domain",
-        is_active=True
+        pattern="@example.com", description="Test domain", is_active=True
     )
     db.add(whitelist)
     db.commit()
-    
+
     # Import here to get the configured app
     from app.main import app
-    
+
     # Remove the SecurityRequestValidationMiddleware temporarily
     # (This is a hack for testing)
     new_middleware = []
@@ -73,15 +70,15 @@ def test_actual_login_simplified(db: Session):
         if "SecurityRequestValidationMiddleware" not in str(mw):
             new_middleware.append(mw)
     app.user_middleware = new_middleware
-    
+
     client = TestClient(app)
-    
+
     # Try login
     response = client.post(
         "/api/auth/login",
-        data={"username": "test@example.com", "password": "testpassword123"}
+        data={"username": "test@example.com", "password": "testpassword123"},
     )
-    
+
     print(f"\nActual login status: {response.status_code}")
     if response.status_code != 200:
         print(f"Response: {response.json()}")

@@ -2,7 +2,6 @@
 Admin-related Pydantic schemas
 """
 
-
 from pydantic import BaseModel, Field
 
 from app.schemas.user import UserResponse
@@ -10,7 +9,9 @@ from app.schemas.user import UserResponse
 
 # Email Whitelist schemas
 class EmailWhitelistBase(BaseModel):
-    pattern: str = Field(..., description="Email pattern (e.g., @example.com or user@example.com)")
+    pattern: str = Field(
+        ..., description="Email pattern (e.g., @example.com or user@example.com)"
+    )
     description: str | None = Field(None, description="Description of the pattern")
     is_active: bool = Field(True, description="Whether this pattern is active")
 
@@ -104,4 +105,3 @@ class DatabaseBackupResponse(BaseModel):
     message: str
     backup_path: str | None
     timestamp: str
-

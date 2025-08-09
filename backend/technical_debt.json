@@ -1,0 +1,229 @@
+{
+  "type_ignores": [
+    {
+      "file": "app/models/generation_history.py",
+      "line": 91,
+      "content": "token_usage = self.token_usage  # type: ignore[assignment]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/models/generation_history.py",
+      "line": 92,
+      "content": "return token_usage is not None and len(token_usage) > 0  # type: ignore[arg-type]",
+      "has_explanation": true
+    },
+    {
+      "file": "app/models/course_search_result.py",
+      "line": 60,
+      "content": "results = self.results  # type: ignore[assignment]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/models/course_search_result.py",
+      "line": 61,
+      "content": "return results is not None and len(results) > 0  # type: ignore[arg-type]",
+      "has_explanation": true
+    },
+    {
+      "file": "app/models/course_search_result.py",
+      "line": 66,
+      "content": "summary = self.summary  # type: ignore[assignment]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/models/course_search_result.py",
+      "line": 67,
+      "content": "return summary is not None and len(summary.strip()) > 0  # type: ignore[union-attr]",
+      "has_explanation": true
+    },
+    {
+      "file": "app/models/quiz_question.py",
+      "line": 91,
+      "content": "partial_credit = self.partial_credit  # type: ignore[assignment]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/models/quiz_question.py",
+      "line": 92,
+      "content": "return partial_credit is not None and len(partial_credit) > 0  # type: ignore[arg-type]",
+      "has_explanation": true
+    },
+    {
+      "file": "app/models/validation_result.py",
+      "line": 75,
+      "content": "suggestions = self.suggestions  # type: ignore[assignment]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/models/validation_result.py",
+      "line": 76,
+      "content": "return suggestions is not None and len(suggestions) > 0  # type: ignore[arg-type]",
+      "has_explanation": true
+    },
+    {
+      "file": "app/core/csrf_protection.py",
+      "line": 30,
+      "content": "def get_config():  # type: ignore[reportUnusedFunction]",
+      "has_explanation": false
+    },
+    {
+      "file": "app/core/security_utils.py",
+      "line": 234,
+      "content": "LoginAttempt.locked_until > datetime.utcnow()  # type: ignore[operator]",
+      "has_explanation": false
+    },
+    {
+      "file": "scripts/generate_debt_report.py",
+      "line": 50,
+      "content": "if \"# type: ignore\" in line:",
+      "has_explanation": true
+    },
+    {
+      "file": "scripts/generate_debt_report.py",
+      "line": 55,
+      "content": "\"has_explanation\": bool(re.search(r'# type: ignore.*[:-]', line))",
+      "has_explanation": true
+    }
+  ],
+  "skipped_tests": [
+    {
+      "file": "tests/test_auth.py",
+      "line": 16,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "line": 51,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "line": 140,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "line": 155,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "line": 168,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "line": 181,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth_simple.py",
+      "line": 13,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 19,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 42,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 51,
+      "reason": ""
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 83,
+      "reason": ""
+    },
+    {
+      "file": "scripts/generate_debt_report.py",
+      "line": 59,
+      "reason": ""
+    }
+  ],
+  "todos": [
+    {
+      "file": "app/api/routes/admin.py",
+      "line": 369,
+      "content": "# TODO: Implement actual system settings retrieval",
+      "type": "TODO"
+    },
+    {
+      "file": "app/api/routes/admin.py",
+      "line": 392,
+      "content": "# TODO: Implement actual system settings update",
+      "type": "TODO"
+    },
+    {
+      "file": "scripts/generate_debt_report.py",
+      "line": 70,
+      "content": "# TODOs",
+      "type": "TODO"
+    }
+  ],
+  "empty_implementations": [
+    {
+      "file": "app/plugins/base.py",
+      "line": 20
+    },
+    {
+      "file": "app/plugins/base.py",
+      "line": 25
+    },
+    {
+      "file": "app/plugins/base.py",
+      "line": 38
+    },
+    {
+      "file": "app/plugins/base.py",
+      "line": 43
+    },
+    {
+      "file": "app/schemas/admin.py",
+      "line": 19
+    },
+    {
+      "file": "app/schemas/admin.py",
+      "line": 71
+    },
+    {
+      "file": "app/services/email_service.py",
+      "line": 24
+    },
+    {
+      "file": "app/core/rate_limiter.py",
+      "line": 102
+    },
+    {
+      "file": "app/core/rate_limiter.py",
+      "line": 133
+    },
+    {
+      "file": "tests/conftest.py",
+      "line": 221
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 23
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 49
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 54
+    },
+    {
+      "file": "tests/test_auth_fixed.py",
+      "line": 86
+    }
+  ],
+  "security_exceptions": []
+}

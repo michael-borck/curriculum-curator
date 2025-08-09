@@ -28,7 +28,7 @@ def test_login_endpoint_exists(client: TestClient):
     """Test that login endpoint exists"""
     response = client.post(
         "/api/auth/login",
-        data={"username": "test@example.com", "password": "wrongpassword"}
+        data={"username": "test@example.com", "password": "wrongpassword"},
     )
     # Should get 401/422/423 for wrong credentials, not 404
     assert response.status_code in [401, 403, 422, 423]  # Not 404
@@ -41,8 +41,8 @@ def test_register_endpoint_exists(client: TestClient, db):
         json={
             "email": "newuser@example.com",
             "password": "Password123!",
-            "name": "Test User"
-        }
+            "name": "Test User",
+        },
     )
     # Should get some response, not 404
     assert response.status_code != 404

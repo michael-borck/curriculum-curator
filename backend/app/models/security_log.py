@@ -60,7 +60,9 @@ class SecurityLog(Base):
     # Event information
     event_type = Column(String(50), nullable=False, index=True)  # SecurityEventType
     event_description = Column(String(500), nullable=True)
-    severity = Column(String(20), default="info", index=True)  # info, warning, error, critical
+    severity = Column(
+        String(20), default="info", index=True
+    )  # info, warning, error, critical
 
     # User and session information
     user_id = Column(GUID(), nullable=True, index=True)  # None for anonymous events
@@ -79,7 +81,9 @@ class SecurityLog(Base):
 
     # Session information
     session_id = Column(String(50), nullable=True)
-    jwt_token_id = Column(String(50), nullable=True, index=True)  # For token blacklisting
+    jwt_token_id = Column(
+        String(50), nullable=True, index=True
+    )  # For token blacklisting
 
     # Timing
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -89,7 +93,9 @@ class SecurityLog(Base):
     details = Column(JSON, nullable=True)  # Additional event-specific data
 
     # Status and outcome
-    success = Column(String(10), default="unknown")  # success, failure, blocked, unknown
+    success = Column(
+        String(10), default="unknown"
+    )  # success, failure, blocked, unknown
 
     def __repr__(self):
         return f"<SecurityLog(event='{self.event_type}', user='{self.user_email}', ip='{self.ip_address}', time='{self.timestamp}')>"
@@ -204,7 +210,7 @@ class SecurityLog(Base):
         user_id: str | None = None,
         ip_address: str | None = None,
         severity: str | None = None,
-        limit: int = 100
+        limit: int = 100,
     ):
         """
         Get recent security events with filtering
@@ -275,7 +281,9 @@ class SecurityLog(Base):
             "time_period_hours": hours,
             "total_attacks": sum(count for _, count in event_counts),
             "by_type": dict(event_counts),
-            "top_attacking_ips": [{"ip": ip, "count": count} for ip, count in ip_counts],
+            "top_attacking_ips": [
+                {"ip": ip, "count": count} for ip, count in ip_counts
+            ],
         }
 
     @classmethod

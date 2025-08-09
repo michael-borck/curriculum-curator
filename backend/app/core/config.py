@@ -19,14 +19,18 @@ class Settings(BaseSettings):
     EMAIL_WHITELIST: list[str] = []
 
     # Brevo Email Service Configuration
-    BREVO_API_KEY: str | None = None
-    BREVO_SMTP_HOST: str = "smtp-relay.sendinblue.com"
+    BREVO_API_KEY: str | None = None  # This is actually the SMTP password
+    BREVO_SMTP_HOST: str = "smtp-relay.brevo.com"
     BREVO_SMTP_PORT: int = 587
+    BREVO_SMTP_LOGIN: str = "93b634001@smtp-brevo.com"  # Your SMTP login
     BREVO_FROM_EMAIL: str = "noreply@curriculum-curator.com"
     BREVO_FROM_NAME: str = "Curriculum Curator"
 
     # Email rate limiting
     EMAIL_RATE_LIMIT_PER_HOUR: int = 50  # Brevo free tier limit
+
+    # Development mode - log emails instead of sending
+    EMAIL_DEV_MODE: bool = True
 
     # LLM Configuration
     OPENAI_API_KEY: str | None = None

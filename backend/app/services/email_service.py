@@ -4,6 +4,7 @@ Email service using Brevo (formerly SendinBlue) via fastapi-mail
 
 import secrets
 import string
+import traceback
 from pathlib import Path
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
@@ -26,7 +27,7 @@ class EmailService:
         template_dir = str(Path(__file__).parent / "../templates/email")
 
         self.config = ConnectionConfig(
-            MAIL_USERNAME=settings.BREVO_FROM_EMAIL,
+            MAIL_USERNAME=settings.BREVO_SMTP_LOGIN,  # Use SMTP login, not FROM email
             MAIL_PASSWORD=settings.BREVO_API_KEY or "dummy-for-dev",
             MAIL_FROM=settings.BREVO_FROM_EMAIL,
             MAIL_FROM_NAME=settings.BREVO_FROM_NAME,
@@ -154,6 +155,16 @@ class EmailService:
         self, user: User, verification_code: str, expires_minutes: int = 15
     ) -> bool:
         """Send email verification code to user"""
+        # Development mode - log instead of sending
+        if settings.EMAIL_DEV_MODE:
+            print("\n📧 [DEV MODE] Email Verification")
+            print(f"To: {user.email}")
+            print(f"Name: {user.name}")
+            print(f"Verification Code: {verification_code}")
+            print(f"Expires in: {expires_minutes} minutes")
+            print(f"Subject: Welcome to {settings.APP_NAME} - Verify Your Email\n")
+            return True
+
         try:
             template = Template(self.get_verification_email_template())
 
@@ -196,12 +207,25 @@ The {settings.APP_NAME} Team
 
         except Exception as e:
             print(f"❌ Failed to send verification email to {user.email}: {e}")
+            # Add more detailed error logging
+            print("Full error traceback:")
+            traceback.print_exc()
             return False
 
     async def send_password_reset_email(
         self, user: User, reset_code: str, expires_minutes: int = 30
     ) -> bool:
         """Send password reset code to user"""
+        # Development mode - log instead of sending
+        if settings.EMAIL_DEV_MODE:
+            print("\n🔐 [DEV MODE] Password Reset Email")
+            print(f"To: {user.email}")
+            print(f"Name: {user.name}")
+            print(f"Reset Code: {reset_code}")
+            print(f"Expires in: {expires_minutes} minutes")
+            print(f"Subject: Password Reset - {settings.APP_NAME}\n")
+            return True
+
         try:
             template = Template(self.get_password_reset_email_template())
 
@@ -248,6 +272,14 @@ The {settings.APP_NAME} Security Team
 
     async def send_welcome_email(self, user: User) -> bool:
         """Send welcome email after successful verification"""
+        # Development mode - log instead of sending
+        if settings.EMAIL_DEV_MODE:
+            print("\n🎉 [DEV MODE] Welcome Email")
+            print(f"To: {user.email}")
+            print(f"Name: {user.name}")
+            print(f"Subject: 🎉 Account Activated - Welcome to {settings.APP_NAME}!\n")
+            return True
+
         try:
             welcome_template = """
             <!DOCTYPE html>

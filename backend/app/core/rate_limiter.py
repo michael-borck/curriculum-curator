@@ -41,7 +41,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     Custom rate limit exceeded handler
     Returns user-friendly JSON response
     """
-    retry_after = exc.retry_after if hasattr(exc, 'retry_after') else 60
+    retry_after = exc.retry_after if hasattr(exc, "retry_after") else 60
 
     return JSONResponse(
         status_code=429,
@@ -49,9 +49,11 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
             "error": "Rate limit exceeded",
             "message": "Too many requests. Please try again later.",
             "retry_after": retry_after,
-            "limit": str(exc.detail) if hasattr(exc, 'detail') else "Rate limit exceeded"
+            "limit": str(exc.detail)
+            if hasattr(exc, "detail")
+            else "Rate limit exceeded",
         },
-        headers={"Retry-After": str(retry_after)}
+        headers={"Retry-After": str(retry_after)},
     )
 
 
@@ -60,28 +62,28 @@ class RateLimits:
     """Predefined rate limits for different endpoint types"""
 
     # Authentication endpoints (more restrictive)
-    LOGIN = "5/minute"           # 5 login attempts per minute
-    REGISTER = "3/minute"        # 3 registrations per minute
-    VERIFY_EMAIL = "10/minute"   # 10 verification attempts per minute
+    LOGIN = "5/minute"  # 5 login attempts per minute
+    REGISTER = "3/minute"  # 3 registrations per minute
+    VERIFY_EMAIL = "10/minute"  # 10 verification attempts per minute
     RESEND_VERIFICATION = "2/minute"  # 2 resend requests per minute
-    FORGOT_PASSWORD = "3/minute" # 3 password reset requests per minute
+    FORGOT_PASSWORD = "3/minute"  # 3 password reset requests per minute
     RESET_PASSWORD = "5/minute"  # 5 password reset attempts per minute
 
     # General API endpoints (less restrictive)
-    DEFAULT = "60/minute"        # Default rate limit
-    API_READ = "60/minute"       # 60 read operations per minute
-    API_WRITE = "30/minute"      # 30 write operations per minute
-    API_DELETE = "10/minute"     # 10 delete operations per minute
+    DEFAULT = "60/minute"  # Default rate limit
+    API_READ = "60/minute"  # 60 read operations per minute
+    API_WRITE = "30/minute"  # 30 write operations per minute
+    API_DELETE = "10/minute"  # 10 delete operations per minute
 
     # Content generation (LLM endpoints)
     CONTENT_GENERATE = "10/minute"  # 10 content generations per minute
-    CONTENT_ENHANCE = "15/minute"   # 15 enhancements per minute
+    CONTENT_ENHANCE = "15/minute"  # 15 enhancements per minute
 
     # File upload
-    FILE_UPLOAD = "20/minute"    # 20 file uploads per minute
+    FILE_UPLOAD = "20/minute"  # 20 file uploads per minute
 
     # Administrative endpoints
-    ADMIN_ACTIONS = "100/minute" # 100 admin actions per minute
+    ADMIN_ACTIONS = "100/minute"  # 100 admin actions per minute
 
 
 def get_user_specific_limiter(request: Request) -> str:
@@ -139,10 +141,10 @@ def create_conditional_limiter(rate_limit: str):
     """
     Create a limiter that can be conditionally bypassed
     """
+
     def conditional_rate_limit(request: Request):
         if should_bypass_rate_limit(request):
             return "999999/second"  # Effectively unlimited
         return get_client_identifier(request)
 
     return Limiter(key_func=conditional_rate_limit)
-

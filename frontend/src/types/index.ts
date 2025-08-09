@@ -5,7 +5,7 @@ export interface User {
   id?: string;
   email: string;
   name: string;
-  role: 'admin' | 'lecturer' | 'student';
+  role: 'USER' | 'ADMIN';
 }
 
 // Course related types

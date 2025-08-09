@@ -61,7 +61,9 @@ class SecurityManager:
             )
 
         # Check IP-based rate limiting (20 attempts in 15 minutes)
-        if LoginAttempt.is_ip_rate_limited(db, ip_address, max_attempts=20, window_minutes=15):
+        if LoginAttempt.is_ip_rate_limited(
+            db, ip_address, max_attempts=20, window_minutes=15
+        ):
             return (
                 True,
                 "IP address temporarily blocked due to excessive requests",
@@ -111,7 +113,10 @@ class SecurityManager:
 
     @staticmethod
     def is_suspicious_activity(
-        db: Session, email: str, ip_address: str, user_agent: str  # noqa: ARG004
+        db: Session,
+        email: str,
+        ip_address: str,
+        user_agent: str,  # noqa: ARG004
     ) -> tuple[bool, str]:
         """
         Detect suspicious login activity
@@ -134,9 +139,7 @@ class SecurityManager:
         unique_emails = (
             db.query(LoginAttempt.email)
             .filter(LoginAttempt.ip_address == ip_address)
-            .filter(
-                LoginAttempt.last_attempt >= datetime.utcnow() - timedelta(hours=1)
-            )
+            .filter(LoginAttempt.last_attempt >= datetime.utcnow() - timedelta(hours=1))
             .distinct()
             .count()
         )
@@ -189,7 +192,9 @@ class SecurityManager:
         return base_message
 
     @staticmethod
-    def manual_unlock_account(db: Session, email: str, admin_reason: str = "Admin unlock") -> bool:
+    def manual_unlock_account(
+        db: Session, email: str, admin_reason: str = "Admin unlock"
+    ) -> bool:
         """Manually unlock an account (admin function)"""
         attempts = (
             db.query(LoginAttempt)
@@ -231,7 +236,7 @@ class SecurityManager:
                 and_(
                     LoginAttempt.is_locked,
                     LoginAttempt.locked_until.is_not(None),
-                    LoginAttempt.locked_until > datetime.utcnow()  # type: ignore[operator]
+                    LoginAttempt.locked_until > datetime.utcnow(),  # type: ignore[operator]
                 )
             )
             .count()

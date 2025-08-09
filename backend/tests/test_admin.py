@@ -12,7 +12,9 @@ from app.models import EmailWhitelist, User
 class TestAdminUserManagement:
     """Test admin user management endpoints"""
 
-    def test_list_users_as_admin(self, client: TestClient, admin_auth_headers, test_user):
+    def test_list_users_as_admin(
+        self, client: TestClient, admin_auth_headers, test_user
+    ):
         """Test listing users as admin"""
         response = client.get("/api/admin/users", headers=admin_auth_headers)
         assert response.status_code == 200
@@ -24,19 +26,20 @@ class TestAdminUserManagement:
     def test_list_users_with_filters(self, client: TestClient, admin_auth_headers):
         """Test listing users with search and filters"""
         response = client.get(
-            "/api/admin/users?search=admin&is_verified=true",
-            headers=admin_auth_headers
+            "/api/admin/users?search=admin&is_verified=true", headers=admin_auth_headers
         )
         assert response.status_code == 200
         data = response.json()
-        assert all("admin" in u["email"].lower() or "admin" in u["name"].lower() for u in data["users"])
+        assert all(
+            "admin" in u["email"].lower() or "admin" in u["name"].lower()
+            for u in data["users"]
+        )
         assert all(u["is_verified"] for u in data["users"])
 
     def test_list_users_pagination(self, client: TestClient, admin_auth_headers):
         """Test user list pagination"""
         response = client.get(
-            "/api/admin/users?skip=0&limit=1",
-            headers=admin_auth_headers
+            "/api/admin/users?skip=0&limit=1", headers=admin_auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -50,35 +53,39 @@ class TestAdminUserManagement:
         assert response.status_code == 403
         assert "Admin privileges required" in response.json()["detail"]
 
-    def test_toggle_user_status(self, client: TestClient, admin_auth_headers, test_user):
+    def test_toggle_user_status(
+        self, client: TestClient, admin_auth_headers, test_user
+    ):
         """Test toggling user active status"""
         response = client.post(
-            f"/api/admin/users/{test_user.id}/toggle-status",
-            headers=admin_auth_headers
+            f"/api/admin/users/{test_user.id}/toggle-status", headers=admin_auth_headers
         )
         assert response.status_code == 200
         data = response.json()
         assert data["is_active"] is False  # Should be toggled to inactive
         assert "disabled" in data["message"]
 
-    def test_toggle_own_status(self, client: TestClient, admin_auth_headers, test_admin):
+    def test_toggle_own_status(
+        self, client: TestClient, admin_auth_headers, test_admin
+    ):
         """Test admin cannot disable themselves"""
         response = client.post(
             f"/api/admin/users/{test_admin.id}/toggle-status",
-            headers=admin_auth_headers
+            headers=admin_auth_headers,
         )
         assert response.status_code == 400
         assert "Cannot disable your own account" in response.json()["detail"]
 
-    def test_delete_user(self, client: TestClient, admin_auth_headers, test_user, db: Session):
+    def test_delete_user(
+        self, client: TestClient, admin_auth_headers, test_user, db: Session
+    ):
         """Test deleting a user (soft delete)"""
         response = client.delete(
-            f"/api/admin/users/{test_user.id}",
-            headers=admin_auth_headers
+            f"/api/admin/users/{test_user.id}", headers=admin_auth_headers
         )
         assert response.status_code == 200
         assert "deleted" in response.json()["message"]
-        
+
         # Check user is soft deleted (inactive)
         db.refresh(test_user)
         assert test_user.is_active is False
@@ -87,13 +94,14 @@ class TestAdminUserManagement:
         """Test deleting non-existent user"""
         fake_id = "00000000-0000-0000-0000-000000000000"
         response = client.delete(
-            f"/api/admin/users/{fake_id}",
-            headers=admin_auth_headers
+            f"/api/admin/users/{fake_id}", headers=admin_auth_headers
         )
         assert response.status_code == 404
         assert "User not found" in response.json()["detail"]
 
-    def test_get_user_statistics(self, client: TestClient, admin_auth_headers, test_user, unverified_user):
+    def test_get_user_statistics(
+        self, client: TestClient, admin_auth_headers, test_user, unverified_user
+    ):
         """Test getting user statistics"""
         response = client.get("/api/admin/users/stats", headers=admin_auth_headers)
         assert response.status_code == 200
@@ -109,7 +117,9 @@ class TestAdminUserManagement:
 class TestAdminEmailWhitelist:
     """Test admin email whitelist management"""
 
-    def test_list_whitelist_patterns(self, client: TestClient, admin_auth_headers, email_whitelist):
+    def test_list_whitelist_patterns(
+        self, client: TestClient, admin_auth_headers, email_whitelist
+    ):
         """Test listing email whitelist patterns"""
         response = client.get("/api/admin/whitelist", headers=admin_auth_headers)
         assert response.status_code == 200
@@ -117,7 +127,9 @@ class TestAdminEmailWhitelist:
         assert len(data) >= 2  # At least the patterns from fixture
         assert any(p["pattern"] == "@example.com" for p in data)
 
-    def test_create_whitelist_pattern(self, client: TestClient, admin_auth_headers, db: Session):
+    def test_create_whitelist_pattern(
+        self, client: TestClient, admin_auth_headers, db: Session
+    ):
         """Test creating a new whitelist pattern"""
         response = client.post(
             "/api/admin/whitelist",
@@ -126,21 +138,25 @@ class TestAdminEmailWhitelist:
                 "pattern": "@newdomain.com",
                 "description": "New test domain",
                 "is_active": True,
-            }
+            },
         )
         assert response.status_code == 200
         data = response.json()
         assert data["pattern"] == "@newdomain.com"
         assert data["description"] == "New test domain"
         assert data["is_active"] is True
-        
+
         # Verify in database
-        pattern = db.query(EmailWhitelist).filter(
-            EmailWhitelist.pattern == "@newdomain.com"
-        ).first()
+        pattern = (
+            db.query(EmailWhitelist)
+            .filter(EmailWhitelist.pattern == "@newdomain.com")
+            .first()
+        )
         assert pattern is not None
 
-    def test_create_duplicate_pattern(self, client: TestClient, admin_auth_headers, email_whitelist):
+    def test_create_duplicate_pattern(
+        self, client: TestClient, admin_auth_headers, email_whitelist
+    ):
         """Test creating duplicate whitelist pattern"""
         response = client.post(
             "/api/admin/whitelist",
@@ -149,12 +165,14 @@ class TestAdminEmailWhitelist:
                 "pattern": email_whitelist.pattern,
                 "description": "Duplicate",
                 "is_active": True,
-            }
+            },
         )
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    def test_update_whitelist_pattern(self, client: TestClient, admin_auth_headers, email_whitelist):
+    def test_update_whitelist_pattern(
+        self, client: TestClient, admin_auth_headers, email_whitelist
+    ):
         """Test updating a whitelist pattern"""
         response = client.put(
             f"/api/admin/whitelist/{email_whitelist.id}",
@@ -162,7 +180,7 @@ class TestAdminEmailWhitelist:
             json={
                 "description": "Updated description",
                 "is_active": False,
-            }
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -170,20 +188,21 @@ class TestAdminEmailWhitelist:
         assert data["is_active"] is False
         assert data["pattern"] == email_whitelist.pattern  # Pattern unchanged
 
-    def test_delete_whitelist_pattern(self, client: TestClient, admin_auth_headers, email_whitelist, db: Session):
+    def test_delete_whitelist_pattern(
+        self, client: TestClient, admin_auth_headers, email_whitelist, db: Session
+    ):
         """Test deleting a whitelist pattern"""
         pattern_id = str(email_whitelist.id)
         response = client.delete(
-            f"/api/admin/whitelist/{pattern_id}",
-            headers=admin_auth_headers
+            f"/api/admin/whitelist/{pattern_id}", headers=admin_auth_headers
         )
         assert response.status_code == 200
         assert "deleted" in response.json()["message"]
-        
+
         # Verify deleted from database
-        pattern = db.query(EmailWhitelist).filter(
-            EmailWhitelist.id == pattern_id
-        ).first()
+        pattern = (
+            db.query(EmailWhitelist).filter(EmailWhitelist.id == pattern_id).first()
+        )
         assert pattern is None
 
 
@@ -209,7 +228,7 @@ class TestAdminSystemSettings:
                 "password_min_length": 10,
                 "max_login_attempts": 3,
                 "enable_user_registration": False,
-            }
+            },
         )
         assert response.status_code == 200
         data = response.json()
@@ -222,7 +241,7 @@ class TestAdminSystemSettings:
         response = client.put(
             "/api/admin/settings",
             headers=auth_headers,
-            json={"password_min_length": 10}
+            json={"password_min_length": 10},
         )
         assert response.status_code == 403
         assert "Admin privileges required" in response.json()["detail"]
@@ -245,7 +264,7 @@ class TestAdminAuthorization:
             ("GET", "/api/admin/settings"),
             ("PUT", "/api/admin/settings"),
         ]
-        
+
         for method, endpoint in endpoints:
             if method == "GET":
                 response = client.get(endpoint)
@@ -255,10 +274,14 @@ class TestAdminAuthorization:
                 response = client.put(endpoint, json={})
             elif method == "DELETE":
                 response = client.delete(endpoint)
-            
-            assert response.status_code == 401, f"{method} {endpoint} should require auth"
 
-    def test_all_admin_endpoints_require_admin_role(self, client: TestClient, auth_headers):
+            assert response.status_code == 401, (
+                f"{method} {endpoint} should require auth"
+            )
+
+    def test_all_admin_endpoints_require_admin_role(
+        self, client: TestClient, auth_headers
+    ):
         """Test that all admin endpoints require admin role"""
         endpoints = [
             ("GET", "/api/admin/users"),
@@ -266,8 +289,10 @@ class TestAdminAuthorization:
             ("GET", "/api/admin/whitelist"),
             ("GET", "/api/admin/settings"),
         ]
-        
+
         for method, endpoint in endpoints:
             response = client.get(endpoint, headers=auth_headers)
-            assert response.status_code == 403, f"{method} {endpoint} should require admin role"
+            assert response.status_code == 403, (
+                f"{method} {endpoint} should require admin role"
+            )
             assert "Admin privileges required" in response.json()["detail"]

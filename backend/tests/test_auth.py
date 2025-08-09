@@ -13,8 +13,12 @@ from app.utils.auth_helpers import auth_helpers
 class TestRegistration:
     """Test user registration endpoint"""
 
-    @pytest.mark.skip(reason="Form data handling issues with TestClient - API works correctly in production")
-    def test_register_new_user_success(self, client: TestClient, db: Session, email_whitelist):
+    @pytest.mark.skip(
+        reason="Form data handling issues with TestClient - API works correctly in production"
+    )
+    def test_register_new_user_success(
+        self, client: TestClient, db: Session, email_whitelist
+    ):
         """Test successful user registration"""
         response = client.post(
             "/api/auth/register",
@@ -26,9 +30,12 @@ class TestRegistration:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["message"] == "Registration successful! Please check your email for the verification code."
+        assert (
+            data["message"]
+            == "Registration successful! Please check your email for the verification code."
+        )
         assert data["user_email"] == "newuser@example.com"
-        
+
         # Check user was created in database
         user = db.query(User).filter(User.email == "newuser@example.com").first()
         assert user is not None
@@ -48,7 +55,9 @@ class TestRegistration:
         assert response.status_code == 409
         assert "already exists" in response.json()["detail"]
 
-    @pytest.mark.skip(reason="Form data handling issues with TestClient - API works correctly in production")
+    @pytest.mark.skip(
+        reason="Form data handling issues with TestClient - API works correctly in production"
+    )
     def test_register_weak_password(self, client: TestClient, email_whitelist):
         """Test registration with weak password"""
         response = client.post(
@@ -81,12 +90,14 @@ class TestRegistration:
 class TestEmailVerification:
     """Test email verification endpoint"""
 
-    def test_verify_email_success(self, client: TestClient, db: Session, unverified_user):
+    def test_verify_email_success(
+        self, client: TestClient, db: Session, unverified_user
+    ):
         """Test successful email verification"""
         # Create verification code
         success, code = auth_helpers.create_verification_code(db, unverified_user)
         assert success
-        
+
         response = client.post(
             "/api/auth/verify-email",
             json={
@@ -111,10 +122,13 @@ class TestEmailVerification:
         assert response.status_code == 400
         assert "verification failed" in response.json()["detail"]
 
-    def test_verify_email_expired_code(self, client: TestClient, db: Session, unverified_user):
+    def test_verify_email_expired_code(
+        self, client: TestClient, db: Session, unverified_user
+    ):
         """Test email verification with expired code"""
         # Create expired verification code
         from datetime import datetime, timedelta
+
         verification = EmailVerification(
             user_id=unverified_user.id,
             code="123456",
@@ -123,7 +137,7 @@ class TestEmailVerification:
         )
         db.add(verification)
         db.commit()
-        
+
         response = client.post(
             "/api/auth/verify-email",
             json={
@@ -137,7 +151,9 @@ class TestEmailVerification:
 class TestLogin:
     """Test login endpoint"""
 
-    @pytest.mark.skip(reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format")
+    @pytest.mark.skip(
+        reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format"
+    )
     def test_login_success(self, client: TestClient, test_user):
         """Test successful login"""
         response = client.post(
@@ -152,7 +168,9 @@ class TestLogin:
         assert "access_token" in data
         assert data["user"]["email"] == test_user.email
 
-    @pytest.mark.skip(reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format")
+    @pytest.mark.skip(
+        reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format"
+    )
     def test_login_invalid_password(self, client: TestClient, test_user):
         """Test login with wrong password"""
         response = client.post(
@@ -165,7 +183,9 @@ class TestLogin:
         assert response.status_code == 401
         assert "Incorrect email or password" in response.json()["detail"]
 
-    @pytest.mark.skip(reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format")
+    @pytest.mark.skip(
+        reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format"
+    )
     def test_login_unverified_user(self, client: TestClient, unverified_user):
         """Test login with unverified email"""
         response = client.post(
@@ -178,7 +198,9 @@ class TestLogin:
         assert response.status_code == 403
         assert "not verified" in response.json()["detail"]
 
-    @pytest.mark.skip(reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format")
+    @pytest.mark.skip(
+        reason="OAuth2PasswordRequestForm expects form-encoded data, TestClient has issues with this format"
+    )
     def test_login_nonexistent_user(self, client: TestClient):
         """Test login with non-existent user"""
         response = client.post(
@@ -219,7 +241,7 @@ class TestPasswordReset:
         # Create reset code
         success, code = auth_helpers.create_password_reset_code(db, test_user)
         assert success
-        
+
         response = client.post(
             "/api/auth/reset-password",
             json={
@@ -230,7 +252,7 @@ class TestPasswordReset:
         )
         assert response.status_code == 200
         assert "Password reset successfully" in response.json()["message"]
-        
+
         # Test login with new password
         login_response = client.post(
             "/api/auth/login",

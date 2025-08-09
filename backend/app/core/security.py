@@ -29,7 +29,7 @@ def create_access_token(
     expires_delta: timedelta | None = None,
     client_ip: str | None = None,
     user_role: str | None = None,
-    session_id: str | None = None
+    session_id: str | None = None,
 ) -> str:
     """
     Create a JWT access token with enhanced security fields.
@@ -54,14 +54,16 @@ def create_access_token(
         expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     # Enhanced JWT payload as per Phase B specification
-    to_encode.update({
-        "iat": int(now.timestamp()),  # Issued at
-        "exp": int(expire.timestamp()),  # Expires at
-        "jti": str(uuid.uuid4()),  # Unique token ID for blacklisting
-        "ip": client_ip,  # Bind to IP address
-        "role": user_role,  # Include role for authorization
-        "sid": session_id or str(uuid.uuid4()),  # Session ID
-    })
+    to_encode.update(
+        {
+            "iat": int(now.timestamp()),  # Issued at
+            "exp": int(expire.timestamp()),  # Expires at
+            "jti": str(uuid.uuid4()),  # Unique token ID for blacklisting
+            "ip": client_ip,  # Bind to IP address
+            "role": user_role,  # Include role for authorization
+            "sid": session_id or str(uuid.uuid4()),  # Session ID
+        }
+    )
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -104,7 +106,9 @@ def decode_access_token(token: str, verify_ip: str | None = None) -> dict | None
         dict: Decoded token payload or None if invalid
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
 
         # Verify IP binding if both token IP and verify IP are provided
         if verify_ip and payload.get("ip") and payload.get("ip") != verify_ip:
@@ -115,7 +119,9 @@ def decode_access_token(token: str, verify_ip: str | None = None) -> dict | None
         return None
 
 
-def validate_token_security(payload: dict, client_ip: str | None = None) -> tuple[bool, str]:
+def validate_token_security(
+    payload: dict, client_ip: str | None = None
+) -> tuple[bool, str]:
     """
     Validate JWT token security aspects.
 

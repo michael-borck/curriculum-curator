@@ -31,19 +31,19 @@ def test_auth_workaround(client: TestClient, db: Session):
         name="Test User",
         role=UserRole.LECTURER.value,
         is_verified=True,
-        is_active=True
+        is_active=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    
+
     # Verify password works
     assert verify_password("testpassword123", user.password_hash)
-    
+
     # Create token directly
     access_token = create_access_token(data={"sub": user.email})
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Test authenticated endpoint
     response = client.get("/api/auth/me", headers=headers)
     print(f"Get profile status: {response.status_code}")
@@ -51,7 +51,7 @@ def test_auth_workaround(client: TestClient, db: Session):
         print(f"Profile data: {response.json()}")
     else:
         print(f"Error: {response.json()}")
-        
+
     assert response.status_code == 200
     assert response.json()["email"] == "test@example.com"
 
@@ -65,15 +65,15 @@ def test_admin_endpoint_workaround(client: TestClient, db: Session):
         name="Admin User",
         role=UserRole.ADMIN.value,
         is_verified=True,
-        is_active=True
+        is_active=True,
     )
     db.add(admin)
     db.commit()
-    
+
     # Create token
     access_token = create_access_token(data={"sub": admin.email})
     headers = {"Authorization": f"Bearer {access_token}"}
-    
+
     # Test admin endpoint
     response = client.get("/api/admin/users", headers=headers)
     print(f"\nAdmin users list status: {response.status_code}")
@@ -81,5 +81,5 @@ def test_admin_endpoint_workaround(client: TestClient, db: Session):
         print(f"Users count: {len(response.json()['users'])}")
     else:
         print(f"Error: {response.json()}")
-        
+
     assert response.status_code == 200

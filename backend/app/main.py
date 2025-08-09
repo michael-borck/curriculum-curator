@@ -5,10 +5,10 @@ Curriculum Curator - Main FastAPI Application
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 from slowapi.errors import RateLimitExceeded
 
@@ -66,14 +66,20 @@ app.add_exception_handler(CsrfProtectError, csrf_exception_handler)
 # 1. Trusted host validation (first line of defense)
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.localhost", "*.edu", "*"]  # Adjust for production
+    allowed_hosts=[
+        "localhost",
+        "127.0.0.1",
+        "*.localhost",
+        "*.edu",
+        "*",
+    ],  # Adjust for production
 )
 
 # 2. Request validation and basic security checks
 app.add_middleware(
     RequestValidationMiddleware,
     max_request_size=10 * 1024 * 1024,  # 10MB limit
-    require_user_agent=False  # Set to True for stricter validation
+    require_user_agent=False,  # Set to True for stricter validation
 )
 
 # 3. Security headers
@@ -82,7 +88,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # 4. Trusted proxy handling (for load balancers/reverse proxies)
 app.add_middleware(
     TrustedProxyMiddleware,
-    trusted_proxies=["127.0.0.1", "::1"]  # Add your proxy IPs here
+    trusted_proxies=["127.0.0.1", "::1"],  # Add your proxy IPs here
 )
 
 # 5. CORS configuration (should be last middleware)
@@ -149,15 +155,19 @@ async def check_password_strength(request: Request):
     email = body.get("email", "")
 
     is_valid, errors = PasswordValidator.validate_password(password, name, email)
-    strength_score, strength_desc = PasswordValidator.get_password_strength_score(password)
-    suggestions = PasswordValidator.suggest_improvements(password, errors) if not is_valid else []
+    strength_score, strength_desc = PasswordValidator.get_password_strength_score(
+        password
+    )
+    suggestions = (
+        PasswordValidator.suggest_improvements(password, errors) if not is_valid else []
+    )
 
     return {
         "is_valid": is_valid,
         "errors": errors,
         "suggestions": suggestions,
         "strength_score": strength_score,
-        "strength": strength_desc
+        "strength": strength_desc,
     }
 
 
@@ -169,5 +179,5 @@ async def test_form_endpoint(form_data: OAuth2PasswordRequestForm = Depends()):
         "username": form_data.username,
         "password": "hidden",
         "grant_type": form_data.grant_type,
-        "scopes": form_data.scopes
+        "scopes": form_data.scopes,
     }

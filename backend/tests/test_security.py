@@ -28,7 +28,7 @@ class TestPasswordHashing:
         """Test password hashing and verification"""
         password = "SecurePassword123!"
         hash = get_password_hash(password)
-        
+
         assert hash != password
         assert verify_password(password, hash) is True
         assert verify_password("WrongPassword", hash) is False
@@ -38,7 +38,7 @@ class TestPasswordHashing:
         password = "TestPassword123!"
         hash1 = get_password_hash(password)
         hash2 = get_password_hash(password)
-        
+
         assert hash1 != hash2
         assert verify_password(password, hash1) is True
         assert verify_password(password, hash2) is True
@@ -50,9 +50,7 @@ class TestPasswordValidator:
     def test_valid_password(self):
         """Test validation of a strong password"""
         is_valid, errors = PasswordValidator.validate_password(
-            "SecurePass123!",
-            "John Doe",
-            "john@example.com"
+            "SecurePass123!", "John Doe", "john@example.com"
         )
         assert is_valid is True
         assert len(errors) == 0
@@ -71,7 +69,7 @@ class TestPasswordValidator:
             ("NoNumbers!", "number"),
             ("NoSpecialChars123", "special character"),
         ]
-        
+
         for password, missing in test_cases:
             is_valid, errors = PasswordValidator.validate_password(password)
             assert is_valid is False
@@ -80,7 +78,7 @@ class TestPasswordValidator:
     def test_common_password_rejection(self):
         """Test rejection of common passwords"""
         common_passwords = ["password123", "qwerty123", "admin123"]
-        
+
         for password in common_passwords:
             is_valid, errors = PasswordValidator.validate_password(password)
             assert is_valid is False
@@ -89,9 +87,7 @@ class TestPasswordValidator:
     def test_personal_info_in_password(self):
         """Test rejection of passwords containing personal info"""
         is_valid, errors = PasswordValidator.validate_password(
-            "John123!Doe",
-            "John Doe",
-            "john@example.com"
+            "John123!Doe", "John Doe", "john@example.com"
         )
         assert is_valid is False
         assert any("personal information" in error for error in errors)
@@ -99,8 +95,10 @@ class TestPasswordValidator:
     def test_password_strength_scoring(self):
         """Test password strength scoring"""
         weak_score, weak_desc = PasswordValidator.get_password_strength_score("weak")
-        strong_score, strong_desc = PasswordValidator.get_password_strength_score("Str0ng!P@ssw0rd#2024")
-        
+        strong_score, strong_desc = PasswordValidator.get_password_strength_score(
+            "Str0ng!P@ssw0rd#2024"
+        )
+
         assert weak_score < strong_score
         assert weak_desc == "Very Weak"
         assert strong_desc in ["Good", "Excellent"]
@@ -113,11 +111,9 @@ class TestJWTTokens:
         """Test creating and decoding access tokens"""
         user_data = {"sub": "user123", "email": "test@example.com"}
         token = create_access_token(
-            data=user_data,
-            client_ip="192.168.1.1",
-            user_role="user"
+            data=user_data, client_ip="192.168.1.1", user_role="user"
         )
-        
+
         decoded = decode_access_token(token)
         assert decoded is not None
         assert decoded["sub"] == "user123"
@@ -129,31 +125,28 @@ class TestJWTTokens:
         """Test token expiration"""
         # Create token that expires in 1 second
         token = create_access_token(
-            data={"sub": "user123"},
-            expires_delta=timedelta(seconds=1)
+            data={"sub": "user123"}, expires_delta=timedelta(seconds=1)
         )
-        
+
         # Token should be valid immediately
         assert decode_access_token(token) is not None
-        
+
         # Wait for expiration
         import time
+
         time.sleep(2)
-        
+
         # Token should be invalid after expiration
         assert decode_access_token(token) is None
 
     def test_token_ip_validation(self):
         """Test token IP binding validation"""
-        token = create_access_token(
-            data={"sub": "user123"},
-            client_ip="192.168.1.1"
-        )
-        
+        token = create_access_token(data={"sub": "user123"}, client_ip="192.168.1.1")
+
         # Valid IP match
         decoded = decode_access_token(token, verify_ip="192.168.1.1")
         assert decoded is not None
-        
+
         # Invalid IP match
         decoded = decode_access_token(token, verify_ip="192.168.1.2")
         assert decoded is None
@@ -166,19 +159,21 @@ class TestJWTTokens:
             "iat": int(datetime.utcnow().timestamp()),
             "exp": int((datetime.utcnow() + timedelta(hours=1)).timestamp()),
             "jti": "token123",
-            "ip": "192.168.1.1"
+            "ip": "192.168.1.1",
         }
         is_valid, error = validate_token_security(payload, client_ip="192.168.1.1")
         assert is_valid is True
         assert error == ""
-        
+
         # Expired token
         expired_payload = payload.copy()
-        expired_payload["exp"] = int((datetime.utcnow() - timedelta(hours=1)).timestamp())
+        expired_payload["exp"] = int(
+            (datetime.utcnow() - timedelta(hours=1)).timestamp()
+        )
         is_valid, error = validate_token_security(expired_payload)
         assert is_valid is False
         assert "expired" in error
-        
+
         # IP mismatch
         is_valid, error = validate_token_security(payload, client_ip="192.168.1.2")
         assert is_valid is False
@@ -192,24 +187,28 @@ class TestSecurityManager:
         """Test account lockout checking"""
         email = "test@example.com"
         ip = "192.168.1.1"
-        
+
         # No lockout initially
-        is_locked, reason, minutes = SecurityManager.check_account_lockout(db, email, ip)
+        is_locked, reason, minutes = SecurityManager.check_account_lockout(
+            db, email, ip
+        )
         assert is_locked is False
-        
+
         # Create failed login attempts
         for i in range(5):
             attempt = LoginAttempt(
                 email=email,
                 ip_address=ip,
                 success=False,
-                failure_reason="Invalid password"
+                failure_reason="Invalid password",
             )
             db.add(attempt)
         db.commit()
-        
+
         # Should be locked after 5 failures
-        is_locked, reason, minutes = SecurityManager.check_account_lockout(db, email, ip)
+        is_locked, reason, minutes = SecurityManager.check_account_lockout(
+            db, email, ip
+        )
         assert is_locked is True
         assert "Too many failed login attempts" in reason
         assert minutes > 0
@@ -217,13 +216,13 @@ class TestSecurityManager:
     def test_suspicious_activity_detection(self, db: Session):
         """Test suspicious activity detection"""
         email = "test@example.com"
-        
+
         # Normal activity
         is_suspicious, reason = SecurityManager.is_suspicious_activity(
             db, email, "192.168.1.1", "Mozilla/5.0"
         )
         assert is_suspicious is False
-        
+
         # Suspicious user agent
         is_suspicious, reason = SecurityManager.is_suspicious_activity(
             db, email, "192.168.1.1", "sqlmap/1.0"
@@ -238,23 +237,23 @@ class TestSecurityManager:
         )
         assert "locked" in message
         assert "10 minutes" in message
-        
+
         message = SecurityManager.get_lockout_status_message(False, "", 0)
         assert message == "Account is not locked"
 
-    @patch('app.core.security_utils.Request')
+    @patch("app.core.security_utils.Request")
     def test_get_client_ip(self, mock_request):
         """Test client IP extraction"""
         # Test with X-Forwarded-For header
         mock_request.headers = {"x-forwarded-for": "10.0.0.1, 192.168.1.1"}
         ip = SecurityManager.get_client_ip(mock_request)
         assert ip == "10.0.0.1"
-        
+
         # Test with X-Real-IP header
         mock_request.headers = {"x-real-ip": "192.168.1.2"}
         ip = SecurityManager.get_client_ip(mock_request)
         assert ip == "192.168.1.2"
-        
+
         # Test with direct client IP
         mock_request.headers = {}
         mock_request.client = Mock(host="192.168.1.3")
@@ -274,10 +273,10 @@ class TestRateLimiting:
                 json={
                     "email": f"user{i}@example.com",
                     "password": "TestPass123!",
-                    "name": f"User {i}"
-                }
+                    "name": f"User {i}",
+                },
             )
-            
+
             # Check rate limit headers
             assert "X-RateLimit-Limit" in response.headers
             assert "X-RateLimit-Remaining" in response.headers
