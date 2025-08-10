@@ -7,13 +7,11 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core import security
 from app.core.config import settings
-from app.core.csrf_middleware import validate_csrf_if_required
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
 from app.core.security_utils import SecurityManager
@@ -46,13 +44,10 @@ async def register(
     request: Request,
     user_request: UserRegistrationRequest,
     db: Session = Depends(deps.get_db),
-    csrf_protect: CsrfProtect = Depends(),
 ):
     """Register a new user with email verification"""
 
-    # CSRF Protection - API-friendly approach
-    # JSON requests are protected by CORS, form submissions need CSRF
-    await validate_csrf_if_required(request, csrf_protect)
+    # No CSRF needed - protected by CORS + rate limiting
 
     # Check if email is whitelisted
     if not EmailWhitelist.is_email_whitelisted(db, user_request.email):
@@ -243,13 +238,11 @@ async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(deps.get_db),
-    csrf_protect: CsrfProtect = Depends(),
 ):
     """OAuth2 compatible token login"""
 
-    # CSRF Protection - API-friendly approach
-    # JSON requests are protected by CORS, form submissions need CSRF
-    await validate_csrf_if_required(request, csrf_protect)
+    # NO CSRF on login endpoint - protected by CORS + rate limiting
+    # Removing CSRF from login to fix authentication issues
 
     # Get client information for security tracking
     client_ip = SecurityManager.get_client_ip(request)

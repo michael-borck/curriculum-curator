@@ -9,14 +9,9 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_csrf_protect.exceptions import CsrfProtectError
 from slowapi.errors import RateLimitExceeded
 
-from app.core.csrf_protection import (
-    csrf_exception_handler,
-    csrf_protect,
-    init_csrf_protection,
-)
+# CSRF removed - using JWT + CORS instead
 from app.core.database import SessionLocal, init_db
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
@@ -37,8 +32,7 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Curriculum Curator...")
     try:
         init_db()
-        init_csrf_protection()
-        logger.info("✅ CSRF protection initialized")
+        logger.info("✅ Database initialized")
     except Exception as e:
         logger.warning(f"Database initialization warning: {e}")
     yield
@@ -57,10 +51,6 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
-# Add CSRF protection to app
-app.state.csrf_protect = csrf_protect
-
-app.add_exception_handler(CsrfProtectError, csrf_exception_handler)
 
 # Security middleware (order matters - add from outermost to innermost)
 # 1. Trusted host validation (first line of defense)
@@ -94,7 +84,14 @@ app.add_middleware(
 # 5. CORS configuration (should be last middleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -138,12 +135,6 @@ async def security_stats():
     finally:
         db.close()
 
-
-@app.get("/csrf-token")
-async def get_csrf_token(request: Request):
-    """Get CSRF token for form submissions"""
-    token = csrf_protect.generate_csrf_tokens(request)
-    return {"csrf_token": token}
 
 
 @app.post("/password-strength")

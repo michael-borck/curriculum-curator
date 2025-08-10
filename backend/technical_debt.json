@@ -61,108 +61,47 @@
       "has_explanation": true
     },
     {
-      "file": "app/core/csrf_protection.py",
-      "line": 30,
-      "content": "def get_config():  # type: ignore[reportUnusedFunction]",
-      "has_explanation": false
-    },
-    {
       "file": "app/core/security_utils.py",
-      "line": 234,
-      "content": "LoginAttempt.locked_until > datetime.utcnow()  # type: ignore[operator]",
+      "line": 239,
+      "content": "LoginAttempt.locked_until > datetime.utcnow(),  # type: ignore[operator]",
       "has_explanation": false
     },
     {
       "file": "scripts/generate_debt_report.py",
-      "line": 50,
+      "line": 48,
       "content": "if \"# type: ignore\" in line:",
       "has_explanation": true
     },
     {
       "file": "scripts/generate_debt_report.py",
       "line": 55,
-      "content": "\"has_explanation\": bool(re.search(r'# type: ignore.*[:-]', line))",
+      "content": "re.search(r\"# type: ignore.*[:-]\", line)",
       "has_explanation": true
     }
   ],
   "skipped_tests": [
     {
-      "file": "tests/test_auth.py",
-      "line": 16,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth.py",
-      "line": 51,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth.py",
-      "line": 140,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth.py",
-      "line": 155,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth.py",
-      "line": 168,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth.py",
-      "line": 181,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth_simple.py",
-      "line": 13,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth_fixed.py",
-      "line": 19,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth_fixed.py",
-      "line": 42,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth_fixed.py",
-      "line": 51,
-      "reason": ""
-    },
-    {
-      "file": "tests/test_auth_fixed.py",
-      "line": 83,
-      "reason": ""
-    },
-    {
       "file": "scripts/generate_debt_report.py",
-      "line": 59,
+      "line": 61,
       "reason": ""
     }
   ],
   "todos": [
     {
       "file": "app/api/routes/admin.py",
-      "line": 369,
+      "line": 350,
       "content": "# TODO: Implement actual system settings retrieval",
       "type": "TODO"
     },
     {
       "file": "app/api/routes/admin.py",
-      "line": 392,
+      "line": 373,
       "content": "# TODO: Implement actual system settings update",
       "type": "TODO"
     },
     {
       "file": "scripts/generate_debt_report.py",
-      "line": 70,
+      "line": 74,
       "content": "# TODOs",
       "type": "TODO"
     }
@@ -186,43 +125,35 @@
     },
     {
       "file": "app/schemas/admin.py",
-      "line": 19
+      "line": 20
     },
     {
       "file": "app/schemas/admin.py",
-      "line": 71
+      "line": 72
     },
     {
-      "file": "app/services/email_service.py",
-      "line": 24
-    },
-    {
-      "file": "app/core/rate_limiter.py",
-      "line": 102
-    },
-    {
-      "file": "app/core/rate_limiter.py",
-      "line": 133
-    },
-    {
-      "file": "tests/conftest.py",
-      "line": 221
-    },
-    {
-      "file": "tests/test_auth_fixed.py",
+      "file": "app/services/llm_service.py",
       "line": 23
     },
     {
-      "file": "tests/test_auth_fixed.py",
-      "line": 49
+      "file": "app/services/llm_service.py",
+      "line": 30
     },
     {
-      "file": "tests/test_auth_fixed.py",
-      "line": 54
+      "file": "app/services/llm_service.py",
+      "line": 32
     },
     {
-      "file": "tests/test_auth_fixed.py",
-      "line": 86
+      "file": "app/services/email_service.py",
+      "line": 25
+    },
+    {
+      "file": "app/core/rate_limiter.py",
+      "line": 104
+    },
+    {
+      "file": "app/core/rate_limiter.py",
+      "line": 135
     }
   ],
   "security_exceptions": []

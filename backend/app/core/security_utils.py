@@ -114,9 +114,9 @@ class SecurityManager:
     @staticmethod
     def is_suspicious_activity(
         db: Session,
-        email: str,
+        email: str,  # noqa: ARG004
         ip_address: str,
-        user_agent: str,  # noqa: ARG004
+        user_agent: str,
     ) -> tuple[bool, str]:
         """
         Detect suspicious login activity

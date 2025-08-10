@@ -1,31 +1,37 @@
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.config import settings
 
 # Optional imports for LLM providers
-HAS_LANGCHAIN = False
-HAS_OPENAI = False
-HAS_ANTHROPIC = False
+if TYPE_CHECKING:
+    from langchain.callbacks import AsyncIteratorCallbackHandler
+    from langchain.schema import HumanMessage, SystemMessage
+    from langchain_anthropic import ChatAnthropic
+    from langchain_openai import ChatOpenAI
+
+has_langchain = False
+has_openai = False
+has_anthropic = False
 
 try:
     from langchain.callbacks import AsyncIteratorCallbackHandler
     from langchain.schema import HumanMessage, SystemMessage
 
-    HAS_LANGCHAIN = True
+    has_langchain = True
 
     try:
         from langchain_openai import ChatOpenAI
 
-        HAS_OPENAI = True
+        has_openai = True
     except ImportError:
         pass
 
     try:
         from langchain_anthropic import ChatAnthropic
 
-        HAS_ANTHROPIC = True
+        has_anthropic = True
     except ImportError:
         pass
 except ImportError:
@@ -35,68 +41,68 @@ except ImportError:
 class LLMService:
     def __init__(self):
         self.models = {}
-        if settings.OPENAI_API_KEY and HAS_OPENAI:
-            self.models["openai"] = ChatOpenAI(
+        if settings.OPENAI_API_KEY and has_openai:
+            self.models["openai"] = ChatOpenAI(  # type: ignore[name-defined]
                 api_key=settings.OPENAI_API_KEY,
                 model=settings.DEFAULT_LLM_MODEL,
                 streaming=True,
             )
-        if settings.ANTHROPIC_API_KEY and HAS_ANTHROPIC:
-            self.models["anthropic"] = ChatAnthropic(
+        if settings.ANTHROPIC_API_KEY and has_anthropic:
+            self.models["anthropic"] = ChatAnthropic(  # type: ignore[name-defined]
                 api_key=settings.ANTHROPIC_API_KEY, model="claude-3-opus-20240229"
             )
 
     async def generate_content(
         self,
+        pedagogy: str,
+        topic: str,
         content_type: str,
-        pedagogy_style: str,
-        context: dict[str, Any],
-        stream: bool = False,
+        provider: str = "openai",
     ) -> AsyncGenerator[str, None]:
-        """Generate content with pedagogical awareness"""
-
-        # If no LLM providers are available, return a placeholder
-        if not self.models:
-            yield "[LLM Service Not Available - Install langchain_openai or langchain_anthropic]\n\n"
-            yield f"Content Type: {content_type}\n"
-            yield f"Pedagogy Style: {pedagogy_style}\n"
-            yield f"Context: {context}\n"
+        """Generate educational content using LLM"""
+        if not has_langchain:
+            yield "LLM service not available - langchain not installed"
             return
 
-        system_prompt = self._build_pedagogy_prompt(pedagogy_style)
-        user_prompt = self._build_content_prompt(content_type, context)
-
-        if not HAS_LANGCHAIN:
-            yield "[Langchain not installed - LLM features disabled]"
+        if provider not in self.models:
+            yield f"Provider {provider} not configured or available"
             return
+
+        llm = self.models[provider]
+        prompt = self._build_prompt(pedagogy, topic, content_type)
 
         messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
+            SystemMessage(content=prompt),  # type: ignore[name-defined]
+            HumanMessage(  # type: ignore[name-defined]
+                content=f"Create {content_type} content about: {topic}"
+            ),
         ]
 
-        # Get first available model
-        model = next(iter(self.models.values())) if self.models else None
-        if not model:
-            yield "[No LLM model available]"
-            return
+        callback = AsyncIteratorCallbackHandler()  # type: ignore[name-defined]
+        task = asyncio.create_task(llm.ainvoke(messages, callbacks=[callback]))
 
-        if stream:
-            callback = AsyncIteratorCallbackHandler()
-            model.callbacks = [callback]
-
-            task = asyncio.create_task(model.agenerate(messages=[messages]))
-
+        try:
             async for token in callback.aiter():
                 yield token
-
+        finally:
             await task
-        else:
-            response = await model.agenerate(messages=[messages])
-            yield response.generations[0][0].text
 
-    def _build_pedagogy_prompt(self, style: str) -> str:
-        """Build system prompt based on pedagogical style"""
+    async def enhance_content(
+        self, content: str, enhancement_type: str, provider: str = "openai"
+    ) -> str:
+        """Enhance existing content"""
+        if not has_langchain:
+            return "LLM service not available - langchain not installed"
+
+        if provider not in self.models:
+            return f"Provider {provider} not configured or available"
+
+        # For now, return a simple response
+        return f"Enhanced content: {content[:100]}..."
+
+    def _build_prompt(self, pedagogy: str, topic: str, content_type: str) -> str:
+        """Build pedagogically-aware prompt"""
+        style = pedagogy.lower().replace(" ", "-")
         styles = {
             "traditional": "Focus on direct instruction, clear explanations, and structured practice.",
             "inquiry-based": "Encourage questioning, exploration, and discovery learning.",
@@ -113,25 +119,6 @@ class LLMService:
         {styles.get(style, "")}
         Create content that aligns with this pedagogical approach."""
 
-    def _build_content_prompt(self, content_type: str, context: dict) -> str:
-        """Build user prompt for specific content type"""
 
-        prompts = {
-            "lecture": f"""Create a lecture on {context.get("topic", "the topic")}.
-                Learning objectives: {context.get("objectives", [])}
-                Duration: {context.get("duration", "50 minutes")}
-                Include: introduction, main content, examples, and summary.""",
-            "worksheet": f"""Create a worksheet on {context.get("topic", "the topic")}.
-                Difficulty: {context.get("difficulty", "intermediate")}
-                Question types: {context.get("question_types", [])}
-                Number of questions: {context.get("num_questions", 10)}""",
-            "quiz": f"""Create a quiz on {context.get("topic", "the topic")}.
-                Format: {context.get("format", "multiple choice")}
-                Questions: {context.get("num_questions", 10)}
-                Include answer key.""",
-        }
-
-        return prompts.get(content_type, "Create educational content.")
-
-
+# Create singleton instance
 llm_service = LLMService()
