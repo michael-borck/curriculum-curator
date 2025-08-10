@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models import User
+from app.models import User, UserRole
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
@@ -63,3 +63,31 @@ def get_current_active_user(
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+def get_current_admin_user(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """Get current user and verify admin role."""
+    if current_user.role != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return current_user
+
+
+def get_user_or_admin_override(
+    resource_owner_id: str,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> bool:
+    """
+    Check if user owns resource or is admin.
+    Returns True if access should be granted.
+    """
+    # Admin can access everything
+    if current_user.role == UserRole.ADMIN.value:
+        return True
+    
+    # User can only access their own resources
+    return str(current_user.id) == str(resource_owner_id)
