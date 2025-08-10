@@ -99,7 +99,7 @@ app.add_middleware(
 
 # Import and include routers with error handling
 try:
-    from app.api.routes import admin, auth, content, courses, llm, user_export
+    from app.api.routes import admin, auth, content, courses, llm, monitoring, user_export
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
@@ -107,6 +107,7 @@ try:
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
     app.include_router(user_export.router, prefix="/api/user", tags=["user"])
+    app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])
 except ImportError as e:
     logger.warning(f"Some routes not loaded: {e}")
 
