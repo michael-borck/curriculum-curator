@@ -99,7 +99,15 @@ app.add_middleware(
 
 # Import and include routers with error handling
 try:
-    from app.api.routes import admin, auth, content, courses, llm, monitoring, user_export
+    from app.api.routes import (
+        admin,
+        auth,
+        content,
+        courses,
+        llm,
+        monitoring,
+        user_export,
+    )
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
@@ -136,7 +144,6 @@ async def security_stats():
         return SecurityManager.get_security_stats(db, hours=24)
     finally:
         db.close()
-
 
 
 @app.post("/password-strength")

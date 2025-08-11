@@ -71,8 +71,7 @@ def get_current_admin_user(
     """Get current user and verify admin role."""
     if current_user.role != UserRole.ADMIN.value:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
     return current_user
 
@@ -88,6 +87,6 @@ def get_user_or_admin_override(
     # Admin can access everything
     if current_user.role == UserRole.ADMIN.value:
         return True
-    
+
     # User can only access their own resources
     return str(current_user.id) == str(resource_owner_id)

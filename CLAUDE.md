@@ -212,3 +212,31 @@ SQLAlchemy models are not implemented yet. When implementing:
 - Create Alembic migrations: `alembic revision --autogenerate -m "description"`
 - Apply migrations: `alembic upgrade head`
 - Current setup uses SQLite for development
+
+## PRD Development Process
+
+This project follows a 3-step PRD development process:
+
+### Step 1: Create PRD
+- Receive initial feature request
+- Ask clarifying questions to understand requirements
+- Generate comprehensive PRD document
+- Save as `prd-[feature-name].md` in `/tasks/` directory
+- **Status: ✅ Completed** - PRD created as `/docs/PRD-Curriculum-Curator.md`
+
+### Step 2: Generate Task List
+- Analyze the PRD document
+- Create parent tasks (high-level)
+- Wait for user confirmation ("Go")
+- Generate detailed sub-tasks
+- Save as `tasks-[prd-file-name].md` in `/tasks/` directory
+- Include relevant files and testing strategy
+
+### Step 3: Process Task List
+- Implement one sub-task at a time
+- Mark tasks as completed `[x]` after each step
+- Wait for user approval before proceeding
+- Update task list regularly
+- Follow completion protocol and rollback procedures
+
+**Current Status**: Ready for Step 2 - Generate task list from PRD

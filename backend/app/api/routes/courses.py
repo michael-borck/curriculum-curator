@@ -9,9 +9,9 @@ from app.api import deps
 from app.models import Unit, UnitStatus, User
 from app.schemas.course import (
     CourseCreate,
+    CourseListResponse,
     CourseResponse,
     CourseUpdate,
-    CourseListResponse,
 )
 
 router = APIRouter()
@@ -33,7 +33,7 @@ async def get_courses(
     Regular users only see their own courses.
     """
     from app.models import UserRole
-    
+
     # Admin can see all or filter by user
     if current_user.role == UserRole.ADMIN.value:
         if user_id:
@@ -43,21 +43,19 @@ async def get_courses(
     else:
         # Regular users only see their own
         query = db.query(Unit).filter(Unit.owner_id == current_user.id)
-    
+
     # Apply filters
     if status:
         query = query.filter(Unit.status == status)
     if search:
-        query = query.filter(
-            Unit.title.contains(search) | Unit.code.contains(search)
-        )
-    
+        query = query.filter(Unit.title.contains(search) | Unit.code.contains(search))
+
     # Get total count
     total = query.count()
-    
+
     # Apply pagination
     courses = query.offset(skip).limit(limit).all()
-    
+
     return CourseListResponse(
         courses=[
             CourseResponse(
@@ -95,7 +93,7 @@ async def get_course(
     Admins can see any course.
     """
     from app.models import UserRole
-    
+
     # Build query based on user role
     if current_user.role == UserRole.ADMIN.value:
         # Admin can see any course
@@ -108,13 +106,13 @@ async def get_course(
             .filter(Unit.owner_id == current_user.id)
             .first()
         )
-    
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found or access denied",
         )
-    
+
     return CourseResponse(
         id=str(course.id),
         title=course.title,
@@ -144,7 +142,7 @@ async def create_course(
     """
     import uuid
     from datetime import datetime
-    
+
     # Create new unit with current user as owner
     new_course = Unit(
         id=uuid.uuid4(),
@@ -163,11 +161,11 @@ async def create_course(
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
-    
+
     db.add(new_course)
     db.commit()
     db.refresh(new_course)
-    
+
     return CourseResponse(
         id=str(new_course.id),
         title=new_course.title,
@@ -197,31 +195,31 @@ async def update_course(
     Only the owner can update their course.
     """
     from datetime import datetime
-    
+
     course = (
         db.query(Unit)
         .filter(Unit.id == course_id)
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found or access denied",
         )
-    
+
     # Update fields if provided
     update_data = course_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(course, field, value)
-    
+
     course.updated_by_id = current_user.id
     course.updated_at = datetime.utcnow()
-    
+
     db.commit()
     db.refresh(course)
-    
+
     return CourseResponse(
         id=str(course.id),
         title=course.title,
@@ -255,14 +253,14 @@ async def delete_course(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Course not found or access denied",
         )
-    
+
     db.delete(course)
     db.commit()
-    
+
     return {"message": "Course deleted successfully"}

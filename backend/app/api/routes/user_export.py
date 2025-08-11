@@ -29,7 +29,7 @@ async def export_user_data(
     """
     # Get all user's units/courses
     units = db.query(Unit).filter(Unit.owner_id == current_user.id).all()
-    
+
     # Build export data
     export_data = {
         "export_date": datetime.utcnow().isoformat(),
@@ -41,11 +41,11 @@ async def export_user_data(
         },
         "courses": [],
     }
-    
+
     for unit in units:
         # Get all content for this unit
         contents = db.query(Content).filter(Content.unit_id == unit.id).all()
-        
+
         unit_data = {
             "id": str(unit.id),
             "title": unit.title,
@@ -62,7 +62,7 @@ async def export_user_data(
             "updated_at": unit.updated_at.isoformat(),
             "contents": [],
         }
-        
+
         for content in contents:
             content_data = {
                 "id": str(content.id),
@@ -79,47 +79,47 @@ async def export_user_data(
                 "updated_at": content.updated_at.isoformat(),
             }
             unit_data["contents"].append(content_data)
-        
+
         export_data["courses"].append(unit_data)
-    
+
     if format == "zip":
         # Create ZIP file with JSON and markdown files
         zip_buffer = BytesIO()
-        with ZipFile(zip_buffer, 'w') as zip_file:
+        with ZipFile(zip_buffer, "w") as zip_file:
             # Add main JSON file
             zip_file.writestr(
                 "export_data.json",
                 json.dumps(export_data, indent=2),
             )
-            
+
             # Add markdown files for each course
             for course in export_data["courses"]:
                 course_dir = f"courses/{course['code']}_{course['title'][:30]}"
-                
-                # Course README
-                course_readme = f"""# {course['title']}
 
-**Code:** {course['code']}
-**Year:** {course['year']}
-**Semester:** {course['semester']}
-**Status:** {course['status']}
+                # Course README
+                course_readme = f"""# {course["title"]}
+
+**Code:** {course["code"]}
+**Year:** {course["year"]}
+**Semester:** {course["semester"]}
+**Status:** {course["status"]}
 
 ## Description
-{course['description'] or 'No description provided.'}
+{course["description"] or "No description provided."}
 
 ## Contents
 """
-                for content in course['contents']:
+                for content in course["contents"]:
                     course_readme += f"- {content['title']} ({content['type']})\n"
-                
+
                 zip_file.writestr(f"{course_dir}/README.md", course_readme)
-                
+
                 # Individual content files
-                for content in course['contents']:
-                    if content['content_markdown']:
+                for content in course["contents"]:
+                    if content["content_markdown"]:
                         filename = f"{course_dir}/{content['order_index']:02d}_{content['title'][:50]}.md"
-                        zip_file.writestr(filename, content['content_markdown'])
-        
+                        zip_file.writestr(filename, content["content_markdown"])
+
         zip_buffer.seek(0)
         return StreamingResponse(
             zip_buffer,
@@ -128,12 +128,12 @@ async def export_user_data(
                 "Content-Disposition": f"attachment; filename=curriculum_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
             },
         )
-    
-    else:  # JSON format
-        return StreamingResponse(
-            BytesIO(json.dumps(export_data, indent=2).encode()),
-            media_type="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=curriculum_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            },
-        )
+
+    # JSON format
+    return StreamingResponse(
+        BytesIO(json.dumps(export_data, indent=2).encode()),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=curriculum_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        },
+    )

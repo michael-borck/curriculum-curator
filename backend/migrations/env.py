@@ -8,6 +8,17 @@ from app.core.config import settings
 # Import our models and database configuration
 from app.core.database import Base
 
+# Import all models so Alembic can detect them
+from app.models import (
+    Conversation,
+    Course,
+    CourseModule,
+    LRD,
+    Material,
+    TaskList,
+    User,
+)
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

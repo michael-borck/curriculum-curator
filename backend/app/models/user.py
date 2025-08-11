@@ -51,6 +51,21 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     LECTURER = "lecturer"
     STUDENT = "student"
+    ASSISTANT = "assistant"  # Teaching assistant role
+
+
+class TeachingPhilosophy(str, Enum):
+    """Teaching philosophy styles"""
+
+    TRADITIONAL_LECTURE = "traditional_lecture"
+    CONSTRUCTIVIST = "constructivist"
+    DIRECT_INSTRUCTION = "direct_instruction"
+    INQUIRY_BASED = "inquiry_based"
+    FLIPPED_CLASSROOM = "flipped_classroom"
+    PROJECT_BASED = "project_based"
+    COMPETENCY_BASED = "competency_based"
+    CULTURALLY_RESPONSIVE = "culturally_responsive"
+    MIXED_APPROACH = "mixed_approach"
 
 
 class User(Base):
@@ -71,8 +86,16 @@ class User(Base):
     department = Column(String(255), nullable=True)
     position_title = Column(String(255), nullable=True)
 
+    # Teaching preferences
+    teaching_philosophy = Column(
+        String(50), default=TeachingPhilosophy.MIXED_APPROACH.value, nullable=False
+    )
+    language_preference = Column(String(10), default="en-AU", nullable=False)
+
     # Teaching preferences and LLM configuration (JSON fields)
-    teaching_preferences = Column(JSON, nullable=True)  # pedagogy style, preferences
+    teaching_preferences = Column(
+        JSON, nullable=True
+    )  # Additional pedagogy preferences
     llm_config = Column(JSON, nullable=True)  # API keys (encrypted), model preferences
     content_generation_context = Column(Text, nullable=True)  # Default context for LLM
 
@@ -83,10 +106,17 @@ class User(Base):
     )
 
     # Relationships
-    email_verifications = relationship("EmailVerification", back_populates="user")
-    password_resets = relationship("PasswordReset", back_populates="user")
+    email_verifications = relationship(
+        "EmailVerification", back_populates="user", cascade="all, delete-orphan"
+    )
+    password_resets = relationship(
+        "PasswordReset", back_populates="user", cascade="all, delete-orphan"
+    )
     owned_units = relationship(
         "Unit", foreign_keys="Unit.owner_id", back_populates="owner"
+    )
+    courses = relationship(
+        "Course", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):

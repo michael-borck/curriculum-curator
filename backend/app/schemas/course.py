@@ -2,13 +2,12 @@
 Course (Unit) schemas for API requests and responses
 """
 
-from datetime import datetime
 from pydantic import BaseModel, Field
 
 
 class CourseBase(BaseModel):
     """Base course schema with common fields"""
-    
+
     title: str = Field(..., min_length=1, max_length=500)
     code: str = Field(..., min_length=1, max_length=20)
     description: str | None = None
@@ -22,13 +21,13 @@ class CourseBase(BaseModel):
 
 class CourseCreate(CourseBase):
     """Schema for creating a new course"""
-    
+
     status: str | None = Field(default="draft")
 
 
 class CourseUpdate(BaseModel):
     """Schema for updating a course - all fields optional"""
-    
+
     title: str | None = Field(None, min_length=1, max_length=500)
     code: str | None = Field(None, min_length=1, max_length=20)
     description: str | None = None
@@ -43,19 +42,19 @@ class CourseUpdate(BaseModel):
 
 class CourseResponse(CourseBase):
     """Schema for course responses"""
-    
+
     id: str
     status: str
     created_at: str
     updated_at: str
-    
+
     class Config:
         from_attributes = True
 
 
 class CourseListResponse(BaseModel):
     """Schema for paginated course list responses"""
-    
+
     courses: list[CourseResponse]
     total: int
     skip: int

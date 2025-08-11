@@ -9,9 +9,9 @@ from app.api import deps
 from app.models import Content, ContentStatus, Unit, User
 from app.schemas.content import (
     ContentCreate,
+    ContentListResponse,
     ContentResponse,
     ContentUpdate,
-    ContentListResponse,
 )
 
 router = APIRouter()
@@ -37,7 +37,7 @@ async def get_contents(
         .join(Unit, Content.unit_id == Unit.id)
         .filter(Unit.owner_id == current_user.id)
     )
-    
+
     # Apply filters
     if unit_id:
         query = query.filter(Content.unit_id == unit_id)
@@ -45,13 +45,13 @@ async def get_contents(
         query = query.filter(Content.type == content_type)
     if status:
         query = query.filter(Content.status == status)
-    
+
     # Get total count
     total = query.count()
-    
+
     # Apply pagination and ordering
     contents = query.order_by(Content.order_index).offset(skip).limit(limit).all()
-    
+
     return ContentListResponse(
         contents=[
             ContentResponse(
@@ -60,7 +60,9 @@ async def get_contents(
                 type=content.type,
                 status=content.status,
                 unit_id=str(content.unit_id),
-                parent_content_id=str(content.parent_content_id) if content.parent_content_id else None,
+                parent_content_id=str(content.parent_content_id)
+                if content.parent_content_id
+                else None,
                 order_index=content.order_index,
                 content_markdown=content.content_markdown or "",
                 summary=content.summary or "",
@@ -94,20 +96,22 @@ async def get_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     return ContentResponse(
         id=str(content.id),
         title=content.title,
         type=content.type,
         status=content.status,
         unit_id=str(content.unit_id),
-        parent_content_id=str(content.parent_content_id) if content.parent_content_id else None,
+        parent_content_id=str(content.parent_content_id)
+        if content.parent_content_id
+        else None,
         order_index=content.order_index,
         content_markdown=content.content_markdown or "",
         summary=content.summary or "",
@@ -130,7 +134,7 @@ async def create_content(
     """
     import uuid
     from datetime import datetime
-    
+
     # Verify user owns the unit
     unit = (
         db.query(Unit)
@@ -138,13 +142,13 @@ async def create_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found or access denied",
         )
-    
+
     # Create new content
     new_content = Content(
         id=uuid.uuid4(),
@@ -162,18 +166,20 @@ async def create_content(
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
-    
+
     db.add(new_content)
     db.commit()
     db.refresh(new_content)
-    
+
     return ContentResponse(
         id=str(new_content.id),
         title=new_content.title,
         type=new_content.type,
         status=new_content.status,
         unit_id=str(new_content.unit_id),
-        parent_content_id=str(new_content.parent_content_id) if new_content.parent_content_id else None,
+        parent_content_id=str(new_content.parent_content_id)
+        if new_content.parent_content_id
+        else None,
         order_index=new_content.order_index,
         content_markdown=new_content.content_markdown or "",
         summary=new_content.summary or "",
@@ -196,7 +202,7 @@ async def update_content(
     User must own the associated unit to update content.
     """
     from datetime import datetime
-    
+
     # Get content with ownership check
     content = (
         db.query(Content)
@@ -205,30 +211,32 @@ async def update_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Update fields if provided
     update_data = content_data.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(content, field, value)
-    
+
     content.updated_at = datetime.utcnow()
-    
+
     db.commit()
     db.refresh(content)
-    
+
     return ContentResponse(
         id=str(content.id),
         title=content.title,
         type=content.type,
         status=content.status,
         unit_id=str(content.unit_id),
-        parent_content_id=str(content.parent_content_id) if content.parent_content_id else None,
+        parent_content_id=str(content.parent_content_id)
+        if content.parent_content_id
+        else None,
         order_index=content.order_index,
         content_markdown=content.content_markdown or "",
         summary=content.summary or "",
@@ -257,16 +265,16 @@ async def delete_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     db.delete(content)
     db.commit()
-    
+
     return {"message": "Content deleted successfully"}
 
 
@@ -288,13 +296,13 @@ async def upload_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found or access denied",
         )
-    
+
     # TODO: Process file and create content
     return {
         "filename": file.filename,
@@ -337,16 +345,21 @@ async def get_content_template(
         },
         "module": {
             "type": "module",
-            "structure": ["overview", "learning_outcomes", "content_sections", "assessment"],
+            "structure": [
+                "overview",
+                "learning_outcomes",
+                "content_sections",
+                "assessment",
+            ],
             "estimated_duration": 180,
         },
     }
-    
+
     template = templates.get(content_type)
     if not template:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Template for content type '{content_type}' not found",
         )
-    
+
     return template

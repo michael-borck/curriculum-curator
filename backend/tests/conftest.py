@@ -1,6 +1,7 @@
 """
 Simple pytest configuration - no mocks, test against running backend
 """
+
 import time
 
 import pytest
@@ -9,15 +10,18 @@ import requests
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
 
+
 @pytest.fixture(scope="session")
 def base_url():
     """Base URL for the API"""
     return BASE_URL
 
+
 @pytest.fixture(scope="session")
 def api_url():
     """API URL for the backend"""
     return API_URL
+
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_backend_running():
@@ -28,6 +32,7 @@ def ensure_backend_running():
             pytest.exit("Backend is not running! Start it with ./backend.sh")
     except requests.exceptions.RequestException:
         pytest.exit("Backend is not running! Start it with ./backend.sh")
+
 
 @pytest.fixture
 def unique_email():

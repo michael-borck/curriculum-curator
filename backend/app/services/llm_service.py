@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from app.core.config import settings
 
