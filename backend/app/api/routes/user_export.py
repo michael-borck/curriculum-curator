@@ -19,7 +19,7 @@ router = APIRouter()
 
 @router.get("/export/data")
 async def export_user_data(
-    format: str = "json",  # json or zip
+    export_format: str = "json",  # json or zip
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -82,7 +82,7 @@ async def export_user_data(
 
         export_data["courses"].append(unit_data)
 
-    if format == "zip":
+    if export_format == "zip":
         # Create ZIP file with JSON and markdown files
         zip_buffer = BytesIO()
         with ZipFile(zip_buffer, "w") as zip_file:

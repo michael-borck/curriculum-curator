@@ -8,7 +8,7 @@ from typing import Any
 
 import psutil
 from fastapi import APIRouter, Depends
-from sqlalchemy import text
+from sqlalchemy import and_, text
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -81,8 +81,8 @@ async def detailed_health_check(
     try:
         # User statistics
         total_users = db.query(User).count()
-        active_users = db.query(User).filter(User.is_active == True).count()
-        verified_users = db.query(User).filter(User.is_verified == True).count()
+        active_users = db.query(User).filter(User.is_active).count()
+        verified_users = db.query(User).filter(User.is_verified).count()
 
         health_status["metrics"]["users"] = {
             "total": total_users,
@@ -100,7 +100,7 @@ async def detailed_health_check(
         failed_attempts = (
             db.query(LoginAttempt)
             .filter(LoginAttempt.attempted_at > one_hour_ago)
-            .filter(LoginAttempt.success == False)
+            .filter(not LoginAttempt.success)
             .count()
         )
 
@@ -144,8 +144,8 @@ async def get_metrics(
     login_attempts = db.query(LoginAttempt).filter(
         LoginAttempt.attempted_at > one_day_ago
     )
-    successful_logins = login_attempts.filter(LoginAttempt.success == True).count()
-    failed_logins = login_attempts.filter(LoginAttempt.success == False).count()
+    successful_logins = login_attempts.filter(LoginAttempt.success).count()
+    failed_logins = login_attempts.filter(not LoginAttempt.success).count()
 
     metrics["authentication"] = {
         "successful_logins": successful_logins,
@@ -204,7 +204,7 @@ async def get_alerts(
     recent_failures = (
         db.query(LoginAttempt)
         .filter(LoginAttempt.attempted_at > one_hour_ago)
-        .filter(LoginAttempt.success == False)
+        .filter(not LoginAttempt.success)
         .count()
     )
 
@@ -219,8 +219,6 @@ async def get_alerts(
         )
 
     # Check for locked accounts
-    from sqlalchemy import and_
-
     locked_accounts = (
         db.query(LoginAttempt)
         .filter(
@@ -282,7 +280,7 @@ async def get_alerts(
     rapid_attempts = (
         db.query(LoginAttempt)
         .filter(LoginAttempt.attempted_at > fifteen_min_ago)
-        .filter(LoginAttempt.success == False)
+        .filter(not LoginAttempt.success)
         .group_by(LoginAttempt.ip_address)
         .having(text("COUNT(*) > 10"))
         .count()

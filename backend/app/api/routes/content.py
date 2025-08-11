@@ -2,6 +2,9 @@
 Content management routes with user workspace isolation
 """
 
+import uuid
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
@@ -132,8 +135,6 @@ async def create_content(
     Create new content for a unit.
     User must own the unit to add content to it.
     """
-    import uuid
-    from datetime import datetime
 
     # Verify user owns the unit
     unit = (
@@ -201,7 +202,6 @@ async def update_content(
     Update content.
     User must own the associated unit to update content.
     """
-    from datetime import datetime
 
     # Get content with ownership check
     content = (

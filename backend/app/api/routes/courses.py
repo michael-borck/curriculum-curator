@@ -2,11 +2,14 @@
 Course management routes with user workspace isolation
 """
 
+import uuid
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import Unit, UnitStatus, User
+from app.models import Unit, UnitStatus, User, UserRole
 from app.schemas.course import (
     CourseCreate,
     CourseListResponse,
@@ -32,8 +35,6 @@ async def get_courses(
     Admins can see all courses or filter by user_id.
     Regular users only see their own courses.
     """
-    from app.models import UserRole
-
     # Admin can see all or filter by user
     if current_user.role == UserRole.ADMIN.value:
         if user_id:
@@ -92,8 +93,6 @@ async def get_course(
     Regular users can only see their own courses.
     Admins can see any course.
     """
-    from app.models import UserRole
-
     # Build query based on user role
     if current_user.role == UserRole.ADMIN.value:
         # Admin can see any course
@@ -140,9 +139,6 @@ async def create_course(
     Create a new course.
     The course will be owned by the authenticated user.
     """
-    import uuid
-    from datetime import datetime
-
     # Create new unit with current user as owner
     new_course = Unit(
         id=uuid.uuid4(),
@@ -194,8 +190,6 @@ async def update_course(
     Update a course.
     Only the owner can update their course.
     """
-    from datetime import datetime
-
     course = (
         db.query(Unit)
         .filter(Unit.id == course_id)

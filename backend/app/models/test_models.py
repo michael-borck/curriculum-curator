@@ -36,8 +36,8 @@ def test_db():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = TestSessionLocal()
+    test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = test_session_local()
     
     yield session
     
