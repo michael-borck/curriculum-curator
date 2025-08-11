@@ -103,6 +103,7 @@ try:
         admin,
         auth,
         content,
+        course_modules,
         courses,
         llm,
         lrds,
@@ -113,6 +114,7 @@ try:
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+    app.include_router(course_modules.router, prefix="/api", tags=["course-modules"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(lrds.router, prefix="/api/lrds", tags=["lrds"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
