@@ -101,6 +101,7 @@ app.add_middleware(
 try:
     from app.api.routes import (
         admin,
+        ai,
         auth,
         content,
         course_modules,
@@ -121,6 +122,7 @@ try:
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
     app.include_router(lrds.router, prefix="/api/lrds", tags=["lrds"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
+    app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(plugins.router, prefix="/api/plugins", tags=["plugins"])
     app.include_router(user_export.router, prefix="/api/user", tags=["user"])
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])
