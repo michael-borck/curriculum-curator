@@ -93,8 +93,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 f"max-age={self.hsts_max_age}; includeSubDomains; preload"
             )
 
-        # Content Security Policy
-        response.headers["Content-Security-Policy"] = self.csp_policy
+        # Content Security Policy - relax for Swagger/ReDoc documentation
+        if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+            # Allow CDN resources for Swagger UI and ReDoc
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+                "img-src 'self' data: https:; "
+                "font-src 'self' data: https://fonts.gstatic.com; "
+                "connect-src 'self' https:; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = self.csp_policy
 
         # Frame Options
         response.headers["X-Frame-Options"] = self.frame_options
