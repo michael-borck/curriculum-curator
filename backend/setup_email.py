@@ -3,6 +3,7 @@
 
 import getpass
 import os
+import sys
 
 print("Brevo Email Setup")
 print("=" * 50)
@@ -19,7 +20,7 @@ print("=" * 50)
 env_file = ".env"
 if not os.path.exists(env_file):
     print(f"\n❌ Error: {env_file} not found. Run this from the backend directory.")
-    exit(1)
+    sys.exit(1)
 
 # Ask for SMTP password
 print("\nEnter your Brevo SMTP password (hidden for security):")
@@ -27,7 +28,7 @@ smtp_password = getpass.getpass("SMTP Password: ")
 
 if not smtp_password:
     print("❌ No password entered. Exiting.")
-    exit(1)
+    sys.exit(1)
 
 # Read current .env
 with open(env_file) as f:

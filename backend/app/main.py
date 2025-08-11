@@ -105,6 +105,7 @@ try:
         content,
         courses,
         llm,
+        lrds,
         monitoring,
         user_export,
     )
@@ -113,6 +114,7 @@ try:
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
+    app.include_router(lrds.router, prefix="/api/lrds", tags=["lrds"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
     app.include_router(user_export.router, prefix="/api/user", tags=["user"])
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])
