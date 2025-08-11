@@ -112,6 +112,7 @@ class URLVerifier(ValidatorPlugin):
             "error": None,
             "suspicious": False,
             "redirect_url": None,
+            "bot_blocked": False,
         }
 
         # Check for suspicious patterns first
@@ -148,11 +149,37 @@ class URLVerifier(ValidatorPlugin):
             )
 
             result["status_code"] = response.status_code
-            result["valid"] = response.status_code < 400
+
+            # Check for bot blocking indicators
+            if response.status_code == 403:
+                result["bot_blocked"] = True
+                result["error"] = "Access forbidden (possible bot blocking)"
+            elif response.status_code == 429:
+                result["bot_blocked"] = True
+                result["error"] = "Rate limited (too many requests)"
+            elif response.status_code == 503:
+                # Could be Cloudflare or similar protection
+                if any(h.lower() in response.headers.get("server", "").lower()
+                       for h in ["cloudflare", "ddos"]):
+                    result["bot_blocked"] = True
+                    result["error"] = "Bot protection detected (Cloudflare/DDoS protection)"
+                else:
+                    result["error"] = "Service unavailable"
+            elif response.status_code == 406:
+                result["bot_blocked"] = True
+                result["error"] = "Not acceptable (bot detection)"
+            else:
+                result["valid"] = response.status_code < 400
 
             # Check for redirects
             if str(response.url) != url:
                 result["redirect_url"] = str(response.url)
+                # Check if redirected to a captcha page
+                if any(captcha in str(response.url).lower()
+                       for captcha in ["captcha", "challenge", "verify", "bot-check"]):
+                    result["bot_blocked"] = True
+                    result["error"] = "Redirected to captcha/verification page"
+                    result["valid"] = False
 
             # If HEAD fails with 405, try GET
             if response.status_code == 405:
@@ -162,7 +189,16 @@ class URLVerifier(ValidatorPlugin):
                     timeout=self._timeout,
                 )
                 result["status_code"] = response.status_code
-                result["valid"] = response.status_code < 400
+
+                # Re-check for bot blocking on GET
+                if response.status_code == 403:
+                    result["bot_blocked"] = True
+                    result["error"] = "Access forbidden (possible bot blocking)"
+                elif response.status_code == 429:
+                    result["bot_blocked"] = True
+                    result["error"] = "Rate limited"
+                else:
+                    result["valid"] = response.status_code < 400
 
         except httpx.TimeoutException:
             result["error"] = "Request timeout"
@@ -211,6 +247,27 @@ class URLVerifier(ValidatorPlugin):
             if result.get("suspicious"):
                 issues.append(f"Suspicious URL pattern: {url[:100]}...")
                 suggestions.append(f"Verify this URL is correct: {result.get('error', 'Pattern match')}")
+
+            elif result.get("bot_blocked"):
+                # Special handling for bot-blocked URLs
+                issues.append(f"Bot detection: {url[:100]}... - {result['error']}")
+                if "403" in str(result.get("status_code", "")):
+                    suggestions.append(
+                        "This site blocks automated verification. "
+                        + "Manual check recommended, or mark as trusted if you know it's valid"
+                    )
+                elif "429" in str(result.get("status_code", "")):
+                    suggestions.append(
+                        "Rate limited by the site. The URL might be valid but needs manual verification"
+                    )
+                elif "captcha" in result.get("error", "").lower():
+                    suggestions.append(
+                        "Site requires CAPTCHA verification. URL likely valid but needs manual check"
+                    )
+                else:
+                    suggestions.append(
+                        "The site has bot protection. Consider manually verifying or whitelisting this domain"
+                    )
 
             elif not result["valid"]:
                 if result.get("error"):
@@ -278,21 +335,27 @@ class URLVerifier(ValidatorPlugin):
             total_urls = len(results)
             valid_urls = sum(1 for r in results if r["valid"])
             suspicious_urls = sum(1 for r in results if r.get("suspicious"))
-            broken_urls = total_urls - valid_urls
+            bot_blocked_urls = sum(1 for r in results if r.get("bot_blocked"))
+            broken_urls = total_urls - valid_urls - bot_blocked_urls
 
             # Calculate score
             if total_urls > 0:
-                # Suspicious URLs are worse than broken ones
-                score = max(0, 100 - (broken_urls * 10) - (suspicious_urls * 20))
+                # Scoring: suspicious URLs are worst, broken are bad, bot-blocked are warnings
+                score = max(0, 100 - (broken_urls * 10) - (suspicious_urls * 20) - (bot_blocked_urls * 3))
             else:
                 score = 100
 
-            # Determine pass/fail
+            # Determine pass/fail (bot-blocked URLs don't fail the check, just warn)
             passed = score >= 70 and suspicious_urls == 0
 
             if passed:
-                if broken_urls > 0:
-                    message = f"URL check passed with {broken_urls} broken link(s)"
+                if broken_urls > 0 or bot_blocked_urls > 0:
+                    parts = []
+                    if broken_urls > 0:
+                        parts.append(f"{broken_urls} broken")
+                    if bot_blocked_urls > 0:
+                        parts.append(f"{bot_blocked_urls} bot-blocked")
+                    message = f"URL check passed with {' and '.join(parts)} link(s)"
                 else:
                     message = f"All {total_urls} URLs verified successfully"
             elif suspicious_urls > 0:
@@ -308,6 +371,7 @@ class URLVerifier(ValidatorPlugin):
                     "url_count": total_urls,
                     "valid_urls": valid_urls,
                     "broken_urls": broken_urls,
+                    "bot_blocked_urls": bot_blocked_urls,
                     "suspicious_urls": suspicious_urls,
                     "results": results[:20],  # Limit detailed results
                 },
