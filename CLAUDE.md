@@ -241,3 +241,4 @@ This project follows a 3-step PRD development process:
 
 **Current Status**: Ready for Step 2 - Generate task list from PRD
 - We use uv controlled environment
+- Remember to update the task list
