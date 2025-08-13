@@ -93,4 +93,40 @@ class SystemSettings(Base):
                 "value": "Curriculum Curator",
                 "description": "Default from name for Brevo emails",
             },
+            # LLM System Settings
+            {
+                "key": "default_llm_provider",
+                "value": "openai",
+                "description": "System default LLM provider (openai, anthropic, gemini)",
+            },
+            {
+                "key": "default_llm_model",
+                "value": "gpt-4",
+                "description": "Default LLM model to use",
+            },
+            {
+                "key": "system_openai_api_key",
+                "value": "",
+                "description": "System-wide OpenAI API key (encrypted)",
+            },
+            {
+                "key": "system_anthropic_api_key",
+                "value": "",
+                "description": "System-wide Anthropic API key (encrypted)",
+            },
+            {
+                "key": "system_gemini_api_key",
+                "value": "",
+                "description": "System-wide Google Gemini API key (encrypted)",
+            },
+            {
+                "key": "allow_user_api_keys",
+                "value": "true",
+                "description": "Allow users to provide their own API keys (BYOK)",
+            },
+            {
+                "key": "require_user_api_key",
+                "value": "false",
+                "description": "Require users to provide their own API key if system key not set",
+            },
         ]

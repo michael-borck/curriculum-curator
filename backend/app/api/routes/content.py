@@ -7,9 +7,11 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.api import deps
 from app.models import Content, ContentStatus, Unit, User
+from app.services.file_import_service import file_import_service
 from app.schemas.content import (
     ContentCreate,
     ContentListResponse,
@@ -286,7 +288,92 @@ async def upload_content(
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
-    Upload a file for content import.
+    Upload a file for content import and processing.
+    User must own the unit to upload content to it.
+    Supports PDF, DOCX, PPTX, and other document formats.
+    """
+    # Verify user owns the unit
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id)
+        .filter(Unit.owner_id == current_user.id)
+        .first()
+    )
+
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found or access denied",
+        )
+
+    # Read file content
+    file_content = await file.read()
+    
+    # Process the file
+    result = await file_import_service.process_file(
+        file_content=file_content,
+        filename=file.filename,
+        content_type=file.content_type
+    )
+    
+    if not result['success']:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to process file: {result.get('error', 'Unknown error')}"
+        )
+    
+    # Create a new content entry from the imported content
+    new_content = Content(
+        id=str(uuid.uuid4()),
+        unit_id=unit_id,
+        title=f"Imported: {file.filename}",
+        type=result['content_type'],
+        content=result['content'],
+        status=ContentStatus.DRAFT,
+        metadata={
+            'original_filename': file.filename,
+            'import_metadata': result['metadata'],
+            'sections': result['sections'],
+            'word_count': result['word_count'],
+            'estimated_reading_time': result['estimated_reading_time']
+        },
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        created_by=current_user.id
+    )
+    
+    db.add(new_content)
+    db.commit()
+    db.refresh(new_content)
+    
+    # Get categorization info
+    categorization = file_import_service.categorize_content(result['content'])
+    
+    return {
+        "success": True,
+        "content_id": new_content.id,
+        "filename": file.filename,
+        "size": len(file_content),
+        "content_type": result['content_type'],
+        "unit_id": unit_id,
+        "word_count": result['word_count'],
+        "sections_found": len(result['sections']),
+        "suggestions": result['suggestions'],
+        "gaps": result['gaps'],
+        "categorization": categorization,
+        "message": "File uploaded and processed successfully"
+    }
+
+
+@router.post("/upload/batch")
+async def batch_upload_content(
+    unit_id: str = Query(...),
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Upload multiple files for batch content import.
     User must own the unit to upload content to it.
     """
     # Verify user owns the unit
@@ -303,12 +390,137 @@ async def upload_content(
             detail="Unit not found or access denied",
         )
 
-    # TODO: Process file and create content
+    results = []
+    for file in files:
+        try:
+            # Read file content
+            file_content = await file.read()
+            
+            # Process the file
+            result = await file_import_service.process_file(
+                file_content=file_content,
+                filename=file.filename,
+                content_type=file.content_type
+            )
+            
+            if result['success']:
+                # Create content entry
+                new_content = Content(
+                    id=str(uuid.uuid4()),
+                    unit_id=unit_id,
+                    title=f"Imported: {file.filename}",
+                    type=result['content_type'],
+                    content=result['content'],
+                    status=ContentStatus.DRAFT,
+                    metadata={
+                        'original_filename': file.filename,
+                        'import_metadata': result['metadata'],
+                        'sections': result['sections']
+                    },
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                    created_by=current_user.id
+                )
+                
+                db.add(new_content)
+                
+                results.append({
+                    "filename": file.filename,
+                    "success": True,
+                    "content_id": new_content.id,
+                    "content_type": result['content_type']
+                })
+            else:
+                results.append({
+                    "filename": file.filename,
+                    "success": False,
+                    "error": result.get('error', 'Processing failed')
+                })
+        except Exception as e:
+            results.append({
+                "filename": file.filename,
+                "success": False,
+                "error": str(e)
+            })
+    
+    db.commit()
+    
+    successful = sum(1 for r in results if r['success'])
+    failed = len(results) - successful
+    
     return {
-        "filename": file.filename,
-        "content_type": file.content_type,
-        "unit_id": unit_id,
-        "message": "File uploaded successfully (processing not yet implemented)",
+        "total_files": len(files),
+        "successful": successful,
+        "failed": failed,
+        "results": results,
+        "message": f"Batch upload completed: {successful} successful, {failed} failed"
+    }
+
+
+@router.patch("/{content_id}/type")
+async def update_content_type(
+    content_id: str,
+    new_type: str = Query(..., description="New content type"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Update the content type after import.
+    Allows users to correct auto-categorization.
+    """
+    # Get the content and verify ownership
+    content = (
+        db.query(Content)
+        .join(Unit, Content.unit_id == Unit.id)
+        .filter(Content.id == content_id)
+        .filter(Unit.owner_id == current_user.id)
+        .first()
+    )
+    
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Content not found or access denied"
+        )
+    
+    # Validate the new type
+    valid_types = [
+        'lecture', 'quiz', 'worksheet', 'lab', 'case_study',
+        'interactive', 'presentation', 'reading', 'video_script', 'general'
+    ]
+    
+    if new_type not in valid_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid content type. Must be one of: {', '.join(valid_types)}"
+        )
+    
+    # Update the content type
+    old_type = content.type
+    content.type = new_type
+    content.updated_at = datetime.utcnow()
+    
+    # Update metadata to track the change
+    if not content.metadata:
+        content.metadata = {}
+    content.metadata['type_history'] = content.metadata.get('type_history', [])
+    content.metadata['type_history'].append({
+        'from': old_type,
+        'to': new_type,
+        'changed_by': current_user.id,
+        'changed_at': datetime.utcnow().isoformat(),
+        'reason': 'User correction'
+    })
+    
+    db.commit()
+    db.refresh(content)
+    
+    return {
+        "success": True,
+        "content_id": content_id,
+        "old_type": old_type,
+        "new_type": new_type,
+        "message": f"Content type updated from '{old_type}' to '{new_type}'"
     }
 
 

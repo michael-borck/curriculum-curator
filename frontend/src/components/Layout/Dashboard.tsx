@@ -28,12 +28,12 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: BookOpen, label: 'My Courses', path: '/courses' },
-    { icon: Plus, label: 'Create Content', path: '/create' },
+    { icon: Plus, label: 'Create Content', path: '/content/new' },
     { icon: Upload, label: 'Import Materials', path: '/import' },
-    { icon: Target, label: 'Teaching Style', path: '/pedagogy' },
-    { icon: Brain, label: 'AI Assistant', path: '/assistant' },
+    { icon: Target, label: 'Teaching Style', path: '/teaching-style' },
+    { icon: Brain, label: 'AI Assistant', path: '/ai-assistant' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
