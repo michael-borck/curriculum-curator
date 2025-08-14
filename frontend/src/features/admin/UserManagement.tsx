@@ -18,9 +18,9 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'USER' | 'ADMIN';
+  role: 'lecturer' | 'admin' | 'student' | 'assistant';
   is_active: boolean;
-  email_verified: boolean;
+  is_verified: boolean;
   created_at: string;
   last_login?: string;
 }
@@ -29,7 +29,9 @@ const UserManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterRole, setFilterRole] = useState<'all' | 'USER' | 'ADMIN'>('all');
+  const [filterRole, setFilterRole] = useState<
+    'all' | 'lecturer' | 'admin' | 'student' | 'assistant'
+  >('all');
   const [filterStatus, setFilterStatus] = useState<
     'all' | 'active' | 'inactive'
   >('all');
@@ -50,7 +52,7 @@ const UserManagement = () => {
     try {
       setIsLoading(true);
       const response = await api.get('/api/admin/users');
-      setUsers(response.data);
+      setUsers(response.data.users || response.data);
       setError('');
     } catch (error: any) {
       setError('Failed to load users');
@@ -89,9 +91,7 @@ const UserManagement = () => {
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
-      await api.patch(`/api/admin/users/${userId}/status`, {
-        is_active: !currentStatus,
-      });
+      await api.post(`/api/admin/users/${userId}/toggle-status`);
 
       setUsers(
         users.map(user =>
@@ -106,18 +106,15 @@ const UserManagement = () => {
   };
 
   const handleChangeRole = async (
-    userId: string,
-    newRole: 'USER' | 'ADMIN'
+    _userId: string,
+    _newRole: 'lecturer' | 'admin' | 'student' | 'assistant'
   ) => {
     try {
-      await api.patch(`/api/admin/users/${userId}/role`, { role: newRole });
-
-      setUsers(
-        users.map(user =>
-          user.id === userId ? { ...user, role: newRole } : user
-        )
+      // This endpoint doesn't exist yet in the backend
+      // For now, just show an alert
+      window.alert(
+        'Role change functionality will be implemented in a future version'
       );
-
       setShowDropdown(null);
     } catch (error) {
       console.error('Error updating user role:', error);
@@ -207,8 +204,10 @@ const UserManagement = () => {
             className='px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500'
           >
             <option value='all'>All Roles</option>
-            <option value='USER'>Users</option>
-            <option value='ADMIN'>Admins</option>
+            <option value='lecturer'>Lecturers</option>
+            <option value='admin'>Admins</option>
+            <option value='student'>Students</option>
+            <option value='assistant'>Assistants</option>
           </select>
 
           {/* Status Filter */}
@@ -269,12 +268,16 @@ const UserManagement = () => {
                   <td className='px-6 py-4 whitespace-nowrap'>
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'ADMIN'
+                        user.role === 'admin'
                           ? 'bg-purple-100 text-purple-800'
-                          : 'bg-gray-100 text-gray-800'
+                          : user.role === 'lecturer'
+                            ? 'bg-blue-100 text-blue-800'
+                            : user.role === 'student'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
                       }`}
                     >
-                      {user.role}
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap'>
@@ -299,7 +302,7 @@ const UserManagement = () => {
                     </span>
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap'>
-                    {user.email_verified ? (
+                    {user.is_verified ? (
                       <CheckCircle className='w-5 h-5 text-green-600' />
                     ) : (
                       <XCircle className='w-5 h-5 text-gray-400' />
@@ -349,13 +352,14 @@ const UserManagement = () => {
                               onClick={() =>
                                 handleChangeRole(
                                   user.id,
-                                  user.role === 'ADMIN' ? 'USER' : 'ADMIN'
+                                  user.role === 'admin' ? 'lecturer' : 'admin'
                                 )
                               }
                               className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left'
                             >
                               <Edit className='w-4 h-4' />
-                              Make {user.role === 'ADMIN' ? 'User' : 'Admin'}
+                              Make{' '}
+                              {user.role === 'admin' ? 'Lecturer' : 'Admin'}
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user.id)}

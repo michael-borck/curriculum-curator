@@ -381,12 +381,71 @@ Features:
 - Secure file handling
 - LLM prompt injection prevention
 
-## Next Steps
+## Phase 2 Enhancement: Git-Backed Storage Architecture
 
-1. **Set up authentication system** (Week 1-2)
-2. **Create database schema and models** (Week 2)
-3. **Build landing page and dashboard** (Week 2-3)
-4. **Implement course creation wizard** (Week 4-5)
-5. **Develop LLM integration layer** (Week 6-7)
+**Status**: Planned (Post-MVP)
+**Timeline**: 13-19 weeks after current MVP completion
+**Documentation**: [ADR-0013](../adr/0013-git-backed-content-storage.md) | [Git Migration Plan](GIT_MIGRATION_PLAN.md)
 
-This roadmap provides a clear path from the current basic implementation to a full-featured curriculum creation platform.
+### Overview
+After completing the current MVP implementation, the system will undergo a major architectural enhancement to migrate from database-centric content storage to a Git-backed architecture. This migration will provide:
+
+- **85%+ storage reduction** through Git delta compression
+- **Professional version control** with native Git features
+- **Protection against LLM drift** via immutable commit history
+- **Collaboration capabilities** for future team features
+- **Advanced version management** with branching and merging
+
+### Migration Strategy
+The Git migration is designed as a **separate enhancement project** that:
+- Does not block current MVP development
+- Can be implemented incrementally alongside existing database storage
+- Provides significant long-term benefits for scalability and collaboration
+- Leverages proven Git technology instead of homemade version control
+
+### Relationship to Current Implementation
+- **Phase 1 (Current)**: Complete MVP with database storage
+  - Tasks 8.6: Admin Dashboard
+  - Tasks 10.1-10.4: Comprehensive testing
+- **Phase 2 (Future)**: Git-backed storage migration
+  - Migrate existing content to Git repositories
+  - Replace homemade version control with native Git
+  - Add collaboration and advanced diff features
+
+## Current MVP Status
+
+### Completed ✅
+- **Task 8.4**: Task Management UI (Kanban board) ✅
+- **Task 8.5**: Version History Browser (Visual diff interface) ✅
+- Core system architecture and authentication
+- LLM integration and content generation
+- Material CRUD operations with basic version control
+- Plugin system for content validation/remediation
+- Import system for PDF/DOCX/PPTX files
+
+### In Progress 🔄
+- **Task 8.6**: Admin Dashboard (User management, settings)
+- **Tasks 10.1-10.4**: Comprehensive testing (backend + frontend)
+
+### Next Steps (Current MVP Completion)
+
+1. **Complete Admin Dashboard** (Task 8.6)
+   - User management interface
+   - System settings and configuration
+   - Security and permissions management
+
+2. **Implement Comprehensive Testing** (Tasks 10.1-10.4)
+   - Backend unit and integration tests
+   - Frontend component and E2E tests
+   - Test coverage and CI/CD pipeline
+
+3. **MVP Launch** 
+   - Production deployment
+   - Documentation and user guides
+   - Performance optimization
+
+4. **Phase 2 Planning**
+   - Git migration architecture finalization
+   - Resource allocation for Git enhancement project
+
+This roadmap provides a clear path from the current near-complete MVP to a full-featured curriculum creation platform with enterprise-grade version control capabilities.

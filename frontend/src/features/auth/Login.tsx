@@ -45,7 +45,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
         login(user);
 
         // Navigate based on role
-        if (user.role === 'ADMIN') {
+        if (user.role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/dashboard');

@@ -5,7 +5,7 @@ export interface User {
   id?: string;
   email: string;
   name: string;
-  role: 'USER' | 'ADMIN';
+  role: 'lecturer' | 'admin' | 'student' | 'assistant';
   teaching_philosophy?: string;
   language_preference?: string;
   llm_config?: {

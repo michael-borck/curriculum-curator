@@ -3,7 +3,6 @@ import {
   Plus,
   Trash2,
   Mail,
-  Globe,
   AlertCircle,
   CheckCircle,
   Loader2,
@@ -14,15 +13,16 @@ import api from '../../services/api';
 interface WhitelistEntry {
   id: string;
   pattern: string;
-  type: 'EMAIL' | 'DOMAIN';
+  description?: string;
+  is_active: boolean;
   created_at: string;
-  created_by: string;
+  updated_at: string;
 }
 
 const EmailWhitelist = () => {
   const [entries, setEntries] = useState<WhitelistEntry[]>([]);
   const [newEntry, setNewEntry] = useState('');
-  const [entryType, setEntryType] = useState<'EMAIL' | 'DOMAIN'>('EMAIL');
+  const [newDescription, setNewDescription] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState('');
@@ -48,22 +48,8 @@ const EmailWhitelist = () => {
 
   const validateEntry = (): boolean => {
     if (!newEntry.trim()) {
-      setError('Please enter an email or domain');
+      setError('Please enter an email pattern');
       return false;
-    }
-
-    if (entryType === 'EMAIL') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newEntry)) {
-        setError('Please enter a valid email address');
-        return false;
-      }
-    } else {
-      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]*\.[a-zA-Z]{2,}$/;
-      if (!domainRegex.test(newEntry)) {
-        setError('Please enter a valid domain (e.g., example.com)');
-        return false;
-      }
     }
 
     // Check for duplicates
@@ -88,14 +74,14 @@ const EmailWhitelist = () => {
     try {
       const response = await api.post('/api/admin/whitelist', {
         pattern: newEntry.toLowerCase(),
-        type: entryType,
+        description: newDescription || `Email pattern: ${newEntry}`,
+        is_active: true,
       });
 
       setEntries([response.data, ...entries]);
       setNewEntry('');
-      setSuccess(
-        `${entryType === 'EMAIL' ? 'Email' : 'Domain'} added successfully`
-      );
+      setNewDescription('');
+      setSuccess('Email pattern added successfully');
 
       window.setTimeout(() => setSuccess(''), 3000);
     } catch (error: any) {
@@ -189,47 +175,49 @@ const EmailWhitelist = () => {
           </div>
         )}
 
-        <div className='flex gap-4'>
-          <select
-            value={entryType}
-            onChange={e => setEntryType(e.target.value as 'EMAIL' | 'DOMAIN')}
-            className='px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500'
-          >
-            <option value='EMAIL'>Email Address</option>
-            <option value='DOMAIN'>Domain</option>
-          </select>
+        <div className='space-y-4'>
+          <div className='flex gap-4'>
+            <input
+              type='text'
+              value={newEntry}
+              onChange={e => {
+                setNewEntry(e.target.value);
+                setError('');
+              }}
+              placeholder='@example.com or user@example.com'
+              className='flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500'
+              onKeyPress={e =>
+                e.key === 'Enter' && !newDescription && handleAdd()
+              }
+            />
+
+            <button
+              onClick={handleAdd}
+              disabled={isAdding || !newEntry.trim()}
+              className='px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center gap-2'
+            >
+              {isAdding ? (
+                <>
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Plus className='w-4 h-4' />
+                  Add
+                </>
+              )}
+            </button>
+          </div>
 
           <input
             type='text'
-            value={newEntry}
-            onChange={e => {
-              setNewEntry(e.target.value);
-              setError('');
-            }}
-            placeholder={
-              entryType === 'EMAIL' ? 'user@example.com' : 'example.com'
-            }
-            className='flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500'
+            value={newDescription}
+            onChange={e => setNewDescription(e.target.value)}
+            placeholder='Optional description (e.g., "Company employees")'
+            className='w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500'
             onKeyPress={e => e.key === 'Enter' && handleAdd()}
           />
-
-          <button
-            onClick={handleAdd}
-            disabled={isAdding || !newEntry.trim()}
-            className='px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center gap-2'
-          >
-            {isAdding ? (
-              <>
-                <Loader2 className='w-4 h-4 animate-spin' />
-                Adding...
-              </>
-            ) : (
-              <>
-                <Plus className='w-4 h-4' />
-                Add
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -257,30 +245,23 @@ const EmailWhitelist = () => {
                 className='px-6 py-4 flex items-center justify-between hover:bg-gray-50'
               >
                 <div className='flex items-center gap-3'>
-                  <div
-                    className={`p-2 rounded-full ${
-                      entry.type === 'EMAIL' ? 'bg-purple-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    {entry.type === 'EMAIL' ? (
-                      <Mail
-                        className={`w-5 h-5 ${
-                          entry.type === 'EMAIL'
-                            ? 'text-purple-600'
-                            : 'text-blue-600'
-                        }`}
-                      />
-                    ) : (
-                      <Globe className='w-5 h-5 text-blue-600' />
-                    )}
+                  <div className='p-2 rounded-full bg-purple-100'>
+                    <Mail className='w-5 h-5 text-purple-600' />
                   </div>
                   <div>
                     <p className='text-sm font-medium text-gray-900'>
                       {entry.pattern}
                     </p>
+                    {entry.description && (
+                      <p className='text-xs text-gray-600 mb-1'>
+                        {entry.description}
+                      </p>
+                    )}
                     <p className='text-xs text-gray-500'>
-                      Added on {formatDate(entry.created_at)} by{' '}
-                      {entry.created_by}
+                      Added on {formatDate(entry.created_at)}
+                      {!entry.is_active && (
+                        <span className='ml-2 text-red-500'>(Inactive)</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -301,8 +282,8 @@ const EmailWhitelist = () => {
       {/* Summary */}
       <div className='text-sm text-gray-600'>
         Total entries: {entries.length} (
-        {entries.filter(e => e.type === 'EMAIL').length} emails,{' '}
-        {entries.filter(e => e.type === 'DOMAIN').length} domains)
+        {entries.filter(e => e.is_active).length} active,{' '}
+        {entries.filter(e => !e.is_active).length} inactive)
       </div>
     </div>
   );

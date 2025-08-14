@@ -37,7 +37,7 @@ function App() {
   // If authenticated, show appropriate dashboard based on role
   if (isAuthenticated && user) {
     // Admin users get admin dashboard
-    if (user.role === 'ADMIN') {
+    if (user.role === 'admin') {
       return (
         <Router>
           <Toaster position='top-right' />

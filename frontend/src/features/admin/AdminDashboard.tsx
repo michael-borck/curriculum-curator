@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -9,26 +9,128 @@ import {
   Menu,
   X,
   Home,
-  FileText,
   Activity,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import UserManagement from './UserManagement';
 import EmailWhitelist from './EmailWhitelist';
 import SystemSettings from './SystemSettings';
+import api from '../../services/api';
 
 type TabType = 'overview' | 'users' | 'whitelist' | 'settings';
+
+interface DashboardStats {
+  total_users: number;
+  verified_users: number;
+  active_users: number;
+  admin_users: number;
+  users_by_role: Record<string, number>;
+  recent_registrations: number;
+}
+
+interface RecentActivity {
+  id: string;
+  action: string;
+  description: string;
+  timestamp: string;
+  type: 'user' | 'whitelist' | 'settings';
+}
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
+    null
+  );
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState('');
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeTab === 'overview') {
+      fetchDashboardStats();
+    }
+  }, [activeTab]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      setStatsError('');
+
+      const [statsResponse] = await Promise.all([
+        api.get('/api/admin/users/stats'),
+        // Could add more endpoints here for course stats, etc.
+      ]);
+
+      setDashboardStats(statsResponse.data);
+
+      // Generate some mock recent activity for now
+      // In a real app, this would come from an audit log API
+      setRecentActivity([
+        {
+          id: '1',
+          action: 'New user registered',
+          description: `john.doe@example.com`,
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          type: 'user',
+        },
+        {
+          id: '2',
+          action: 'Email whitelist updated',
+          description: 'Added 3 new domains',
+          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+          type: 'whitelist',
+        },
+        {
+          id: '3',
+          action: 'System settings changed',
+          description: 'AI features enabled',
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          type: 'settings',
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error fetching dashboard stats:', error);
+      setStatsError('Failed to load dashboard statistics');
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
     localStorage.removeItem('token');
     navigate('/login');
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours === 1) return '1 hour ago';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return '1 day ago';
+    return `${diffDays} days ago`;
+  };
+
+  const getActivityIcon = (type: RecentActivity['type']) => {
+    switch (type) {
+      case 'user':
+        return 'bg-green-500';
+      case 'whitelist':
+        return 'bg-blue-500';
+      case 'settings':
+        return 'bg-purple-500';
+      default:
+        return 'bg-gray-500';
+    }
   };
 
   const sidebarItems = [
@@ -41,6 +143,28 @@ const AdminDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
+        if (isLoadingStats) {
+          return (
+            <div className='flex items-center justify-center h-64'>
+              <Loader2 className='w-8 h-8 animate-spin text-purple-600' />
+            </div>
+          );
+        }
+
+        if (statsError) {
+          return (
+            <div className='bg-red-50 border border-red-200 rounded-lg p-6'>
+              <p className='text-red-600'>{statsError}</p>
+              <button
+                onClick={fetchDashboardStats}
+                className='mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700'
+              >
+                Retry
+              </button>
+            </div>
+          );
+        }
+
         return (
           <div className='space-y-6'>
             <h2 className='text-2xl font-semibold text-gray-900'>
@@ -54,96 +178,110 @@ const AdminDashboard = () => {
                   <div>
                     <p className='text-sm text-gray-600'>Total Users</p>
                     <p className='text-2xl font-semibold text-gray-900 mt-1'>
-                      124
+                      {dashboardStats?.total_users || 0}
                     </p>
                   </div>
                   <Users className='w-8 h-8 text-purple-600' />
                 </div>
                 <p className='text-sm text-green-600 mt-2'>
-                  +12% from last month
+                  +{dashboardStats?.recent_registrations || 0} this week
                 </p>
               </div>
 
               <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
                 <div className='flex items-center justify-between'>
                   <div>
-                    <p className='text-sm text-gray-600'>Active Courses</p>
+                    <p className='text-sm text-gray-600'>Active Users</p>
                     <p className='text-2xl font-semibold text-gray-900 mt-1'>
-                      42
-                    </p>
-                  </div>
-                  <FileText className='w-8 h-8 text-purple-600' />
-                </div>
-                <p className='text-sm text-green-600 mt-2'>
-                  +8% from last month
-                </p>
-              </div>
-
-              <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <p className='text-sm text-gray-600'>System Health</p>
-                    <p className='text-2xl font-semibold text-gray-900 mt-1'>
-                      98%
+                      {dashboardStats?.active_users || 0}
                     </p>
                   </div>
                   <Activity className='w-8 h-8 text-purple-600' />
                 </div>
+                <p className='text-sm text-blue-600 mt-2'>
+                  {dashboardStats?.verified_users || 0} verified
+                </p>
+              </div>
+
+              <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
+                <div className='flex items-center justify-between'>
+                  <div>
+                    <p className='text-sm text-gray-600'>Admin Users</p>
+                    <p className='text-2xl font-semibold text-gray-900 mt-1'>
+                      {dashboardStats?.admin_users || 0}
+                    </p>
+                  </div>
+                  <Shield className='w-8 h-8 text-purple-600' />
+                </div>
                 <p className='text-sm text-gray-600 mt-2'>
-                  All systems operational
+                  System administrators
                 </p>
               </div>
             </div>
+
+            {/* User Breakdown */}
+            {dashboardStats?.users_by_role && (
+              <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+                <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+                  User Breakdown by Role
+                </h3>
+                <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                  {Object.entries(dashboardStats.users_by_role).map(
+                    ([role, count]) => (
+                      <div key={role} className='text-center'>
+                        <div className='text-2xl font-semibold text-gray-900'>
+                          {count}
+                        </div>
+                        <div className='text-sm text-gray-600 capitalize'>
+                          {role.toLowerCase()}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Recent Activity */}
             <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
               <h3 className='text-lg font-semibold text-gray-900 mb-4'>
                 Recent Activity
               </h3>
-              <div className='space-y-4'>
-                <div className='flex items-center justify-between py-3 border-b border-gray-100'>
-                  <div className='flex items-center gap-3'>
-                    <div className='w-2 h-2 bg-green-500 rounded-full'></div>
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>
-                        New user registered
-                      </p>
-                      <p className='text-xs text-gray-600'>
-                        john.doe@example.com
-                      </p>
+              {recentActivity.length > 0 ? (
+                <div className='space-y-4'>
+                  {recentActivity.map((activity, index) => (
+                    <div
+                      key={activity.id}
+                      className={`flex items-center justify-between py-3 ${
+                        index < recentActivity.length - 1
+                          ? 'border-b border-gray-100'
+                          : ''
+                      }`}
+                    >
+                      <div className='flex items-center gap-3'>
+                        <div
+                          className={`w-2 h-2 ${getActivityIcon(activity.type)} rounded-full`}
+                        ></div>
+                        <div>
+                          <p className='text-sm font-medium text-gray-900'>
+                            {activity.action}
+                          </p>
+                          <p className='text-xs text-gray-600'>
+                            {activity.description}
+                          </p>
+                        </div>
+                      </div>
+                      <span className='text-xs text-gray-500'>
+                        {formatDate(activity.timestamp)}
+                      </span>
                     </div>
-                  </div>
-                  <span className='text-xs text-gray-500'>2 hours ago</span>
+                  ))}
                 </div>
-                <div className='flex items-center justify-between py-3 border-b border-gray-100'>
-                  <div className='flex items-center gap-3'>
-                    <div className='w-2 h-2 bg-blue-500 rounded-full'></div>
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>
-                        Email whitelist updated
-                      </p>
-                      <p className='text-xs text-gray-600'>
-                        Added 3 new domains
-                      </p>
-                    </div>
-                  </div>
-                  <span className='text-xs text-gray-500'>5 hours ago</span>
-                </div>
-                <div className='flex items-center justify-between py-3'>
-                  <div className='flex items-center gap-3'>
-                    <div className='w-2 h-2 bg-purple-500 rounded-full'></div>
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>
-                        System settings changed
-                      </p>
-                      <p className='text-xs text-gray-600'>
-                        AI features enabled
-                      </p>
-                    </div>
-                  </div>
-                  <span className='text-xs text-gray-500'>1 day ago</span>
-                </div>
-              </div>
+              ) : (
+                <p className='text-gray-500 text-center py-8'>
+                  No recent activity
+                </p>
+              )}
             </div>
           </div>
         );
