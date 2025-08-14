@@ -1095,3 +1095,251 @@ async def get_material_analytics(
             "has_media": bool(material.content and material.content.get("media_urls")),
         },
     )
+
+
+
+@router.get("/{material_id}/versions", response_model=list[MaterialVersionHistory])
+def get_material_versions(
+    material_id: uuid.UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> list[MaterialVersionHistory]:
+    """
+    Get version history for a material.
+    """
+    # Get the original material
+    original = (
+        db.query(Material)
+        .join(Course, Material.course_id == Course.id)
+        .filter(Material.id == material_id)
+        .filter(Course.user_id == current_user.id)
+        .first()
+    )
+
+    if not original:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found or access denied",
+        )
+
+    # Get all versions (including the original)
+    versions = (
+        db.query(Material)
+        .filter(
+            or_(
+                Material.id == material_id,
+                Material.parent_version_id == material_id,
+            )
+        )
+        .order_by(Material.version.desc())
+        .all()
+    )
+
+    # Convert to response model
+    version_history = []
+    for version in versions:
+        # Calculate change summary (simplified - in production would do proper diff)
+        change_summary = "Initial version"
+        if version.parent_version_id:
+            change_summary = f"Updated content (version {version.version})"
+            if version.generation_context and isinstance(version.generation_context, dict):
+                if version.generation_context.get("change_reason"):
+                    change_summary = version.generation_context["change_reason"]
+
+        version_history.append(
+            MaterialVersionHistory(
+                id=str(version.id),
+                version=version.version,
+                created_at=version.created_at,
+                updated_at=version.updated_at,
+                is_latest=version.is_latest,
+                parent_version_id=str(version.parent_version_id) if version.parent_version_id else None,
+                change_summary=change_summary,
+                quality_score=version.quality_score or 0,
+                teaching_philosophy=version.teaching_philosophy,
+            )
+        )
+
+    return version_history
+
+
+@router.get("/{material_id}/versions/{version_id}", response_model=MaterialResponse)
+def get_material_version(
+    material_id: uuid.UUID,
+    version_id: uuid.UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> MaterialResponse:
+    """
+    Get a specific version of a material.
+    """
+    # Verify access to the original material
+    original = (
+        db.query(Material)
+        .join(Course, Material.course_id == Course.id)
+        .filter(Material.id == material_id)
+        .filter(Course.user_id == current_user.id)
+        .first()
+    )
+
+    if not original:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found or access denied",
+        )
+
+    # Get the specific version
+    version = (
+        db.query(Material)
+        .filter(Material.id == version_id)
+        .filter(
+            or_(
+                Material.id == material_id,
+                Material.parent_version_id == material_id,
+            )
+        )
+        .first()
+    )
+
+    if not version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Version not found",
+        )
+
+    # Calculate quality score
+    quality_score, quality_metrics = calculate_quality_score(version)
+
+    return MaterialResponse(
+        id=str(version.id),
+        course_id=str(version.course_id),
+        module_id=str(version.module_id) if version.module_id else None,
+        type=version.type,
+        title=version.title,
+        description=version.description,
+        content=version.content or {},
+        raw_content=version.raw_content or "",
+        version=version.version,
+        parent_version_id=str(version.parent_version_id) if version.parent_version_id else None,
+        is_latest=version.is_latest,
+        validation_results=version.validation_results,
+        quality_score=quality_score,
+        quality_metrics=quality_metrics,
+        generation_context=version.generation_context,
+        teaching_philosophy=version.teaching_philosophy,
+        created_at=version.created_at,
+        updated_at=version.updated_at,
+    )
+
+
+@router.post("/{material_id}/restore/{version_id}", response_model=MaterialResponse)
+def restore_material_version(
+    material_id: uuid.UUID,
+    version_id: uuid.UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> MaterialResponse:
+    """
+    Restore a previous version of a material by creating a new version with the old content.
+    """
+    # Verify access
+    original = (
+        db.query(Material)
+        .join(Course, Material.course_id == Course.id)
+        .filter(Material.id == material_id)
+        .filter(Course.user_id == current_user.id)
+        .first()
+    )
+
+    if not original:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found or access denied",
+        )
+
+    # Get the version to restore
+    version_to_restore = (
+        db.query(Material)
+        .filter(Material.id == version_id)
+        .filter(
+            or_(
+                Material.id == material_id,
+                Material.parent_version_id == material_id,
+            )
+        )
+        .first()
+    )
+
+    if not version_to_restore:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Version not found",
+        )
+
+    # Get current latest version to determine new version number
+    current_latest = (
+        db.query(Material)
+        .filter(
+            or_(
+                Material.id == material_id,
+                Material.parent_version_id == material_id,
+            )
+        )
+        .filter(Material.is_latest == True)
+        .first()
+    )
+
+    # Create new version with content from the old version
+    new_version = Material(
+        course_id=version_to_restore.course_id,
+        module_id=version_to_restore.module_id,
+        type=version_to_restore.type,
+        title=version_to_restore.title,
+        description=version_to_restore.description,
+        content=version_to_restore.content,
+        raw_content=version_to_restore.raw_content,
+        version=(current_latest.version + 1) if current_latest else 1,
+        parent_version_id=material_id,
+        is_latest=True,
+        validation_results=version_to_restore.validation_results,
+        quality_score=version_to_restore.quality_score,
+        generation_context={
+            "restored_from_version": version_to_restore.version,
+            "change_reason": f"Restored from version {version_to_restore.version}",
+            "restored_at": datetime.utcnow().isoformat(),
+        },
+        teaching_philosophy=version_to_restore.teaching_philosophy,
+    )
+
+    # Mark current latest as not latest
+    if current_latest:
+        current_latest.is_latest = False
+
+    db.add(new_version)
+    db.commit()
+    db.refresh(new_version)
+
+    # Calculate quality score
+    quality_score, quality_metrics = calculate_quality_score(new_version)
+
+    return MaterialResponse(
+        id=str(new_version.id),
+        course_id=str(new_version.course_id),
+        module_id=str(new_version.module_id) if new_version.module_id else None,
+        type=new_version.type,
+        title=new_version.title,
+        description=new_version.description,
+        content=new_version.content or {},
+        raw_content=new_version.raw_content or "",
+        version=new_version.version,
+        parent_version_id=str(new_version.parent_version_id) if new_version.parent_version_id else None,
+        is_latest=new_version.is_latest,
+        validation_results=new_version.validation_results,
+        quality_score=quality_score,
+        quality_metrics=quality_metrics,
+        generation_context=new_version.generation_context,
+        teaching_philosophy=new_version.teaching_philosophy,
+        created_at=new_version.created_at,
+        updated_at=new_version.updated_at,
+    )
+

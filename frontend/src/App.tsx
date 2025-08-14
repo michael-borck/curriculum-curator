@@ -18,6 +18,7 @@ import LRDCreator from './features/lrd/LRDCreator';
 import LRDList from './features/lrd/LRDList';
 import LRDDetail from './features/lrd/LRDDetail';
 import ImportMaterials from './features/import/ImportMaterials';
+import MaterialDetail from './features/materials/MaterialDetail';
 import TeachingStyle from './features/teaching/TeachingStyle';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
@@ -69,6 +70,9 @@ function App() {
 
             {/* Import */}
             <Route path='/import' element={<ImportMaterials />} />
+
+            {/* Materials */}
+            <Route path='/materials/:materialId' element={<MaterialDetail />} />
 
             {/* Teaching Style */}
             <Route path='/teaching-style' element={<TeachingStyle />} />
