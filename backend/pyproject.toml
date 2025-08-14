@@ -40,7 +40,7 @@ dependencies = [
     # Authentication & Security
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-    "bcrypt>=4.1.2",
+    "bcrypt==4.2.0",  # Pinned to 4.2.0 for passlib compatibility
     "cryptography>=41.0.7",
     "slowapi>=0.1.9", # Rate limiting
     "redis>=5.0.1", # Rate limiting storage (optional)

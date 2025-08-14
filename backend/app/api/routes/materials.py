@@ -533,66 +533,6 @@ async def delete_material(
     return {"message": "Material deleted successfully", "id": str(material_id)}
 
 
-@router.get("/{material_id}/versions", response_model=MaterialVersionHistory)
-async def get_material_versions(
-    material_id: str,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-):
-    """
-    Get version history for a material.
-    """
-    # Get base material with access check
-    base_material = (
-        db.query(Material)
-        .join(Course, Material.course_id == Course.id)
-        .filter(Material.id == material_id)
-        .filter(Course.user_id == current_user.id)
-        .first()
-    )
-
-    if not base_material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Material not found or access denied",
-        )
-
-    # Get all versions
-    versions = (
-        db.query(Material)
-        .filter(
-            or_(
-                Material.id == material_id,
-                Material.parent_version_id == material_id,
-            )
-        )
-        .order_by(Material.version)
-        .all()
-    )
-
-    version_list = [
-        {
-            "version": v.version,
-            "parent_version_id": str(v.parent_version_id)
-            if v.parent_version_id
-            else None,
-            "created_at": v.created_at,
-            "created_by": str(v.created_by_id) if hasattr(v, "created_by_id") else None,
-            "change_summary": f"Version {v.version}",
-            "is_latest": v.is_latest,
-        }
-        for v in versions
-    ]
-
-    current_version = max(v.version for v in versions) if versions else 1
-
-    return MaterialVersionHistory(
-        material_id=str(material_id),
-        current_version=current_version,
-        versions=version_list,
-        total_versions=len(versions),
-    )
-
 
 @router.post("/{material_id}/clone", response_model=MaterialResponse)
 async def clone_material(

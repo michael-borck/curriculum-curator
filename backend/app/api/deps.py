@@ -39,13 +39,20 @@ def get_current_user(
     )
 
     try:
+        # Decode JWT token - no IP verification for now
+        # IP verification was causing issues with local testing
         payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
         )
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        # Log the actual error for debugging
+        import logging
+        logging.exception(f"JWT decode error: {e!s}")
         raise credentials_exception from None
 
     # Fetch the user from the database

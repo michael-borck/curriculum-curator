@@ -56,8 +56,8 @@ def create_access_token(
     # Enhanced JWT payload as per Phase B specification
     to_encode.update(
         {
-            "iat": int(now.timestamp()),  # Issued at
-            "exp": int(expire.timestamp()),  # Expires at
+            "exp": expire,  # Let python-jose handle the timestamp conversion
+            "iat": now,  # Let python-jose handle the timestamp conversion
             "jti": str(uuid.uuid4()),  # Unique token ID for blacklisting
             "ip": client_ip,  # Bind to IP address
             "role": user_role,  # Include role for authorization
