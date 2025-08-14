@@ -111,6 +111,7 @@ try:
         materials,
         monitoring,
         plugins,
+        tasks,
         user_export,
     )
 
@@ -121,6 +122,7 @@ try:
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
     app.include_router(lrds.router, prefix="/api/lrds", tags=["lrds"])
+    app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(plugins.router, prefix="/api/plugins", tags=["plugins"])

@@ -19,6 +19,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '../../services/api';
+import TaskBoard from '../tasks/TaskBoard';
 
 interface CourseDetails {
   id: string;
@@ -717,6 +718,20 @@ const CourseDashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'tasks' && courseId && (
+          <div className='h-[600px]'>
+            <TaskBoard courseId={courseId} />
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div>
+            <p className='text-gray-500 text-center py-12'>
+              Analytics coming soon...
+            </p>
           </div>
         )}
       </div>
