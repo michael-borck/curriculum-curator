@@ -48,6 +48,15 @@ tmp/
 *.tar.gz
 *.rar
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
 # Coverage reports
 coverage/
 *.cover
