@@ -2,8 +2,8 @@
 """Setup Brevo email configuration"""
 
 import getpass
-import os
 import sys
+from pathlib import Path
 
 print("Brevo Email Setup")
 print("=" * 50)
@@ -17,8 +17,8 @@ print("\nIMPORTANT: This is NOT the API key, it's the SMTP password!")
 print("=" * 50)
 
 # Check if .env exists
-env_file = ".env"
-if not os.path.exists(env_file):
+env_file = Path(".env")
+if not env_file.exists():
     print(f"\n❌ Error: {env_file} not found. Run this from the backend directory.")
     sys.exit(1)
 
@@ -31,7 +31,7 @@ if not smtp_password:
     sys.exit(1)
 
 # Read current .env
-with open(env_file) as f:
+with env_file.open() as f:
     lines = f.readlines()
 
 # Update or add BREVO_API_KEY
@@ -57,7 +57,7 @@ if not key_found:
     new_lines = final_lines
 
 # Write back to .env
-with open(env_file, "w") as f:
+with env_file.open("w") as f:
     f.writelines(new_lines)
 
 print("\n✅ SMTP password has been set in .env")
@@ -68,7 +68,7 @@ response = input(
 )
 if response.lower() == "y":
     # Update EMAIL_DEV_MODE
-    with open(env_file) as f:
+    with env_file.open() as f:
         lines = f.readlines()
 
     new_lines = []
@@ -78,12 +78,12 @@ if response.lower() == "y":
         else:
             new_lines.append(line)
 
-    with open(env_file, "w") as f:
+    with env_file.open("w") as f:
         f.writelines(new_lines)
 
     print("✅ Email dev mode disabled. Emails will now be sent via Brevo.")
 else:
-    print("ℹ️  Email dev mode remains enabled. Emails will be logged to console.")
+    print("INFO: Email dev mode remains enabled. Emails will be logged to console.")
 
 print("\n✅ Email setup complete!")
 print("\nTo test your email configuration, run:")

@@ -50,14 +50,22 @@ class QualityMetrics(BaseModel):
 class MaterialContent(BaseModel):
     """Structured content for materials"""
 
-    format: MaterialFormat = Field(MaterialFormat.MARKDOWN, description="Content format")
+    format: MaterialFormat = Field(
+        MaterialFormat.MARKDOWN, description="Content format"
+    )
     body: str = Field(..., description="Main content body")
-    metadata: dict[str, Any] | None = Field(None, description="Format-specific metadata")
-    media_urls: list[str] = Field(default_factory=list, description="Associated media URLs")
+    metadata: dict[str, Any] | None = Field(
+        None, description="Format-specific metadata"
+    )
+    media_urls: list[str] = Field(
+        default_factory=list, description="Associated media URLs"
+    )
     code_snippets: list[dict[str, str]] = Field(
         default_factory=list, description="Code examples"
     )
-    exercises: list[dict[str, Any]] = Field(default_factory=list, description="Exercises")
+    exercises: list[dict[str, Any]] = Field(
+        default_factory=list, description="Exercises"
+    )
     solutions: list[dict[str, Any]] = Field(
         default_factory=list, description="Exercise solutions"
     )
@@ -75,7 +83,9 @@ class MaterialBase(BaseModel):
     prerequisites: list[str] = Field(
         default_factory=list, description="Prerequisite knowledge"
     )
-    estimated_duration_minutes: int = Field(30, description="Estimated time to complete")
+    estimated_duration_minutes: int = Field(
+        30, description="Estimated time to complete"
+    )
     difficulty_level: str = Field("intermediate", description="Difficulty level")
     tags: list[str] = Field(default_factory=list, description="Searchable tags")
 
@@ -208,7 +218,9 @@ class MaterialImport(BaseModel):
 class MaterialExport(BaseModel):
     """Export materials configuration"""
 
-    format: str = Field("markdown", description="Export format: markdown, html, pdf, scorm")
+    format: str = Field(
+        "markdown", description="Export format: markdown, html, pdf, scorm"
+    )
     include_solutions: bool = Field(False, description="Include solutions")
     include_metadata: bool = Field(True, description="Include metadata")
     combine_materials: bool = Field(False, description="Combine into single file")

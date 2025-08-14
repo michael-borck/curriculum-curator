@@ -14,6 +14,21 @@ from app.schemas.llm import (
     PedagogyAnalysisResponse,
 )
 
+# Try to import LLM providers - they're optional
+try:
+    import openai
+    has_openai = True
+except ImportError:
+    openai = None
+    has_openai = False
+
+try:
+    import anthropic
+    has_anthropic = True
+except ImportError:
+    anthropic = None
+    has_anthropic = False
+
 
 class AdvancedLLMService:
     """Enhanced LLM service with educational AI capabilities"""
@@ -25,22 +40,14 @@ class AdvancedLLMService:
     def _initialize_providers(self):
         """Initialize available LLM providers"""
         # OpenAI
-        if settings.OPENAI_API_KEY:
-            try:
-                import openai
-                self.providers[LLMProvider.OPENAI] = openai
-            except ImportError:
-                pass
+        if settings.OPENAI_API_KEY and has_openai:
+            self.providers[LLMProvider.OPENAI] = openai
 
         # Anthropic
-        if settings.ANTHROPIC_API_KEY:
-            try:
-                import anthropic
-                self.providers[LLMProvider.ANTHROPIC] = anthropic.Anthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
-                )
-            except ImportError:
-                pass
+        if settings.ANTHROPIC_API_KEY and has_anthropic:
+            self.providers[LLMProvider.ANTHROPIC] = anthropic.Anthropic(
+                api_key=settings.ANTHROPIC_API_KEY
+            )
 
     async def enhance_content(
         self,
@@ -65,12 +72,13 @@ class AdvancedLLMService:
 
         # Get completion from LLM
         messages = [
-            ChatMessage(role="system", content="You are an expert educational content enhancer."),
+            ChatMessage(
+                role="system", content="You are an expert educational content enhancer."
+            ),
             ChatMessage(role="user", content=prompt),
         ]
 
-        response = await self.get_completion(messages)
-        return response
+        return await self.get_completion(messages)
 
     async def analyze_pedagogy(
         self,
@@ -92,14 +100,14 @@ Please provide:
 3. Key strengths from a pedagogical perspective
 4. Areas for improvement
 5. Specific actionable suggestions
-{f'6. Alignment with {target_style} style' if target_style else ''}
+{f"6. Alignment with {target_style} style" if target_style else ""}
 
 Format your response as JSON with keys: current_style, confidence, strengths, weaknesses, suggestions, alignment_score"""
 
         messages = [
             ChatMessage(
                 role="system",
-                content="You are an expert in educational pedagogy and instructional design."
+                content="You are an expert in educational pedagogy and instructional design.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -138,9 +146,9 @@ Content:
 {content}
 
 Requirements:
-- Question types: {', '.join(question_types)}
+- Question types: {", ".join(question_types)}
 - Difficulty level: {difficulty}
-{f'- Target Bloom taxonomy levels: {", ".join(bloom_levels)}' if bloom_levels else ''}
+{f"- Target Bloom taxonomy levels: {', '.join(bloom_levels)}" if bloom_levels else ""}
 
 For each question provide:
 1. The question text
@@ -157,7 +165,7 @@ Format as JSON array with the structure for each question."""
         messages = [
             ChatMessage(
                 role="system",
-                content="You are an expert assessment designer and educational evaluator."
+                content="You are an expert assessment designer and educational evaluator.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -199,7 +207,7 @@ Format as JSON array with the structure for each question."""
             "tldr": "Create a brief TL;DR summary",
         }
 
-        prompt = f"""{summary_prompts.get(summary_type, summary_prompts['key_points'])} from the following content:
+        prompt = f"""{summary_prompts.get(summary_type, summary_prompts["key_points"])} from the following content:
 
 Content:
 {content}
@@ -207,13 +215,13 @@ Content:
 Requirements:
 - Format: {format_instruction}
 - Length: {length_instruction}
-{'- Include key examples' if include_examples else '- Focus on concepts, not examples'}
+{"- Include key examples" if include_examples else "- Focus on concepts, not examples"}
 """
 
         messages = [
             ChatMessage(
                 role="system",
-                content="You are an expert at summarizing educational content clearly and concisely."
+                content="You are an expert at summarizing educational content clearly and concisely.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -239,22 +247,22 @@ Requirements:
 
         prompt = f"""Provide feedback on the following student work:
 
-{f'Assignment: {assignment_context}' if assignment_context else ''}
-{f'Rubric: {json.dumps(rubric, indent=2)}' if rubric else ''}
+{f"Assignment: {assignment_context}" if assignment_context else ""}
+{f"Rubric: {json.dumps(rubric, indent=2)}" if rubric else ""}
 
 Student Work:
 {student_work}
 
 Provide feedback with a {feedback_tone} tone.
-{'Include specific suggestions for improvement.' if include_suggestions else ''}
-{'Highlight what the student did well.' if highlight_strengths else ''}
+{"Include specific suggestions for improvement." if include_suggestions else ""}
+{"Highlight what the student did well." if highlight_strengths else ""}
 
 Structure your response as JSON with keys: overall_feedback, strengths, areas_for_improvement, specific_suggestions, grade_suggestion, rubric_scores"""
 
         messages = [
             ChatMessage(
                 role="system",
-                content=f"You are an experienced educator providing constructive feedback. {tone_instructions.get(feedback_tone, '')}"
+                content=f"You are an experienced educator providing constructive feedback. {tone_instructions.get(feedback_tone, '')}",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -288,16 +296,16 @@ Content:
 {content}
 
 Requirements:
-{'- Preserve all markdown formatting' if preserve_formatting else ''}
-{'- Adapt examples and references for the target culture' if cultural_adaptation else '- Keep examples as-is'}
-{f'- Use these specific translations for technical terms: {json.dumps(glossary, indent=2)}' if glossary else ''}
+{"- Preserve all markdown formatting" if preserve_formatting else ""}
+{"- Adapt examples and references for the target culture" if cultural_adaptation else "- Keep examples as-is"}
+{f"- Use these specific translations for technical terms: {json.dumps(glossary, indent=2)}" if glossary else ""}
 - Maintain educational clarity and accuracy
 """
 
         messages = [
             ChatMessage(
                 role="system",
-                content=f"You are an expert translator specializing in educational content. Translate to {target_language} while maintaining pedagogical effectiveness."
+                content=f"You are an expert translator specializing in educational content. Translate to {target_language} while maintaining pedagogical effectiveness.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -320,7 +328,7 @@ Topic: {topic}
 Current Knowledge Level: {current_knowledge}
 Target Level: {target_level}
 Available Time: {available_time}
-{f'Preferred Learning Style: {learning_style}' if learning_style else ''}
+{f"Preferred Learning Style: {learning_style}" if learning_style else ""}
 
 Provide a structured learning path with:
 1. Prerequisites to review
@@ -335,7 +343,7 @@ Format as JSON with appropriate structure."""
         messages = [
             ChatMessage(
                 role="system",
-                content="You are an expert learning designer creating personalized educational pathways."
+                content="You are an expert learning designer creating personalized educational pathways.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -364,7 +372,7 @@ Format as JSON with appropriate structure."""
 
         prompt = f"""Analyze the student's response for misconceptions:
 
-{f'Context/Question: {context}' if context else ''}
+{f"Context/Question: {context}" if context else ""}
 Correct Concept: {correct_concept}
 Student Response: {student_response}
 
@@ -379,7 +387,7 @@ Format as JSON with keys: misconceptions, confusion_sources, corrections, remedi
         messages = [
             ChatMessage(
                 role="system",
-                content="You are an expert educator skilled at identifying and addressing student misconceptions."
+                content="You are an expert educator skilled at identifying and addressing student misconceptions.",
             ),
             ChatMessage(role="user", content=prompt),
         ]
@@ -414,20 +422,18 @@ Format as JSON with keys: misconceptions, confusion_sources, corrections, remedi
             "summarize": "Create a concise summary maintaining key concepts",
         }
 
-        prompt = f"""{enhancement_instructions.get(enhancement_type, enhancement_instructions['improve'])} of the following content:
+        return f"""{enhancement_instructions.get(enhancement_type, enhancement_instructions["improve"])} of the following content:
 
 Content:
 {content}
 
 Requirements:
-{f'- Apply {pedagogy_style} pedagogical style' if pedagogy_style else ''}
-{f'- Target education level: {target_level}' if target_level else ''}
-{'- Preserve the original structure and formatting' if preserve_structure else '- Reorganize for better flow if needed'}
-{f'- Focus on these areas: {", ".join(focus_areas)}' if focus_areas else ''}
+{f"- Apply {pedagogy_style} pedagogical style" if pedagogy_style else ""}
+{f"- Target education level: {target_level}" if target_level else ""}
+{"- Preserve the original structure and formatting" if preserve_structure else "- Reorganize for better flow if needed"}
+{f"- Focus on these areas: {', '.join(focus_areas)}" if focus_areas else ""}
 
 Provide the enhanced content maintaining markdown formatting."""
-
-        return prompt
 
     async def get_completion(
         self,
@@ -453,7 +459,9 @@ Provide the enhanced content maintaining markdown formatting."""
         if selected_provider == LLMProvider.OPENAI:
             return await self._get_openai_completion(messages, temperature, max_tokens)
         if selected_provider == LLMProvider.ANTHROPIC:
-            return await self._get_anthropic_completion(messages, temperature, max_tokens)
+            return await self._get_anthropic_completion(
+                messages, temperature, max_tokens
+            )
 
         return self._mock_completion(messages)
 
@@ -465,7 +473,8 @@ Provide the enhanced content maintaining markdown formatting."""
     ) -> str:
         """Get completion from OpenAI"""
         try:
-            import openai
+            if not has_openai or not openai:
+                return "OpenAI not available"
 
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -492,7 +501,9 @@ Provide the enhanced content maintaining markdown formatting."""
             client = self.providers[LLMProvider.ANTHROPIC]
 
             # Convert to Anthropic format
-            system_message = next((m.content for m in messages if m.role == "system"), "")
+            system_message = next(
+                (m.content for m in messages if m.role == "system"), ""
+            )
             user_messages = [m.content for m in messages if m.role == "user"]
 
             response = client.messages.create(
@@ -515,35 +526,42 @@ Provide the enhanced content maintaining markdown formatting."""
         if "enhance" in last_message.lower():
             return "Enhanced content: This is an improved version with better clarity and structure."
         if "analyze" in last_message.lower():
-            return json.dumps({
-                "current_style": "traditional",
-                "confidence": 0.8,
-                "strengths": ["Clear structure", "Good examples"],
-                "weaknesses": ["Could use more interaction"],
-                "suggestions": ["Add practice exercises"],
-                "alignment_score": 85.0,
-            })
+            return json.dumps(
+                {
+                    "current_style": "traditional",
+                    "confidence": 0.8,
+                    "strengths": ["Clear structure", "Good examples"],
+                    "weaknesses": ["Could use more interaction"],
+                    "suggestions": ["Add practice exercises"],
+                    "alignment_score": 85.0,
+                }
+            )
         if "question" in last_message.lower():
-            return json.dumps([{
-                "question": "What is the main concept discussed?",
-                "question_type": "short_answer",
-                "difficulty": "medium",
-                "bloom_level": "comprehension",
-                "points": 5,
-            }])
+            return json.dumps(
+                [
+                    {
+                        "question": "What is the main concept discussed?",
+                        "question_type": "short_answer",
+                        "difficulty": "medium",
+                        "bloom_level": "comprehension",
+                        "points": 5,
+                    }
+                ]
+            )
         if "summary" in last_message.lower():
             return "• Key point 1\n• Key point 2\n• Key point 3"
         if "feedback" in last_message.lower():
-            return json.dumps({
-                "overall_feedback": "Good effort on this assignment.",
-                "strengths": ["Completed on time", "Shows understanding"],
-                "areas_for_improvement": ["Add more detail"],
-                "specific_suggestions": ["Review chapter 3"],
-                "grade_suggestion": "B+",
-            })
+            return json.dumps(
+                {
+                    "overall_feedback": "Good effort on this assignment.",
+                    "strengths": ["Completed on time", "Shows understanding"],
+                    "areas_for_improvement": ["Add more detail"],
+                    "specific_suggestions": ["Review chapter 3"],
+                    "grade_suggestion": "B+",
+                }
+            )
         return "AI response generated successfully."
 
 
 # Singleton instance
 advanced_llm_service = AdvancedLLMService()
-

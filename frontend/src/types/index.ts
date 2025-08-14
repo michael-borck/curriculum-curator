@@ -6,6 +6,15 @@ export interface User {
   email: string;
   name: string;
   role: 'USER' | 'ADMIN';
+  teaching_philosophy?: string;
+  language_preference?: string;
+  llm_config?: {
+    provider?: string;
+    model?: string;
+    openai_api_key?: string;
+    anthropic_api_key?: string;
+    gemini_api_key?: string;
+  };
 }
 
 // Course related types

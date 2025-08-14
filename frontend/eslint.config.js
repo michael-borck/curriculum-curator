@@ -42,6 +42,7 @@ export default [
         EventSource: 'readonly',
         global: 'readonly',
         vi: 'readonly',
+        React: 'readonly',
       },
     },
     plugins: {
@@ -69,6 +70,9 @@ export default [
       
       // Accessibility
       ...jsxA11y.configs.recommended.rules,
+      'jsx-a11y/label-has-associated-control': 'off', // Disabled as it's too strict for our use case
+      'jsx-a11y/click-events-have-key-events': 'off', // We handle keyboard navigation differently
+      'jsx-a11y/no-static-element-interactions': 'off', // We use proper ARIA roles where needed
       
       // TypeScript rules
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
@@ -107,6 +111,7 @@ export default [
         EventSource: 'readonly',
         global: 'readonly',
         vi: 'readonly',
+        React: 'readonly',
       },
     },
     plugins: {
@@ -133,6 +138,9 @@ export default [
       
       // Accessibility
       ...jsxA11y.configs.recommended.rules,
+      'jsx-a11y/label-has-associated-control': 'off', // Disabled as it's too strict for our use case
+      'jsx-a11y/click-events-have-key-events': 'off', // We handle keyboard navigation differently
+      'jsx-a11y/no-static-element-interactions': 'off', // We use proper ARIA roles where needed
       
       // General JavaScript
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

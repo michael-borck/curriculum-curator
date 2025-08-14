@@ -35,13 +35,15 @@ class CodeFormatter(RemediatorPlugin):
         for match in matches:
             language = match.group(1) or "text"
             code = match.group(2)
-            code_blocks.append({
-                "language": language,
-                "code": code,
-                "start": match.start(),
-                "end": match.end(),
-                "full_match": match.group(0),
-            })
+            code_blocks.append(
+                {
+                    "language": language,
+                    "code": code,
+                    "start": match.start(),
+                    "end": match.end(),
+                    "full_match": match.group(0),
+                }
+            )
 
         # Also find inline code blocks without language
         pattern_no_lang = r"```\n(.*?)```"
@@ -49,49 +51,67 @@ class CodeFormatter(RemediatorPlugin):
 
         for match in matches_no_lang:
             # Check if this isn't already captured
-            if not any(match.start() >= b["start"] and match.end() <= b["end"] for b in code_blocks):
+            if not any(
+                match.start() >= b["start"] and match.end() <= b["end"]
+                for b in code_blocks
+            ):
                 code = match.group(1)
-                code_blocks.append({
-                    "language": self._detect_language(code),
-                    "code": code,
-                    "start": match.start(),
-                    "end": match.end(),
-                    "full_match": match.group(0),
-                })
+                code_blocks.append(
+                    {
+                        "language": self._detect_language(code),
+                        "code": code,
+                        "start": match.start(),
+                        "end": match.end(),
+                        "full_match": match.group(0),
+                    }
+                )
 
         return sorted(code_blocks, key=lambda x: x["start"])
 
     def _detect_language(self, code: str) -> str:
         """Detect programming language from code content."""
-        # Simple heuristics for language detection
+        # Language detection rules
+        language_rules = {
+            "python": ["def ", "import ", "from ", "class ", "if __name__"],
+            "javascript": ["const ", "let ", "var ", "function ", "=>"],
+            "java": ["public class ", "public static void main"],
+            "sql": ["select ", "from ", "where ", "insert ", "update "],
+            "bash": ["echo ", "cd ", "ls ", "mkdir "],
+        }
+
         code_lower = code.lower()
 
-        # Python
-        if any(keyword in code for keyword in ["def ", "import ", "from ", "class ", "if __name__"]):
-            return "python"
+        # Check each language rule
+        for language, keywords in language_rules.items():
+            if language == "sql":
+                # SQL keywords should be case-insensitive
+                if any(keyword in code_lower for keyword in keywords):
+                    return language
+            elif any(keyword in code for keyword in keywords):
+                # Special handling for TypeScript
+                if language == "javascript" and ("interface " in code or ": string" in code or ": number" in code):
+                    return "typescript"
+                return language
 
-        # JavaScript/TypeScript
-        if any(keyword in code for keyword in ["const ", "let ", "var ", "function ", "=>"]):
-            if "interface " in code or ": string" in code or ": number" in code:
-                return "typescript"
-            return "javascript"
+        # Check for special patterns
+        special_lang = self._check_special_languages(code, code_lower)
+        if special_lang:
+            return special_lang
 
-        # Java
-        if "public class " in code or "public static void main" in code:
-            return "java"
+        return "text"
 
+    def _check_special_languages(self, code: str, code_lower: str) -> str | None:  # noqa: PLR0911
+        """Check for languages that require special pattern matching."""
         # C/C++
         if "#include" in code:
-            if "cout" in code or "namespace" in code:
-                return "cpp"
-            return "c"
+            return "cpp" if "cout" in code or "namespace" in code else "c"
 
         # HTML
         if "<html" in code_lower or "<div" in code_lower or "<body" in code_lower:
             return "html"
 
         # CSS
-        if any(pattern in code for pattern in ["{", "}", ":", ";", "#", "."]) and "color:" in code_lower:
+        if "{" in code and "}" in code and "color:" in code_lower:
             return "css"
 
         # JSON
@@ -101,21 +121,17 @@ class CodeFormatter(RemediatorPlugin):
         except Exception:
             pass
 
-        # SQL
-        if any(keyword in code_lower for keyword in ["select ", "from ", "where ", "insert ", "update "]):
-            return "sql"
-
-        # Shell/Bash
-        if code.startswith("#!") or any(cmd in code for cmd in ["echo ", "cd ", "ls ", "mkdir "]):
+        # Shell script
+        if code.startswith("#!"):
             return "bash"
 
         # YAML
-        if any(pattern in code for pattern in [":", "-", "  "]) and "{" not in code:
+        if ":" in code and "-" in code and "{" not in code:
             lines = code.split("\n")
             if any(":" in line for line in lines):
                 return "yaml"
 
-        return "text"
+        return None
 
     def _format_python(self, code: str) -> str:
         """Format Python code."""
@@ -134,14 +150,14 @@ class CodeFormatter(RemediatorPlugin):
                     continue
 
                 # Decrease indent for these keywords
-                if stripped.startswith(("return", "break", "continue", "pass")):
-                    if indent_level > 0:
-                        indent_level -= 1
+                if stripped.startswith(("return", "break", "continue", "pass")) and indent_level > 0:
+                    indent_level -= 1
 
                 # Decrease indent for dedent keywords
-                if stripped.startswith(("else:", "elif ", "except:", "finally:", "except ")):
-                    if indent_level > 0:
-                        indent_level -= 1
+                if stripped.startswith(
+                    ("else:", "elif ", "except:", "finally:", "except ")
+                ) and indent_level > 0:
+                    indent_level -= 1
 
                 # Add proper indentation
                 formatted_line = "    " * indent_level + stripped
@@ -205,9 +221,22 @@ class CodeFormatter(RemediatorPlugin):
         try:
             # Basic SQL formatting
             keywords = [
-                "SELECT", "FROM", "WHERE", "JOIN", "LEFT JOIN", "RIGHT JOIN",
-                "INNER JOIN", "ON", "GROUP BY", "ORDER BY", "HAVING",
-                "INSERT INTO", "VALUES", "UPDATE", "SET", "DELETE"
+                "SELECT",
+                "FROM",
+                "WHERE",
+                "JOIN",
+                "LEFT JOIN",
+                "RIGHT JOIN",
+                "INNER JOIN",
+                "ON",
+                "GROUP BY",
+                "ORDER BY",
+                "HAVING",
+                "INSERT INTO",
+                "VALUES",
+                "UPDATE",
+                "SET",
+                "DELETE",
             ]
 
             formatted = code
@@ -218,15 +247,12 @@ class CodeFormatter(RemediatorPlugin):
                         rf"\s+{keyword}\s+",
                         f"\n{keyword} ",
                         formatted,
-                        flags=re.IGNORECASE
+                        flags=re.IGNORECASE,
                     )
                 else:
                     # Just uppercase the keyword
                     formatted = re.sub(
-                        rf"\b{keyword}\b",
-                        keyword,
-                        formatted,
-                        flags=re.IGNORECASE
+                        rf"\b{keyword}\b", keyword, formatted, flags=re.IGNORECASE
                     )
 
             # Clean up multiple spaces
@@ -257,14 +283,14 @@ class CodeFormatter(RemediatorPlugin):
 
     def _add_language_if_missing(self, content: str) -> str:
         """Add language identifier to code blocks that don't have one."""
+
         def replace_block(match):
             code = match.group(1)
             language = self._detect_language(code)
             return f"```{language}\n{code}```"
 
         # Replace code blocks without language
-        content = re.sub(r"```\n(.*?)```", replace_block, content, flags=re.DOTALL)
-        return content
+        return re.sub(r"```\n(.*?)```", replace_block, content, flags=re.DOTALL)
 
     async def remediate(self, content: str, issues: list) -> PluginResult:
         """Format code blocks in content."""
@@ -307,7 +333,9 @@ class CodeFormatter(RemediatorPlugin):
                         # Replace in content
                         start = block["start"] + offset
                         end = block["end"] + offset
-                        new_content = new_content[:start] + new_block + new_content[end:]
+                        new_content = (
+                            new_content[:start] + new_block + new_content[end:]
+                        )
 
                         # Update offset for next blocks
                         offset += len(new_block) - len(block["full_match"])
@@ -345,4 +373,3 @@ class CodeFormatter(RemediatorPlugin):
                 success=False,
                 message=f"Code formatting failed: {e!s}",
             )
-

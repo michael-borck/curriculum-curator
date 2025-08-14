@@ -59,13 +59,11 @@ class BasicRemediator(RemediatorPlugin):
         # Ensure sentences end with punctuation
         lines = content.split("\n")
         for i, line in enumerate(lines):
-            if line and not line.startswith("#") and not line.startswith("-"):
-                # Check if line ends with alphanumeric and no punctuation
-                if re.match(r".*[a-zA-Z0-9]$", line.strip()):
-                    # Skip if it's likely a heading or list item
-                    if not re.match(r"^\d+\.", line) and len(line) > 20:
-                        lines[i] = line + "."
-                        changes.append(f"Added missing period to line {i+1}")
+            if (line and not line.startswith("#") and not line.startswith("-") and
+                re.match(r".*[a-zA-Z0-9]$", line.strip()) and
+                not re.match(r"^\d+\.", line) and len(line) > 20):
+                lines[i] = line + "."
+                changes.append(f"Added missing period to line {i + 1}")
 
         if changes:
             content = "\n".join(lines)
@@ -93,15 +91,17 @@ class BasicRemediator(RemediatorPlugin):
         for pattern, replacement in typo_fixes.items():
             if re.search(pattern, content, re.IGNORECASE):
                 # Preserve case
-                def replace_preserve_case(match):
+                def replace_preserve_case(match, repl=replacement):
                     original = match.group()
                     if original.isupper():
-                        return replacement.upper()
+                        return repl.upper()
                     if original[0].isupper():
-                        return replacement.capitalize()
-                    return replacement
+                        return repl.capitalize()
+                    return repl
 
-                new_content = re.sub(pattern, replace_preserve_case, content, flags=re.IGNORECASE)
+                new_content = re.sub(
+                    pattern, replace_preserve_case, content, flags=re.IGNORECASE
+                )
                 if new_content != content:
                     changes.append(f"Fixed typo: '{pattern}' → '{replacement}'")
                     content = new_content
@@ -133,7 +133,7 @@ class BasicRemediator(RemediatorPlugin):
 
         # Fix heading level skips
         prev_level = 0
-        for i, (line_idx, heading) in enumerate(heading_lines):
+        for _i, (line_idx, heading) in enumerate(heading_lines):
             level = len(re.match(r"^(#+)", heading).group(1))
 
             if prev_level > 0 and level - prev_level > 1:
@@ -161,13 +161,13 @@ class BasicRemediator(RemediatorPlugin):
             if re.match(r"^\s*\*\s+", line):
                 # Convert * to - for consistency
                 lines[i] = re.sub(r"^(\s*)\*\s+", r"\1- ", line)
-                changes.append(f"Standardized list marker at line {i+1}")
+                changes.append(f"Standardized list marker at line {i + 1}")
 
             # Fix numbered list formatting
             if re.match(r"^\s*\d+\)\s+", line):
                 # Convert 1) to 1.
                 lines[i] = re.sub(r"^(\s*)(\d+)\)\s+", r"\1\2. ", line)
-                changes.append(f"Fixed numbered list format at line {i+1}")
+                changes.append(f"Fixed numbered list format at line {i + 1}")
 
         if changes:
             content = "\n".join(lines)
@@ -219,8 +219,10 @@ class BasicRemediator(RemediatorPlugin):
                 original_lines = original_content.split("\n")
                 new_lines = content.split("\n")
                 lines_changed = sum(
-                    1 for i in range(min(len(original_lines), len(new_lines)))
-                    if i < len(original_lines) and i < len(new_lines)
+                    1
+                    for i in range(min(len(original_lines), len(new_lines)))
+                    if i < len(original_lines)
+                    and i < len(new_lines)
                     and original_lines[i] != new_lines[i]
                 )
 

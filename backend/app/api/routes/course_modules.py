@@ -189,9 +189,15 @@ async def create_module(
         prerequisites=module_data.prerequisites,
         is_complete=False,
         materials_count=0,
-        pre_class_content=module_data.content.pre_class_content if module_data.content else None,
-        in_class_content=module_data.content.in_class_content if module_data.content else None,
-        post_class_content=module_data.content.post_class_content if module_data.content else None,
+        pre_class_content=module_data.content.pre_class_content
+        if module_data.content
+        else None,
+        in_class_content=module_data.content.in_class_content
+        if module_data.content
+        else None,
+        post_class_content=module_data.content.post_class_content
+        if module_data.content
+        else None,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -642,7 +648,11 @@ async def get_course_progress(
             }
         )
         milestones.append(
-            {"name": "Course Complete", "completed": completed_modules == total_modules, "date": None}
+            {
+                "name": "Course Complete",
+                "completed": completed_modules == total_modules,
+                "date": None,
+            }
         )
 
     return CourseProgress(
@@ -777,7 +787,12 @@ async def get_course_templates(
                 },
             ],
             duration_weeks=12,
-            assessment_structure={"participation": 10, "assignments": 40, "midterm": 20, "final": 30},
+            assessment_structure={
+                "participation": 10,
+                "assignments": 40,
+                "midterm": 20,
+                "final": 30,
+            },
         ),
         CourseTemplate(
             name="Project-Based Learning Template",
@@ -852,7 +867,6 @@ async def get_course_templates(
             assessment_structure={"assignments": 30, "midterm": 30, "final": 40},
         ),
     ]
-
 
 
 @router.post("/courses/from-template")

@@ -98,7 +98,7 @@ const EmailWhitelist = () => {
       );
 
       window.setTimeout(() => setSuccess(''), 3000);
-    } catch {
+    } catch (error: any) {
       if (error.response?.data?.detail) {
         setError(error.response.data.detail);
       } else {

@@ -112,13 +112,12 @@ class ReadabilityValidator(ValidatorPlugin):
         if metrics["word_count"] == 0:
             return 0.0
 
-        fog = 0.4 * (
+        return 0.4 * (
             metrics["avg_words_per_sentence"]
             + 100 * (metrics["complex_word_count"] / metrics["word_count"])
         )
-        return fog
 
-    def _get_readability_level(self, flesch_ease: float) -> str:
+    def _get_readability_level(self, flesch_ease: float) -> str:  # noqa: PLR0911
         """Get readability level description"""
         if flesch_ease >= 90:
             return "Very Easy (5th grade)"
@@ -216,7 +215,7 @@ class ReadabilityValidator(ValidatorPlugin):
 
             # Get target level from metadata
             target_level = metadata.get("config", {}).get("target_level", "high_school")
-            difficulty_level = metadata.get("difficulty_level", "intermediate")
+            metadata.get("difficulty_level", "intermediate")
 
             # Generate suggestions
             suggestions = self._generate_suggestions(

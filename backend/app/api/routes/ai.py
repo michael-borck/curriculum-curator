@@ -31,7 +31,7 @@ async def enhance_content(
 ) -> LLMResponse:
     """
     Enhance existing content with AI.
-    
+
     Enhancement types:
     - improve: Improve clarity and engagement
     - simplify: Simplify for better understanding
@@ -64,7 +64,7 @@ async def analyze_pedagogy(
 ) -> PedagogyAnalysisResponse:
     """
     Analyze content for pedagogical quality and alignment.
-    
+
     Returns:
     - Current pedagogical style
     - Confidence score
@@ -73,14 +73,12 @@ async def analyze_pedagogy(
     - Alignment score (if target style provided)
     """
     try:
-        analysis = await advanced_llm_service.analyze_pedagogy(
+        return await advanced_llm_service.analyze_pedagogy(
             content=request.content,
             check_alignment=request.check_alignment,
             suggest_improvements=request.suggest_improvements,
             target_style=request.target_style,
         )
-
-        return analysis
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {e!s}")
 
@@ -92,7 +90,7 @@ async def generate_questions(
 ) -> list[GeneratedQuestion]:
     """
     Generate assessment questions from content.
-    
+
     Supports multiple question types:
     - multiple_choice
     - short_answer
@@ -101,17 +99,17 @@ async def generate_questions(
     - fill_blank
     """
     try:
-        questions = await advanced_llm_service.generate_questions(
+        return await advanced_llm_service.generate_questions(
             content=request.content,
             question_types=request.question_types,
             count=request.count,
             difficulty=request.difficulty,
             bloom_levels=request.bloom_levels,
         )
-
-        return questions
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Question generation failed: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Question generation failed: {e!s}"
+        )
 
 
 @router.post("/generate-summary", response_model=LLMResponse)
@@ -121,7 +119,7 @@ async def generate_summary(
 ) -> LLMResponse:
     """
     Generate summary of content.
-    
+
     Summary types:
     - executive: High-level overview for stakeholders
     - key_points: Main learning points
@@ -153,7 +151,7 @@ async def generate_feedback(
 ) -> GeneratedFeedback:
     """
     Generate feedback for student work.
-    
+
     Features:
     - Rubric-based assessment
     - Customizable tone (encouraging, neutral, direct)
@@ -161,7 +159,7 @@ async def generate_feedback(
     - Improvement suggestions
     """
     try:
-        feedback = await advanced_llm_service.generate_feedback(
+        return await advanced_llm_service.generate_feedback(
             student_work=request.student_work,
             rubric=request.rubric,
             assignment_context=request.assignment_context,
@@ -169,10 +167,10 @@ async def generate_feedback(
             include_suggestions=request.include_suggestions,
             highlight_strengths=request.highlight_strengths,
         )
-
-        return feedback
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Feedback generation failed: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Feedback generation failed: {e!s}"
+        )
 
 
 @router.post("/translate", response_model=LLMResponse)
@@ -182,7 +180,7 @@ async def translate_content(
 ) -> LLMResponse:
     """
     Translate educational content to another language.
-    
+
     Features:
     - Preserves formatting
     - Cultural adaptation option
@@ -217,7 +215,7 @@ async def generate_learning_path(
 ) -> dict:
     """
     Generate personalized learning path.
-    
+
     Creates a structured learning journey with:
     - Prerequisites
     - Core concepts in sequence
@@ -227,17 +225,17 @@ async def generate_learning_path(
     - Resource recommendations
     """
     try:
-        path = await advanced_llm_service.generate_learning_path(
+        return await advanced_llm_service.generate_learning_path(
             topic=topic,
             current_knowledge=current_knowledge,
             target_level=target_level,
             available_time=available_time,
             learning_style=learning_style,
         )
-
-        return path
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Learning path generation failed: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Learning path generation failed: {e!s}"
+        )
 
 
 @router.post("/detect-misconceptions")
@@ -249,7 +247,7 @@ async def detect_misconceptions(
 ) -> dict:
     """
     Detect and explain student misconceptions.
-    
+
     Analyzes student responses to identify:
     - Specific misconceptions
     - Sources of confusion
@@ -257,15 +255,15 @@ async def detect_misconceptions(
     - Remediation suggestions
     """
     try:
-        analysis = await advanced_llm_service.detect_misconceptions(
+        return await advanced_llm_service.detect_misconceptions(
             student_response=student_response,
             correct_concept=correct_concept,
             context=context,
         )
-
-        return analysis
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Misconception detection failed: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Misconception detection failed: {e!s}"
+        )
 
 
 @router.post("/chat", response_model=LLMResponse)
@@ -275,7 +273,7 @@ async def chat_completion(
 ) -> LLMResponse:
     """
     General chat completion for educational assistance.
-    
+
     Supports:
     - Multi-turn conversations
     - Temperature control
@@ -307,7 +305,7 @@ async def list_available_models(
 ) -> dict:
     """
     List available AI models and providers.
-    
+
     Returns configured models with their capabilities.
     """
     return {
@@ -345,7 +343,7 @@ async def validate_content_with_ai(
 ) -> dict:
     """
     Validate content using AI for various quality checks.
-    
+
     Validation types:
     - comprehensive: All checks
     - factual: Fact checking
@@ -376,4 +374,3 @@ Return findings as JSON with keys: issues, suggestions, score"""
         return {"validation_result": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Validation failed: {e!s}")
-

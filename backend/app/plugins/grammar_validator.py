@@ -54,22 +54,20 @@ class GrammarValidator(ValidatorPlugin):
         starters = []
 
         for sentence in sentences:
-            sentence = sentence.strip()
-            if sentence:
+            stripped_sentence = sentence.strip()
+            if stripped_sentence:
                 # Get first word
-                first_word = sentence.split()[0] if sentence.split() else ""
+                first_word = stripped_sentence.split()[0] if stripped_sentence.split() else ""
                 if first_word:
                     starters.append(first_word.lower())
 
         # Check for repetition
         for i in range(len(starters) - 2):
-            if starters[i] == starters[i+1] == starters[i+2]:
+            if starters[i] == starters[i + 1] == starters[i + 2]:
                 issues.append(
                     f"Three consecutive sentences start with '{starters[i].capitalize()}'"
                 )
-                suggestions.append(
-                    "Vary sentence beginnings to improve flow"
-                )
+                suggestions.append("Vary sentence beginnings to improve flow")
                 break  # Only report once
 
         return issues, suggestions
@@ -105,7 +103,9 @@ class GrammarValidator(ValidatorPlugin):
 
         return issues[:5], suggestions[:5]  # Limit to 5
 
-    def _check_spelling_common_errors(self, content: str) -> tuple[list[str], list[str]]:
+    def _check_spelling_common_errors(
+        self, content: str
+    ) -> tuple[list[str], list[str]]:
         """Check for common spelling/word choice errors"""
         issues = []
         suggestions = []
@@ -152,16 +152,26 @@ class GrammarValidator(ValidatorPlugin):
 
             if has_british and has_american:
                 issues.append(f"Mixed spelling variants: {word_pair}")
-                suggestions.append("Use consistent spelling throughout (British or American)")
+                suggestions.append(
+                    "Use consistent spelling throughout (British or American)"
+                )
                 break  # Only report one instance
 
         # Check for number formatting consistency
         has_digits = bool(re.search(r"\b\d{1,2}\b", content))
-        has_words = bool(re.search(r"\b(one|two|three|four|five|six|seven|eight|nine)\b", content, re.IGNORECASE))
+        has_words = bool(
+            re.search(
+                r"\b(one|two|three|four|five|six|seven|eight|nine)\b",
+                content,
+                re.IGNORECASE,
+            )
+        )
 
         if has_digits and has_words:
             issues.append("Mixed number formatting (digits and words)")
-            suggestions.append("Use consistent number formatting (typically words for 1-9, digits for 10+)")
+            suggestions.append(
+                "Use consistent number formatting (typically words for 1-9, digits for 10+)"
+            )
 
         return issues, suggestions
 
@@ -187,11 +197,9 @@ class GrammarValidator(ValidatorPlugin):
 
         return issues, suggestions
 
-    def _calculate_style_score(
-        self, issue_counts: dict[str, int]
-    ) -> tuple[int, str]:
+    def _calculate_style_score(self, issue_counts: dict[str, int]) -> tuple[int, str]:
         """Calculate overall style score"""
-        total_issues = sum(issue_counts.values())
+        sum(issue_counts.values())
 
         # Weight different issue types
         weighted_score = 100

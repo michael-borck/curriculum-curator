@@ -29,65 +29,103 @@ from app.schemas.material import (
 router = APIRouter()
 
 
+def _calculate_completeness_score(material: Material) -> float:
+    """Calculate completeness score based on filled fields"""
+    score = 0
+    if material.title:
+        score += 20
+    if material.description:
+        score += 20
+    if material.content:
+        score += 30
+    if material.raw_content and len(material.raw_content) > 100:
+        score += 30
+    return score
+
+
+def _calculate_clarity_score(material: Material) -> float:
+    """Calculate clarity score based on content structure"""
+    score = 80  # Default decent clarity
+    if not material.raw_content:
+        return score
+
+    # Check for structure indicators
+    has_headers = "##" in material.raw_content or "###" in material.raw_content
+    has_paragraphs = len(material.raw_content.split("\n\n")) > 3
+
+    if has_headers:
+        score += 10
+    if has_paragraphs:
+        score += 10
+
+    return min(score, 100)
+
+
+def _calculate_engagement_score(material: Material) -> float:
+    """Calculate engagement score based on interactive elements"""
+    score = 50  # Base score
+
+    if not material.content or not isinstance(material.content, dict):
+        return score
+
+    # Add points for different interactive elements
+    engagement_elements = {"exercises": 25, "code_snippets": 15, "media_urls": 10}
+
+    for element, points in engagement_elements.items():
+        if material.content.get(element):
+            score += points
+
+    return min(score, 100)
+
+
+def _calculate_alignment_score(material: Material) -> float:
+    """Calculate alignment score based on learning objectives"""
+    if (
+        material.content
+        and isinstance(material.content, dict)
+        and material.content.get("learning_objectives")
+    ):
+        return 90
+    return 70  # Default alignment
+
+
+def _calculate_accessibility_score(material: Material) -> float:
+    """Calculate accessibility score based on content features"""
+    score = 80  # Default good accessibility
+
+    # Check for images without alt text
+    if (
+        material.raw_content
+        and "![" in material.raw_content
+        and "alt=" not in material.raw_content.lower()
+    ):
+        score -= 20
+
+    return max(score, 0)
+
+
 def calculate_quality_score(material: Material) -> tuple[float, QualityMetrics]:
     """Calculate quality score for a material"""
     metrics = QualityMetrics()
 
-    # Completeness: Check if all expected fields are filled
-    completeness_score = 0
-    if material.title:
-        completeness_score += 20
-    if material.description:
-        completeness_score += 20
-    if material.content:
-        completeness_score += 30
-    if material.raw_content and len(material.raw_content) > 100:
-        completeness_score += 30
-    metrics.completeness = completeness_score
+    # Calculate individual metric scores
+    metrics.completeness = _calculate_completeness_score(material)
+    metrics.clarity = _calculate_clarity_score(material)
+    metrics.engagement = _calculate_engagement_score(material)
+    metrics.alignment = _calculate_alignment_score(material)
+    metrics.accessibility = _calculate_accessibility_score(material)
 
-    # Clarity: Basic heuristics (in production, would use NLP)
-    clarity_score = 80  # Default decent clarity
-    if material.raw_content:
-        # Check for structure indicators
-        if "##" in material.raw_content or "###" in material.raw_content:
-            clarity_score += 10
-        if len(material.raw_content.split("\n\n")) > 3:  # Multiple paragraphs
-            clarity_score += 10
-    metrics.clarity = min(clarity_score, 100)
+    # Calculate weighted overall score
+    weights = {
+        "completeness": 0.2,
+        "clarity": 0.2,
+        "engagement": 0.25,
+        "alignment": 0.2,
+        "accessibility": 0.15,
+    }
 
-    # Engagement: Check for interactive elements
-    engagement_score = 50  # Base score
-    if material.content and isinstance(material.content, dict):
-        if material.content.get("exercises"):
-            engagement_score += 25
-        if material.content.get("code_snippets"):
-            engagement_score += 15
-        if material.content.get("media_urls"):
-            engagement_score += 10
-    metrics.engagement = min(engagement_score, 100)
-
-    # Alignment: Check learning objectives
-    alignment_score = 70  # Default alignment
-    if material.content and isinstance(material.content, dict):
-        if material.content.get("learning_objectives"):
-            alignment_score = 90
-    metrics.alignment = alignment_score
-
-    # Accessibility: Basic checks
-    accessibility_score = 80  # Default good accessibility
-    if material.raw_content:
-        # Check for alt text patterns (simplified)
-        if "![" in material.raw_content and "alt=" not in material.raw_content.lower():
-            accessibility_score -= 20
-    metrics.accessibility = max(accessibility_score, 0)
-
-    # Calculate overall score
-    metrics.overall = (
-        metrics.completeness * 0.2
-        + metrics.clarity * 0.2
-        + metrics.engagement * 0.25
-        + metrics.alignment * 0.2
-        + metrics.accessibility * 0.15
+    metrics.overall = sum(
+        getattr(metrics, metric) * weight for metric, weight in weights.items()
     )
 
     return metrics.overall, metrics
@@ -126,7 +164,9 @@ async def get_materials(
     if only_latest:
         query = query.filter(Material.is_latest.is_(True))
     if not include_drafts:
-        query = query.filter(or_(Material.is_draft.is_(False), Material.is_draft.is_(None)))
+        query = query.filter(
+            or_(Material.is_draft.is_(False), Material.is_draft.is_(None))
+        )
 
     # Get total count
     total = query.count()
@@ -217,7 +257,9 @@ async def get_material(
         title=material.title,
         description=material.description,
         version=material.version,
-        parent_version_id=str(material.parent_version_id) if material.parent_version_id else None,
+        parent_version_id=str(material.parent_version_id)
+        if material.parent_version_id
+        else None,
         is_latest=material.is_latest,
         is_draft=getattr(material, "is_draft", False),
         teaching_philosophy=material.teaching_philosophy,
@@ -296,9 +338,11 @@ async def create_material(
 
     # Update module materials count if applicable
     if material_data.module_id:
-        module = db.query(CourseModule).filter(
-            CourseModule.id == material_data.module_id
-        ).first()
+        module = (
+            db.query(CourseModule)
+            .filter(CourseModule.id == material_data.module_id)
+            .first()
+        )
         if module:
             module.materials_count = (module.materials_count or 0) + 1
 
@@ -364,12 +408,18 @@ async def update_material(
             type=material.type,
             title=material_data.title or material.title,
             description=material_data.description or material.description,
-            content=material_data.content.model_dump() if material_data.content else material.content,
-            raw_content=material_data.content.body if material_data.content else material.raw_content,
+            content=material_data.content.model_dump()
+            if material_data.content
+            else material.content,
+            raw_content=material_data.content.body
+            if material_data.content
+            else material.raw_content,
             version=material.version + 1,
             parent_version_id=material.id,
             is_latest=True,
-            is_draft=material_data.is_draft if material_data.is_draft is not None else material.is_draft,
+            is_draft=material_data.is_draft
+            if material_data.is_draft is not None
+            else material.is_draft,
             teaching_philosophy=material.teaching_philosophy,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -416,7 +466,9 @@ async def update_material(
     return MaterialResponse(
         id=str(updated_material.id),
         course_id=str(updated_material.course_id),
-        module_id=str(updated_material.module_id) if updated_material.module_id else None,
+        module_id=str(updated_material.module_id)
+        if updated_material.module_id
+        else None,
         type=updated_material.type,
         title=updated_material.title,
         description=updated_material.description,
@@ -470,9 +522,9 @@ async def delete_material(
 
     # Update module materials count if applicable
     if material.module_id:
-        module = db.query(CourseModule).filter(
-            CourseModule.id == material.module_id
-        ).first()
+        module = (
+            db.query(CourseModule).filter(CourseModule.id == material.module_id).first()
+        )
         if module and module.materials_count:
             module.materials_count = max(0, module.materials_count - 1)
 
@@ -518,18 +570,19 @@ async def get_material_versions(
         .all()
     )
 
-    version_list = []
-    for v in versions:
-        version_list.append(
-            {
-                "version": v.version,
-                "parent_version_id": str(v.parent_version_id) if v.parent_version_id else None,
-                "created_at": v.created_at,
-                "created_by": str(v.created_by_id) if hasattr(v, "created_by_id") else None,
-                "change_summary": f"Version {v.version}",
-                "is_latest": v.is_latest,
-            }
-        )
+    version_list = [
+        {
+            "version": v.version,
+            "parent_version_id": str(v.parent_version_id)
+            if v.parent_version_id
+            else None,
+            "created_at": v.created_at,
+            "created_by": str(v.created_by_id) if hasattr(v, "created_by_id") else None,
+            "change_summary": f"Version {v.version}",
+            "is_latest": v.is_latest,
+        }
+        for v in versions
+    ]
 
     current_version = max(v.version for v in versions) if versions else 1
 
@@ -592,7 +645,8 @@ async def clone_material(
         version=1,
         is_latest=True,
         is_draft=clone_data.create_as_draft,
-        teaching_philosophy=clone_data.adapt_to_philosophy or source_material.teaching_philosophy,
+        teaching_philosophy=clone_data.adapt_to_philosophy
+        or source_material.teaching_philosophy,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
         created_by_id=current_user.id,
@@ -607,9 +661,11 @@ async def clone_material(
 
     # Update module materials count if applicable
     if clone_data.target_module_id:
-        module = db.query(CourseModule).filter(
-            CourseModule.id == clone_data.target_module_id
-        ).first()
+        module = (
+            db.query(CourseModule)
+            .filter(CourseModule.id == clone_data.target_module_id)
+            .first()
+        )
         if module:
             module.materials_count = (module.materials_count or 0) + 1
 
@@ -639,6 +695,88 @@ async def clone_material(
     )
 
 
+def _bulk_publish_materials(
+    materials: list[Material], operation_data: dict | None = None
+) -> int:
+    """Publish draft materials"""
+    affected_count = 0
+    for material in materials:
+        if material.is_draft:
+            material.is_draft = False
+            material.updated_at = datetime.utcnow()
+            affected_count += 1
+    return affected_count
+
+
+def _bulk_archive_materials(
+    materials: list[Material], operation_data: dict | None = None
+) -> int:
+    """Archive materials by marking them as not latest"""
+    affected_count = 0
+    for material in materials:
+        material.is_latest = False
+        material.updated_at = datetime.utcnow()
+        affected_count += 1
+    return affected_count
+
+
+def _bulk_delete_materials(
+    materials: list[Material],
+    operation_data: dict | None = None,
+    db: Session | None = None,
+) -> int:
+    """Delete materials from database"""
+    affected_count = 0
+    for material in materials:
+        if db:
+            db.delete(material)
+        affected_count += 1
+    return affected_count
+
+
+def _bulk_move_materials(
+    materials: list[Material], operation_data: dict | None = None
+) -> int:
+    """Move materials to a different module"""
+    if not operation_data:
+        return 0
+
+    new_module_id = operation_data.get("module_id")
+    if not new_module_id:
+        return 0
+
+    affected_count = 0
+    for material in materials:
+        material.module_id = new_module_id
+        material.updated_at = datetime.utcnow()
+        affected_count += 1
+    return affected_count
+
+
+def _bulk_tag_materials(
+    materials: list[Material], operation_data: dict | None = None
+) -> int:
+    """Add tags to materials"""
+    if not operation_data:
+        return 0
+
+    tags = operation_data.get("tags", [])
+    if not tags:
+        return 0
+
+    affected_count = 0
+    for material in materials:
+        # Add tags to content metadata
+        content = material.content if material.content else {}
+        if not isinstance(content, dict):
+            content = {}
+        content["tags"] = list(set(content.get("tags", []) + tags))
+        material.content = content
+        material.updated_at = datetime.utcnow()
+        affected_count += 1
+    return affected_count
+
+
 @router.post("/bulk", response_model=dict)
 async def bulk_material_operation(
     operation: MaterialBulkOperation,
@@ -663,52 +801,28 @@ async def bulk_material_operation(
             detail="Access denied to some materials",
         )
 
-    affected_count = 0
+    # Define operation handlers
+    def delete_handler(materials: list[Material], data: dict) -> int:
+        return _bulk_delete_materials(materials, data, db)
 
-    if operation.operation == "publish":
-        for material in materials:
-            if material.is_draft:
-                material.is_draft = False
-                material.updated_at = datetime.utcnow()
-                affected_count += 1
+    operation_handlers = {
+        "publish": _bulk_publish_materials,
+        "archive": _bulk_archive_materials,
+        "delete": delete_handler,
+        "move": _bulk_move_materials,
+        "tag": _bulk_tag_materials,
+    }
 
-    elif operation.operation == "archive":
-        for material in materials:
-            material.is_latest = False
-            material.updated_at = datetime.utcnow()
-            affected_count += 1
-
-    elif operation.operation == "delete":
-        for material in materials:
-            db.delete(material)
-            affected_count += 1
-
-    elif operation.operation == "move":
-        if operation.data:
-            new_module_id = operation.data.get("module_id")
-            for material in materials:
-                material.module_id = new_module_id
-                material.updated_at = datetime.utcnow()
-                affected_count += 1
-
-    elif operation.operation == "tag":
-        if operation.data:
-            tags = operation.data.get("tags", [])
-            for material in materials:
-                # Add tags to content metadata
-                content = material.content if material.content else {}
-                if not isinstance(content, dict):
-                    content = {}
-                content["tags"] = list(set(content.get("tags", []) + tags))
-                material.content = content
-                material.updated_at = datetime.utcnow()
-                affected_count += 1
-
-    else:
+    # Get the handler for the operation
+    handler = operation_handlers.get(operation.operation)
+    if not handler:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unknown operation: {operation.operation}",
         )
+
+    # Execute the operation
+    affected_count = handler(materials, operation.data)
 
     db.commit()
 
@@ -736,7 +850,12 @@ async def get_material_templates(
                 name="Standard Lecture",
                 description="Traditional lecture format with sections",
                 structure={
-                    "sections": ["Introduction", "Main Content", "Summary", "Questions"],
+                    "sections": [
+                        "Introduction",
+                        "Main Content",
+                        "Summary",
+                        "Questions",
+                    ],
                     "includes": ["objectives", "key_points", "examples"],
                 },
                 default_content={
@@ -754,7 +873,12 @@ async def get_material_templates(
                 name="Flipped Classroom Pre-Class",
                 description="Video-based content for pre-class preparation",
                 structure={
-                    "sections": ["Preview", "Video Content", "Reading", "Pre-Class Quiz"],
+                    "sections": [
+                        "Preview",
+                        "Video Content",
+                        "Reading",
+                        "Pre-Class Quiz",
+                    ],
                     "includes": ["video_links", "reading_list", "self_check"],
                 },
                 default_content={
@@ -774,7 +898,12 @@ async def get_material_templates(
                 name="Problem Set",
                 description="Practice problems with worked examples",
                 structure={
-                    "sections": ["Instructions", "Worked Example", "Practice Problems", "Challenge"],
+                    "sections": [
+                        "Instructions",
+                        "Worked Example",
+                        "Practice Problems",
+                        "Challenge",
+                    ],
                     "includes": ["solutions", "hints"],
                 },
                 default_content={
@@ -783,7 +912,11 @@ async def get_material_templates(
                     "metadata": {"type": "worksheet"},
                 },
                 suggested_duration=30,
-                best_for=["traditional_lecture", "direct_instruction", "flipped_classroom"],
+                best_for=[
+                    "traditional_lecture",
+                    "direct_instruction",
+                    "flipped_classroom",
+                ],
             )
         )
 
@@ -814,7 +947,13 @@ async def get_material_templates(
                 name="Hands-On Lab",
                 description="Practical exercise with step-by-step instructions",
                 structure={
-                    "sections": ["Objectives", "Setup", "Procedure", "Analysis", "Cleanup"],
+                    "sections": [
+                        "Objectives",
+                        "Setup",
+                        "Procedure",
+                        "Analysis",
+                        "Cleanup",
+                    ],
                     "includes": ["materials_list", "safety_notes", "troubleshooting"],
                 },
                 default_content={
@@ -870,21 +1009,25 @@ async def validate_material(
         validation.warnings.append("Content seems too short (less than 100 characters)")
 
     # Check for learning objectives
-    if material.content and isinstance(material.content, dict):
-        if not material.content.get("learning_objectives"):
-            validation.suggestions.append("Consider adding learning objectives")
+    if (
+        material.content
+        and isinstance(material.content, dict)
+        and not material.content.get("learning_objectives")
+    ):
+        validation.suggestions.append("Consider adding learning objectives")
 
     # Basic accessibility checks
     if material.raw_content:
         # Check for images without alt text
-        if "![" in material.raw_content:
-            # Simplified check - in production would parse markdown properly
-            if "alt=" not in material.raw_content.lower():
-                validation.accessibility_issues.append("Images may be missing alt text")
+        # Simplified check - in production would parse markdown properly
+        if "![" in material.raw_content and "alt=" not in material.raw_content.lower():
+            validation.accessibility_issues.append("Images may be missing alt text")
 
         # Check for heading structure
         if "# " not in material.raw_content:
-            validation.suggestions.append("Consider adding headings to structure the content")
+            validation.suggestions.append(
+                "Consider adding headings to structure the content"
+            )
 
     # Calculate quality score
     quality_score, _ = calculate_quality_score(material)
@@ -946,7 +1089,9 @@ async def get_material_analytics(
         last_accessed=material.updated_at,
         engagement_metrics={
             "quality_score": quality_score,
-            "has_exercises": bool(material.content and material.content.get("exercises")),
+            "has_exercises": bool(
+                material.content and material.content.get("exercises")
+            ),
             "has_media": bool(material.content and material.content.get("media_urls")),
         },
     )

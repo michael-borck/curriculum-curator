@@ -25,23 +25,33 @@ cd frontend && npm run preview
 ```
 
 ### Code Quality Commands
+
+**IMPORTANT: Run linters and type checkers after every code change. All checks must pass with 0 errors before committing.**
+
 ```bash
 # Backend linting and formatting (modern tools)
 cd backend
-ruff check .              # Fast linting
+ruff check .              # Fast linting - MUST have 0 errors
 ruff format .             # Fast formatting
-basedpyright             # Type checking
+basedpyright             # Type checking - MUST have 0 errors
 
 # Legacy alternatives (if modern tools not available)
 # black app/ && flake8 app/ && mypy app/
 
 # Frontend linting and formatting  
 cd frontend
-npm run lint              # ESLint checking
+npm run lint              # ESLint checking - MUST have 0 errors
 npm run lint:fix          # Auto-fix ESLint issues
 npm run format            # Prettier formatting
 npm run format:check      # Check formatting without changes
+npm run type-check        # TypeScript checking - MUST have 0 errors
 ```
+
+#### Quality Gates (MANDATORY)
+- **Before committing**: Run all linters and type checkers
+- **Zero tolerance**: All checks must pass with 0 errors
+- **Fix immediately**: Address linting issues as you write code, not after
+- **Technical debt prevention**: Never ignore or suppress warnings without justification
 
 ### Testing Commands
 ```bash
@@ -73,6 +83,7 @@ npm run test:ui          # Run tests with UI interface
 - **pyproject.toml** for modern dependency management
 
 ### Frontend Architecture (`/src/`)
+- **TypeScript-first**: ALL components must be `.tsx` files, no `.jsx` allowed
 - **Modern React tooling**: ESLint (linting), Prettier (formatting), Vitest (testing)
 - **Feature-based structure**: `features/{auth,content,courses}/`
 - **Shared components**: `components/{Editor,Layout,Wizard}/`
@@ -89,7 +100,7 @@ npm run test:ui          # Run tests with UI interface
 - Streaming content generation via Server-Sent Events
 - Configurable via environment variables
 
-### Rich Text Editor (`frontend/src/components/Editor/RichTextEditor.jsx`)
+### Rich Text Editor (`frontend/src/components/Editor/RichTextEditor.tsx`)
 - Professional TipTap-based editor
 - Table support, code blocks with syntax highlighting
 - Pedagogy hints based on selected teaching style
@@ -170,6 +181,37 @@ VITE_ENABLE_AI_FEATURES=true
 - **Advanced Security**: Additional security phases (MFA, advanced monitoring)
 - **Performance**: Database optimization, caching, CDN integration
 
+## TypeScript Requirements
+
+### Frontend Development Rules
+1. **ALWAYS use TypeScript** (`.tsx` for React components, `.ts` for utilities)
+2. **NEVER create `.jsx` or `.js` files** in the frontend
+3. **Define interfaces** for all data structures
+4. **Type all function parameters** and return values
+5. **No `any` types** without explicit justification
+6. **Use strict mode** - already configured in tsconfig.json
+
+### Example Component Structure
+```typescript
+// ✅ CORRECT: ComponentName.tsx
+interface Props {
+  id: string;
+  onUpdate: (data: UpdateData) => void;
+}
+
+interface State {
+  loading: boolean;
+  data: DataType | null;
+}
+
+export const ComponentName: React.FC<Props> = ({ id, onUpdate }) => {
+  const [state, setState] = useState<State>({ loading: false, data: null });
+  // ...
+};
+
+// ❌ WRONG: ComponentName.jsx or untyped parameters
+```
+
 ## Common Patterns
 
 ### Adding New API Endpoints
@@ -178,11 +220,20 @@ VITE_ENABLE_AI_FEATURES=true
 3. Implement business logic in `backend/app/services/`
 4. Register route in `backend/app/main.py`
 
+### Frontend Development Rules
+1. **ALWAYS use TypeScript** (`.tsx` for React components, `.ts` for utilities)
+2. **NEVER create `.jsx` or `.js` files** in the frontend
+3. **Type everything**: props, state, event handlers, function returns
+4. **No `any` types** without explicit justification
+5. **Define interfaces** for all component props and complex data structures
+
 ### Adding New Frontend Components
-1. Create in appropriate `features/` or `components/` directory
-2. Follow existing patterns for props and styling
-3. Use Tailwind CSS classes consistently
-4. Import icons from `lucide-react`
+1. Create as `.tsx` file in appropriate `features/` or `components/` directory
+2. Define TypeScript interfaces for all props and state
+3. Follow existing patterns for props and styling
+4. Use Tailwind CSS classes consistently
+5. Import icons from `lucide-react`
+6. Type all event handlers and callbacks
 
 ### LLM Provider Integration
 Extend `LLMService` class in `backend/app/services/llm_service.py` following the existing OpenAI/Anthropic pattern.

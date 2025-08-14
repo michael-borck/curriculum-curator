@@ -33,7 +33,6 @@ class InclusiveLanguageValidator(ValidatorPlugin):
             "man-hours": ("gender", "person-hours, work hours"),
             "man-made": ("gender", "artificial, synthetic, human-made"),
             "guys": ("gender", "everyone, folks, team (context-dependent)"),
-
             # Ability-related terms
             "crazy": ("ability", "wild, amazing, unexpected"),
             "insane": ("ability", "incredible, unbelievable"),
@@ -45,25 +44,27 @@ class InclusiveLanguageValidator(ValidatorPlugin):
             "normal people": ("ability", "typical people, people without disabilities"),
             "suffers from": ("ability", "has, lives with"),
             "wheelchair-bound": ("ability", "wheelchair user"),
-
             # Age-related terms
             "elderly": ("age", "older adults, seniors"),
             "youngster": ("age", "young person"),
-
             # Cultural/racial terms
-            "minority": ("cultural", "underrepresented group (be specific when possible)"),
+            "minority": (
+                "cultural",
+                "underrepresented group (be specific when possible)",
+            ),
             "exotic": ("cultural", "unique, distinctive"),
             "tribe": ("cultural", "group, team (unless referring to actual tribes)"),
             "ghetto": ("cultural", "neighborhood, community"),
             "third-world": ("cultural", "developing country, Global South"),
             "oriental": ("cultural", "Asian (be specific about region)"),
-
             # Technical/professional terms
             "master/slave": ("technical", "primary/replica, main/secondary"),
-            "whitelist/blacklist": ("technical", "allowlist/blocklist, permitlist/denylist"),
+            "whitelist/blacklist": (
+                "technical",
+                "allowlist/blocklist, permitlist/denylist",
+            ),
             "dummy": ("technical", "placeholder, sample, test"),
             "sanity check": ("technical", "validation check, consistency check"),
-
             # Violence-related metaphors
             "killing it": ("violence", "doing great, excelling"),
             "crush it": ("violence", "succeed, excel"),
@@ -78,7 +79,11 @@ class InclusiveLanguageValidator(ValidatorPlugin):
             (r"\bhis/her\b", "their", "gender"),
             (r"\bladies and gentlemen\b", "everyone, distinguished guests", "gender"),
             (r"\bmother tongue\b", "native language, first language", "cultural"),
-            (r"\bforeign\s+(?:language|student|national)\b", "international, non-native", "cultural"),
+            (
+                r"\bforeign\s+(?:language|student|national)\b",
+                "international, non-native",
+                "cultural",
+            ),
         ]
 
     @property
@@ -99,7 +104,7 @@ class InclusiveLanguageValidator(ValidatorPlugin):
 
         content_lower = content.lower()
 
-        for term, (category, suggestion) in self._problematic_terms.items():
+        for term in self._problematic_terms:
             # Use word boundaries to avoid false positives
             pattern = rf"\b{re.escape(term)}\b"
             matches = re.finditer(pattern, content_lower, re.IGNORECASE)
@@ -147,7 +152,7 @@ class InclusiveLanguageValidator(ValidatorPlugin):
 
             if count > 0 and contexts:
                 # Use the pattern itself if no match available
-                phrase = contexts[0].strip() if contexts else pattern
+                contexts[0].strip() if contexts else pattern
                 issue = f"[{category}] Found phrase that could be more inclusive"
                 if count == 1:
                     issue += f" in: '...{contexts[0]}...'"
@@ -167,12 +172,16 @@ class InclusiveLanguageValidator(ValidatorPlugin):
         generic_he_pattern = r"\b(?:he|him|his)\b.*?\b(?:student|user|developer|person|individual|employee|teacher|learner)\b"
         if re.search(generic_he_pattern, content, re.IGNORECASE):
             issues.append("[gender] Generic masculine pronouns detected")
-            suggestions.append("Use 'they/them/their' for generic references or alternate pronouns")
+            suggestions.append(
+                "Use 'they/them/their' for generic references or alternate pronouns"
+            )
 
         # Check for assumption patterns
         assumption_patterns = [
-            (r"assumes? (?:he|she) (?:has|knows|understands)",
-             "Avoid assuming gender in examples"),
+            (
+                r"assumes? (?:he|she) (?:has|knows|understands)",
+                "Avoid assuming gender in examples",
+            ),
         ]
 
         for pattern, suggestion in assumption_patterns:
@@ -257,7 +266,9 @@ class InclusiveLanguageValidator(ValidatorPlugin):
                     "total_issues": len(all_issues),
                     "issue_counts": issue_counts,
                     "issues": all_issues[:10],  # Limit to first 10
-                    "categories_affected": [k for k, v in issue_counts.items() if v > 0],
+                    "categories_affected": [
+                        k for k, v in issue_counts.items() if v > 0
+                    ],
                 },
                 suggestions=all_suggestions[:10] if all_suggestions else None,
             )
@@ -267,4 +278,3 @@ class InclusiveLanguageValidator(ValidatorPlugin):
                 success=False,
                 message=f"Inclusive language validation failed: {e!s}",
             )
-

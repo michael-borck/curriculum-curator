@@ -26,9 +26,15 @@ class ModuleContent(BaseModel):
     pre_class_content: dict[str, Any] | None = Field(
         None, description="Pre-class materials for flipped classroom"
     )
-    in_class_content: dict[str, Any] | None = Field(None, description="In-class activities")
-    post_class_content: dict[str, Any] | None = Field(None, description="Post-class assignments")
-    resources: list[str] = Field(default_factory=list, description="Additional resources")
+    in_class_content: dict[str, Any] | None = Field(
+        None, description="In-class activities"
+    )
+    post_class_content: dict[str, Any] | None = Field(
+        None, description="Post-class assignments"
+    )
+    resources: list[str] = Field(
+        default_factory=list, description="Additional resources"
+    )
     learning_objectives: list[str] = Field(
         default_factory=list, description="Module learning objectives"
     )

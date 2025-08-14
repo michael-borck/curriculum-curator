@@ -47,7 +47,9 @@ def init_db():
         # Check if we already have data
         existing_users = db.query(User).count()
         if existing_users > 0:
-            print(f"ℹ️  Database already contains {existing_users} users. Skipping initialization.")
+            print(
+                f"INFO: Database already contains {existing_users} users. Skipping initialization."
+            )
             return
 
         print("\n📝 Creating sample data...")
@@ -290,7 +292,10 @@ def init_db():
             content={
                 "exercises": [
                     {"question": "Write a hello world program", "difficulty": "easy"},
-                    {"question": "Calculate the area of a circle", "difficulty": "medium"},
+                    {
+                        "question": "Calculate the area of a circle",
+                        "difficulty": "medium",
+                    },
                     {"question": "Create a simple calculator", "difficulty": "hard"},
                 ],
                 "estimated_time": "60 minutes",
@@ -346,8 +351,16 @@ def init_db():
                         "title": "Create pre-class materials",
                         "status": "completed",
                         "subtasks": [
-                            {"id": "1.1", "title": "Record video lecture", "completed": True},
-                            {"id": "1.2", "title": "Prepare reading materials", "completed": True},
+                            {
+                                "id": "1.1",
+                                "title": "Record video lecture",
+                                "completed": True,
+                            },
+                            {
+                                "id": "1.2",
+                                "title": "Prepare reading materials",
+                                "completed": True,
+                            },
                         ],
                     },
                     {
@@ -355,8 +368,16 @@ def init_db():
                         "title": "Develop in-class activities",
                         "status": "in_progress",
                         "subtasks": [
-                            {"id": "2.1", "title": "Create coding exercises", "completed": True},
-                            {"id": "2.2", "title": "Design group activities", "completed": False},
+                            {
+                                "id": "2.1",
+                                "title": "Create coding exercises",
+                                "completed": True,
+                            },
+                            {
+                                "id": "2.2",
+                                "title": "Design group activities",
+                                "completed": False,
+                            },
                         ],
                     },
                     {
@@ -364,8 +385,16 @@ def init_db():
                         "title": "Prepare assessments",
                         "status": "pending",
                         "subtasks": [
-                            {"id": "3.1", "title": "Write quiz questions", "completed": False},
-                            {"id": "3.2", "title": "Design assignment", "completed": False},
+                            {
+                                "id": "3.1",
+                                "title": "Write quiz questions",
+                                "completed": False,
+                            },
+                            {
+                                "id": "3.2",
+                                "title": "Design assignment",
+                                "completed": False,
+                            },
                         ],
                     },
                 ],
@@ -408,7 +437,9 @@ def init_db():
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Initialize Curriculum Curator database")
+    parser = argparse.ArgumentParser(
+        description="Initialize Curriculum Curator database"
+    )
     parser.add_argument(
         "--reset",
         action="store_true",

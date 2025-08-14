@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import Dashboard from './components/Layout/Dashboard';
 import ContentCreator from './features/content/ContentCreator';
 import CourseManager from './features/courses/CourseManager';
+import CourseDashboard from './features/courses/CourseDashboard';
 import CourseView from './features/courses/CourseView';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
@@ -56,30 +57,43 @@ function App() {
             <Route path='/' element={<CourseManager />} />
             <Route path='/dashboard' element={<CourseManager />} />
             <Route path='/courses' element={<CourseManager />} />
+            <Route
+              path='/courses/:courseId/dashboard'
+              element={<CourseDashboard />}
+            />
             <Route path='/course/:id' element={<CourseView />} />
-            
+
             {/* Content Creation */}
             <Route path='/content/new' element={<ContentCreator />} />
             <Route path='/create/:type' element={<ContentCreator />} />
-            
+
             {/* Import */}
             <Route path='/import' element={<ImportMaterials />} />
-            
+
             {/* Teaching Style */}
             <Route path='/teaching-style' element={<TeachingStyle />} />
-            
+
             {/* AI Assistant */}
             <Route path='/ai-assistant' element={<AIAssistant />} />
-            
+
             {/* Settings */}
             <Route path='/settings' element={<Settings />} />
-            
+
             {/* LRD Routes */}
             <Route path='/courses/:courseId/lrds' element={<LRDList />} />
-            <Route path='/courses/:courseId/lrds/new' element={<LRDCreator />} />
-            <Route path='/courses/:courseId/lrds/:lrdId' element={<LRDDetail />} />
-            <Route path='/courses/:courseId/lrds/:lrdId/edit' element={<LRDCreator />} />
-            
+            <Route
+              path='/courses/:courseId/lrds/new'
+              element={<LRDCreator />}
+            />
+            <Route
+              path='/courses/:courseId/lrds/:lrdId'
+              element={<LRDDetail />}
+            />
+            <Route
+              path='/courses/:courseId/lrds/:lrdId/edit'
+              element={<LRDCreator />}
+            />
+
             <Route path='*' element={<Navigate to='/dashboard' replace />} />
           </Routes>
         </Dashboard>

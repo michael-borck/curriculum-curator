@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { register } from '../../services/api';
 import EmailVerificationForm from './EmailVerificationForm';
@@ -80,16 +80,10 @@ const RegistrationModal = ({
     setErrors({});
 
     try {
-      const response = await register(
-        formData.email,
-        formData.password,
-        formData.name
-      );
+      await register(formData.email, formData.password, formData.name);
 
-      if (response.status === 200 || response.status === 201) {
-        setIsRegistered(true);
-        setShowVerification(true);
-      }
+      setIsRegistered(true);
+      setShowVerification(true);
     } catch (error: any) {
       if (error.response?.status === 409) {
         setErrors({ email: 'Email already registered' });

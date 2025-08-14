@@ -19,7 +19,9 @@ class URLVerifier(ValidatorPlugin):
     def __init__(self):
         super().__init__()
         self._timeout = 10  # seconds
-        self._user_agent = "Mozilla/5.0 (Compatible; CurriculumCurator/1.0; +https://example.com/bot)"
+        self._user_agent = (
+            "Mozilla/5.0 (Compatible; CurriculumCurator/1.0; +https://example.com/bot)"
+        )
         self._max_concurrent = 5  # Max concurrent requests
 
         # Common URL patterns that are often hallucinated
@@ -33,13 +35,28 @@ class URLVerifier(ValidatorPlugin):
 
         # Whitelisted domains that we trust even if temporarily down
         self._trusted_domains = {
-            "github.com", "gitlab.com", "bitbucket.org",
-            "stackoverflow.com", "developer.mozilla.org", "w3.org",
-            "python.org", "nodejs.org", "reactjs.org", "vuejs.org",
-            "djangoproject.com", "flask.palletsprojects.com",
-            "aws.amazon.com", "cloud.google.com", "azure.microsoft.com",
-            "wikipedia.org", "wikimedia.org", "arxiv.org",
-            "coursera.org", "udemy.com", "edx.org", "khanacademy.org",
+            "github.com",
+            "gitlab.com",
+            "bitbucket.org",
+            "stackoverflow.com",
+            "developer.mozilla.org",
+            "w3.org",
+            "python.org",
+            "nodejs.org",
+            "reactjs.org",
+            "vuejs.org",
+            "djangoproject.com",
+            "flask.palletsprojects.com",
+            "aws.amazon.com",
+            "cloud.google.com",
+            "azure.microsoft.com",
+            "wikipedia.org",
+            "wikimedia.org",
+            "arxiv.org",
+            "coursera.org",
+            "udemy.com",
+            "edx.org",
+            "khanacademy.org",
         }
 
     @property
@@ -105,7 +122,33 @@ class URLVerifier(ValidatorPlugin):
 
     async def _verify_url(self, client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         """Verify a single URL"""
-        result = {
+        result = self._init_result(url)
+
+        # Check for suspicious patterns
+        suspicious_reason = self._is_suspicious_url(url)
+        if suspicious_reason:
+            result["suspicious"] = True
+            result["error"] = suspicious_reason
+            return result
+
+        # Validate URL format
+        parsed = self._validate_url_format(url, result)
+        if not parsed:
+            return result
+
+        # Check trusted domains
+        if self._is_trusted_domain(parsed.netloc.lower()):
+            result["valid"] = True
+            result["trusted_domain"] = True
+            return result
+
+        # Perform HTTP verification
+        await self._perform_http_verification(client, url, result)
+        return result
+
+    def _init_result(self, url: str) -> dict[str, Any]:
+        """Initialize result dictionary for URL verification."""
+        return {
             "url": url,
             "valid": False,
             "status_code": None,
@@ -115,90 +158,35 @@ class URLVerifier(ValidatorPlugin):
             "bot_blocked": False,
         }
 
-        # Check for suspicious patterns first
-        suspicious_reason = self._is_suspicious_url(url)
-        if suspicious_reason:
-            result["suspicious"] = True
-            result["error"] = suspicious_reason
-            return result
-
-        # Parse URL
+    def _validate_url_format(self, url: str, result: dict) -> Any:
+        """Validate URL format and parse it."""
         try:
             parsed = urlparse(url)
             if not parsed.scheme or not parsed.netloc:
                 result["error"] = "Invalid URL format"
-                return result
+                return None
+            return parsed
         except Exception as e:
             result["error"] = f"URL parsing error: {e!s}"
-            return result
+            return None
 
-        # Check if domain is trusted (skip actual verification for trusted domains)
-        domain = parsed.netloc.lower()
-        if any(domain.endswith(trusted) for trusted in self._trusted_domains):
-            result["valid"] = True
-            result["trusted_domain"] = True
-            return result
+    def _is_trusted_domain(self, domain: str) -> bool:
+        """Check if domain is in trusted list."""
+        return any(domain.endswith(trusted) for trusted in self._trusted_domains)
 
-        # Perform actual HTTP request
+    async def _perform_http_verification(
+        self, client: httpx.AsyncClient, url: str, result: dict
+    ) -> None:
+        """Perform actual HTTP request verification."""
         try:
-            # Use HEAD request first (faster, less resource intensive)
-            response = await client.head(
-                url,
-                follow_redirects=True,
-                timeout=self._timeout,
-            )
-
-            result["status_code"] = response.status_code
-
-            # Check for bot blocking indicators
-            if response.status_code == 403:
-                result["bot_blocked"] = True
-                result["error"] = "Access forbidden (possible bot blocking)"
-            elif response.status_code == 429:
-                result["bot_blocked"] = True
-                result["error"] = "Rate limited (too many requests)"
-            elif response.status_code == 503:
-                # Could be Cloudflare or similar protection
-                if any(h.lower() in response.headers.get("server", "").lower()
-                       for h in ["cloudflare", "ddos"]):
-                    result["bot_blocked"] = True
-                    result["error"] = "Bot protection detected (Cloudflare/DDoS protection)"
-                else:
-                    result["error"] = "Service unavailable"
-            elif response.status_code == 406:
-                result["bot_blocked"] = True
-                result["error"] = "Not acceptable (bot detection)"
-            else:
-                result["valid"] = response.status_code < 400
-
-            # Check for redirects
-            if str(response.url) != url:
-                result["redirect_url"] = str(response.url)
-                # Check if redirected to a captcha page
-                if any(captcha in str(response.url).lower()
-                       for captcha in ["captcha", "challenge", "verify", "bot-check"]):
-                    result["bot_blocked"] = True
-                    result["error"] = "Redirected to captcha/verification page"
-                    result["valid"] = False
+            # Try HEAD request first
+            response = await self._make_request(client, url, "HEAD")
+            self._process_response(response, url, result)
 
             # If HEAD fails with 405, try GET
             if response.status_code == 405:
-                response = await client.get(
-                    url,
-                    follow_redirects=True,
-                    timeout=self._timeout,
-                )
-                result["status_code"] = response.status_code
-
-                # Re-check for bot blocking on GET
-                if response.status_code == 403:
-                    result["bot_blocked"] = True
-                    result["error"] = "Access forbidden (possible bot blocking)"
-                elif response.status_code == 429:
-                    result["bot_blocked"] = True
-                    result["error"] = "Rate limited"
-                else:
-                    result["valid"] = response.status_code < 400
+                response = await self._make_request(client, url, "GET")
+                self._process_response(response, url, result)
 
         except httpx.TimeoutException:
             result["error"] = "Request timeout"
@@ -210,7 +198,63 @@ class URLVerifier(ValidatorPlugin):
         except Exception as e:
             result["error"] = f"Request failed: {e!s}"
 
-        return result
+    async def _make_request(
+        self, client: httpx.AsyncClient, url: str, method: str
+    ) -> httpx.Response:
+        """Make HTTP request with specified method."""
+        if method == "HEAD":
+            return await client.head(
+                url, follow_redirects=True, timeout=self._timeout
+            )
+        return await client.get(
+            url, follow_redirects=True, timeout=self._timeout
+        )
+
+    def _process_response(
+        self, response: httpx.Response, url: str, result: dict
+    ) -> None:
+        """Process HTTP response and update result."""
+        result["status_code"] = response.status_code
+
+        # Check for bot blocking
+        bot_block_info = self._check_bot_blocking(response)
+        if bot_block_info:
+            result["bot_blocked"] = True
+            result["error"] = bot_block_info
+            result["valid"] = False
+        else:
+            result["valid"] = response.status_code < 400
+
+        # Check for redirects
+        if str(response.url) != url:
+            result["redirect_url"] = str(response.url)
+            if self._is_captcha_redirect(str(response.url)):
+                result["bot_blocked"] = True
+                result["error"] = "Redirected to captcha/verification page"
+                result["valid"] = False
+
+    def _check_bot_blocking(self, response: httpx.Response) -> str | None:
+        """Check if response indicates bot blocking."""
+        status_code = response.status_code
+
+        if status_code == 403:
+            return "Access forbidden (possible bot blocking)"
+        if status_code == 429:
+            return "Rate limited (too many requests)"
+        if status_code == 406:
+            return "Not acceptable (bot detection)"
+        if status_code == 503:
+            server = response.headers.get("server", "").lower()
+            if any(h in server for h in ["cloudflare", "ddos"]):
+                return "Bot protection detected (Cloudflare/DDoS protection)"
+            return "Service unavailable"
+
+        return None
+
+    def _is_captcha_redirect(self, redirect_url: str) -> bool:
+        """Check if URL is a captcha or verification page."""
+        captcha_indicators = ["captcha", "challenge", "verify", "bot-check"]
+        return any(indicator in redirect_url.lower() for indicator in captcha_indicators)
 
     async def _verify_urls(self, urls: list[tuple[str, str]]) -> list[dict[str, Any]]:
         """Verify multiple URLs concurrently"""
@@ -223,7 +267,7 @@ class URLVerifier(ValidatorPlugin):
         ) as client:
             # Process URLs in batches to avoid overwhelming
             for i in range(0, len(urls), self._max_concurrent):
-                batch = urls[i:i + self._max_concurrent]
+                batch = urls[i : i + self._max_concurrent]
                 tasks = [self._verify_url(client, url) for url, _ in batch]
                 batch_results = await asyncio.gather(*tasks)
 
@@ -235,69 +279,120 @@ class URLVerifier(ValidatorPlugin):
 
         return results
 
-    def _generate_report(self, results: list[dict[str, Any]]) -> tuple[list[str], list[str]]:
+    def _generate_report(
+        self, results: list[dict[str, Any]]
+    ) -> tuple[list[str], list[str]]:
         """Generate issues and suggestions from verification results"""
         issues = []
         suggestions = []
 
         for result in results:
-            url = result["url"]
-            context = result.get("context", "")
-
-            if result.get("suspicious"):
-                issues.append(f"Suspicious URL pattern: {url[:100]}...")
-                suggestions.append(f"Verify this URL is correct: {result.get('error', 'Pattern match')}")
-
-            elif result.get("bot_blocked"):
-                # Special handling for bot-blocked URLs
-                issues.append(f"Bot detection: {url[:100]}... - {result['error']}")
-                if "403" in str(result.get("status_code", "")):
-                    suggestions.append(
-                        "This site blocks automated verification. "
-                        + "Manual check recommended, or mark as trusted if you know it's valid"
-                    )
-                elif "429" in str(result.get("status_code", "")):
-                    suggestions.append(
-                        "Rate limited by the site. The URL might be valid but needs manual verification"
-                    )
-                elif "captcha" in result.get("error", "").lower():
-                    suggestions.append(
-                        "Site requires CAPTCHA verification. URL likely valid but needs manual check"
-                    )
-                else:
-                    suggestions.append(
-                        "The site has bot protection. Consider manually verifying or whitelisting this domain"
-                    )
-
-            elif not result["valid"]:
-                if result.get("error"):
-                    if "Connection failed" in result["error"]:
-                        issues.append(f"Unreachable URL: {url[:100]}... ({context})")
-                        suggestions.append("Check if the URL is correct or if the site is temporarily down")
-                    elif "timeout" in result["error"].lower():
-                        issues.append(f"URL timeout: {url[:100]}... ({context})")
-                        suggestions.append("The URL took too long to respond, verify it's correct")
-                    elif "404" in str(result.get("status_code", "")):
-                        issues.append(f"Broken link (404): {url[:100]}... ({context})")
-                        suggestions.append("This page doesn't exist, find the correct URL or remove the link")
-                    elif result.get("status_code") and result["status_code"] >= 500:
-                        issues.append(f"Server error ({result['status_code']}): {url[:100]}...")
-                        suggestions.append("The server returned an error, the link may be temporarily broken")
-                    else:
-                        issues.append(f"Invalid URL: {url[:100]}... - {result['error']}")
-                        suggestions.append("Verify and correct this URL")
-
-            elif result.get("redirect_url"):
-                # Only flag significant redirects (different domain or path)
-                original_parsed = urlparse(url)
-                redirect_parsed = urlparse(result["redirect_url"])
-
-                if (original_parsed.netloc != redirect_parsed.netloc or
-                    original_parsed.path != redirect_parsed.path):
-                    issues.append(f"URL redirects: {url[:50]}... → {result['redirect_url'][:50]}...")
-                    suggestions.append(f"Update to use the final URL: {result['redirect_url']}")
+            issue, suggestion = self._process_result(result)
+            if issue:
+                issues.append(issue)
+                suggestions.append(suggestion)
 
         return issues, suggestions
+
+    def _process_result(self, result: dict[str, Any]) -> tuple[str | None, str | None]:
+        """Process a single verification result."""
+        url = result["url"]
+        context = result.get("context", "")
+
+        if result.get("suspicious"):
+            return self._handle_suspicious_url(url, result)
+
+        if result.get("bot_blocked"):
+            return self._handle_bot_blocked_url(url, result)
+
+        if not result["valid"]:
+            return self._handle_invalid_url(url, context, result)
+
+        if result.get("redirect_url"):
+            return self._handle_redirect(url, result)
+
+        return None, None
+
+    def _handle_suspicious_url(self, url: str, result: dict) -> tuple[str, str]:
+        """Handle suspicious URL."""
+        issue = f"Suspicious URL pattern: {url[:100]}..."
+        suggestion = f"Verify this URL is correct: {result.get('error', 'Pattern match')}"
+        return issue, suggestion
+
+    def _handle_bot_blocked_url(self, url: str, result: dict) -> tuple[str, str]:
+        """Handle bot-blocked URL."""
+        issue = f"Bot detection: {url[:100]}... - {result['error']}"
+
+        bot_suggestions = {
+            403: "This site blocks automated verification. Manual check recommended, or mark as trusted if you know it's valid",
+            429: "Rate limited by the site. The URL might be valid but needs manual verification",
+        }
+
+        status_code = result.get("status_code")
+        if status_code in bot_suggestions:
+            suggestion = bot_suggestions[status_code]
+        elif "captcha" in result.get("error", "").lower():
+            suggestion = "Site requires CAPTCHA verification. URL likely valid but needs manual check"
+        else:
+            suggestion = "The site has bot protection. Consider manually verifying or whitelisting this domain"
+
+        return issue, suggestion
+
+    def _handle_invalid_url(self, url: str, context: str, result: dict) -> tuple[str, str]:
+        """Handle invalid URL."""
+        error = result.get("error", "")
+        status_code = result.get("status_code")
+
+        error_handlers = {
+            "Connection failed": (
+                f"Unreachable URL: {url[:100]}... ({context})",
+                "Check if the URL is correct or if the site is temporarily down"
+            ),
+            "timeout": (
+                f"URL timeout: {url[:100]}... ({context})",
+                "The URL took too long to respond, verify it's correct"
+            ),
+        }
+
+        # Check error message patterns
+        for pattern, (issue_fmt, suggestion) in error_handlers.items():
+            if pattern in error.lower():
+                return issue_fmt, suggestion
+
+        # Check status codes
+        if status_code == 404:
+            return (
+                f"Broken link (404): {url[:100]}... ({context})",
+                "This page doesn't exist, find the correct URL or remove the link"
+            )
+
+        if status_code and status_code >= 500:
+            return (
+                f"Server error ({status_code}): {url[:100]}...",
+                "The server returned an error, the link may be temporarily broken"
+            )
+
+        # Default case
+        return (
+            f"Invalid URL: {url[:100]}... - {error}",
+            "Verify and correct this URL"
+        )
+
+    def _handle_redirect(self, url: str, result: dict) -> tuple[str | None, str | None]:
+        """Handle URL redirect."""
+        redirect_url = result["redirect_url"]
+
+        # Check if redirect is significant
+        original_parsed = urlparse(url)
+        redirect_parsed = urlparse(redirect_url)
+
+        if (original_parsed.netloc != redirect_parsed.netloc or
+            original_parsed.path != redirect_parsed.path):
+            issue = f"URL redirects: {url[:50]}... → {redirect_url[:50]}..."
+            suggestion = f"Update to use the final URL: {redirect_url}"
+            return issue, suggestion
+
+        return None, None
 
     async def validate(self, content: str, metadata: dict[str, Any]) -> PluginResult:
         """Validate URLs in content"""
@@ -313,7 +408,9 @@ class URLVerifier(ValidatorPlugin):
                 )
 
             # Skip verification in certain modes
-            skip_verification = metadata.get("config", {}).get("skip_verification", False)
+            skip_verification = metadata.get("config", {}).get(
+                "skip_verification", False
+            )
             if skip_verification:
                 return PluginResult(
                     success=True,
@@ -341,7 +438,13 @@ class URLVerifier(ValidatorPlugin):
             # Calculate score
             if total_urls > 0:
                 # Scoring: suspicious URLs are worst, broken are bad, bot-blocked are warnings
-                score = max(0, 100 - (broken_urls * 10) - (suspicious_urls * 20) - (bot_blocked_urls * 3))
+                score = max(
+                    0,
+                    100
+                    - (broken_urls * 10)
+                    - (suspicious_urls * 20)
+                    - (bot_blocked_urls * 3),
+                )
             else:
                 score = 100
 
@@ -359,7 +462,9 @@ class URLVerifier(ValidatorPlugin):
                 else:
                     message = f"All {total_urls} URLs verified successfully"
             elif suspicious_urls > 0:
-                message = f"Found {suspicious_urls} suspicious URL(s) (possibly hallucinated)"
+                message = (
+                    f"Found {suspicious_urls} suspicious URL(s) (possibly hallucinated)"
+                )
             else:
                 message = f"Found {broken_urls} broken link(s) out of {total_urls}"
 
@@ -383,4 +488,3 @@ class URLVerifier(ValidatorPlugin):
                 success=False,
                 message=f"URL verification failed: {e!s}",
             )
-

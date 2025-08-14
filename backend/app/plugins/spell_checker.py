@@ -8,6 +8,14 @@ from typing import Any
 
 from app.plugins.base import PluginResult, ValidatorPlugin
 
+# Try to import spellchecker - it's optional
+try:
+    from spellchecker import SpellChecker as PySpellChecker
+    has_spellchecker = True
+except ImportError:
+    PySpellChecker = None
+    has_spellchecker = False
+
 
 class SpellChecker(ValidatorPlugin):
     """Checks content for spelling errors"""
@@ -17,31 +25,161 @@ class SpellChecker(ValidatorPlugin):
         self._spell_checker = None
         self._technical_terms = {
             # Programming terms
-            "api", "apis", "backend", "frontend", "database", "sql", "nosql",
-            "json", "xml", "yaml", "html", "css", "javascript", "typescript",
-            "python", "java", "cpp", "csharp", "golang", "rust", "kotlin",
-            "docker", "kubernetes", "microservices", "serverless", "webhook",
-            "async", "await", "callback", "promise", "observable", "middleware",
-            "orm", "crud", "rest", "graphql", "grpc", "websocket", "jwt",
-            "oauth", "saml", "ldap", "cors", "csrf", "xss", "redis", "mongodb", "postgresql", "mysql", "elasticsearch",
-            "github", "gitlab", "bitbucket", "git", "svn", "merge", "rebase",
-            "ci", "cd", "devops", "agile", "scrum", "kanban", "jira",
-            "npm", "pip", "maven", "gradle", "webpack", "vite", "babel",
-            "react", "vue", "angular", "svelte", "nextjs", "nuxt", "gatsby",
-            "django", "flask", "fastapi", "express", "nestjs", "spring",
-            "tensorflow", "pytorch", "sklearn", "pandas", "numpy", "scipy",
-            "jupyter", "colab", "anaconda", "conda", "virtualenv", "venv",
+            "api",
+            "apis",
+            "backend",
+            "frontend",
+            "database",
+            "sql",
+            "nosql",
+            "json",
+            "xml",
+            "yaml",
+            "html",
+            "css",
+            "javascript",
+            "typescript",
+            "python",
+            "java",
+            "cpp",
+            "csharp",
+            "golang",
+            "rust",
+            "kotlin",
+            "docker",
+            "kubernetes",
+            "microservices",
+            "serverless",
+            "webhook",
+            "async",
+            "await",
+            "callback",
+            "promise",
+            "observable",
+            "middleware",
+            "orm",
+            "crud",
+            "rest",
+            "graphql",
+            "grpc",
+            "websocket",
+            "jwt",
+            "oauth",
+            "saml",
+            "ldap",
+            "cors",
+            "csrf",
+            "xss",
+            "redis",
+            "mongodb",
+            "postgresql",
+            "mysql",
+            "elasticsearch",
+            "github",
+            "gitlab",
+            "bitbucket",
+            "git",
+            "svn",
+            "merge",
+            "rebase",
+            "ci",
+            "cd",
+            "devops",
+            "agile",
+            "scrum",
+            "kanban",
+            "jira",
+            "npm",
+            "pip",
+            "maven",
+            "gradle",
+            "webpack",
+            "vite",
+            "babel",
+            "react",
+            "vue",
+            "angular",
+            "svelte",
+            "nextjs",
+            "nuxt",
+            "gatsby",
+            "django",
+            "flask",
+            "fastapi",
+            "express",
+            "nestjs",
+            "spring",
+            "tensorflow",
+            "pytorch",
+            "sklearn",
+            "pandas",
+            "numpy",
+            "scipy",
+            "jupyter",
+            "colab",
+            "anaconda",
+            "conda",
+            "virtualenv",
+            "venv",
             # Educational terms
-            "lms", "mooc", "elearning", "pedagogy", "andragogy", "curriculum",
-            "syllabus", "rubric", "assessment", "formative", "summative",
-            "bloom", "taxonomy", "constructivist", "behaviorist", "cognitivist",
-            "scaffolding", "differentiation", "gamification", "microlearning",
-            "asynchronous", "synchronous", "blended", "flipped", "hybrid",
+            "lms",
+            "mooc",
+            "elearning",
+            "pedagogy",
+            "andragogy",
+            "curriculum",
+            "syllabus",
+            "rubric",
+            "assessment",
+            "formative",
+            "summative",
+            "bloom",
+            "taxonomy",
+            "constructivist",
+            "behaviorist",
+            "cognitivist",
+            "scaffolding",
+            "differentiation",
+            "gamification",
+            "microlearning",
+            "asynchronous",
+            "synchronous",
+            "blended",
+            "flipped",
+            "hybrid",
             # Common tech abbreviations
-            "http", "https", "url", "uri", "cdn", "dns", "ssl", "tls",
-            "cpu", "gpu", "ram", "ssd", "hdd", "lan", "wan", "vpn",
-            "ui", "ux", "gui", "cli", "ide", "sdk", "saas", "paas",
-            "iaas", "aws", "gcp", "azure", "ec2", "s3", "lambda", "rds",
+            "http",
+            "https",
+            "url",
+            "uri",
+            "cdn",
+            "dns",
+            "ssl",
+            "tls",
+            "cpu",
+            "gpu",
+            "ram",
+            "ssd",
+            "hdd",
+            "lan",
+            "wan",
+            "vpn",
+            "ui",
+            "ux",
+            "gui",
+            "cli",
+            "ide",
+            "sdk",
+            "saas",
+            "paas",
+            "iaas",
+            "aws",
+            "gcp",
+            "azure",
+            "ec2",
+            "s3",
+            "lambda",
+            "rds",
         }
 
     @property
@@ -55,12 +193,11 @@ class SpellChecker(ValidatorPlugin):
     def _get_spell_checker(self):
         """Lazy load spell checker"""
         if self._spell_checker is None:
-            try:
-                from spellchecker import SpellChecker as PySpellChecker
+            if has_spellchecker and PySpellChecker:
                 self._spell_checker = PySpellChecker()
                 # Add technical terms to dictionary
                 self._spell_checker.word_frequency.load_words(self._technical_terms)
-            except ImportError:
+            else:
                 # Fallback to basic checking if pyspellchecker not available
                 self._spell_checker = "basic"
         return self._spell_checker
@@ -76,15 +213,15 @@ class SpellChecker(ValidatorPlugin):
         content = re.sub(r"www\.[^\s]+", "", content)
 
         # Remove email addresses
-        content = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", content)
+        content = re.sub(
+            r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "", content
+        )
 
         # Remove markdown formatting
         content = re.sub(r"[#*_\[\]()]", " ", content)
 
         # Extract words (letters only, no numbers or special chars)
-        words = re.findall(r"\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b", content)
-
-        return words
+        return re.findall(r"\b[a-zA-Z]+(?:'[a-zA-Z]+)?\b", content)
 
     def _basic_spell_check(self, words: list[str]) -> tuple[list[str], list[str]]:
         """Basic spell checking without external library"""
@@ -183,11 +320,15 @@ class SpellChecker(ValidatorPlugin):
 
             if word_lower in common_errors:
                 issues.append(f"Misspelled word: '{word}'")
-                suggestions.append(f"Replace '{word}' with '{common_errors[word_lower]}'")
+                suggestions.append(
+                    f"Replace '{word}' with '{common_errors[word_lower]}'"
+                )
 
         return issues[:20], suggestions[:20]  # Limit to 20
 
-    def _advanced_spell_check(self, words: list[str], spell_checker) -> tuple[list[str], list[str]]:
+    def _advanced_spell_check(
+        self, words: list[str], spell_checker
+    ) -> tuple[list[str], list[str]]:
         """Advanced spell checking using pyspellchecker"""
         issues = []
         suggestions = []
@@ -196,14 +337,15 @@ class SpellChecker(ValidatorPlugin):
         words_to_check = []
         for word in words:
             word_lower = word.lower()
-            # Skip if it's a known technical term
-            if word_lower not in self._technical_terms:
-                # Skip very short words (likely abbreviations)
-                if len(word) > 2:
-                    # Skip words with mixed case in middle (likely camelCase)
-                    if not (word[0].isupper() and word[1:].islower()) and not word.islower():
-                        continue
-                    words_to_check.append(word)
+            # Skip if it's a known technical term or very short word (likely abbreviations)
+            if word_lower not in self._technical_terms and len(word) > 2:
+                # Skip words with mixed case in middle (likely camelCase)
+                if (
+                    not (word[0].isupper() and word[1:].islower())
+                    and not word.islower()
+                ):
+                    continue
+                words_to_check.append(word)
 
         # Find misspelled words
         misspelled = spell_checker.unknown(words_to_check)
@@ -219,7 +361,9 @@ class SpellChecker(ValidatorPlugin):
                     if len(corrections) == 1:
                         suggestions.append(f"Did you mean '{corrections[0]}'?")
                     else:
-                        suggestions.append(f"Did you mean one of: {', '.join(corrections)}?")
+                        suggestions.append(
+                            f"Did you mean one of: {', '.join(corrections)}?"
+                        )
 
         return issues[:20], suggestions[:20]  # Limit to 20
 
@@ -246,7 +390,7 @@ class SpellChecker(ValidatorPlugin):
                 issues, suggestions = self._advanced_spell_check(words, spell_checker)
 
             # Calculate score
-            error_rate = len(issues) / max(len(set(w.lower() for w in words)), 1)
+            error_rate = len(issues) / max(len({w.lower() for w in words}), 1)
             score = max(0, 100 - (error_rate * 500))  # 5 points per 1% error rate
 
             # Determine pass/fail
@@ -255,7 +399,9 @@ class SpellChecker(ValidatorPlugin):
 
             if passed:
                 if issues:
-                    message = f"Spell check passed with minor issues (score: {score:.0f})"
+                    message = (
+                        f"Spell check passed with minor issues (score: {score:.0f})"
+                    )
                 else:
                     message = "No spelling errors detected"
             else:
@@ -267,11 +413,13 @@ class SpellChecker(ValidatorPlugin):
                 data={
                     "score": round(score, 2),
                     "word_count": len(words),
-                    "unique_words": len(set(w.lower() for w in words)),
+                    "unique_words": len({w.lower() for w in words}),
                     "error_count": len(issues),
                     "error_rate": round(error_rate * 100, 2),
                     "issues": issues,
-                    "spell_checker": "pyspellchecker" if spell_checker != "basic" else "basic",
+                    "spell_checker": "pyspellchecker"
+                    if spell_checker != "basic"
+                    else "basic",
                 },
                 suggestions=suggestions if suggestions else None,
             )
@@ -281,4 +429,3 @@ class SpellChecker(ValidatorPlugin):
                 success=False,
                 message=f"Spell check failed: {e!s}",
             )
-

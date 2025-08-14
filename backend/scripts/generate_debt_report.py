@@ -40,7 +40,7 @@ class DebtScanner:
     def _scan_file(self, filepath: Path):
         """Scan a single file for debt markers"""
         try:
-            with open(filepath, encoding="utf-8") as f:
+            with filepath.open(encoding="utf-8") as f:
                 lines = f.readlines()
 
             for i, line in enumerate(lines, 1):
@@ -92,13 +92,13 @@ class DebtScanner:
         except Exception as e:
             print(f"Error scanning {filepath}: {e}")
 
-    def generate_report(self, format: str = "markdown") -> str:
+    def generate_report(self, output_format: str = "markdown") -> str:
         """Generate report in specified format"""
-        if format == "markdown":
+        if output_format == "markdown":
             return self._generate_markdown_report()
-        if format == "json":
+        if output_format == "json":
             return json.dumps(self.results, indent=2)
-        raise ValueError(f"Unknown format: {format}")
+        raise ValueError(f"Unknown format: {output_format}")
 
     def _generate_markdown_report(self) -> str:
         """Generate markdown report"""
@@ -168,7 +168,7 @@ def main():
     print(scanner.generate_report("markdown"))
 
     # Save JSON for further processing
-    with open("technical_debt.json", "w") as f:
+    with Path("technical_debt.json").open("w") as f:
         f.write(scanner.generate_report("json"))
 
     print("\n📊 Full report saved to technical_debt.json")

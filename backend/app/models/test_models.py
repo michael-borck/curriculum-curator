@@ -35,12 +35,12 @@ def test_db():
     # Use in-memory SQLite for tests
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
-    
+
     test_session_local = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = test_session_local()
-    
+
     yield session
-    
+
     session.close()
     engine.dispose()
 
@@ -88,7 +88,7 @@ def test_course(test_db: Session, test_user: User):
 
 class TestUserModel:
     """Test User model functionality"""
-    
+
     def test_create_user(self, test_db: Session):
         """Test creating a user"""
         user = User(
@@ -99,20 +99,22 @@ class TestUserModel:
         )
         test_db.add(user)
         test_db.commit()
-        
+
         assert user.id is not None
         assert user.email == "newuser@example.com"
         assert user.teaching_philosophy == TeachingPhilosophy.MIXED_APPROACH.value
         assert user.language_preference == "en-AU"
-    
-    def test_user_relationships(self, test_db: Session, test_user: User, test_course: Course):
+
+    def test_user_relationships(
+        self, test_db: Session, test_user: User, test_course: Course
+    ):
         """Test user-course relationship"""
         # Refresh to load relationships
         test_db.refresh(test_user)
-        
+
         assert len(test_user.courses) == 1
         assert test_user.courses[0].id == test_course.id
-    
+
     def test_user_role_properties(self, test_user: User):
         """Test role checking properties"""
         assert test_user.is_lecturer is True
@@ -122,7 +124,7 @@ class TestUserModel:
 
 class TestCourseModel:
     """Test Course model functionality"""
-    
+
     def test_create_course(self, test_db: Session, test_user: User):
         """Test creating a course"""
         course = Course(
@@ -134,11 +136,11 @@ class TestCourseModel:
         )
         test_db.add(course)
         test_db.commit()
-        
+
         assert course.id is not None
         assert course.status == CourseStatus.PLANNING.value
         assert course.is_active is False
-    
+
     def test_course_modules(self, test_db: Session, test_course: Course):
         """Test course-module relationship"""
         module1 = CourseModule(
@@ -156,16 +158,16 @@ class TestCourseModel:
         test_db.add_all([module1, module2])
         test_db.commit()
         test_db.refresh(test_course)
-        
+
         assert len(test_course.modules) == 2
         assert test_course.modules[0].is_flipped is True
         assert test_course.modules[1].is_flipped is False
-    
+
     def test_course_progress(self, test_db: Session, test_course: Course):
         """Test course progress calculation"""
         # No modules yet
         assert test_course.progress_percentage == 0.0
-        
+
         # Add modules
         module1 = CourseModule(
             course_id=test_course.id,
@@ -182,13 +184,13 @@ class TestCourseModel:
         test_db.add_all([module1, module2])
         test_db.commit()
         test_db.refresh(test_course)
-        
+
         assert test_course.progress_percentage == 50.0
 
 
 class TestLRDModel:
     """Test LRD model functionality"""
-    
+
     def test_create_lrd(self, test_db: Session, test_course: Course):
         """Test creating an LRD"""
         lrd = LRD(
@@ -207,11 +209,11 @@ class TestLRDModel:
         )
         test_db.add(lrd)
         test_db.commit()
-        
+
         assert lrd.id is not None
         assert lrd.status == LRDStatus.DRAFT.value
         assert "objectives" in lrd.content
-    
+
     def test_lrd_task_list_relationship(self, test_db: Session, test_course: Course):
         """Test LRD-TaskList relationship"""
         lrd = LRD(
@@ -222,7 +224,7 @@ class TestLRDModel:
         )
         test_db.add(lrd)
         test_db.commit()
-        
+
         task_list = TaskList(
             lrd_id=lrd.id,
             course_id=test_course.id,
@@ -237,14 +239,14 @@ class TestLRDModel:
         test_db.add(task_list)
         test_db.commit()
         test_db.refresh(lrd)
-        
+
         assert len(lrd.task_lists) == 1
         assert lrd.task_lists[0].progress_percentage == 0.0
 
 
 class TestMaterialModel:
     """Test Material model functionality"""
-    
+
     def test_create_material(self, test_db: Session, test_course: Course):
         """Test creating course material"""
         material = Material(
@@ -257,11 +259,11 @@ class TestMaterialModel:
         )
         test_db.add(material)
         test_db.commit()
-        
+
         assert material.id is not None
         assert material.version == 1
         assert material.is_latest is True
-    
+
     def test_material_versioning(self, test_db: Session, test_course: Course):
         """Test material version tracking"""
         # Create original
@@ -274,7 +276,7 @@ class TestMaterialModel:
         )
         test_db.add(v1)
         test_db.commit()
-        
+
         # Create new version
         v2 = Material(
             course_id=test_course.id,
@@ -287,10 +289,10 @@ class TestMaterialModel:
         v1.is_latest = False  # Mark v1 as not latest
         test_db.add(v2)
         test_db.commit()
-        
+
         test_db.refresh(v1)
         test_db.refresh(v2)
-        
+
         assert v1.is_latest is False
         assert v2.is_latest is True
         assert v2.parent_version_id == v1.id
@@ -299,7 +301,7 @@ class TestMaterialModel:
 
 class TestConversationModel:
     """Test Conversation model functionality"""
-    
+
     def test_create_conversation(self, test_db: Session, test_course: Course):
         """Test creating a conversation history"""
         session_id = uuid.uuid4()
@@ -313,7 +315,7 @@ class TestConversationModel:
         )
         test_db.add(conversation)
         test_db.commit()
-        
+
         assert conversation.id is not None
         assert len(conversation.messages) == 2
         assert conversation.session_id == session_id
@@ -321,7 +323,7 @@ class TestConversationModel:
 
 class TestTaskListModel:
     """Test TaskList model functionality"""
-    
+
     def test_create_task_list(self, test_db: Session, test_course: Course):
         """Test creating a task list"""
         task_list = TaskList(
@@ -338,10 +340,10 @@ class TestTaskListModel:
         )
         test_db.add(task_list)
         test_db.commit()
-        
+
         assert task_list.id is not None
         assert task_list.progress_percentage == 0.0
-    
+
     def test_task_list_progress(self, test_db: Session, test_course: Course):
         """Test task list progress tracking"""
         task_list = TaskList(
@@ -352,22 +354,22 @@ class TestTaskListModel:
         )
         test_db.add(task_list)
         test_db.commit()
-        
+
         assert task_list.progress_percentage == 75.0
-        
+
         # Complete all tasks
         task_list.completed_tasks = 4
         task_list.status = TaskStatus.COMPLETE.value
         task_list.completed_at = datetime.utcnow()
         test_db.commit()
-        
+
         assert task_list.progress_percentage == 100.0
         assert task_list.completed_at is not None
 
 
 class TestModelRelationships:
     """Test complex relationships between models"""
-    
+
     def test_full_course_structure(self, test_db: Session, test_user: User):
         """Test creating a complete course structure"""
         # Create course
@@ -379,7 +381,7 @@ class TestModelRelationships:
         )
         test_db.add(course)
         test_db.commit()
-        
+
         # Add LRD
         lrd = LRD(
             course_id=course.id,
@@ -388,7 +390,7 @@ class TestModelRelationships:
             content={"topic": "Full course"},
         )
         test_db.add(lrd)
-        
+
         # Add modules
         module = CourseModule(
             course_id=course.id,
@@ -397,7 +399,7 @@ class TestModelRelationships:
         )
         test_db.add(module)
         test_db.commit()
-        
+
         # Add material to module
         material = Material(
             course_id=course.id,
@@ -407,7 +409,7 @@ class TestModelRelationships:
             content={"content": "Lecture content"},
         )
         test_db.add(material)
-        
+
         # Add conversation
         conversation = Conversation(
             course_id=course.id,
@@ -416,7 +418,7 @@ class TestModelRelationships:
             messages=[{"role": "system", "content": "Starting conversation"}],
         )
         test_db.add(conversation)
-        
+
         # Add task list
         task_list = TaskList(
             course_id=course.id,
@@ -425,10 +427,10 @@ class TestModelRelationships:
             total_tasks=1,
         )
         test_db.add(task_list)
-        
+
         test_db.commit()
         test_db.refresh(course)
-        
+
         # Verify all relationships
         assert len(course.modules) == 1
         assert len(course.lrds) == 1

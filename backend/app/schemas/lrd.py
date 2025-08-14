@@ -22,8 +22,12 @@ class LRDStatus(str, Enum):
 class LRDTargetAudience(BaseModel):
     """Target audience information"""
 
-    level: str = Field(..., description="Skill level (Beginner, Intermediate, Advanced)")
-    prerequisites: list[str] = Field(default_factory=list, description="Required prerequisites")
+    level: str = Field(
+        ..., description="Skill level (Beginner, Intermediate, Advanced)"
+    )
+    prerequisites: list[str] = Field(
+        default_factory=list, description="Required prerequisites"
+    )
     class_size: int = Field(30, description="Expected class size")
     age_group: str | None = Field(None, description="Target age group")
 
@@ -47,7 +51,9 @@ class LRDAssessment(BaseModel):
     summative: list[dict[str, Any]] = Field(
         default_factory=list, description="Summative assessment methods"
     )
-    weighting: dict[str, float] | None = Field(None, description="Assessment weightings")
+    weighting: dict[str, float] | None = Field(
+        None, description="Assessment weightings"
+    )
 
 
 class LRDContent(BaseModel):
@@ -59,7 +65,9 @@ class LRDContent(BaseModel):
     target_audience: LRDTargetAudience
     structure: LRDStructure
     assessment: LRDAssessment
-    modules: list[dict[str, Any]] = Field(default_factory=list, description="Course modules")
+    modules: list[dict[str, Any]] = Field(
+        default_factory=list, description="Course modules"
+    )
     resources: list[str] = Field(default_factory=list, description="Required resources")
     teaching_philosophy: str = Field(..., description="Teaching philosophy to apply")
     success_criteria: list[str] = Field(

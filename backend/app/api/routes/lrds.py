@@ -89,7 +89,9 @@ async def get_lrd(
     User must own the associated course or be an admin.
     """
     # Get LRD with ownership check
-    query = db.query(LRD).join(Course, LRD.course_id == Course.id).filter(LRD.id == lrd_id)
+    query = (
+        db.query(LRD).join(Course, LRD.course_id == Course.id).filter(LRD.id == lrd_id)
+    )
 
     if current_user.role != UserRole.ADMIN.value:
         query = query.filter(Course.user_id == current_user.id)
@@ -273,7 +275,10 @@ async def approve_lrd(
     # Validate status transition
     valid_transitions = {
         LRDStatus.DRAFT.value: [LRDStatus.PENDING_REVIEW.value],
-        LRDStatus.PENDING_REVIEW.value: [LRDStatus.APPROVED.value, LRDStatus.REJECTED.value],
+        LRDStatus.PENDING_REVIEW.value: [
+            LRDStatus.APPROVED.value,
+            LRDStatus.REJECTED.value,
+        ],
         LRDStatus.REJECTED.value: [LRDStatus.DRAFT.value],
     }
 
@@ -390,9 +395,21 @@ async def generate_tasks_from_lrd(
         else:
             module_tasks["subtasks"].extend(
                 [
-                    {"id": f"{task_id}.1", "title": "Create lecture content", "completed": False},
-                    {"id": f"{task_id}.2", "title": "Prepare examples", "completed": False},
-                    {"id": f"{task_id}.3", "title": "Design exercises", "completed": False},
+                    {
+                        "id": f"{task_id}.1",
+                        "title": "Create lecture content",
+                        "completed": False,
+                    },
+                    {
+                        "id": f"{task_id}.2",
+                        "title": "Prepare examples",
+                        "completed": False,
+                    },
+                    {
+                        "id": f"{task_id}.3",
+                        "title": "Design exercises",
+                        "completed": False,
+                    },
                 ]
             )
 
@@ -429,9 +446,21 @@ async def generate_tasks_from_lrd(
             "title": "Additional resources",
             "status": "pending",
             "subtasks": [
-                {"id": f"{task_id}.1", "title": "Create supplementary materials", "completed": False},
-                {"id": f"{task_id}.2", "title": "Develop practice problems", "completed": False},
-                {"id": f"{task_id}.3", "title": "Record tutorial videos", "completed": False},
+                {
+                    "id": f"{task_id}.1",
+                    "title": "Create supplementary materials",
+                    "completed": False,
+                },
+                {
+                    "id": f"{task_id}.2",
+                    "title": "Develop practice problems",
+                    "completed": False,
+                },
+                {
+                    "id": f"{task_id}.3",
+                    "title": "Record tutorial videos",
+                    "completed": False,
+                },
             ],
         }
         parent_tasks.append(optional_tasks)

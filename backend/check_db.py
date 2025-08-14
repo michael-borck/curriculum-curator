@@ -44,7 +44,9 @@ def check_db():
             modules = db.query(CourseModule).filter_by(course_id=course.id).count()
             materials = db.query(Material).filter_by(course_id=course.id).count()
             print(f"  - {course.code}: {course.title}")
-            print(f"    Status: {course.status}, Modules: {modules}, Materials: {materials}")
+            print(
+                f"    Status: {course.status}, Modules: {modules}, Materials: {materials}"
+            )
             print(f"    Owner: {course.user.name}")
             print(f"    Teaching Philosophy: {course.teaching_philosophy}")
 
@@ -53,7 +55,9 @@ def check_db():
         print(f"\n📋 LRDs ({len(lrds)} total):")
         for lrd in lrds:
             course = db.query(Course).filter_by(id=lrd.course_id).first()
-            print(f"  - Version {lrd.version} for {course.code if course else 'Unknown'}")
+            print(
+                f"  - Version {lrd.version} for {course.code if course else 'Unknown'}"
+            )
             print(f"    Status: {lrd.status}")
 
         # Check materials
@@ -79,8 +83,12 @@ def check_db():
         for task_list in task_lists:
             course = db.query(Course).filter_by(id=task_list.course_id).first()
             progress = task_list.progress_percentage
-            print(f"  - {course.code if course else 'Unknown'}: {progress:.0f}% complete")
-            print(f"    Status: {task_list.status}, Tasks: {task_list.completed_tasks}/{task_list.total_tasks}")
+            print(
+                f"  - {course.code if course else 'Unknown'}: {progress:.0f}% complete"
+            )
+            print(
+                f"    Status: {task_list.status}, Tasks: {task_list.completed_tasks}/{task_list.total_tasks}"
+            )
 
         print("\n" + "=" * 50)
         print("✅ Database check complete")

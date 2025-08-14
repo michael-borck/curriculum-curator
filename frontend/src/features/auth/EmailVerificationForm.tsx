@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
   Loader2,
@@ -44,6 +44,7 @@ const EmailVerificationForm = ({
       );
       return () => window.clearTimeout(timer);
     }
+    return undefined;
   }, [resendCooldown]);
 
   const handleCodeChange = (index: number, value: string) => {
@@ -137,7 +138,7 @@ const EmailVerificationForm = ({
           onSuccess();
         }, 1500);
       }
-    } catch {
+    } catch (error: any) {
       if (error.response?.status === 400) {
         setError('Invalid or expired verification code');
       } else if (error.response?.data?.detail) {

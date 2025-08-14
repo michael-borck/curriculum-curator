@@ -59,7 +59,9 @@ class AccessibilityValidator(ValidatorPlugin):
 
         if not headings:
             issues.append("No headings found in content")
-            suggestions.append("Add headings to structure your content (use # for main heading)")
+            suggestions.append(
+                "Add headings to structure your content (use # for main heading)"
+            )
             return issues, suggestions
 
         # Check heading levels
@@ -72,12 +74,12 @@ class AccessibilityValidator(ValidatorPlugin):
 
         # Check for skipped levels
         for i in range(1, len(levels)):
-            if levels[i] - levels[i-1] > 1:
+            if levels[i] - levels[i - 1] > 1:
                 issues.append(
-                    f"Heading level skip: H{levels[i-1]} followed by H{levels[i]}"
+                    f"Heading level skip: H{levels[i - 1]} followed by H{levels[i]}"
                 )
                 suggestions.append(
-                    f"Use sequential heading levels (H{levels[i-1]} → H{levels[i-1]+1})"
+                    f"Use sequential heading levels (H{levels[i - 1]} → H{levels[i - 1] + 1})"
                 )
 
         # Check for multiple H1s
@@ -87,10 +89,12 @@ class AccessibilityValidator(ValidatorPlugin):
             suggestions.append("Use only one H1 (main heading) per document")
 
         # Check heading text
-        for level, text in headings:
+        for _level, text in headings:
             if len(text) > 100:
                 issues.append(f"Heading too long: '{text[:50]}...'")
-                suggestions.append(f"Shorten heading to under 100 characters: '{text[:50]}...'")
+                suggestions.append(
+                    f"Shorten heading to under 100 characters: '{text[:50]}...'"
+                )
             if text.isupper():
                 issues.append(f"Heading in all caps: '{text}'")
                 suggestions.append(f"Use sentence case instead of all caps: '{text}'")
@@ -109,7 +113,9 @@ class AccessibilityValidator(ValidatorPlugin):
         for text, url in links:
             if not text.strip():
                 issues.append(f"Link to '{url}' has no text")
-                suggestions.append(f"Add descriptive link text: [descriptive text]({url})")
+                suggestions.append(
+                    f"Add descriptive link text: [descriptive text]({url})"
+                )
             elif text.lower() in ["click here", "here", "link", "read more"]:
                 issues.append(f"Link has non-descriptive text: '{text}'")
                 suggestions.append(
@@ -140,8 +146,10 @@ class AccessibilityValidator(ValidatorPlugin):
                     in_list = True
                     list_indent = current_indent
                 elif abs(current_indent - list_indent) % 2 != 0:
-                    issues.append(f"Inconsistent list indentation at line {i+1}")
-                    suggestions.append("Use consistent indentation (2 or 4 spaces) for list items")
+                    issues.append(f"Inconsistent list indentation at line {i + 1}")
+                    suggestions.append(
+                        "Use consistent indentation (2 or 4 spaces) for list items"
+                    )
             else:
                 in_list = False
 
@@ -153,8 +161,18 @@ class AccessibilityValidator(ValidatorPlugin):
         suggestions = []
 
         color_words = [
-            "red", "green", "blue", "yellow", "orange", "purple", "pink",
-            "brown", "gray", "grey", "black", "white"
+            "red",
+            "green",
+            "blue",
+            "yellow",
+            "orange",
+            "purple",
+            "pink",
+            "brown",
+            "gray",
+            "grey",
+            "black",
+            "white",
         ]
 
         color_pattern = r"\b(" + "|".join(color_words) + r")\b"
@@ -187,13 +205,19 @@ class AccessibilityValidator(ValidatorPlugin):
             table_lines = [i for i, line in enumerate(lines) if "|" in line]
 
             for i in range(len(table_lines) - 1):
-                if table_lines[i+1] == table_lines[i] + 1:
-                    header_line = lines[table_lines[i]]
-                    separator_line = lines[table_lines[i+1]] if table_lines[i+1] < len(lines) else ""
+                if table_lines[i + 1] == table_lines[i] + 1:
+                    lines[table_lines[i]]
+                    separator_line = (
+                        lines[table_lines[i + 1]]
+                        if table_lines[i + 1] < len(lines)
+                        else ""
+                    )
 
                     if not re.match(r"^\|?\s*:?-+:?\s*\|", separator_line):
                         issues.append("Table may be missing header row")
-                        suggestions.append("Ensure tables have header rows with |---|---| separator")
+                        suggestions.append(
+                            "Ensure tables have header rows with |---|---| separator"
+                        )
 
         return issues, suggestions
 
@@ -249,7 +273,9 @@ class AccessibilityValidator(ValidatorPlugin):
 
             if len(all_issues) > 10:
                 severity = "critical"
-                message = f"Critical accessibility issues found ({len(all_issues)} issues)"
+                message = (
+                    f"Critical accessibility issues found ({len(all_issues)} issues)"
+                )
             elif len(all_issues) > 5:
                 severity = "major"
                 message = f"Major accessibility issues found ({len(all_issues)} issues)"
@@ -266,7 +292,9 @@ class AccessibilityValidator(ValidatorPlugin):
                     "score": score,
                     "issue_count": len(all_issues),
                     "severity": severity,
-                    "issues": all_issues[:10] if all_issues else [],  # Limit to first 10
+                    "issues": all_issues[:10]
+                    if all_issues
+                    else [],  # Limit to first 10
                     "checks_performed": [
                         "images_alt_text",
                         "heading_structure",
@@ -277,7 +305,9 @@ class AccessibilityValidator(ValidatorPlugin):
                         "language_complexity",
                     ],
                 },
-                suggestions=all_suggestions[:10] if all_suggestions else None,  # Limit to first 10
+                suggestions=all_suggestions[:10]
+                if all_suggestions
+                else None,  # Limit to first 10
             )
 
         except Exception as e:

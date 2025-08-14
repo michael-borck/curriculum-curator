@@ -19,7 +19,9 @@ class ValidateContentRequest(BaseModel):
     """Request for content validation"""
 
     content: str = Field(..., description="Content to validate")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+    metadata: dict[str, Any] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
     validators: list[str] | None = Field(None, description="Specific validators to run")
 
 
@@ -28,7 +30,9 @@ class RemediateContentRequest(BaseModel):
 
     content: str = Field(..., description="Content to remediate")
     issues: list[dict[str, Any]] = Field(..., description="Issues to remediate")
-    remediators: list[str] | None = Field(None, description="Specific remediators to run")
+    remediators: list[str] | None = Field(
+        None, description="Specific remediators to run"
+    )
 
 
 class PluginConfigRequest(BaseModel):
@@ -37,7 +41,9 @@ class PluginConfigRequest(BaseModel):
     name: str = Field(..., description="Plugin name")
     enabled: bool = Field(True, description="Whether plugin is enabled")
     priority: int = Field(0, description="Plugin priority (higher runs first)")
-    config: dict[str, Any] = Field(default_factory=dict, description="Plugin-specific config")
+    config: dict[str, Any] = Field(
+        default_factory=dict, description="Plugin-specific config"
+    )
 
 
 class ValidateMaterialRequest(BaseModel):
@@ -51,8 +57,12 @@ class RemediateMaterialRequest(BaseModel):
     """Request to remediate a material"""
 
     material_id: str = Field(..., description="Material ID to remediate")
-    apply_changes: bool = Field(False, description="Whether to apply changes to material")
-    remediators: list[str] | None = Field(None, description="Specific remediators to run")
+    apply_changes: bool = Field(
+        False, description="Whether to apply changes to material"
+    )
+    remediators: list[str] | None = Field(
+        None, description="Specific remediators to run"
+    )
 
 
 @router.get("/validators")
@@ -235,11 +245,7 @@ async def validate_material(
     Validate a material using plugins
     """
     # Get material with access check
-    material = (
-        db.query(Material)
-        .filter(Material.id == request.material_id)
-        .first()
-    )
+    material = db.query(Material).filter(Material.id == request.material_id).first()
 
     if not material:
         raise HTTPException(
@@ -252,10 +258,9 @@ async def validate_material(
 
     # Prepare content
     content = material.raw_content or ""
-    if not content and material.content:
+    if not content and material.content and isinstance(material.content, dict):
         # Try to extract text from structured content
-        if isinstance(material.content, dict):
-            content = material.content.get("body", "")
+        content = material.content.get("body", "")
 
     if not content:
         return {
@@ -290,7 +295,9 @@ async def validate_material(
             elif "flesch_reading_ease" in result.data:
                 quality_scores[name] = result.data["flesch_reading_ease"]
 
-    avg_score = sum(quality_scores.values()) / len(quality_scores) if quality_scores else 0
+    avg_score = (
+        sum(quality_scores.values()) / len(quality_scores) if quality_scores else 0
+    )
 
     return {
         "material_id": request.material_id,
@@ -320,11 +327,7 @@ async def remediate_material(
     Remediate a material using plugins
     """
     # Get material with access check
-    material = (
-        db.query(Material)
-        .filter(Material.id == request.material_id)
-        .first()
-    )
+    material = db.query(Material).filter(Material.id == request.material_id).first()
 
     if not material:
         raise HTTPException(
@@ -334,9 +337,8 @@ async def remediate_material(
 
     # Prepare content
     content = material.raw_content or ""
-    if not content and material.content:
-        if isinstance(material.content, dict):
-            content = material.content.get("body", "")
+    if not content and material.content and isinstance(material.content, dict):
+        content = material.content.get("body", "")
 
     if not content:
         return {
@@ -349,14 +351,12 @@ async def remediate_material(
     validation_results = await plugin_manager.validate_content(content, {}, None)
 
     # Collect all issues
-    all_issues = []
-    for name, result in validation_results.items():
-        if result.data and "issues" in result.data:
-            for issue in result.data["issues"]:
-                all_issues.append({
-                    "source": name,
-                    "issue": issue,
-                })
+    all_issues = [
+        {"source": name, "issue": issue}
+        for name, result in validation_results.items()
+        if result.data and "issues" in result.data
+        for issue in result.data["issues"]
+    ]
 
     # Run remediation
     remediation_results = await plugin_manager.remediate_content(

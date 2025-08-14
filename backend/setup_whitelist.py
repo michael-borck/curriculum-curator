@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Setup email whitelist for testing"""
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.core.database import SessionLocal, init_db
 from app.models import EmailWhitelist
@@ -41,8 +41,8 @@ def add_to_whitelist(email: str):
 
 
 if __name__ == "__main__":
-    # Add specific email (optional)
-    # add_to_whitelist("michael.borck@curtin.edu.au")
+    # To whitelist a specific email, use:
+    #   add_to_whitelist("user@example.com")  # noqa: ERA001
 
     # Add domain - this will whitelist ALL @curtin.edu.au emails
     add_to_whitelist("@curtin.edu.au")

@@ -48,8 +48,10 @@ class PluginManager:
 
         # Get all Python files in the plugins directory
         plugin_files = [
-            f for f in plugin_dir.glob("*.py")
-            if not f.name.startswith("_") and f.name not in ["base.py", "plugin_manager.py"]
+            f
+            for f in plugin_dir.glob("*.py")
+            if not f.name.startswith("_")
+            and f.name not in ["base.py", "plugin_manager.py"]
         ]
 
         for plugin_file in plugin_files:
@@ -59,7 +61,7 @@ class PluginManager:
                 module = importlib.import_module(module_name)
 
                 # Find all classes in the module
-                for name, obj in inspect.getmembers(module, inspect.isclass):
+                for _name, obj in inspect.getmembers(module, inspect.isclass):
                     # Check if it's a validator plugin
                     if (
                         issubclass(obj, ValidatorPlugin)
@@ -80,8 +82,8 @@ class PluginManager:
                         self.remediators[instance.name] = instance
                         logger.info(f"Loaded remediator plugin: {instance.name}")
 
-            except Exception as e:
-                logger.error(f"Failed to load plugin from {plugin_file}: {e}")
+            except Exception:
+                logger.exception(f"Failed to load plugin from {plugin_file}")
 
         self._loaded = True
         logger.info(
@@ -122,12 +124,12 @@ class PluginManager:
     ) -> dict[str, PluginResult]:
         """
         Run validation plugins on content
-        
+
         Args:
             content: The content to validate
             metadata: Additional metadata for validation
             validators: List of validator names to run (None = run all enabled)
-        
+
         Returns:
             Dictionary of validator name to result
         """
@@ -141,9 +143,11 @@ class PluginManager:
         validators_to_run = []
         if validators:
             # Run specific validators
-            for name in validators:
-                if name in self.validators and self.is_plugin_enabled(name):
-                    validators_to_run.append((name, self.validators[name]))
+            validators_to_run.extend(
+                (name, self.validators[name])
+                for name in validators
+                if name in self.validators and self.is_plugin_enabled(name)
+            )
         else:
             # Run all enabled validators
             for name, validator in self.validators.items():
@@ -154,7 +158,7 @@ class PluginManager:
         def get_priority(item: tuple[str, ValidatorPlugin]) -> int:
             name = item[0]
             return self.plugin_configs.get(name, PluginConfig(name)).priority
-        
+
         validators_to_run.sort(key=get_priority, reverse=True)
 
         # Run validators
@@ -165,7 +169,7 @@ class PluginManager:
                 result = await validator.validate(content, plugin_metadata)
                 results[name] = result
             except Exception as e:
-                logger.error(f"Error running validator {name}: {e}")
+                logger.exception(f"Error running validator {name}")
                 results[name] = PluginResult(
                     success=False,
                     message=f"Validator error: {e!s}",
@@ -181,12 +185,12 @@ class PluginManager:
     ) -> dict[str, PluginResult]:
         """
         Run remediation plugins on content
-        
+
         Args:
             content: The content to remediate
             issues: List of issues to remediate
             remediators: List of remediator names to run (None = run all enabled)
-        
+
         Returns:
             Dictionary of remediator name to result
         """
@@ -199,9 +203,11 @@ class PluginManager:
         remediators_to_run = []
         if remediators:
             # Run specific remediators
-            for name in remediators:
-                if name in self.remediators and self.is_plugin_enabled(name):
-                    remediators_to_run.append((name, self.remediators[name]))
+            remediators_to_run.extend(
+                (name, self.remediators[name])
+                for name in remediators
+                if name in self.remediators and self.is_plugin_enabled(name)
+            )
         else:
             # Run all enabled remediators
             for name, remediator in self.remediators.items():
@@ -212,7 +218,7 @@ class PluginManager:
         def get_priority(item: tuple[str, RemediatorPlugin]) -> int:
             name = item[0]
             return self.plugin_configs.get(name, PluginConfig(name)).priority
-        
+
         remediators_to_run.sort(key=get_priority, reverse=True)
 
         # Run remediators
@@ -226,7 +232,7 @@ class PluginManager:
                 if result.success and result.data and "content" in result.data:
                     current_content = result.data["content"]
             except Exception as e:
-                logger.error(f"Error running remediator {name}: {e}")
+                logger.exception(f"Error running remediator {name}")
                 results[name] = PluginResult(
                     success=False,
                     message=f"Remediator error: {e!s}",
