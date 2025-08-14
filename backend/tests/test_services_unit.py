@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 
 # Import plugin classes at module level
-from app.plugins.base import BaseValidator, BaseRemediator
+from app.plugins.base import ValidatorPlugin, RemediatorPlugin
 from app.plugins.plugin_manager import PluginManager
 
 # Set test environment
@@ -193,8 +193,8 @@ class TestPluginBasics:
 
     def test_plugin_imports(self):
         """Test that plugins can be imported"""
-        assert BaseValidator is not None
-        assert BaseRemediator is not None
+        assert ValidatorPlugin is not None
+        assert RemediatorPlugin is not None
 
     def test_plugin_manager_import(self):
         """Test plugin manager can be imported"""

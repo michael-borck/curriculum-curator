@@ -60,30 +60,49 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 # Rate limiting decorators for different endpoint types
 class RateLimits:
     """Predefined rate limits for different endpoint types"""
+    
+    # Check if rate limiting is disabled for testing
+    if settings.DISABLE_RATE_LIMIT or settings.TESTING:
+        # Set very high limits when testing
+        LOGIN = "10000/minute"
+        REGISTER = "10000/minute"
+        VERIFY_EMAIL = "10000/minute"
+        RESEND_VERIFICATION = "10000/minute"
+        FORGOT_PASSWORD = "10000/minute"
+        RESET_PASSWORD = "10000/minute"
+        DEFAULT = "10000/minute"
+        API_READ = "10000/minute"
+        API_WRITE = "10000/minute"
+        API_DELETE = "10000/minute"
+        CONTENT_GENERATE = "10000/minute"
+        CONTENT_ENHANCE = "10000/minute"
+        FILE_UPLOAD = "10000/minute"
+        ADMIN_ACTIONS = "10000/minute"
+    else:
+        # Production rate limits
+        # Authentication endpoints (more restrictive)
+        LOGIN = "5/minute"  # 5 login attempts per minute
+        REGISTER = "3/minute"  # 3 registrations per minute
+        VERIFY_EMAIL = "10/minute"  # 10 verification attempts per minute
+        RESEND_VERIFICATION = "2/minute"  # 2 resend requests per minute
+        FORGOT_PASSWORD = "3/minute"  # 3 password reset requests per minute
+        RESET_PASSWORD = "5/minute"  # 5 password reset attempts per minute
 
-    # Authentication endpoints (more restrictive)
-    LOGIN = "5/minute"  # 5 login attempts per minute
-    REGISTER = "3/minute"  # 3 registrations per minute
-    VERIFY_EMAIL = "10/minute"  # 10 verification attempts per minute
-    RESEND_VERIFICATION = "2/minute"  # 2 resend requests per minute
-    FORGOT_PASSWORD = "3/minute"  # 3 password reset requests per minute
-    RESET_PASSWORD = "5/minute"  # 5 password reset attempts per minute
+        # General API endpoints (less restrictive)
+        DEFAULT = "60/minute"  # Default rate limit
+        API_READ = "60/minute"  # 60 read operations per minute
+        API_WRITE = "30/minute"  # 30 write operations per minute
+        API_DELETE = "10/minute"  # 10 delete operations per minute
 
-    # General API endpoints (less restrictive)
-    DEFAULT = "60/minute"  # Default rate limit
-    API_READ = "60/minute"  # 60 read operations per minute
-    API_WRITE = "30/minute"  # 30 write operations per minute
-    API_DELETE = "10/minute"  # 10 delete operations per minute
+        # Content generation (LLM endpoints)
+        CONTENT_GENERATE = "10/minute"  # 10 content generations per minute
+        CONTENT_ENHANCE = "15/minute"  # 15 enhancements per minute
 
-    # Content generation (LLM endpoints)
-    CONTENT_GENERATE = "10/minute"  # 10 content generations per minute
-    CONTENT_ENHANCE = "15/minute"  # 15 enhancements per minute
+        # File upload
+        FILE_UPLOAD = "20/minute"  # 20 file uploads per minute
 
-    # File upload
-    FILE_UPLOAD = "20/minute"  # 20 file uploads per minute
-
-    # Administrative endpoints
-    ADMIN_ACTIONS = "100/minute"  # 100 admin actions per minute
+        # Administrative endpoints
+        ADMIN_ACTIONS = "100/minute"  # 100 admin actions per minute
 
 
 def get_user_specific_limiter(request: Request) -> str:
@@ -117,6 +136,10 @@ def should_bypass_rate_limit(request: Request) -> bool:
     Check if request should bypass rate limiting
     For example, internal health checks, admin users, etc.
     """
+    # Check if rate limiting is disabled for testing
+    if settings.DISABLE_RATE_LIMIT or settings.TESTING:
+        return True
+    
     # Allow health check endpoints
     if request.url.path in ["/health", "/", "/docs", "/redoc"]:
         return True

@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "Curriculum Curator"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
+    
+    # Testing
+    TESTING: bool = False
+    DISABLE_RATE_LIMIT: bool = False
 
     # Security
     SECRET_KEY: str
