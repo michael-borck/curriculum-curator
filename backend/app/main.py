@@ -47,6 +47,15 @@ async def lifespan(app: FastAPI):
         git_service = get_git_service()
         logger.info(f"✅ Git repository initialized at {git_service.repo_path}")
 
+        # Initialize configuration service
+        from app.services.config_service import ConfigService  # noqa: PLC0415
+        db = SessionLocal()
+        try:
+            ConfigService.initialize(db)
+            logger.info("✅ Configuration service initialized")
+        finally:
+            db.close()
+
     except Exception as e:
         logger.warning(f"Initialization warning: {e}")
     yield
@@ -115,6 +124,7 @@ app.add_middleware(
 try:
     from app.api.routes import (
         admin,
+        admin_config,
         ai,
         auth,
         content,
@@ -133,6 +143,7 @@ try:
 
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+    app.include_router(admin_config.router, prefix="/api/admin", tags=["admin-config"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(course_modules.router, prefix="/api", tags=["course-modules"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
