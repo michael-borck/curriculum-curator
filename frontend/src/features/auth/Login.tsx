@@ -14,6 +14,8 @@ const Login = ({ onBackToLanding }: LoginProps) => {
   const [error, setError] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   const login = useAuthStore(state => state.login);
   const navigate = useNavigate();
@@ -55,13 +57,23 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       if (error.response?.status === 401) {
         setError('Invalid email or password');
       } else if (error.response?.status === 403) {
-        setError('Please verify your email before logging in');
+        // Check if it's specifically email not verified
+        const detail = error.response?.data?.detail;
+        if (detail && typeof detail === 'object' && detail.error === 'email_not_verified') {
+          // Open verification modal with the email
+          setVerificationEmail(detail.email || email);
+          setShowVerification(true);
+          setError('');
+        } else {
+          setError('Please verify your email before logging in');
+        }
       } else if (error.response?.status === 423) {
         setError(
           'Account is locked due to too many failed attempts. Please try again later.'
         );
       } else if (error.response?.data?.detail) {
-        setError(error.response.data.detail);
+        const detail = error.response.data.detail;
+        setError(typeof detail === 'string' ? detail : detail.message || 'Login failed');
       } else {
         setError('Login failed. Please try again.');
       }
