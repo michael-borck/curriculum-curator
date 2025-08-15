@@ -25,6 +25,7 @@ from app.schemas.material import (
     MaterialVersionHistory,
     QualityMetrics,
 )
+from app.services.git_content_service import get_git_service
 
 router = APIRouter()
 
@@ -36,27 +37,40 @@ def _calculate_completeness_score(material: Material) -> float:
         score += 20
     if material.description:
         score += 20
-    if material.content:
+    if material.content_summary:
         score += 30
-    if material.raw_content and len(material.raw_content) > 100:
-        score += 30
+    # Check if Git content exists and has substance
+    if material.git_path:
+        try:
+            git_service = get_git_service()
+            content = git_service.get_content(material.git_path)
+            if content and len(content) > 100:
+                score += 30
+        except Exception:
+            pass
     return score
 
 
 def _calculate_clarity_score(material: Material) -> float:
     """Calculate clarity score based on content structure"""
     score = 80  # Default decent clarity
-    if not material.raw_content:
-        return score
 
-    # Check for structure indicators
-    has_headers = "##" in material.raw_content or "###" in material.raw_content
-    has_paragraphs = len(material.raw_content.split("\n\n")) > 3
+    # Get content from Git
+    if material.git_path:
+        try:
+            git_service = get_git_service()
+            content = git_service.get_content(material.git_path)
 
-    if has_headers:
-        score += 10
-    if has_paragraphs:
-        score += 10
+            # Check for structure indicators
+            has_headers = "##" in content or "###" in content
+            has_paragraphs = len(content.split("\n\n")) > 3
+
+            if has_headers:
+                score += 10
+            if has_paragraphs:
+                score += 10
+        except Exception:
+            pass
 
     return min(score, 100)
 
@@ -65,14 +79,14 @@ def _calculate_engagement_score(material: Material) -> float:
     """Calculate engagement score based on interactive elements"""
     score = 50  # Base score
 
-    if not material.content or not isinstance(material.content, dict):
+    if not material.content_summary or not isinstance(material.content_summary, dict):
         return score
 
     # Add points for different interactive elements
     engagement_elements = {"exercises": 25, "code_snippets": 15, "media_urls": 10}
 
     for element, points in engagement_elements.items():
-        if material.content.get(element):
+        if material.content_summary.get(element):
             score += points
 
     return min(score, 100)
@@ -81,9 +95,9 @@ def _calculate_engagement_score(material: Material) -> float:
 def _calculate_alignment_score(material: Material) -> float:
     """Calculate alignment score based on learning objectives"""
     if (
-        material.content
-        and isinstance(material.content, dict)
-        and material.content.get("learning_objectives")
+        material.content_summary
+        and isinstance(material.content_summary, dict)
+        and material.content_summary.get("learning_objectives")
     ):
         return 90
     return 70  # Default alignment
@@ -93,13 +107,16 @@ def _calculate_accessibility_score(material: Material) -> float:
     """Calculate accessibility score based on content features"""
     score = 80  # Default good accessibility
 
-    # Check for images without alt text
-    if (
-        material.raw_content
-        and "![" in material.raw_content
-        and "alt=" not in material.raw_content.lower()
-    ):
-        score -= 20
+    # Check Git content for accessibility issues
+    if material.git_path:
+        try:
+            git_service = get_git_service()
+            content = git_service.get_content(material.git_path)
+            # Check for images without alt text
+            if "![" in content and "alt=" not in content.lower():
+                score -= 20
+        except Exception:
+            pass
 
     return max(score, 0)
 
@@ -310,24 +327,41 @@ async def create_material(
                 detail="Module not found in this course",
             )
 
-    # Create new material
+    # Generate unique material ID
+    material_id = uuid.uuid4()
+
+    # Get Git service
+    git_service = get_git_service()
+
+    # Generate content path in Git
+    # Use first 8 chars of IDs for cleaner paths
+    course_short = str(material_data.course_id)[:8]
+    material_short = str(material_id)[:8]
+    git_path = f"courses/{course_short}/{material_data.type.value}/{material_short}.md"
+
+    # Save content to Git
+    content_text = material_data.content.body if hasattr(material_data.content, 'body') else str(material_data.content)
+    commit_hash = git_service.save_content(
+        git_path,
+        content_text,
+        current_user.email,
+        f"Created {material_data.type.value}: {material_data.title}"
+    )
+
+    # Create new material (metadata only)
     new_material = Material(
-        id=uuid.uuid4(),
+        id=material_id,
         course_id=material_data.course_id,
         module_id=material_data.module_id,
         type=material_data.type.value,
         title=material_data.title,
         description=material_data.description,
-        content=material_data.content.model_dump(),
-        raw_content=material_data.content.body,
-        version=1,
-        is_latest=True,
-        is_draft=material_data.is_draft,
+        git_path=git_path,
+        current_commit=commit_hash,
+        content_summary=material_data.content.model_dump() if hasattr(material_data.content, 'model_dump') else {},
         teaching_philosophy=material_data.teaching_philosophy,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
-        created_by_id=current_user.id,
-        updated_by_id=current_user.id,
     )
 
     # Calculate initial quality score
@@ -351,6 +385,9 @@ async def create_material(
 
     quality_score, quality_metrics = calculate_quality_score(new_material)
 
+    # Fetch content from Git
+    raw_content = git_service.get_content(new_material.git_path)
+
     return MaterialResponse(
         id=str(new_material.id),
         course_id=str(new_material.course_id),
@@ -358,15 +395,15 @@ async def create_material(
         type=new_material.type,
         title=new_material.title,
         description=new_material.description,
-        version=new_material.version,
+        version=1,  # Git manages versions, this is for compatibility
         parent_version_id=None,
-        is_latest=new_material.is_latest,
-        is_draft=new_material.is_draft,
+        is_latest=True,
+        is_draft=getattr(new_material, 'is_draft', False),
         teaching_philosophy=new_material.teaching_philosophy,
         quality_score=quality_score,
         quality_metrics=quality_metrics,
-        content=new_material.content,
-        raw_content=new_material.raw_content,
+        content=new_material.content_summary,
+        raw_content=raw_content,
         created_at=new_material.created_at,
         updated_at=new_material.updated_at,
     )
@@ -1082,9 +1119,8 @@ def get_material_versions(
         change_summary = "Initial version"
         if version.parent_version_id:
             change_summary = f"Updated content (version {version.version})"
-            if version.generation_context and isinstance(version.generation_context, dict):
-                if version.generation_context.get("change_reason"):
-                    change_summary = version.generation_context["change_reason"]
+            if version.generation_context and isinstance(version.generation_context, dict) and version.generation_context.get("change_reason"):
+                change_summary = version.generation_context["change_reason"]
 
         version_history.append(
             MaterialVersionHistory(
@@ -1225,7 +1261,7 @@ def restore_material_version(
                 Material.parent_version_id == material_id,
             )
         )
-        .filter(Material.is_latest == True)
+        .filter(Material.is_latest)
         .first()
     )
 

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Curriculum Curator"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
-    
+
     # Testing
     TESTING: bool = False
     DISABLE_RATE_LIMIT: bool = False
@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # File Upload
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: list[str] = [".md", ".docx", ".pptx", ".pdf", ".txt"]
+
+    # Git Content Repository
+    CONTENT_REPO_PATH: str = "./content"  # Default to local content directory
 
     class Config:
         env_file = ".env"

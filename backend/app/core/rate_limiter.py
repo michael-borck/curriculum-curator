@@ -60,7 +60,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 # Rate limiting decorators for different endpoint types
 class RateLimits:
     """Predefined rate limits for different endpoint types"""
-    
+
     # Check if rate limiting is disabled for testing
     if settings.DISABLE_RATE_LIMIT or settings.TESTING:
         # Set very high limits when testing
@@ -81,28 +81,28 @@ class RateLimits:
     else:
         # Production rate limits
         # Authentication endpoints (more restrictive)
-        LOGIN = "5/minute"  # 5 login attempts per minute
-        REGISTER = "3/minute"  # 3 registrations per minute
-        VERIFY_EMAIL = "10/minute"  # 10 verification attempts per minute
-        RESEND_VERIFICATION = "2/minute"  # 2 resend requests per minute
-        FORGOT_PASSWORD = "3/minute"  # 3 password reset requests per minute
-        RESET_PASSWORD = "5/minute"  # 5 password reset attempts per minute
+        LOGIN = "5/minute"  # type: ignore  # 5 login attempts per minute
+        REGISTER = "3/minute"  # type: ignore  # 3 registrations per minute
+        VERIFY_EMAIL = "10/minute"  # type: ignore  # 10 verification attempts per minute
+        RESEND_VERIFICATION = "2/minute"  # type: ignore  # 2 resend requests per minute
+        FORGOT_PASSWORD = "3/minute"  # type: ignore  # 3 password reset requests per minute
+        RESET_PASSWORD = "5/minute"  # type: ignore  # 5 password reset attempts per minute
 
         # General API endpoints (less restrictive)
-        DEFAULT = "60/minute"  # Default rate limit
-        API_READ = "60/minute"  # 60 read operations per minute
-        API_WRITE = "30/minute"  # 30 write operations per minute
-        API_DELETE = "10/minute"  # 10 delete operations per minute
+        DEFAULT = "60/minute"  # type: ignore  # Default rate limit
+        API_READ = "60/minute"  # type: ignore  # 60 read operations per minute
+        API_WRITE = "30/minute"  # type: ignore  # 30 write operations per minute
+        API_DELETE = "10/minute"  # type: ignore  # 10 delete operations per minute
 
         # Content generation (LLM endpoints)
-        CONTENT_GENERATE = "10/minute"  # 10 content generations per minute
-        CONTENT_ENHANCE = "15/minute"  # 15 enhancements per minute
+        CONTENT_GENERATE = "10/minute"  # type: ignore  # 10 content generations per minute
+        CONTENT_ENHANCE = "15/minute"  # type: ignore  # 15 enhancements per minute
 
         # File upload
-        FILE_UPLOAD = "20/minute"  # 20 file uploads per minute
+        FILE_UPLOAD = "20/minute"  # type: ignore  # 20 file uploads per minute
 
         # Administrative endpoints
-        ADMIN_ACTIONS = "100/minute"  # 100 admin actions per minute
+        ADMIN_ACTIONS = "100/minute"  # type: ignore  # 100 admin actions per minute
 
 
 def get_user_specific_limiter(request: Request) -> str:
@@ -139,7 +139,7 @@ def should_bypass_rate_limit(request: Request) -> bool:
     # Check if rate limiting is disabled for testing
     if settings.DISABLE_RATE_LIMIT or settings.TESTING:
         return True
-    
+
     # Allow health check endpoints
     if request.url.path in ["/health", "/", "/docs", "/redoc"]:
         return True

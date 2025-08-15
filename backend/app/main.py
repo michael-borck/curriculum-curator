@@ -33,17 +33,22 @@ async def lifespan(app: FastAPI):
     try:
         init_db()
         logger.info("✅ Database initialized")
-        
+
         # Run startup checks and cleanup
-        from app.core.startup_checks import run_startup_checks
+        from app.core.startup_checks import run_startup_checks  # noqa: PLC0415
         db = SessionLocal()
         try:
             run_startup_checks(db)
         finally:
             db.close()
-            
+
+        # Initialize Git repository for content
+        from app.services.git_content_service import get_git_service  # noqa: PLC0415
+        git_service = get_git_service()
+        logger.info(f"✅ Git repository initialized at {git_service.repo_path}")
+
     except Exception as e:
-        logger.warning(f"Database initialization warning: {e}")
+        logger.warning(f"Initialization warning: {e}")
     yield
     # Shutdown
     logger.info("Shutting down...")
@@ -115,9 +120,11 @@ try:
         content,
         course_modules,
         courses,
+        export,
         llm,
         lrds,
         materials,
+        materials_git,
         monitoring,
         plugins,
         tasks,
@@ -130,6 +137,8 @@ try:
     app.include_router(course_modules.router, prefix="/api", tags=["course-modules"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
+    app.include_router(materials_git.router, prefix="/api/materials", tags=["materials-git"])
+    app.include_router(export.router, prefix="/api/export", tags=["export"])
     app.include_router(lrds.router, prefix="/api/lrds", tags=["lrds"])
     app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])

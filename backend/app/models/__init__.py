@@ -21,6 +21,7 @@ from .material import Material, MaterialType
 from .password_reset import PasswordReset
 from .quiz_question import QuestionType, QuizQuestion
 from .security_log import SecurityEventType, SecurityLog
+from .system_config import ConfigCategory, SystemConfig
 from .system_settings import SystemSettings
 from .task_list import TaskList, TaskStatus
 
@@ -84,4 +85,7 @@ __all__ = [
     "LoginAttemptType",
     "SecurityLog",
     "SecurityEventType",
+    # System Configuration
+    "SystemConfig",
+    "ConfigCategory",
 ]

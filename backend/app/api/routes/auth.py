@@ -107,22 +107,49 @@ async def register(
         )
 
     try:
+        # Check if this is the first user (becomes admin)
+        user_count = db.query(User).count()
+        is_first_user = user_count == 0
+
+        # Determine role - first user becomes admin
+        user_role = UserRole.ADMIN.value if is_first_user else UserRole.LECTURER.value
+
         # Create new user
         new_user = User(
             id=uuid.uuid4(),
             email=user_request.email.lower().strip(),
             password_hash=security.get_password_hash(user_request.password),
             name=user_request.name.strip(),
-            role=UserRole.LECTURER.value,
+            role=user_role,
             is_verified=False,
             is_active=True,
         )
+
+        # If first user, auto-verify them (admin doesn't need email verification)
+        if is_first_user:
+            new_user.is_verified = True
 
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Send verification email
+        # Send verification email (skip for first user/admin)
+        if is_first_user:
+            # First user is auto-verified and becomes admin
+            SecurityLogger.log_authentication_event(
+                db=db,
+                event_type=SecurityEventType.LOGIN_SUCCESS,
+                request=request,
+                user=new_user,
+                success=True,
+                description=f"First user registered as admin: {new_user.email}",
+            )
+
+            return UserRegistrationResponse(
+                message="Registration successful! You are the first user and have been granted admin privileges. You can now log in.",
+                user_email=new_user.email,
+            )
+        # Regular user - send verification email
         success, verification_code = await auth_helpers.create_and_send_verification(
             db, new_user
         )
@@ -131,7 +158,7 @@ async def register(
             # Log successful registration
             SecurityLogger.log_authentication_event(
                 db=db,
-                event_type=SecurityEventType.LOGIN_SUCCESS,  # Registration is a form of account creation
+                event_type=SecurityEventType.LOGIN_SUCCESS,
                 request=request,
                 user=new_user,
                 success=True,

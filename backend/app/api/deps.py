@@ -49,10 +49,8 @@ def get_current_user(
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError as e:
-        # Log the actual error for debugging
-        import logging
-        logging.exception(f"JWT decode error: {e!s}")
+    except JWTError:
+        # JWT decode error - invalid token
         raise credentials_exception from None
 
     # Fetch the user from the database

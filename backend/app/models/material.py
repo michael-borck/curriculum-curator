@@ -1,5 +1,5 @@
 """
-Material and content versioning models
+Material models with Git-backed content storage
 """
 
 import uuid
@@ -8,7 +8,6 @@ from enum import Enum
 
 from sqlalchemy import (
     JSON,
-    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -53,14 +52,12 @@ class Material(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
 
-    # Content storage
-    content = Column(JSON, nullable=False)  # Structured content
-    raw_content = Column(Text, nullable=True)  # Raw markdown/HTML
+    # Git-backed content storage
+    git_path = Column(String(500), nullable=False)  # e.g., "courses/cs101/lecture1.md"
+    current_commit = Column(String(40), nullable=True)  # Git commit SHA
 
-    # Version tracking
-    version = Column(Integer, default=1, nullable=False)
-    parent_version_id = Column(GUID(), ForeignKey("materials.id"), nullable=True)
-    is_latest = Column(Boolean, default=True, nullable=False)
+    # Cached metadata (for quick access without Git)
+    content_summary = Column(JSON, nullable=True)  # Quick preview/metadata
 
     # Validation and quality
     validation_results = Column(JSON, nullable=True)
@@ -79,8 +76,6 @@ class Material(Base):
     # Relationships
     course = relationship("Course", back_populates="materials")
     module = relationship("CourseModule", back_populates="materials")
-    parent_version = relationship("Material", remote_side=[id])
-    child_versions = relationship("Material", back_populates="parent_version")
 
     def __repr__(self):
-        return f"<Material(id={self.id}, type='{self.type}', title='{self.title}', v{self.version})>"
+        return f"<Material(id={self.id}, type='{self.type}', title='{self.title}')>"
