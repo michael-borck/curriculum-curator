@@ -105,6 +105,22 @@ const UserManagement = () => {
     }
   };
 
+  const handleVerifyUser = async (userId: string) => {
+    try {
+      await api.post(`/api/admin/users/${userId}/verify`);
+
+      setUsers(
+        users.map(user =>
+          user.id === userId ? { ...user, is_verified: true } : user
+        )
+      );
+
+      setShowDropdown(null);
+    } catch (error) {
+      console.error('Error verifying user:', error);
+    }
+  };
+
   const handleChangeRole = async (
     _userId: string,
     _newRole: 'lecturer' | 'admin' | 'student' | 'assistant'
@@ -330,6 +346,15 @@ const UserManagement = () => {
                       {showDropdown === user.id && (
                         <div className='absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200'>
                           <div className='py-1'>
+                            {!user.is_verified && (
+                              <button
+                                onClick={() => handleVerifyUser(user.id)}
+                                className='flex items-center gap-2 px-4 py-2 text-sm text-green-700 hover:bg-green-50 w-full text-left'
+                              >
+                                <CheckCircle className='w-4 h-4' />
+                                Verify User
+                              </button>
+                            )}
                             <button
                               onClick={() =>
                                 handleToggleStatus(user.id, user.is_active)
