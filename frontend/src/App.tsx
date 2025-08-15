@@ -105,29 +105,17 @@ function App() {
     );
   }
 
-  // If not authenticated, show landing or login
-  if (showLogin) {
-    return (
-      <Router>
-        <Routes>
-          <Route
-            path='/login'
-            element={<Login onBackToLanding={() => setShowLogin(false)} />}
-          />
-          <Route
-            path='/verify'
-            element={<Login onBackToLanding={() => setShowLogin(false)} />}
-          />
-          <Route
-            path='*'
-            element={<Login onBackToLanding={() => setShowLogin(false)} />}
-          />
-        </Routes>
-      </Router>
-    );
-  }
-
-  return <Landing onSignInClick={() => setShowLogin(true)} />;
+  // If not authenticated, wrap everything in Router for navigation context
+  return (
+    <Router>
+      <Toaster position='top-right' />
+      {showLogin ? (
+        <Login onBackToLanding={() => setShowLogin(false)} />
+      ) : (
+        <Landing onSignInClick={() => setShowLogin(true)} />
+      )}
+    </Router>
+  );
 }
 
 export default App;
