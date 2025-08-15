@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import Material, User
+from app.models import Course, Material, User
 from app.services.git_content_service import get_git_service
 
 router = APIRouter()
@@ -33,7 +33,6 @@ async def get_material_history(
         )
 
     # Verify user has access to the course
-    from app.models import Course  # noqa: PLC0415
     course = db.query(Course).filter(
         Course.id == material.course_id,
         Course.user_id == current_user.id
@@ -71,7 +70,6 @@ async def get_material_diff(
         )
 
     # Verify user has access
-    from app.models import Course  # noqa: PLC0415
     course = db.query(Course).filter(
         Course.id == material.course_id,
         Course.user_id == current_user.id
@@ -114,7 +112,6 @@ async def revert_material(
         )
 
     # Verify user has access
-    from app.models import Course  # noqa: PLC0415
     course = db.query(Course).filter(
         Course.id == material.course_id,
         Course.user_id == current_user.id

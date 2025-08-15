@@ -7,6 +7,8 @@ import logging
 from pydantic import EmailStr, ValidationError
 from sqlalchemy.orm import Session
 
+from app.models import User
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,8 +17,6 @@ def validate_and_clean_emails(db: Session) -> None:
     Check all user emails are valid and remove invalid ones.
     This prevents Pydantic validation errors at runtime.
     """
-    from app.models import User  # noqa: PLC0415
-
     try:
         users = db.query(User).all()
         invalid_users = []

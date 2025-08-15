@@ -21,6 +21,8 @@ from app.core.security_middleware import (
     TrustedProxyMiddleware,
 )
 from app.core.security_utils import SecurityManager
+from app.core.startup_checks import run_startup_checks
+from app.services.git_content_service import get_git_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,7 +37,6 @@ async def lifespan(app: FastAPI):
         logger.info("✅ Database initialized")
 
         # Run startup checks and cleanup
-        from app.core.startup_checks import run_startup_checks  # noqa: PLC0415
         db = SessionLocal()
         try:
             run_startup_checks(db)
@@ -43,7 +44,6 @@ async def lifespan(app: FastAPI):
             db.close()
 
         # Initialize Git repository for content
-        from app.services.git_content_service import get_git_service  # noqa: PLC0415
         git_service = get_git_service()
         logger.info(f"✅ Git repository initialized at {git_service.repo_path}")
 
