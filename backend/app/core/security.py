@@ -3,12 +3,16 @@ Security utilities for authentication and password handling
 """
 
 import uuid
+import warnings
 from datetime import datetime, timedelta
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.config import settings
+
+# Suppress bcrypt version warning (known issue with bcrypt 4.2.0 and passlib)
+warnings.filterwarnings("ignore", message=".*error reading bcrypt version.*")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
