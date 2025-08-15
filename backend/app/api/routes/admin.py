@@ -128,6 +128,43 @@ async def toggle_user_status(
     }
 
 
+@router.post("/users/{user_id}/verify")
+# @limiter.limit(RateLimits.DEFAULT)
+async def verify_user(
+    user_id: str,
+    db: Session = Depends(deps.get_db),
+    admin_user: User = Depends(get_current_admin_user),
+):
+    """Manually verify a user (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if user.is_verified:
+        return {
+            "message": f"User {user.email} is already verified",
+            "is_verified": True,
+        }
+
+    user.is_verified = True
+    db.commit()
+
+    # Log the action
+    SecurityLogger.log_admin_action(
+        db=db,
+        admin_user=admin_user,
+        action=f"Manually verified user {user.email}",
+        target_user_id=user.id,
+    )
+
+    return {
+        "message": f"User {user.email} has been verified",
+        "is_verified": True,
+    }
+
+
 @router.delete("/users/{user_id}")
 # @limiter.limit(RateLimits.DEFAULT)
 async def delete_user(

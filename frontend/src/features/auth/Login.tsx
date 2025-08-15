@@ -196,6 +196,19 @@ const Login = ({ onBackToLanding }: LoginProps) => {
           }}
         />
       )}
+      
+      {/* Verification Modal */}
+      {showVerification && (
+        <VerificationModal
+          email={verificationEmail}
+          onClose={() => setShowVerification(false)}
+          onSuccess={() => {
+            setShowVerification(false);
+            // Try to login again after verification
+            handleSubmit({ preventDefault: () => {} } as any);
+          }}
+        />
+      )}
     </>
   );
 };

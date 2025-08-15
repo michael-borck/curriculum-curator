@@ -39,6 +39,7 @@ const RegistrationModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
+  const [isFirstUser, setIsFirstUser] = useState(false);
 
   if (!isOpen) return null;
 
@@ -80,10 +81,23 @@ const RegistrationModal = ({
     setErrors({});
 
     try {
-      await register(formData.email, formData.password, formData.name);
-
+      const response = await register(formData.email, formData.password, formData.name);
+      
       setIsRegistered(true);
-      setShowVerification(true);
+      
+      // Check if this was the first user (admin)
+      if (response.data?.message?.includes('first user') || 
+          response.data?.message?.includes('admin privileges')) {
+        setIsFirstUser(true);
+        // First user doesn't need verification, they can login immediately
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+        }, 2000); // Show success message for 2 seconds
+      } else {
+        // Regular user needs verification
+        setShowVerification(true);
+      }
     } catch (error: any) {
       if (error.response?.status === 409) {
         setErrors({ email: 'Email already registered' });
@@ -149,13 +163,24 @@ const RegistrationModal = ({
             </div>
           )}
 
-          {isRegistered && (
+          {isRegistered && !isFirstUser && (
             <div className='p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2'>
               <CheckCircle className='w-5 h-5 text-green-600 flex-shrink-0 mt-0.5' />
               <p className='text-sm text-green-600'>
                 Registration successful! Please check your email for the
                 verification code.
               </p>
+            </div>
+          )}
+          
+          {isRegistered && isFirstUser && (
+            <div className='p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2'>
+              <CheckCircle className='w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5' />
+              <div className='text-sm text-blue-600'>
+                <p className='font-semibold'>Welcome, Administrator!</p>
+                <p>You are the first user and have been granted admin privileges.</p>
+                <p>You can now login without email verification.</p>
+              </div>
             </div>
           )}
 

@@ -115,6 +115,10 @@ function App() {
             element={<Login onBackToLanding={() => setShowLogin(false)} />}
           />
           <Route
+            path='/verify'
+            element={<Login onBackToLanding={() => setShowLogin(false)} />}
+          />
+          <Route
             path='*'
             element={<Login onBackToLanding={() => setShowLogin(false)} />}
           />

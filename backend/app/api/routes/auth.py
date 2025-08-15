@@ -337,9 +337,15 @@ async def login(
         )
 
     if not user.is_verified:
+        # Return a special status that frontend can handle to redirect to verification
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email address not verified. Please check your email for the verification code.",
+            detail={
+                "error": "email_not_verified",
+                "message": "Email address not verified. Please check your email for the verification code.",
+                "email": user.email,
+                "action": "redirect_to_verification"
+            }
         )
 
     # Create access token with enhanced security
