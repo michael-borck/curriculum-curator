@@ -13,6 +13,7 @@ from app.core.config import settings
 
 # Suppress bcrypt version warning (known issue with bcrypt 4.2.0 and passlib)
 warnings.filterwarnings("ignore", message=".*error reading bcrypt version.*")
+warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

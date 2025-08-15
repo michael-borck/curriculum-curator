@@ -33,6 +33,15 @@ async def lifespan(app: FastAPI):
     try:
         init_db()
         logger.info("✅ Database initialized")
+        
+        # Run startup checks and cleanup
+        from app.core.startup_checks import run_startup_checks
+        db = SessionLocal()
+        try:
+            run_startup_checks(db)
+        finally:
+            db.close()
+            
     except Exception as e:
         logger.warning(f"Database initialization warning: {e}")
     yield
