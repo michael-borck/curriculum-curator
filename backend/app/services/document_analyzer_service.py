@@ -231,20 +231,19 @@ class DocumentAnalyzerService:
         # Check for specific document types
         if "unit outline" in text_lower or "unit outline" in title_lower:
             return DocumentType.UNIT_OUTLINE
-        elif "lecture" in title_lower or "lecture notes" in text_lower:
+        if "lecture" in title_lower or "lecture notes" in text_lower:
             return DocumentType.LECTURE_NOTES
-        elif "tutorial" in title_lower or "tutorial guide" in text_lower:
+        if "tutorial" in title_lower or "tutorial guide" in text_lower:
             return DocumentType.TUTORIAL_GUIDE
-        elif "assignment" in title_lower or "assignment brief" in text_lower:
+        if "assignment" in title_lower or "assignment brief" in text_lower:
             return DocumentType.ASSIGNMENT_BRIEF
-        elif "reading list" in text_lower or "bibliography" in text_lower:
+        if "reading list" in text_lower or "bibliography" in text_lower:
             return DocumentType.READING_LIST
-        elif "syllabus" in title_lower or "course syllabus" in text_lower:
+        if "syllabus" in title_lower or "course syllabus" in text_lower:
             return DocumentType.SYLLABUS
-        elif "study guide" in title_lower:
+        if "study guide" in title_lower:
             return DocumentType.STUDY_GUIDE
-        else:
-            return DocumentType.UNKNOWN
+        return DocumentType.UNKNOWN
 
     def _extract_title(self, document: ExtractedDocument) -> str | None:
         """Extract document title from content"""
@@ -395,18 +394,15 @@ class DocumentAnalyzerService:
         """Determine heading level (1-6)"""
         if re.match(r"^(Chapter|Unit)\s+", text, re.IGNORECASE):
             return 1
-        elif re.match(r"^(Section|Module)\s+", text, re.IGNORECASE):
+        if re.match(r"^(Section|Module)\s+", text, re.IGNORECASE):
             return 2
-        elif re.match(r"^(Week|Topic)\s+", text, re.IGNORECASE):
+        if re.match(r"^(Week|Topic)\s+", text, re.IGNORECASE) or re.match(r"^\d+\.\d+\.\d+", text):
             return 3
-        elif re.match(r"^\d+\.\d+\.\d+", text):
-            return 3
-        elif re.match(r"^\d+\.\d+", text):
+        if re.match(r"^\d+\.\d+", text):
             return 2
-        elif re.match(r"^\d+\.?\s+", text):
+        if re.match(r"^\d+\.?\s+", text):
             return 1
-        else:
-            return 2  # Default
+        return 2  # Default
 
     def _extract_learning_outcomes(
         self, document: ExtractedDocument
@@ -885,3 +881,4 @@ class DocumentAnalyzerService:
 
 # Singleton instance
 document_analyzer_service = DocumentAnalyzerService()
+

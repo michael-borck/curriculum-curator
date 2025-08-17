@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models import User, WorkflowChatSession, WorkflowStage
-from app.schemas.course_structure import ChatSessionResponse, ChatWorkflowStatus
 from app.services.content_workflow_service import ContentWorkflowService
 
 router = APIRouter()
@@ -69,7 +68,7 @@ async def create_workflow_session(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating workflow session: {str(e)}",
+            detail=f"Error creating workflow session: {e!s}",
         )
 
 
@@ -82,12 +81,10 @@ async def get_workflow_status(
     """Get current status and progress of a workflow session"""
     try:
         workflow_service = ContentWorkflowService(db)
-        status_data = await workflow_service.get_workflow_status(
+        return await workflow_service.get_workflow_status(
             session_id=session_id,
             user_id=str(current_user.id),
         )
-
-        return status_data
 
     except ValueError as e:
         raise HTTPException(
@@ -112,19 +109,18 @@ async def get_next_question(
 
         if question:
             return {"status": "question_available", "question": question}
-        else:
-            # Check if workflow is complete or stage needs advancement
-            status_data = await workflow_service.get_workflow_status(
-                session_id=session_id,
-                user_id=str(current_user.id),
-            )
+        # Check if workflow is complete or stage needs advancement
+        status_data = await workflow_service.get_workflow_status(
+            session_id=session_id,
+            user_id=str(current_user.id),
+        )
 
-            return {
-                "status": "no_questions",
-                "workflow_status": status_data["status"],
-                "current_stage": status_data["current_stage"],
-                "can_generate": status_data["can_generate_structure"],
-            }
+        return {
+            "status": "no_questions",
+            "workflow_status": status_data["status"],
+            "current_stage": status_data["current_stage"],
+            "can_generate": status_data["can_generate_structure"],
+        }
 
     except ValueError as e:
         raise HTTPException(
@@ -152,14 +148,12 @@ async def submit_workflow_answer(
     """
     try:
         workflow_service = ContentWorkflowService(db)
-        result = await workflow_service.submit_answer(
+        return await workflow_service.submit_answer(
             session_id=session_id,
             user_id=str(current_user.id),
             question_key=question_key,
             answer=answer,
         )
-
-        return result
 
     except ValueError as e:
         raise HTTPException(
@@ -185,12 +179,10 @@ async def generate_course_structure(
     """
     try:
         workflow_service = ContentWorkflowService(db)
-        result = await workflow_service.generate_course_structure(
+        return await workflow_service.generate_course_structure(
             session_id=session_id,
             user_id=str(current_user.id),
         )
-
-        return result
 
     except ValueError as e:
         raise HTTPException(
@@ -200,7 +192,7 @@ async def generate_course_structure(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error generating course structure: {str(e)}",
+            detail=f"Error generating course structure: {e!s}",
         )
 
 
@@ -283,7 +275,7 @@ async def get_stage_questions(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error getting stage questions: {str(e)}",
+            detail=f"Error getting stage questions: {e!s}",
         )
 
 
@@ -401,3 +393,4 @@ async def reset_workflow_session(
         "message": "Workflow session reset successfully",
         "next_question": first_question,
     }
+

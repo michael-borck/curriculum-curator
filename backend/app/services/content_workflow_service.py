@@ -2,7 +2,6 @@
 Content creation workflow service for guided course development
 """
 
-import json
 import uuid
 from datetime import datetime
 from enum import Enum
@@ -12,19 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     AssessmentPlan,
-    Content,
-    ContentCategory,
-    ContentType,
     CourseOutline,
     SessionStatus,
     Unit,
     UnitLearningOutcome,
-    User,
     WeeklyTopic,
     WorkflowChatSession,
     WorkflowStage,
 )
-from app.services.llm_service import llm_service
 
 
 class WorkflowDecision(str, Enum):
@@ -308,7 +302,7 @@ class ContentWorkflowService:
             next_stage = await self._get_next_stage(session.current_stage)
             if next_stage:
                 session.advance_to_stage(next_stage)
-                
+
                 # Generate stage summary
                 summary = await self._generate_stage_summary(session)
                 chat_history.append(
@@ -333,14 +327,13 @@ class ContentWorkflowService:
                 "message": "Workflow completed successfully!",
                 "next_steps": await self._get_completion_next_steps(session),
             }
-        else:
-            next_question = await self.get_next_question(session_id, user_id)
-            return {
-                "status": "in_progress",
-                "next_question": next_question,
-                "stage": session.current_stage,
-                "progress": session.progress_percentage,
-            }
+        next_question = await self.get_next_question(session_id, user_id)
+        return {
+            "status": "in_progress",
+            "next_question": next_question,
+            "stage": session.current_stage,
+            "progress": session.progress_percentage,
+        }
 
     async def _is_stage_complete(self, session: WorkflowChatSession) -> bool:
         """Check if current stage is complete"""
@@ -432,7 +425,7 @@ class ContentWorkflowService:
         try:
             # Create course outline
             duration_weeks = int(decisions.get("duration_weeks", {}).get("value", 12))
-            
+
             outline = CourseOutline(
                 id=uuid.uuid4(),
                 unit_id=session.unit_id,
@@ -497,14 +490,14 @@ class ContentWorkflowService:
 
         except Exception as e:
             self.db.rollback()
-            raise ValueError(f"Error generating course structure: {str(e)}")
+            raise ValueError(f"Error generating course structure: {e!s}")
 
     async def _generate_outline_description(
         self, session: WorkflowChatSession, unit: Unit
     ) -> str:
         """Generate course outline description based on decisions"""
         decisions = session.decisions_made or {}
-        
+
         parts = [
             f"This {decisions.get('unit_type', {}).get('value', 'unit')} ",
             f"is designed for {decisions.get('student_level', {}).get('value', 'students')} ",
@@ -512,7 +505,7 @@ class ContentWorkflowService:
             f"The pedagogical approach emphasizes {decisions.get('pedagogy_approach', {}).get('value', 'active learning')} ",
             f"with {decisions.get('assessment_strategy', {}).get('value', 'balanced')} assessment strategy.",
         ]
-        
+
         return "".join(parts)
 
     async def _generate_learning_outcomes(
@@ -520,7 +513,7 @@ class ContentWorkflowService:
     ) -> list[dict[str, Any]]:
         """Generate learning outcomes based on workflow decisions"""
         decisions = session.decisions_made or {}
-        
+
         # Determine number of outcomes
         outcome_count = 5  # Default
         outcome_count_str = decisions.get("learning_outcome_count", {}).get("value", "5-6 outcomes")
@@ -533,7 +526,7 @@ class ContentWorkflowService:
 
         # Determine Bloom levels to use
         bloom_focus = decisions.get("bloom_focus", {}).get("value", "Full spectrum")
-        
+
         if "Lower order" in bloom_focus:
             bloom_levels = ["remember", "understand"]
         elif "Middle order" in bloom_focus:
@@ -548,7 +541,7 @@ class ContentWorkflowService:
         for i in range(outcome_count):
             bloom_level = bloom_levels[i % len(bloom_levels)]
             outcome_text = await self._generate_outcome_text(unit, bloom_level, i + 1)
-            
+
             outcomes.append(
                 {
                     "outcome_type": "ulo",
@@ -565,7 +558,7 @@ class ContentWorkflowService:
         """Generate a learning outcome text"""
         # Simple template-based generation
         # In production, this would use LLM service
-        
+
         verb_map = {
             "remember": ["identify", "list", "describe"],
             "understand": ["explain", "summarize", "classify"],
@@ -574,10 +567,10 @@ class ContentWorkflowService:
             "evaluate": ["evaluate", "assess", "critique"],
             "create": ["create", "design", "develop"],
         }
-        
+
         verbs = verb_map.get(bloom_level, ["demonstrate"])
         verb = verbs[number % len(verbs)]
-        
+
         return f"Students will be able to {verb} key concepts in {unit.name}"
 
     async def _generate_weekly_topics(
@@ -586,7 +579,7 @@ class ContentWorkflowService:
         """Generate weekly topics based on workflow decisions"""
         decisions = session.decisions_made or {}
         duration_weeks = outline.duration_weeks
-        
+
         topics = []
         for week in range(1, duration_weeks + 1):
             # Determine week type
@@ -623,7 +616,7 @@ class ContentWorkflowService:
     ) -> list[dict[str, Any]]:
         """Generate assessment plan based on workflow decisions"""
         decisions = session.decisions_made or {}
-        
+
         # Determine number of assessments
         assessment_count = 3  # Default
         count_str = decisions.get("assessment_count", {}).get("value", "2-3 assessments")
@@ -634,7 +627,7 @@ class ContentWorkflowService:
 
         # Determine assessment types based on strategy
         strategy = decisions.get("assessment_strategy", {}).get("value", "Balanced mix")
-        
+
         if "Continuous" in strategy:
             types = ["quiz", "assignment", "participation", "quiz", "assignment"]
             weights = [10, 20, 10, 10, 20]
@@ -654,11 +647,11 @@ class ContentWorkflowService:
         # Generate assessments
         assessments = []
         total_weight = sum(weights[:assessment_count])
-        
+
         for i in range(assessment_count):
             assessment_type = types[i % len(types)]
             weight = weights[i % len(weights)] * 100 / total_weight  # Normalize to 100%
-            
+
             assessments.append(
                 {
                     "assessment_name": f"Assessment {i + 1}: {assessment_type.title()}",
@@ -697,7 +690,7 @@ class ContentWorkflowService:
     async def get_stage_questions(self, stage: WorkflowStage) -> list[dict[str, Any]]:
         """Get all questions for a specific stage"""
         questions = self.WORKFLOW_QUESTIONS.get(stage, [])
-        
+
         return [
             {
                 "key": q.key,
@@ -709,3 +702,4 @@ class ContentWorkflowService:
             }
             for q in questions
         ]
+

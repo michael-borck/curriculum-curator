@@ -11,7 +11,6 @@ from typing import Any
 
 import fitz  # PyMuPDF
 import pdfplumber
-from bs4 import BeautifulSoup
 from pypdf import PdfReader
 
 
@@ -113,10 +112,10 @@ class PDFParserService:
         # Extract based on method
         if method == ExtractionMethod.PYPDF:
             return self._extract_with_pypdf(pdf_bytes)
-        elif method == ExtractionMethod.PDFPLUMBER:
+        if method == ExtractionMethod.PDFPLUMBER:
             return self._extract_with_pdfplumber(pdf_bytes)
-        else:  # PYMUPDF
-            return self._extract_with_pymupdf(pdf_bytes)
+        # PYMUPDF
+        return self._extract_with_pymupdf(pdf_bytes)
 
     def _determine_best_method(self, pdf_bytes: bytes) -> ExtractionMethod:
         """
@@ -139,10 +138,9 @@ class PDFParserService:
             # Simple heuristics
             if has_forms:
                 return ExtractionMethod.PDFPLUMBER
-            elif page_count > 50:
+            if page_count > 50:
                 return ExtractionMethod.PYPDF  # Faster for large docs
-            else:
-                return ExtractionMethod.PYMUPDF  # Best quality
+            return ExtractionMethod.PYMUPDF  # Best quality
 
         except Exception:
             return ExtractionMethod.PYMUPDF  # Default to most robust
@@ -177,7 +175,7 @@ class PDFParserService:
             )
 
         except Exception as e:
-            self.errors.append(f"pypdf extraction error: {str(e)}")
+            self.errors.append(f"pypdf extraction error: {e!s}")
             raise
 
     def _extract_pypdf_metadata(self, reader: PdfReader) -> PDFMetadata:
@@ -250,7 +248,7 @@ class PDFParserService:
                 )
 
         except Exception as e:
-            self.errors.append(f"pdfplumber extraction error: {str(e)}")
+            self.errors.append(f"pdfplumber extraction error: {e!s}")
             raise
 
     def _extract_with_pymupdf(self, pdf_bytes: bytes) -> ExtractedDocument:
@@ -337,7 +335,7 @@ class PDFParserService:
             )
 
         except Exception as e:
-            self.errors.append(f"pymupdf extraction error: {str(e)}")
+            self.errors.append(f"pymupdf extraction error: {e!s}")
             raise
 
     async def extract_structure(
@@ -352,7 +350,7 @@ class PDFParserService:
         Returns:
             Document structure analysis
         """
-        structure = {
+        structure: dict[str, Any] = {
             "sections": [],
             "headings": [],
             "lists": [],
@@ -363,17 +361,19 @@ class PDFParserService:
 
         # Extract headings and sections
         heading_pattern = re.compile(
-            r"^(#{1,6}\s+.+|"  # Markdown headings
-            r"Chapter\s+\d+|"  # Chapter headings
-            r"Section\s+\d+|"  # Section headings
-            r"Unit\s+\d+|"  # Unit headings
-            r"Module\s+\d+|"  # Module headings
-            r"Week\s+\d+|"  # Week headings
-            r"Topic\s+\d+|"  # Topic headings
-            r"Learning\s+Outcome|"  # Learning outcomes
-            r"Assessment|"  # Assessment sections
-            r"References|"  # References
-            r"Bibliography)",  # Bibliography
+            (
+                r"^(#{1,6}\s+.+|"
+                r"Chapter\s+\d+|"
+                r"Section\s+\d+|"
+                r"Unit\s+\d+|"
+                r"Module\s+\d+|"
+                r"Week\s+\d+|"
+                r"Topic\s+\d+|"
+                r"Learning\s+Outcome|"
+                r"Assessment|"
+                r"References|"
+                r"Bibliography)"
+            ),
             re.MULTILINE | re.IGNORECASE,
         )
 
@@ -428,11 +428,13 @@ class PDFParserService:
 
         # Extract learning outcomes
         lo_pattern = re.compile(
-            r"(learning\s+outcome[s]?|"
-            r"course\s+outcome[s]?|"
-            r"unit\s+outcome[s]?|"
-            r"objective[s]?)"
-            r"[:\s]*([^.!?]*[.!?]){1,5}",
+            (
+                r"(learning\s+outcome[s]?|"
+                r"course\s+outcome[s]?|"
+                r"unit\s+outcome[s]?|"
+                r"objective[s]?)"
+                r"[:\s]*([^.!?]*[.!?]){1,5}"
+            ),
             re.IGNORECASE | re.MULTILINE,
         )
 
@@ -441,13 +443,15 @@ class PDFParserService:
 
         # Extract assessment information
         assessment_pattern = re.compile(
-            r"(assignment[s]?|"
-            r"quiz[zes]?|"
-            r"exam[s]?|"
-            r"test[s]?|"
-            r"project[s]?|"
-            r"presentation[s]?)"
-            r"[:\s]*([^.!?]*[.!?]){1,3}",
+            (
+                r"(assignment[s]?|"
+                r"quiz[zes]?|"
+                r"exam[s]?|"
+                r"test[s]?|"
+                r"project[s]?|"
+                r"presentation[s]?)"
+                r"[:\s]*([^.!?]*[.!?]){1,3}"
+            ),
             re.IGNORECASE | re.MULTILINE,
         )
 
@@ -587,3 +591,4 @@ class PDFParserService:
 
 # Singleton instance
 pdf_parser_service = PDFParserService()
+

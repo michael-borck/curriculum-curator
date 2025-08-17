@@ -2,9 +2,7 @@
 API routes for importing and analyzing course content from PDFs
 """
 
-import io
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -21,15 +19,7 @@ from app.models import (
     User,
     WeeklyTopic,
 )
-from app.schemas.course_structure import (
-    AssessmentPlanCreate,
-    CourseOutlineCreate,
-    CourseOutlineResponse,
-    LearningOutcomeCreate,
-    WeeklyTopicCreate,
-)
 from app.services.document_analyzer_service import (
-    DocumentType,
     document_analyzer_service,
 )
 from app.services.pdf_parser_service import ExtractionMethod, pdf_parser_service
@@ -108,7 +98,7 @@ async def analyze_pdf(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing PDF: {str(e)}",
+            detail=f"Error processing PDF: {e!s}",
         )
 
 
@@ -173,7 +163,7 @@ async def extract_pdf_text(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error extracting text from PDF: {str(e)}",
+            detail=f"Error extracting text from PDF: {e!s}",
         )
 
 
@@ -315,24 +305,23 @@ async def create_course_structure_from_pdf(
                 },
             }
 
-        else:
-            # Return preview without creating
-            return {
-                "status": "preview",
-                "message": "Course structure preview (not saved)",
-                "course_structure": course_mapping,
-                "document_info": {
-                    "filename": file.filename,
-                    "document_type": analysis.document_type,
-                    "title": analysis.title,
-                },
-            }
+        # Return preview without creating
+        return {
+            "status": "preview",
+            "message": "Course structure preview (not saved)",
+            "course_structure": course_mapping,
+            "document_info": {
+                "filename": file.filename,
+                "document_type": analysis.document_type,
+                "title": analysis.title,
+            },
+        }
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating course structure: {str(e)}",
+            detail=f"Error creating course structure: {e!s}",
         )
 
 
@@ -414,7 +403,7 @@ async def create_content_from_pdf(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating content: {str(e)}",
+            detail=f"Error creating content: {e!s}",
         )
 
 
@@ -564,3 +553,4 @@ async def get_import_suggestions(
             "5. Generate student-facing materials",
         ],
     }
+
