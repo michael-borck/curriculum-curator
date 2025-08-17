@@ -49,9 +49,14 @@ dependencies = [
     "alembic>=1.13.1",
     # Document Processing
     "PyPDF2>=3.0.1",  # PDF processing
+    "pypdf>=3.17.0",  # Modern PDF processing (replacement for PyPDF2)
+    "pdfplumber>=0.10.3",  # Advanced PDF text extraction
+    "pymupdf>=1.23.8",  # Fast PDF processing with layout preservation
     "python-docx>=1.1.0",  # DOCX processing
     "python-pptx>=0.6.23",  # PPTX processing
     "markdown>=3.5.1",  # Markdown processing
+    "beautifulsoup4>=4.12.2",  # HTML parsing for converted content
+    "lxml>=4.9.3",  # XML/HTML parser
     # Configuration & Validation
     "pydantic>=2.5.3",
     "pydantic-settings>=2.1.0",
