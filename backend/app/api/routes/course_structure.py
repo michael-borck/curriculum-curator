@@ -41,7 +41,7 @@ async def get_course_structure(
         # Try to find as a unit
         unit = db.query(Unit).filter(
             Unit.id == course_id,
-            Unit.user_id == current_user.id
+            Unit.owner_id == current_user.id
         ).first()
 
         if not unit:
@@ -151,7 +151,7 @@ async def delete_course_structure(
     if not course:
         unit = db.query(Unit).filter(
             Unit.id == course_id,
-            Unit.user_id == current_user.id
+            Unit.owner_id == current_user.id
         ).first()
 
         if not unit:

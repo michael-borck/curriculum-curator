@@ -144,12 +144,12 @@ const CourseManager = () => {
       {/* Header */}
       <div className='flex justify-between items-center mb-8'>
         <div>
-          <h1 className='text-3xl font-bold text-gray-900'>My Courses</h1>
+          <h1 className='text-3xl font-bold text-gray-900'>My Units</h1>
           <p className='text-gray-600 mt-2'>
-            Manage your courses and learning resources
+            Manage your unit curriculum and learning resources
           </p>
           <p className='text-sm text-gray-500 mt-1'>
-            {courses.length} course(s) loaded
+            {courses.length} unit(s) loaded
           </p>
         </div>
         <button
@@ -157,25 +157,25 @@ const CourseManager = () => {
           className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
         >
           <Plus className='h-5 w-5 mr-2' />
-          New Course
+          New Unit
         </button>
       </div>
 
-      {/* Courses Grid */}
+      {/* Units Grid */}
       {courses.length === 0 ? (
         <div className='bg-white rounded-lg shadow-md p-12 text-center'>
           <BookOpen className='h-12 w-12 text-gray-400 mx-auto mb-4' />
           <h3 className='text-lg font-medium text-gray-900 mb-2'>
-            No Courses Yet
+            No Units Yet
           </h3>
           <p className='text-gray-600 mb-6'>
-            Create your first course to start building curriculum
+            Create your first unit to start building curriculum
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
             className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
           >
-            Create Your First Course
+            Create Your First Unit
           </button>
         </div>
       ) : (
@@ -303,7 +303,7 @@ const CourseManager = () => {
       {showCreateModal && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
           <div className='bg-white rounded-lg p-6 max-w-md w-full'>
-            <h2 className='text-xl font-semibold mb-4'>Create New Course</h2>
+            <h2 className='text-xl font-semibold mb-4'>Create New Unit</h2>
 
             {errors.general && (
               <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-lg'>
@@ -314,7 +314,7 @@ const CourseManager = () => {
             <div className='space-y-4'>
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Course Title *
+                  Unit Title *
                 </label>
                 <input
                   type='text'
@@ -323,13 +323,13 @@ const CourseManager = () => {
                     setNewCourse({ ...newCourse, title: e.target.value })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                  placeholder='e.g., Introduction to Computer Science'
+                  placeholder='e.g., Programming Fundamentals'
                 />
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Course Code *
+                  Unit Code *
                 </label>
                 <input
                   type='text'

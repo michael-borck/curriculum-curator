@@ -184,7 +184,7 @@ async def create_course_structure_from_pdf(
     - auto_create: Automatically create all extracted elements
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.user_id == current_user.id).first()
+    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -346,7 +346,7 @@ async def create_content_from_pdf(
     - week_number: Optional week number
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.user_id == current_user.id).first()
+    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -422,7 +422,7 @@ async def get_import_suggestions(
     - Gaps in current content
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.user_id == current_user.id).first()
+    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

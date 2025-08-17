@@ -127,7 +127,7 @@ const CourseWorkflow: React.FC = () => {
           className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
         >
           <ArrowLeft size={20} className="mr-2" />
-          Back to courses
+          Back to units
         </Link>
 
         <div className="flex justify-between items-start">
@@ -162,10 +162,10 @@ const CourseWorkflow: React.FC = () => {
       {!courseOutline ? (
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-            Get Started with Course Structure
+            Get Started with Unit Structure
           </h2>
           <p className="text-gray-600 text-center mb-8">
-            Choose how you want to create your course structure
+            Choose how you want to create your unit structure
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -180,7 +180,7 @@ const CourseWorkflow: React.FC = () => {
                 Guided Creation
               </h3>
               <p className="text-gray-600 text-center mb-4">
-                Answer questions to generate a complete course structure with AI assistance
+                Answer questions to generate a complete unit structure with AI assistance
               </p>
               <button
                 onClick={() => setShowWorkflowWizard(true)}
@@ -201,7 +201,7 @@ const CourseWorkflow: React.FC = () => {
                 Import from PDF
               </h3>
               <p className="text-gray-600 text-center mb-4">
-                Upload unit outlines, syllabi, or course materials to extract structure
+                Upload unit outlines, syllabi, or teaching materials to extract structure
               </p>
               <button
                 onClick={() => setShowPDFImport(true)}
@@ -222,10 +222,10 @@ const CourseWorkflow: React.FC = () => {
                 Manual Creation
               </h3>
               <p className="text-gray-600 text-center mb-4">
-                Build your course structure manually with full control over every detail
+                Build your unit structure manually with full control over every detail
               </p>
               <button
-                onClick={() => navigate(`/courses/${courseId}/structure/edit`)}
+                onClick={() => alert('Manual structure editor coming soon! For now, use the Guided Workflow or PDF Import.')}
                 className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >
                 Create Manually

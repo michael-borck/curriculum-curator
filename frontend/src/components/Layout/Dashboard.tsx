@@ -12,9 +12,13 @@ import {
   Menu,
   X,
   ChevronDown,
+  ChevronRight,
   Search,
   Bell,
   GraduationCap,
+  Wand2,
+  FileText,
+  Layout,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import type { DashboardProps } from '../../types/index';
@@ -26,12 +30,31 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
   const logout = onLogout || authStoreLogout;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
+
+  const toggleExpandedMenu = (label: string) => {
+    const newExpanded = new Set(expandedMenus);
+    if (newExpanded.has(label)) {
+      newExpanded.delete(label);
+    } else {
+      newExpanded.add(label);
+    }
+    setExpandedMenus(newExpanded);
+  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: BookOpen, label: 'My Courses', path: '/courses' },
+    { icon: BookOpen, label: 'My Units', path: '/courses' },
+    {
+      icon: Layout,
+      label: 'Unit Structure',
+      submenu: [
+        { icon: Wand2, label: 'Guided Workflow', path: '/workflow/guided' },
+        { icon: FileText, label: 'Manual Structure', path: '/workflow/manual' },
+        { icon: Upload, label: 'Import from PDF', path: '/workflow/import' },
+      ],
+    },
     { icon: Plus, label: 'Create Content', path: '/content/new' },
-    { icon: Upload, label: 'Import Materials', path: '/import' },
     { icon: Target, label: 'Teaching Style', path: '/teaching-style' },
     { icon: Brain, label: 'AI Assistant', path: '/ai-assistant' },
     { icon: Settings, label: 'Settings', path: '/settings' },
@@ -80,6 +103,55 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
         <nav className='flex-1 overflow-y-auto py-4'>
           {menuItems.map(item => {
             const Icon = item.icon;
+            
+            // Handle submenu items
+            if ('submenu' in item && item.submenu) {
+              const isExpanded = expandedMenus.has(item.label);
+              return (
+                <div key={item.label}>
+                  <button
+                    onClick={() => toggleExpandedMenu(item.label)}
+                    className='w-full flex items-center justify-between px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition'
+                  >
+                    <div className='flex items-center gap-3'>
+                      <Icon className='w-5 h-5' />
+                      {item.label}
+                    </div>
+                    {isExpanded ? (
+                      <ChevronDown className='w-4 h-4' />
+                    ) : (
+                      <ChevronRight className='w-4 h-4' />
+                    )}
+                  </button>
+                  {isExpanded && (
+                    <div className='bg-gray-800'>
+                      {item.submenu.map(subItem => {
+                        const SubIcon = subItem.icon;
+                        return (
+                          <button
+                            key={subItem.path}
+                            onClick={() => {
+                              navigate(subItem.path);
+                              setSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 pl-12 pr-4 py-2 text-left transition ${
+                              isActive(subItem.path)
+                                ? 'bg-purple-600 text-white'
+                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            }`}
+                          >
+                            <SubIcon className='w-4 h-4' />
+                            {subItem.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
+            // Regular menu items
             return (
               <button
                 key={item.path}

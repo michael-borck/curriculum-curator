@@ -196,10 +196,42 @@ class ContentWorkflowService:
         self, unit_id: str, user_id: str, session_name: str | None = None
     ) -> WorkflowChatSession:
         """Create a new workflow session for guided content creation"""
-        # Verify unit exists
-        unit = self.db.query(Unit).filter(Unit.id == unit_id, Unit.user_id == user_id).first()
+        from app.models import Course  # Import Course model
+        
+        # First try to find as a unit
+        unit = self.db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == user_id).first()
+        
+        # If not found as unit, try as course and create/find corresponding unit
         if not unit:
-            raise ValueError("Unit not found or access denied")
+            course = self.db.query(Course).filter(Course.id == unit_id, Course.user_id == user_id).first()
+            if course:
+                # Check if a unit already exists for this course
+                unit = self.db.query(Unit).filter(
+                    Unit.code == course.code,
+                    Unit.owner_id == user_id
+                ).first()
+                
+                if not unit:
+                    # Create a unit from the course
+                    unit = Unit(
+                        id=uuid.uuid4(),
+                        title=course.title,
+                        code=course.code,
+                        description=course.description,
+                        year=2024,  # Default year
+                        semester="semester_1",  # Default semester
+                        owner_id=user_id,
+                        created_by_id=user_id,
+                        pedagogy_type="traditional",  # Map from course.teaching_philosophy
+                        credit_points=course.credits or 6
+                    )
+                    self.db.add(unit)
+                    self.db.flush()
+                
+                # Update unit_id to use the actual unit id
+                unit_id = str(unit.id)
+            else:
+                raise ValueError("Course/Unit not found or access denied")
 
         # Create session
         session = WorkflowChatSession(
