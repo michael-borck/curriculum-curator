@@ -11,10 +11,10 @@ from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .content import Content, ContentCategory, ContentStatus, ContentType
 from .content_version import ContentVersion
-from .conversation import Conversation
-from .course import Course, CourseModule, CourseStatus, ModuleType
+# Conversation model removed - using ChatSession and WorkflowChatSession instead
+# Course model removed - using Unit model instead
 from .course_outline import CourseOutline, CourseStructureStatus
-from .course_search_result import CourseSearchResult
+# CourseSearchResult removed - using Unit model
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 
@@ -50,17 +50,12 @@ __all__ = [
     "UserRole",
     "TeachingPhilosophy",
     # Core academic
-    "Course",
-    "CourseModule",
-    "CourseStatus",
-    "ModuleType",
     "LRD",
     "LRDStatus",
     "Material",
     "MaterialType",
     "TaskList",
     "TaskStatus",
-    "Conversation",
     "Unit",
     "UnitStatus",
     "Semester",
@@ -78,7 +73,6 @@ __all__ = [
     # Validation and search
     "ValidationResult",
     "ValidationStatus",
-    "CourseSearchResult",
     # Chat functionality
     "ChatSession",
     "ChatMessage",
