@@ -75,8 +75,15 @@ const SystemSettings = () => {
     try {
       setIsLoading(true);
       const response = await api.get('/api/admin/settings');
-      setSettings(response.data);
-      setOriginalSettings(response.data);
+      // Merge with defaults to ensure all fields are present
+      const mergedSettings = {
+        ...settings,  // Start with defaults
+        ...response.data,  // Override with API data
+        // Ensure arrays are properly initialized
+        allowed_file_types: response.data.allowed_file_types || ['pdf', 'doc', 'docx', 'txt']
+      };
+      setSettings(mergedSettings);
+      setOriginalSettings(mergedSettings);
       setError('');
     } catch (error: any) {
       setError('Failed to load settings');
@@ -314,7 +321,7 @@ const SystemSettings = () => {
             <input
               id='file-types'
               type='text'
-              value={settings.allowed_file_types.join(', ')}
+              value={settings.allowed_file_types?.join(', ') || ''}
               onChange={e => handleFileTypesChange(e.target.value)}
               disabled={!settings.enable_file_upload}
               placeholder='pdf, doc, docx, txt'

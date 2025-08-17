@@ -73,7 +73,10 @@ describe('E2E: Complete User Flow', () => {
 
     (api.post as any).mockResolvedValueOnce(mockLoginResponse);
 
-    await user.type(screen.getByPlaceholderText(/email address/i), 'lecturer@university.edu');
+    await user.type(
+      screen.getByPlaceholderText(/email address/i),
+      'lecturer@university.edu'
+    );
     await user.type(screen.getByPlaceholderText(/password/i), 'SecurePass123!');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
@@ -111,10 +114,19 @@ describe('E2E: Complete User Flow', () => {
     const modal = screen.getByRole('dialog');
     const withinModal = within(modal);
 
-    await user.type(withinModal.getByPlaceholderText(/course title/i), 'Introduction to AI');
-    await user.type(withinModal.getByPlaceholderText(/description/i), 'Learn AI fundamentals');
+    await user.type(
+      withinModal.getByPlaceholderText(/course title/i),
+      'Introduction to AI'
+    );
+    await user.type(
+      withinModal.getByPlaceholderText(/description/i),
+      'Learn AI fundamentals'
+    );
     await user.type(withinModal.getByPlaceholderText(/duration/i), '8');
-    await user.type(withinModal.getByPlaceholderText(/objectives/i), 'Understand ML basics\nBuild AI models');
+    await user.type(
+      withinModal.getByPlaceholderText(/objectives/i),
+      'Understand ML basics\nBuild AI models'
+    );
 
     const newCourse = {
       data: {
@@ -158,8 +170,14 @@ describe('E2E: Complete User Flow', () => {
     const materialModal = screen.getByRole('dialog');
     const withinMaterialModal = within(materialModal);
 
-    await user.type(withinMaterialModal.getByPlaceholderText(/material title/i), 'Lecture 1: Introduction');
-    await user.selectOptions(withinMaterialModal.getByLabelText(/material type/i), 'lecture');
+    await user.type(
+      withinMaterialModal.getByPlaceholderText(/material title/i),
+      'Lecture 1: Introduction'
+    );
+    await user.selectOptions(
+      withinMaterialModal.getByLabelText(/material type/i),
+      'lecture'
+    );
 
     const newMaterial = {
       data: {
@@ -174,7 +192,9 @@ describe('E2E: Complete User Flow', () => {
 
     (api.post as any).mockResolvedValueOnce(newMaterial);
 
-    await user.click(withinMaterialModal.getByRole('button', { name: /create/i }));
+    await user.click(
+      withinMaterialModal.getByRole('button', { name: /create/i })
+    );
 
     // Step 9: Verify material was added
     await waitFor(() => {
@@ -205,12 +225,17 @@ describe('E2E: Complete User Flow', () => {
       },
     });
 
-    await user.type(screen.getByPlaceholderText(/email address/i), 'wrong@email.com');
+    await user.type(
+      screen.getByPlaceholderText(/email address/i),
+      'wrong@email.com'
+    );
     await user.type(screen.getByPlaceholderText(/password/i), 'wrongpass');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/invalid email or password/i)
+      ).toBeInTheDocument();
     });
 
     // Clear error
@@ -231,7 +256,10 @@ describe('E2E: Complete User Flow', () => {
 
     (api.post as any).mockResolvedValueOnce(mockLoginResponse);
 
-    await user.type(screen.getByPlaceholderText(/email address/i), 'test@test.com');
+    await user.type(
+      screen.getByPlaceholderText(/email address/i),
+      'test@test.com'
+    );
     await user.type(screen.getByPlaceholderText(/password/i), 'password');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
@@ -272,7 +300,10 @@ describe('E2E: Complete User Flow', () => {
 
     (api.post as any).mockResolvedValueOnce(mockAdminResponse);
 
-    await user.type(screen.getByPlaceholderText(/email address/i), 'admin@university.edu');
+    await user.type(
+      screen.getByPlaceholderText(/email address/i),
+      'admin@university.edu'
+    );
     await user.type(screen.getByPlaceholderText(/password/i), 'AdminPass123!');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
@@ -316,7 +347,9 @@ describe('E2E: Complete User Flow', () => {
     await user.click(screen.getByRole('button', { name: /confirm/i }));
 
     await waitFor(() => {
-      expect(api.put).toHaveBeenCalledWith(expect.stringContaining('/users/2/status'));
+      expect(api.put).toHaveBeenCalledWith(
+        expect.stringContaining('/users/2/status')
+      );
     });
   });
 });

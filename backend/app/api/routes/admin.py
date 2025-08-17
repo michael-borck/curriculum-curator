@@ -9,7 +9,15 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import EmailWhitelist, User, UserRole
+from app.models import (
+    EmailVerification,
+    EmailWhitelist,
+    LoginAttempt,
+    PasswordReset,
+    SecurityLog,
+    User,
+    UserRole,
+)
 from app.schemas.admin import (
     EmailWhitelistCreate,
     EmailWhitelistResponse,
@@ -169,10 +177,11 @@ async def verify_user(
 # @limiter.limit(RateLimits.DEFAULT)
 async def delete_user(
     user_id: str,
+    permanent: bool = Query(False, description="Permanently delete user from database"),
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(get_current_admin_user),
 ):
-    """Delete a user (soft delete by marking inactive)"""
+    """Delete a user (soft delete by default, or permanent delete if specified)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -186,6 +195,39 @@ async def delete_user(
             detail="Cannot delete your own account",
         )
 
+    user_email = user.email
+
+    if permanent:
+        # Hard delete - remove from database permanently
+        # First delete related records
+        # Delete email verifications
+        db.query(EmailVerification).filter(EmailVerification.user_id == user.id).delete()
+
+        # Delete password resets
+        db.query(PasswordReset).filter(PasswordReset.user_id == user.id).delete()
+
+        # Delete security logs
+        db.query(SecurityLog).filter(SecurityLog.user_id == user.id).delete()
+
+        # Delete login attempts (uses email, not user_id)
+        db.query(LoginAttempt).filter(LoginAttempt.email == user.email).delete()
+
+        # Delete the user
+        db.delete(user)
+        db.commit()
+
+        # Log the action
+        SecurityLogger.log_admin_action(
+            db=db,
+            admin_user=admin_user,
+            action=f"Permanently deleted user {user_email}",
+            target_user_id=None,  # User no longer exists
+        )
+
+        return {
+            "message": f"User {user_email} has been permanently deleted",
+            "permanent": True
+        }
     # Soft delete - just mark as inactive
     user.is_active = False
     db.commit()
@@ -194,11 +236,14 @@ async def delete_user(
     SecurityLogger.log_admin_action(
         db=db,
         admin_user=admin_user,
-        action=f"Deleted user {user.email}",
+        action=f"Deactivated user {user_email}",
         target_user_id=user.id,
     )
 
-    return {"message": f"User {user.email} has been deleted"}
+    return {
+        "message": f"User {user_email} has been deactivated",
+        "permanent": False
+    }
 
 
 @router.get("/users/stats", response_model=UserStatsResponse)

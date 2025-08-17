@@ -2,7 +2,6 @@
 Simple auth tests against running backend
 """
 
-import pytest
 import requests
 
 

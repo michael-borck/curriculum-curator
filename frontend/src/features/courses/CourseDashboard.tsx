@@ -88,7 +88,7 @@ const CourseDashboard = () => {
   useEffect(() => {
     const fetchCourseDetails = async () => {
       try {
-        const response = await api.get(`/courses/${courseId}`);
+        const response = await api.get(`/api/courses/${courseId}`);
         setCourse(response.data);
       } catch (error) {
         console.error('Error fetching course:', error);
@@ -102,13 +102,13 @@ const CourseDashboard = () => {
         // Fetch additional statistics
         const [modulesRes, materialsRes, tasksRes] = await Promise.all([
           api
-            .get(`/course-modules?course_id=${courseId}`)
+            .get(`/api/course-modules?course_id=${courseId}`)
             .catch(() => ({ data: [] })),
           api
-            .get(`/materials?course_id=${courseId}&limit=5`)
+            .get(`/api/materials?course_id=${courseId}&limit=5`)
             .catch(() => ({ data: { items: [] } })),
           api
-            .get(`/tasks?course_id=${courseId}&status=pending&limit=5`)
+            .get(`/api/tasks?course_id=${courseId}&status=pending&limit=5`)
             .catch(() => ({ data: [] })),
         ]);
 

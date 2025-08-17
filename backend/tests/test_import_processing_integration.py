@@ -9,7 +9,7 @@ import time
 import os
 import io
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 
 class TestFileImport:
@@ -69,7 +69,7 @@ class TestFileImport:
     def sample_pdf_file(self) -> bytes:
         """Create a simple PDF file for testing"""
         # Create a minimal PDF content
-        pdf_content = b"""%PDF-1.4
+        return b"""%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
 endobj
@@ -107,7 +107,6 @@ trailer
 startxref
 435
 %%EOF"""
-        return pdf_content
     
     @pytest.fixture
     def sample_text_file(self) -> bytes:

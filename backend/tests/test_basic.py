@@ -3,11 +3,9 @@ Basic integration tests that run against actual backend
 No mocks, no complexity - just real tests
 """
 
-import requests
 import time
-import subprocess
-import os
-import signal
+
+import requests
 
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"

@@ -3,11 +3,13 @@ Real-world integration tests that work with the running backend
 Focuses on actual functionality rather than mocking
 """
 
+import io
+import json
+import time
+from typing import Any
+
 import pytest
 import requests
-import time
-import json
-from typing import Dict, Any, List
 
 
 class TestRealAuthentication:
@@ -177,7 +179,7 @@ class TestCourseWorkflow:
         )
         
         if detail_response.status_code == 200:
-            details = detail_response.json()
+            detail_response.json()  # Verify response is valid JSON
             print("✓ Retrieved course details")
         
         # Step 5: Clean up - delete the course
@@ -257,7 +259,7 @@ class TestCourseWorkflow:
             )
             
             if history_response.status_code == 200:
-                history = history_response.json()
+                history_response.json()  # Verify response is valid JSON
                 print("✓ Material has version history")
         
         # Cleanup
@@ -435,7 +437,6 @@ class TestImportFunctionality:
         course_id = course_resp.json()["id"]
         
         # Create a test file
-        import io
         test_content = """# Test Course Material
         
 ## Introduction

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import RegistrationModal from './RegistrationModal';
 import PasswordResetFlow from './PasswordResetFlow';
+import VerificationModal from './VerificationModal';
 import type { LoginProps, HandleSubmitFunction } from '../../types/index';
 
 const Login = ({ onBackToLanding }: LoginProps) => {
@@ -59,7 +60,11 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       } else if (error.response?.status === 403) {
         // Check if it's specifically email not verified
         const detail = error.response?.data?.detail;
-        if (detail && typeof detail === 'object' && detail.error === 'email_not_verified') {
+        if (
+          detail &&
+          typeof detail === 'object' &&
+          detail.error === 'email_not_verified'
+        ) {
           // Open verification modal with the email
           setVerificationEmail(detail.email || email);
           setShowVerification(true);
@@ -73,7 +78,9 @@ const Login = ({ onBackToLanding }: LoginProps) => {
         );
       } else if (error.response?.data?.detail) {
         const detail = error.response.data.detail;
-        setError(typeof detail === 'string' ? detail : detail.message || 'Login failed');
+        setError(
+          typeof detail === 'string' ? detail : detail.message || 'Login failed'
+        );
       } else {
         setError('Login failed. Please try again.');
       }
@@ -208,7 +215,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
           }}
         />
       )}
-      
+
       {/* Verification Modal */}
       {showVerification && (
         <VerificationModal

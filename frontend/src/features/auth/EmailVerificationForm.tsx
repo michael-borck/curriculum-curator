@@ -175,117 +175,111 @@ const EmailVerificationForm = ({
   };
 
   return (
-    <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50'>
-      <div className='bg-white rounded-lg shadow-xl max-w-md w-full mx-4'>
-        <div className='p-6'>
-          {onBack && (
-            <button
-              onClick={onBack}
-              className='flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors'
-            >
-              <ArrowLeft className='w-4 h-4' />
-              Back to registration
-            </button>
-          )}
+    <div className='w-full'>
+      {onBack && (
+        <button
+          onClick={onBack}
+          className='flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors'
+        >
+          <ArrowLeft className='w-4 h-4' />
+          Back to registration
+        </button>
+      )}
 
-          <div className='text-center mb-6'>
-            <h2 className='text-2xl font-semibold text-gray-900 mb-2'>
-              Verify Your Email
-            </h2>
-            <p className='text-gray-600'>
-              We&apos;ve sent a 6-digit code to
-              <br />
-              <span className='font-medium text-gray-900'>{email}</span>
-            </p>
-          </div>
+      <div className='text-center mb-6'>
+        <h2 className='text-2xl font-semibold text-gray-900 mb-2'>
+          Verify Your Email
+        </h2>
+        <p className='text-gray-600'>
+          We&apos;ve sent a 6-digit code to
+          <br />
+          <span className='font-medium text-gray-900'>{email}</span>
+        </p>
+      </div>
 
-          {error && (
-            <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2'>
-              <AlertCircle className='w-5 h-5 text-red-600 flex-shrink-0 mt-0.5' />
-              <p className='text-sm text-red-600'>{error}</p>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className='mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2'>
-              <CheckCircle className='w-5 h-5 text-green-600 flex-shrink-0 mt-0.5' />
-              <p className='text-sm text-green-600'>{successMessage}</p>
-            </div>
-          )}
-
-          <div className='mb-6'>
-            <div className='block text-sm font-medium text-gray-700 mb-3'>
-              Enter verification code
-            </div>
-            <div className='flex gap-2 justify-center'>
-              {code.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={el => (inputRefs.current[index] = el)}
-                  type='text'
-                  inputMode='numeric'
-                  pattern='\d*'
-                  maxLength={1}
-                  value={digit}
-                  onChange={e => handleCodeChange(index, e.target.value)}
-                  onKeyDown={e => handleKeyDown(index, e)}
-                  onPaste={handlePaste}
-                  className={`w-12 h-12 text-center text-lg font-semibold border-2 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
-                    error ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  disabled={isLoading || !!successMessage}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => handleVerify()}
-            disabled={
-              isLoading || !code.every(digit => digit) || !!successMessage
-            }
-            className='w-full mb-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center justify-center gap-2'
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className='w-4 h-4 animate-spin' />
-                Verifying...
-              </>
-            ) : successMessage ? (
-              <>
-                <CheckCircle className='w-4 h-4' />
-                Verified!
-              </>
-            ) : (
-              'Verify Email'
-            )}
-          </button>
-
-          <div className='text-center'>
-            <p className='text-sm text-gray-600 mb-2'>
-              Didn&apos;t receive the code?
-            </p>
-            <button
-              onClick={handleResend}
-              disabled={isResending || resendCooldown > 0}
-              className='text-purple-600 hover:text-purple-700 font-medium text-sm inline-flex items-center gap-1 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed'
-            >
-              {isResending ? (
-                <>
-                  <Loader2 className='w-4 h-4 animate-spin' />
-                  Sending...
-                </>
-              ) : resendCooldown > 0 ? (
-                `Resend in ${resendCooldown}s`
-              ) : (
-                <>
-                  <RefreshCw className='w-4 h-4' />
-                  Resend code
-                </>
-              )}
-            </button>
-          </div>
+      {error && (
+        <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start gap-2'>
+          <AlertCircle className='w-5 h-5 text-red-600 flex-shrink-0 mt-0.5' />
+          <p className='text-sm text-red-600'>{error}</p>
         </div>
+      )}
+
+      {successMessage && (
+        <div className='mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-start gap-2'>
+          <CheckCircle className='w-5 h-5 text-green-600 flex-shrink-0 mt-0.5' />
+          <p className='text-sm text-green-600'>{successMessage}</p>
+        </div>
+      )}
+
+      <div className='mb-6'>
+        <div className='block text-sm font-medium text-gray-700 mb-3'>
+          Enter verification code
+        </div>
+        <div className='flex gap-2 justify-center'>
+          {code.map((digit, index) => (
+            <input
+              key={index}
+              ref={el => (inputRefs.current[index] = el)}
+              type='text'
+              inputMode='numeric'
+              pattern='\d*'
+              maxLength={1}
+              value={digit}
+              onChange={e => handleCodeChange(index, e.target.value)}
+              onKeyDown={e => handleKeyDown(index, e)}
+              onPaste={handlePaste}
+              className={`w-12 h-12 text-center text-lg font-semibold border-2 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
+                error ? 'border-red-300' : 'border-gray-300'
+              }`}
+              disabled={isLoading || !!successMessage}
+            />
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={() => handleVerify()}
+        disabled={isLoading || !code.every(digit => digit) || !!successMessage}
+        className='w-full mb-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className='w-4 h-4 animate-spin' />
+            Verifying...
+          </>
+        ) : successMessage ? (
+          <>
+            <CheckCircle className='w-4 h-4' />
+            Verified!
+          </>
+        ) : (
+          'Verify Email'
+        )}
+      </button>
+
+      <div className='text-center'>
+        <p className='text-sm text-gray-600 mb-2'>
+          Didn&apos;t receive the code?
+        </p>
+        <button
+          onClick={handleResend}
+          disabled={isResending || resendCooldown > 0}
+          className='text-purple-600 hover:text-purple-700 font-medium text-sm inline-flex items-center gap-1 transition-colors disabled:text-gray-400 disabled:cursor-not-allowed'
+        >
+          {isResending ? (
+            <>
+              <Loader2 className='w-4 h-4 animate-spin' />
+              Sending...
+            </>
+          ) : resendCooldown > 0 ? (
+            `Resend in ${resendCooldown}s`
+          ) : (
+            <>
+              <RefreshCw className='w-4 h-4' />
+              Resend code
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

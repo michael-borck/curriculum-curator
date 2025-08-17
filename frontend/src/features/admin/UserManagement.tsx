@@ -11,6 +11,7 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
+  UserX,
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -137,17 +138,42 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
+  const handleDeleteUser = async (userId: string, permanent: boolean = false) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const action = permanent ? 'permanently delete' : 'deactivate';
+    const warning = permanent 
+      ? 'This will permanently remove the user and all their data from the database. This action cannot be undone!'
+      : 'This will deactivate the user account. They will not be able to login.';
+
+    if (!window.confirm(`Are you sure you want to ${action} user ${user.email}?\n\n${warning}`)) {
       return;
     }
 
     try {
-      await api.delete(`/api/admin/users/${userId}`);
-      setUsers(users.filter(user => user.id !== userId));
+      const response = await api.delete(`/api/admin/users/${userId}${permanent ? '?permanent=true' : ''}`);
+      
+      if (permanent) {
+        // Remove from list if permanently deleted
+        setUsers(users.filter(user => user.id !== userId));
+      } else {
+        // Update user status if soft deleted
+        setUsers(
+          users.map(user =>
+            user.id === userId ? { ...user, is_active: false } : user
+          )
+        );
+      }
+      
+      // Show success message
+      const message = response.data?.message || `User ${action}d successfully`;
+      window.alert(message);
+      
       setShowDropdown(null);
     } catch (error) {
       console.error('Error deleting user:', error);
+      window.alert(`Failed to ${action} user. Please try again.`);
     }
   };
 
@@ -272,7 +298,7 @@ const UserManagement = () => {
             </thead>
             <tbody className='bg-white divide-y divide-gray-200'>
               {filteredUsers.map(user => (
-                <tr key={user.id} className='hover:bg-gray-50'>
+                <tr key={user.id} className={`hover:bg-gray-50 ${!user.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
                   <td className='px-6 py-4 whitespace-nowrap'>
                     <div>
                       <div className='text-sm font-medium text-gray-900'>
@@ -386,12 +412,21 @@ const UserManagement = () => {
                               Make{' '}
                               {user.role === 'admin' ? 'Lecturer' : 'Admin'}
                             </button>
+                            {user.is_active && (
+                              <button
+                                onClick={() => handleDeleteUser(user.id, false)}
+                                className='flex items-center gap-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 w-full text-left'
+                              >
+                                <UserX className='w-4 h-4' />
+                                Deactivate User
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className='flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left'
+                              onClick={() => handleDeleteUser(user.id, true)}
+                              className='flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left border-t border-gray-100'
                             >
                               <Trash2 className='w-4 h-4' />
-                              Delete
+                              Permanently Delete
                             </button>
                           </div>
                         </div>

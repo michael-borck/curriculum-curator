@@ -29,7 +29,7 @@ class EmailVerification(Base):
     # Relationships
     user = relationship("User", back_populates="email_verifications")
 
-    def __init__(self, user_id: uuid.UUID, code: str, expires_minutes: int = 15):
+    def __init__(self, user_id: uuid.UUID, code: str, expires_minutes: int = 60):
         """Initialize with expiration time"""
         self.user_id = user_id
         self.code = code

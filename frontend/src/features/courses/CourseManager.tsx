@@ -54,8 +54,9 @@ const CourseManager = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/courses');
-      setCourses(response.data);
+      const response = await api.get('/api/courses');
+      console.log('Fetched courses:', response.data);
+      setCourses(response.data.courses || []);
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
@@ -66,7 +67,22 @@ const CourseManager = () => {
   const createCourse = async () => {
     try {
       setErrors({});
-      const response = await api.post('/courses', newCourse);
+      
+      // Map frontend fields to backend schema
+      const courseData = {
+        title: newCourse.title,
+        code: newCourse.code,
+        description: newCourse.description,
+        year: parseInt(newCourse.semester.split('-')[0]) || 2024,  // Extract year from semester
+        semester: newCourse.semester,
+        pedagogy_type: newCourse.teaching_philosophy.toLowerCase().replace('_', '-'),
+        difficulty_level: 'intermediate',  // Default value
+        duration_weeks: 12,  // Default value
+        credit_points: newCourse.credits,
+        status: 'draft'
+      };
+      
+      const response = await api.post('/api/courses', courseData);
       setCourses([...courses, response.data]);
       setShowCreateModal(false);
       setNewCourse({
@@ -78,14 +94,15 @@ const CourseManager = () => {
         credits: 3,
       });
     } catch (error: any) {
-      setErrors(error.response?.data || { general: 'Failed to create course' });
+      console.error('Course creation error:', error);
+      setErrors(error.response?.data?.detail || { general: 'Failed to create course' });
     }
   };
 
   const deleteCourse = async (courseId: string) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        await api.delete(`/courses/${courseId}`);
+        await api.delete(`/api/courses/${courseId}`);
         setCourses(courses.filter(c => c.id !== courseId));
       } catch (error) {
         console.error('Error deleting course:', error);
@@ -131,6 +148,9 @@ const CourseManager = () => {
           <p className='text-gray-600 mt-2'>
             Manage your courses and learning resources
           </p>
+          <p className='text-sm text-gray-500 mt-1'>
+            {courses.length} course(s) loaded
+          </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
@@ -164,7 +184,7 @@ const CourseManager = () => {
             <div
               key={course.id}
               className='bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer'
-              onClick={() => navigate(`/course/${course.id}`)}
+              onClick={() => navigate(`/courses/${course.id}/dashboard`)}
             >
               <div className='p-6'>
                 {/* Course Header */}
@@ -189,11 +209,11 @@ const CourseManager = () => {
                 <div className='space-y-2 mb-4'>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Calendar className='h-4 w-4 mr-2' />
-                    {course.semester} • {course.credits} credits
+                    {course.semester || 'Not set'} • {course.credits || 0} credits
                   </div>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Users className='h-4 w-4 mr-2' />
-                    {course.teaching_philosophy.replace('_', ' ')}
+                    {course.teaching_philosophy ? course.teaching_philosophy.replace('_', ' ') : 'Not specified'}
                   </div>
                 </div>
 

@@ -205,3 +205,44 @@
 - **Total to MVP: ~64 hours (8 days)**
 
 **Current Status**: Backend essentially complete. Frontend and import processing are the critical path to MVP.
+
+---
+
+## NEW: Content Creation Workflow Improvements (Added 2025-08-16)
+
+### 13.0 Course Structure Foundation [Effort: L] [Priority: HIGH]
+- [ ] 13.1 Create CourseOutline model with relationships
+- [ ] 13.2 Create UnitLearningOutcome model (CLO/ULO/WLO types)
+- [ ] 13.3 Create WeeklyTopic model for schedule management
+- [ ] 13.4 Create AssessmentPlan model for evaluation tracking
+- [ ] 13.5 Update Content model with week_number and categories
+- [ ] 13.6 Generate and apply database migrations
+
+### 14.0 PDF Import & Parsing Enhancement [Effort: L] [Priority: HIGH]
+- [ ] 14.1 Implement advanced PDF parsing service (PyPDF2/pdfplumber)
+- [ ] 14.2 Create structure detection algorithms for outlines
+- [ ] 14.3 Build mapping service for extracted data
+- [ ] 14.4 Add import API endpoints for PDF outlines
+- [ ] 14.5 Create frontend PDF upload component with preview
+
+### 15.0 Guided Content Creation Workflow [Effort: XL] [Priority: HIGH]
+- [ ] 15.1 Create ChatSession model for conversation history
+- [ ] 15.2 Build workflow state machine (syllabus → CLOs → ULOs → weekly)
+- [ ] 15.3 Implement context-aware prompting system
+- [ ] 15.4 Create streaming chat interface (WebSocket/SSE)
+- [ ] 15.5 Build content generation from chat decisions
+
+### 16.0 Quality Assurance Features [Effort: L] [Priority: MEDIUM]
+- [ ] 16.1 Create alignment checker service
+- [ ] 16.2 Build gap analysis tool
+- [ ] 16.3 Implement consistency validator
+- [ ] 16.4 Create quality dashboard with visualizations
+- [ ] 16.5 Add batch validation API
+
+### Task Legend Update
+- **Effort:** S (Small: <4 hours), M (Medium: 4-8 hours), L (Large: >8 hours), XL (Extra Large: >16 hours)
+
+### Implementation Notes
+- Tasks 13-16 align with docs/instructional-design-workflow.md
+- Full tracking document at tasks/content-creation-workflow-improvements.md
+- LRD document at docs/LRD-content-creation-system-v1.0.md

@@ -3,9 +3,17 @@ Simple test to verify API authentication is working
 Handles rate limiting and redirect issues
 """
 
+import base64
+import json
+import sys
 import time
+
 import requests
-from jose import jwt
+from jose import jwt as jose_jwt
+
+# Add backend to path for settings import
+sys.path.insert(0, '/home/michael/Downloads/curriculum-curator/generated_project/backend')
+from app.core.config import settings
 
 
 def test_authentication_flow():
@@ -39,7 +47,7 @@ def test_authentication_flow():
     print("✓ Login successful")
     
     # Examine token
-    claims = jwt.get_unverified_claims(token)
+    claims = jose_jwt.get_unverified_claims(token)
     print(f"  Token IP: {claims.get('ip')}")
     print(f"  Token role: {claims.get('role')}")
     print(f"  Token sub: {claims.get('sub')}")
@@ -137,13 +145,9 @@ def diagnose_jwt_issue():
     token = login_resp.json()['access_token']
     
     # Decode token
-    from jose import jwt as jose_jwt
-    import json
-    
     # Get header and payload
     parts = token.split('.')
     if len(parts) == 3:
-        import base64
         
         # Decode header
         header_padding = '=' * (4 - len(parts[0]) % 4)
@@ -159,13 +163,8 @@ def diagnose_jwt_issue():
         
         # Try to validate with the same secret
         try:
-            # Import the settings to get the secret
-            import sys
-            sys.path.insert(0, '/home/michael/Downloads/curriculum-curator/generated_project/backend')
-            from app.core.config import settings
-            
             # Try to decode with verification
-            verified = jose_jwt.decode(
+            jose_jwt.decode(
                 token,
                 settings.SECRET_KEY,
                 algorithms=[settings.ALGORITHM]

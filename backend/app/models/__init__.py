@@ -4,17 +4,23 @@ Database models for Curriculum Curator
 
 # Authentication models
 # Chat functionality
+# New course structure models
+# Import learning_outcome first to ensure content_outcomes table is defined
+from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
-from .content import Content, ContentStatus, ContentType
+from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
+from .content import Content, ContentCategory, ContentStatus, ContentType
 from .content_version import ContentVersion
 from .conversation import Conversation
 from .course import Course, CourseModule, CourseStatus, ModuleType
+from .course_outline import CourseOutline, CourseStructureStatus
 from .course_search_result import CourseSearchResult
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 
 # Generation tracking
 from .generation_history import GenerationHistory, GenerationType
+from .learning_outcome import BloomLevel, OutcomeType, UnitLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
 from .lrd import LRD, LRDStatus
 from .material import Material, MaterialType
@@ -27,11 +33,11 @@ from .task_list import TaskList, TaskStatus
 
 # Core academic models
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
-from .unit_learning_outcome import BloomLevel, UnitLearningOutcome
 from .user import TeachingPhilosophy, User, UserRole
 
 # Validation and search models
 from .validation_result import ValidationResult, ValidationStatus
+from .weekly_topic import WeeklyTopic, WeekType
 
 # ruff: noqa: RUF022
 __all__ = [
@@ -65,6 +71,7 @@ __all__ = [
     "Content",
     "ContentType",
     "ContentStatus",
+    "ContentCategory",
     "ContentVersion",
     "QuizQuestion",
     "QuestionType",
@@ -88,4 +95,16 @@ __all__ = [
     # System Configuration
     "SystemConfig",
     "ConfigCategory",
+    # New course structure models
+    "CourseOutline",
+    "CourseStructureStatus",
+    "WeeklyTopic",
+    "WeekType",
+    "AssessmentPlan",
+    "AssessmentType",
+    "AssessmentMode",
+    "OutcomeType",
+    "WorkflowChatSession",
+    "WorkflowStage",
+    "SessionStatus",
 ]

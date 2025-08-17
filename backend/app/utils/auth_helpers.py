@@ -29,7 +29,7 @@ class AuthHelpers:
 
     @staticmethod
     async def create_and_send_verification(
-        db: Session, user: User, expires_minutes: int = 15
+        db: Session, user: User, expires_minutes: int = 60
     ) -> tuple[bool, str | None]:
         """
         Create email verification record and send verification email
@@ -79,7 +79,7 @@ class AuthHelpers:
             # Invalidate any existing password resets for this user
             existing_resets = (
                 db.query(PasswordReset)
-                .filter(PasswordReset.user_id == user.id, not PasswordReset.used)
+                .filter(PasswordReset.user_id == user.id, PasswordReset.used.is_(False))
                 .all()
             )
 
@@ -131,7 +131,7 @@ class AuthHelpers:
                 .filter(
                     EmailVerification.user_id == user.id,
                     EmailVerification.code == code,
-                    not EmailVerification.used,
+                    EmailVerification.used.is_(False),
                 )
                 .order_by(EmailVerification.created_at.desc())
                 .first()
@@ -175,7 +175,7 @@ class AuthHelpers:
                 .filter(
                     PasswordReset.user_id == user.id,
                     PasswordReset.token == code,
-                    not PasswordReset.used,
+                    PasswordReset.used.is_(False),
                 )
                 .order_by(PasswordReset.created_at.desc())
                 .first()
@@ -206,7 +206,7 @@ class AuthHelpers:
                 .filter(
                     PasswordReset.user_id == user.id,
                     PasswordReset.token == code,
-                    not PasswordReset.used,
+                    PasswordReset.used.is_(False),
                 )
                 .first()
             )

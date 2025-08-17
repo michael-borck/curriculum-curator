@@ -21,6 +21,15 @@ from app.core.database import Base
 from app.models.user import GUID
 
 
+class ContentCategory(str, Enum):
+    """Content category for flipped classroom model"""
+
+    PRE_CLASS = "pre_class"  # Before class preparation
+    IN_CLASS = "in_class"  # During class activities
+    POST_CLASS = "post_class"  # After class reflection/practice
+    GENERAL = "general"  # Not categorized
+
+
 class ContentType(str, Enum):
     """Content type enumeration"""
 
@@ -75,6 +84,12 @@ class Content(Base):
     )
     order_index = Column(Integer, default=0, nullable=False)
 
+    # Weekly schedule mapping
+    week_number = Column(Integer, nullable=True, index=True)  # Week in course
+    content_category = Column(
+        String(20), default=ContentCategory.GENERAL.value, nullable=False
+    )  # pre/in/post class
+
     # Educational metadata
     learning_objectives = Column(JSON, nullable=True)  # List of objectives
     estimated_duration_minutes = Column(Integer, nullable=True)
@@ -115,6 +130,15 @@ class Content(Base):
     )
     generation_history = relationship(
         "GenerationHistory", back_populates="content", cascade="all, delete-orphan"
+    )
+
+    # Many-to-many relationship with learning outcomes
+    # The association table is defined in learning_outcome.py
+    learning_outcomes = relationship(
+        "UnitLearningOutcome",
+        secondary="content_outcomes",
+        back_populates="contents",
+        overlaps="contents"  # Avoid warning about overlapping relationships
     )
 
     def __repr__(self):

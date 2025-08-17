@@ -81,13 +81,19 @@ const RegistrationModal = ({
     setErrors({});
 
     try {
-      const response = await register(formData.email, formData.password, formData.name);
-      
+      const response = await register(
+        formData.email,
+        formData.password,
+        formData.name
+      );
+
       setIsRegistered(true);
-      
+
       // Check if this was the first user (admin)
-      if (response.data?.message?.includes('first user') || 
-          response.data?.message?.includes('admin privileges')) {
+      if (
+        response.data?.message?.includes('first user') ||
+        response.data?.message?.includes('admin privileges')
+      ) {
         setIsFirstUser(true);
         // First user doesn't need verification, they can login immediately
         setTimeout(() => {
@@ -132,11 +138,15 @@ const RegistrationModal = ({
 
   if (showVerification) {
     return (
-      <EmailVerificationForm
-        email={formData.email}
-        onSuccess={handleVerificationSuccess}
-        onBack={() => setShowVerification(false)}
-      />
+      <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50'>
+        <div className='bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6'>
+          <EmailVerificationForm
+            email={formData.email}
+            onSuccess={handleVerificationSuccess}
+            onBack={() => setShowVerification(false)}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -172,13 +182,15 @@ const RegistrationModal = ({
               </p>
             </div>
           )}
-          
+
           {isRegistered && isFirstUser && (
             <div className='p-3 bg-blue-50 border border-blue-200 rounded-md flex items-start gap-2'>
               <CheckCircle className='w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5' />
               <div className='text-sm text-blue-600'>
                 <p className='font-semibold'>Welcome, Administrator!</p>
-                <p>You are the first user and have been granted admin privileges.</p>
+                <p>
+                  You are the first user and have been granted admin privileges.
+                </p>
                 <p>You can now login without email verification.</p>
               </div>
             </div>

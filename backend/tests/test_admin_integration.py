@@ -6,7 +6,7 @@ Tests against real running backend with actual database
 import pytest
 import requests
 import time
-from typing import Dict, Any
+from typing import Any
 
 
 class TestAdminIntegration:
@@ -161,7 +161,7 @@ class TestAdminIntegration:
             assert updated["is_active"] is False
             
         finally:
-            # Delete (cleanup)
+            # Cleanup: Delete the test whitelist pattern
             delete_response = requests.delete(
                 f"{api_url}/admin/whitelist/{pattern_id}",
                 headers=admin_headers
@@ -236,7 +236,7 @@ class TestAdminIntegration:
         }
         
         # Register user (might fail if email verification is required)
-        register_response = requests.post(
+        requests.post(
             f"{api_url}/auth/register",
             json=register_data
         )

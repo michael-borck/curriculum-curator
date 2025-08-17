@@ -49,18 +49,20 @@ describe('Login Component', () => {
 
   it('renders login form correctly', () => {
     renderLogin();
-    
+
     expect(screen.getByPlaceholderText(/email address/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /sign in/i })
+    ).toBeInTheDocument();
   });
 
   it('displays validation errors for empty fields', async () => {
     renderLogin();
-    
+
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     fireEvent.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/email is required/i)).toBeInTheDocument();
       expect(screen.getByText(/password is required/i)).toBeInTheDocument();
@@ -70,15 +72,17 @@ describe('Login Component', () => {
   it('validates email format', async () => {
     renderLogin();
     const user = userEvent.setup();
-    
+
     const emailInput = screen.getByPlaceholderText(/email address/i);
     await user.type(emailInput, 'invalid-email');
-    
+
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
-      expect(screen.getByText(/please enter a valid email/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/please enter a valid email/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -94,23 +98,26 @@ describe('Login Component', () => {
         },
       },
     };
-    
+
     (api.post as any).mockResolvedValueOnce(mockResponse);
-    
+
     renderLogin();
     const user = userEvent.setup();
-    
+
     const emailInput = screen.getByPlaceholderText(/email address/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
-    
+
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/auth/login', expect.any(URLSearchParams));
+      expect(api.post).toHaveBeenCalledWith(
+        '/auth/login',
+        expect.any(URLSearchParams)
+      );
       expect(mockSetToken).toHaveBeenCalledWith('test-token');
       expect(mockSetUser).toHaveBeenCalledWith(mockResponse.data.user);
     });
@@ -124,19 +131,19 @@ describe('Login Component', () => {
         },
       },
     });
-    
+
     renderLogin();
     const user = userEvent.setup();
-    
+
     const emailInput = screen.getByPlaceholderText(/email address/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'wrongpassword');
-    
+
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
     });
@@ -145,15 +152,15 @@ describe('Login Component', () => {
   it('toggles password visibility', async () => {
     renderLogin();
     const user = userEvent.setup();
-    
+
     const passwordInput = screen.getByPlaceholderText(/password/i);
     expect(passwordInput).toHaveAttribute('type', 'password');
-    
+
     const toggleButton = screen.getByRole('button', { name: /show password/i });
     await user.click(toggleButton);
-    
+
     expect(passwordInput).toHaveAttribute('type', 'text');
-    
+
     await user.click(toggleButton);
     expect(passwordInput).toHaveAttribute('type', 'password');
   });
@@ -161,10 +168,10 @@ describe('Login Component', () => {
   it('opens registration modal when clicking sign up link', async () => {
     renderLogin();
     const user = userEvent.setup();
-    
+
     const signUpLink = screen.getByText(/sign up/i);
     await user.click(signUpLink);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/create account/i)).toBeInTheDocument();
     });
@@ -173,10 +180,10 @@ describe('Login Component', () => {
   it('opens forgot password modal when clicking forgot password link', async () => {
     renderLogin();
     const user = userEvent.setup();
-    
+
     const forgotLink = screen.getByText(/forgot password/i);
     await user.click(forgotLink);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/reset password/i)).toBeInTheDocument();
     });

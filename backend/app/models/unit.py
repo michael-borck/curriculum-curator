@@ -128,6 +128,12 @@ class Unit(Base):
     chat_sessions = relationship(
         "ChatSession", back_populates="unit", cascade="all, delete-orphan"
     )
+    workflow_chat_sessions = relationship(
+        "WorkflowChatSession", back_populates="unit", cascade="all, delete-orphan"
+    )
+    course_outline = relationship(
+        "CourseOutline", back_populates="unit", uselist=False, cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Unit(id={self.id}, code='{self.code}', title='{self.title[:50]}...', status='{self.status}')>"
