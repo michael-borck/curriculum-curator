@@ -51,7 +51,7 @@ class WorkflowQuestion:
         input_type: str = "select",
         required: bool = True,
         depends_on: str | None = None,
-        stage: WorkflowStage = WorkflowStage.INITIAL_PLANNING,
+        stage: WorkflowStage = WorkflowStage.INITIAL,
     ):
         self.key = key
         self.question = question
@@ -67,7 +67,7 @@ class ContentWorkflowService:
 
     # Workflow questions by stage
     WORKFLOW_QUESTIONS = {
-        WorkflowStage.INITIAL_PLANNING: [
+        WorkflowStage.COURSE_OVERVIEW: [
             WorkflowQuestion(
                 key="unit_type",
                 question="What type of unit is this?",
@@ -78,7 +78,7 @@ class ContentWorkflowService:
                     "Research Methods Unit",
                     "Professional Practice Unit",
                 ],
-                stage=WorkflowStage.INITIAL_PLANNING,
+                stage=WorkflowStage.COURSE_OVERVIEW,
             ),
             WorkflowQuestion(
                 key="student_level",
@@ -90,22 +90,22 @@ class ContentWorkflowService:
                     "Postgraduate",
                     "Mixed Levels",
                 ],
-                stage=WorkflowStage.INITIAL_PLANNING,
+                stage=WorkflowStage.COURSE_OVERVIEW,
             ),
             WorkflowQuestion(
                 key="delivery_mode",
                 question="How will this unit be delivered?",
                 options=["Face-to-face", "Online", "Blended/Hybrid", "Flexible"],
-                stage=WorkflowStage.INITIAL_PLANNING,
+                stage=WorkflowStage.COURSE_OVERVIEW,
             ),
             WorkflowQuestion(
                 key="duration_weeks",
                 question="How many weeks will the unit run?",
                 input_type="number",
-                stage=WorkflowStage.INITIAL_PLANNING,
+                stage=WorkflowStage.COURSE_OVERVIEW,
             ),
         ],
-        WorkflowStage.LEARNING_DESIGN: [
+        WorkflowStage.LEARNING_OUTCOMES: [
             WorkflowQuestion(
                 key="pedagogy_approach",
                 question="What is your primary pedagogical approach?",
@@ -118,13 +118,13 @@ class ContentWorkflowService:
                     "Research-Led Teaching",
                     "Collaborative Learning",
                 ],
-                stage=WorkflowStage.LEARNING_DESIGN,
+                stage=WorkflowStage.LEARNING_OUTCOMES,
             ),
             WorkflowQuestion(
                 key="learning_outcome_count",
                 question="How many unit learning outcomes do you plan to have?",
                 options=["3-4 outcomes", "5-6 outcomes", "7-8 outcomes", "More than 8"],
-                stage=WorkflowStage.LEARNING_DESIGN,
+                stage=WorkflowStage.LEARNING_OUTCOMES,
             ),
             WorkflowQuestion(
                 key="bloom_focus",
@@ -135,10 +135,10 @@ class ContentWorkflowService:
                     "Higher order (Evaluate, Create)",
                     "Full spectrum (All levels)",
                 ],
-                stage=WorkflowStage.LEARNING_DESIGN,
+                stage=WorkflowStage.LEARNING_OUTCOMES,
             ),
         ],
-        WorkflowStage.CONTENT_STRUCTURING: [
+        WorkflowStage.WEEKLY_PLANNING: [
             WorkflowQuestion(
                 key="content_organization",
                 question="How will you organize the content?",
@@ -150,7 +150,7 @@ class ContentWorkflowService:
                     "Chronological (time-based)",
                     "Thematic (by themes)",
                 ],
-                stage=WorkflowStage.CONTENT_STRUCTURING,
+                stage=WorkflowStage.WEEKLY_PLANNING,
             ),
             WorkflowQuestion(
                 key="weekly_pattern",
@@ -162,10 +162,10 @@ class ContentWorkflowService:
                     "Online Modules + Discussion",
                     "Flexible/Varies by Week",
                 ],
-                stage=WorkflowStage.CONTENT_STRUCTURING,
+                stage=WorkflowStage.WEEKLY_PLANNING,
             ),
         ],
-        WorkflowStage.ASSESSMENT_PLANNING: [
+        WorkflowStage.UNIT_BREAKDOWN: [
             WorkflowQuestion(
                 key="assessment_strategy",
                 question="What is your assessment philosophy?",
@@ -177,19 +177,19 @@ class ContentWorkflowService:
                     "Exam-heavy",
                     "Project-focused",
                 ],
-                stage=WorkflowStage.ASSESSMENT_PLANNING,
+                stage=WorkflowStage.UNIT_BREAKDOWN,
             ),
             WorkflowQuestion(
                 key="assessment_count",
                 question="How many assessments will you have?",
                 options=["2-3 assessments", "4-5 assessments", "6+ assessments"],
-                stage=WorkflowStage.ASSESSMENT_PLANNING,
+                stage=WorkflowStage.UNIT_BREAKDOWN,
             ),
             WorkflowQuestion(
                 key="formative_assessment",
                 question="Will you include formative (non-graded) assessments?",
                 options=["Yes, regularly", "Yes, occasionally", "No, summative only"],
-                stage=WorkflowStage.ASSESSMENT_PLANNING,
+                stage=WorkflowStage.UNIT_BREAKDOWN,
             ),
         ],
     }
@@ -215,7 +215,7 @@ class ContentWorkflowService:
             session_name=session_name or f"Workflow for {unit.name}",
             session_type="content_creation",
             status=SessionStatus.ACTIVE,
-            current_stage=WorkflowStage.INITIAL_PLANNING,
+            current_stage=WorkflowStage.COURSE_OVERVIEW,
             progress_percentage=0.0,
             message_count=0,
             total_tokens_used=0,
@@ -356,11 +356,14 @@ class ContentWorkflowService:
     async def _get_next_stage(self, current_stage: WorkflowStage) -> WorkflowStage | None:
         """Get the next stage in the workflow"""
         stage_order = [
-            WorkflowStage.INITIAL_PLANNING,
-            WorkflowStage.LEARNING_DESIGN,
-            WorkflowStage.CONTENT_STRUCTURING,
-            WorkflowStage.ASSESSMENT_PLANNING,
-            WorkflowStage.MATERIAL_GENERATION,
+            WorkflowStage.INITIAL,
+            WorkflowStage.COURSE_OVERVIEW,
+            WorkflowStage.LEARNING_OUTCOMES,
+            WorkflowStage.UNIT_BREAKDOWN,
+            WorkflowStage.WEEKLY_PLANNING,
+            WorkflowStage.CONTENT_GENERATION,
+            WorkflowStage.QUALITY_REVIEW,
+            WorkflowStage.COMPLETED,
         ]
 
         try:

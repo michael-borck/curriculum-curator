@@ -26,11 +26,13 @@ async def create_workflow_session(
     Create a new guided content creation workflow session
 
     This starts an interactive workflow that guides users through:
-    1. Initial planning (unit type, student level, delivery mode)
-    2. Learning design (pedagogy, outcomes, Bloom's levels)
-    3. Content structuring (organization, weekly patterns)
-    4. Assessment planning (strategy, types, formative/summative)
-    5. Material generation (automated creation based on decisions)
+    1. Course overview (unit type, student level, delivery mode)
+    2. Learning outcomes (define CLOs with Bloom's levels)
+    3. Unit breakdown (define ULOs and assessment strategy)
+    4. Weekly planning (organize topics and activities)
+    5. Content generation (automated material creation)
+    6. Quality review (validate and refine)
+    7. Completion
     """
     try:
         workflow_service = ContentWorkflowService(db)
@@ -209,34 +211,52 @@ async def get_workflow_stages(
     """Get all workflow stages and their descriptions"""
     stages = [
         {
-            "stage": WorkflowStage.INITIAL_PLANNING,
-            "name": "Initial Planning",
-            "description": "Define unit type, student level, and delivery mode",
+            "stage": WorkflowStage.INITIAL,
+            "name": "Initial Setup",
+            "description": "Starting point for workflow",
             "order": 1,
         },
         {
-            "stage": WorkflowStage.LEARNING_DESIGN,
-            "name": "Learning Design",
-            "description": "Set pedagogical approach and learning outcomes",
+            "stage": WorkflowStage.COURSE_OVERVIEW,
+            "name": "Course Overview",
+            "description": "Define course basics and delivery mode",
             "order": 2,
         },
         {
-            "stage": WorkflowStage.CONTENT_STRUCTURING,
-            "name": "Content Structuring",
-            "description": "Organize content and weekly patterns",
+            "stage": WorkflowStage.LEARNING_OUTCOMES,
+            "name": "Learning Outcomes",
+            "description": "Define course learning outcomes",
             "order": 3,
         },
         {
-            "stage": WorkflowStage.ASSESSMENT_PLANNING,
-            "name": "Assessment Planning",
-            "description": "Design assessment strategy and tasks",
+            "stage": WorkflowStage.UNIT_BREAKDOWN,
+            "name": "Unit Breakdown",
+            "description": "Define unit learning outcomes and assessments",
             "order": 4,
         },
         {
-            "stage": WorkflowStage.MATERIAL_GENERATION,
-            "name": "Material Generation",
-            "description": "Generate course materials based on decisions",
+            "stage": WorkflowStage.WEEKLY_PLANNING,
+            "name": "Weekly Planning",
+            "description": "Plan weekly topics and activities",
             "order": 5,
+        },
+        {
+            "stage": WorkflowStage.CONTENT_GENERATION,
+            "name": "Content Generation",
+            "description": "Generate course materials",
+            "order": 6,
+        },
+        {
+            "stage": WorkflowStage.QUALITY_REVIEW,
+            "name": "Quality Review",
+            "description": "Review and validate content",
+            "order": 7,
+        },
+        {
+            "stage": WorkflowStage.COMPLETED,
+            "name": "Completed",
+            "description": "Workflow complete",
+            "order": 8,
         },
     ]
 
@@ -357,7 +377,7 @@ async def reset_workflow_session(
 
     # Reset session
     session.status = "active"
-    session.current_stage = WorkflowStage.INITIAL_PLANNING
+    session.current_stage = WorkflowStage.COURSE_OVERVIEW
     session.progress_percentage = 0.0
     session.decisions_made = {}
     session.chat_history = []
