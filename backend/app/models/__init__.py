@@ -22,14 +22,14 @@ from .email_whitelist import EmailWhitelist
 from .generation_history import GenerationHistory, GenerationType
 from .learning_outcome import BloomLevel, OutcomeType, UnitLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
-from .lrd import LRD, LRDStatus
-from .material import Material, MaterialType
+# from .lrd import LRD, LRDStatus  # Disabled - table dropped, references courses
+# from .material import Material, MaterialType  # Disabled - table dropped, references courses
 from .password_reset import PasswordReset
 from .quiz_question import QuestionType, QuizQuestion
 from .security_log import SecurityEventType, SecurityLog
 from .system_config import ConfigCategory, SystemConfig
 from .system_settings import SystemSettings
-from .task_list import TaskList, TaskStatus
+# from .task_list import TaskList, TaskStatus  # May reference courses - check later
 
 # Core academic models
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
@@ -50,12 +50,12 @@ __all__ = [
     "UserRole",
     "TeachingPhilosophy",
     # Core academic
-    "LRD",
-    "LRDStatus",
-    "Material",
-    "MaterialType",
-    "TaskList",
-    "TaskStatus",
+    # "LRD",  # Disabled
+    # "LRDStatus",  # Disabled
+    # "Material",  # Disabled
+    # "MaterialType",  # Disabled
+    # "TaskList",  # Disabled
+    # "TaskStatus",  # Disabled
     "Unit",
     "UnitStatus",
     "Semester",

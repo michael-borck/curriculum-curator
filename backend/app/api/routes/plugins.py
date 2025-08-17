@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import Material, User
+# from app.models import Material, User  # Material disabled - table dropped
+from app.models import User
 from app.plugins.plugin_manager import PluginConfig, plugin_manager
 
 router = APIRouter()

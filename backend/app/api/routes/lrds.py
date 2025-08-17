@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import LRD, Course, TaskList, TaskStatus, User, UserRole
+from app.models import LRD, TaskList, TaskStatus, User, UserRole  # Course removed - using Unit
+# from app.models import Course  # Removed - using Unit model
 from app.models.lrd import LRDStatus
 from app.schemas.lrd import (
     ApprovalRecord,

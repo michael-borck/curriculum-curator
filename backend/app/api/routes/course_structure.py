@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import (
     AssessmentPlan,
-    Course,
+    # Course,  # Removed - using Unit model
     CourseOutline,
     Unit,
     UnitLearningOutcome,
