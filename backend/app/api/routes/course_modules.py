@@ -9,8 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
-# from app.models import Course, CourseModule, Material, User, UserRole  # Disabled - tables dropped
-from app.models import User, UserRole  # Keep only what's needed
+from app.models import User, UserRole
 from app.schemas.course_module import (
     CourseClone,
     CourseModuleCreate,

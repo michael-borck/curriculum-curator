@@ -14,8 +14,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api import deps
-# from app.models import Course, Material, User  # Disabled - tables dropped
-from app.models import User  # Keep only what's needed
+from app.models import User
 from app.services.git_content_service import get_git_service
 
 router = APIRouter()

@@ -3,18 +3,13 @@ Database models for Curriculum Curator
 """
 
 # Authentication models
-# Chat functionality
-# New course structure models
-# Import learning_outcome first to ensure content_outcomes table is defined
+# Import models in dependency order
 from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .content import Content, ContentCategory, ContentStatus, ContentType
 from .content_version import ContentVersion
-# Conversation model removed - using ChatSession and WorkflowChatSession instead
-# Course model removed - using Unit model instead
 from .course_outline import CourseOutline, CourseStructureStatus
-# CourseSearchResult removed - using Unit model
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 
@@ -22,14 +17,11 @@ from .email_whitelist import EmailWhitelist
 from .generation_history import GenerationHistory, GenerationType
 from .learning_outcome import BloomLevel, OutcomeType, UnitLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
-# from .lrd import LRD, LRDStatus  # Disabled - table dropped, references courses
-# from .material import Material, MaterialType  # Disabled - table dropped, references courses
 from .password_reset import PasswordReset
 from .quiz_question import QuestionType, QuizQuestion
 from .security_log import SecurityEventType, SecurityLog
 from .system_config import ConfigCategory, SystemConfig
 from .system_settings import SystemSettings
-# from .task_list import TaskList, TaskStatus  # May reference courses - check later
 
 # Core academic models
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
@@ -50,12 +42,6 @@ __all__ = [
     "UserRole",
     "TeachingPhilosophy",
     # Core academic
-    # "LRD",  # Disabled
-    # "LRDStatus",  # Disabled
-    # "Material",  # Disabled
-    # "MaterialType",  # Disabled
-    # "TaskList",  # Disabled
-    # "TaskStatus",  # Disabled
     "Unit",
     "UnitStatus",
     "Semester",

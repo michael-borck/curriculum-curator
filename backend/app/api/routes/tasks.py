@@ -9,9 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core.database import get_db
-# from app.models import TaskList, User  # TaskList disabled - table dropped
 from app.models import User
-# from app.models.task_list import TaskStatus  # Disabled with TaskList
 from app.schemas.task import (
     TaskListCreate,
     TaskListResponse,
