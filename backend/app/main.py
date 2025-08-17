@@ -128,6 +128,7 @@ try:
         ai,
         auth,
         content,
+        content_workflow,
         course_modules,
         courses,
         export,
@@ -149,6 +150,7 @@ try:
     app.include_router(course_modules.router, prefix="/api", tags=["course-modules"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])
+    app.include_router(content_workflow.router, prefix="/api/content", tags=["workflow"])
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
     app.include_router(materials_git.router, prefix="/api/materials", tags=["materials-git"])
     app.include_router(export.router, prefix="/api/export", tags=["export"])
