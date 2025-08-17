@@ -5,7 +5,7 @@ Content creation workflow service for guided course development
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy.orm import Session
 
@@ -61,7 +61,7 @@ class ContentWorkflowService:
     """Service for managing guided content creation workflows"""
 
     # Workflow questions by stage
-    WORKFLOW_QUESTIONS = {
+    WORKFLOW_QUESTIONS: ClassVar[dict[WorkflowStage, list[WorkflowQuestion]]] = {
         WorkflowStage.COURSE_OVERVIEW: [
             WorkflowQuestion(
                 key="unit_type",
@@ -237,7 +237,7 @@ class ContentWorkflowService:
             id=uuid.uuid4(),
             user_id=user_id,
             unit_id=unit_id,
-            session_name=session_name or f"Workflow for {unit.name}",
+            session_name=session_name or f"Workflow for {unit.title}",
             session_type="content_creation",
             status=SessionStatus.ACTIVE,
             current_stage=WorkflowStage.COURSE_OVERVIEW,
@@ -247,7 +247,7 @@ class ContentWorkflowService:
             decisions_made={},
             chat_history=[],
             workflow_data={
-                "unit_name": unit.name,
+                "unit_name": unit.title,
                 "unit_code": unit.code,
                 "started_at": datetime.utcnow().isoformat(),
             },
@@ -460,7 +460,7 @@ class ContentWorkflowService:
             outline = CourseOutline(
                 id=uuid.uuid4(),
                 unit_id=session.unit_id,
-                title=f"Course Outline: {unit.name}",
+                title=f"Course Outline: {unit.title}",
                 description=await self._generate_outline_description(session, unit),
                 duration_weeks=duration_weeks,
                 delivery_mode=decisions.get("delivery_mode", {}).get("value"),
@@ -602,13 +602,12 @@ class ContentWorkflowService:
         verbs = verb_map.get(bloom_level, ["demonstrate"])
         verb = verbs[number % len(verbs)]
 
-        return f"Students will be able to {verb} key concepts in {unit.name}"
+        return f"Students will be able to {verb} key concepts in {unit.title}"
 
     async def _generate_weekly_topics(
         self, session: WorkflowChatSession, unit: Unit, outline: CourseOutline
     ) -> list[dict[str, Any]]:
         """Generate weekly topics based on workflow decisions"""
-        decisions = session.decisions_made or {}
         duration_weeks = outline.duration_weeks
 
         topics = []
