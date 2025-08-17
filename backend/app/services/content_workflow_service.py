@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     AssessmentPlan,
+    Course,
     CourseOutline,
     SessionStatus,
     Unit,
@@ -196,11 +197,9 @@ class ContentWorkflowService:
         self, unit_id: str, user_id: str, session_name: str | None = None
     ) -> WorkflowChatSession:
         """Create a new workflow session for guided content creation"""
-        from app.models import Course  # Import Course model
-        
         # First try to find as a unit
         unit = self.db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == user_id).first()
-        
+
         # If not found as unit, try as course and create/find corresponding unit
         if not unit:
             course = self.db.query(Course).filter(Course.id == unit_id, Course.user_id == user_id).first()
@@ -210,7 +209,7 @@ class ContentWorkflowService:
                     Unit.code == course.code,
                     Unit.owner_id == user_id
                 ).first()
-                
+
                 if not unit:
                     # Create a unit from the course
                     unit = Unit(
@@ -227,7 +226,7 @@ class ContentWorkflowService:
                     )
                     self.db.add(unit)
                     self.db.flush()
-                
+
                 # Update unit_id to use the actual unit id
                 unit_id = str(unit.id)
             else:
