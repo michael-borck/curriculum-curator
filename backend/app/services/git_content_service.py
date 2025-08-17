@@ -21,7 +21,9 @@ class GitContentService:
         Args:
             repo_path: Path to Git repository (defaults to CONTENT_REPO_PATH env var)
         """
-        self.repo_path = Path(repo_path or os.getenv("CONTENT_REPO_PATH", "/app/content"))
+        # Use a local path instead of Docker path
+        default_path = Path.cwd() / "content_repo"
+        self.repo_path = Path(repo_path or os.getenv("CONTENT_REPO_PATH", str(default_path)))
         self._ensure_repo_initialized()
 
     def _ensure_repo_initialized(self) -> None:

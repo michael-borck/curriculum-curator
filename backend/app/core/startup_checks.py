@@ -24,7 +24,8 @@ def validate_and_clean_emails(db: Session) -> None:
         for user in users:
             try:
                 # Test if email passes Pydantic validation
-                EmailStr._validate(user.email)
+                # Use the public validation method
+                validated = EmailStr(user.email)
             except (ValidationError, ValueError) as e:
                 logger.warning(f"Invalid email found: {user.email} - {e}")
                 invalid_users.append(user)
