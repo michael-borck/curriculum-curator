@@ -11,6 +11,7 @@ import ContentCreator from './features/content/ContentCreator';
 import CourseManager from './features/courses/CourseManager';
 import CourseDashboard from './features/courses/CourseDashboard';
 import CourseView from './features/courses/CourseView';
+import CourseWorkflow from './features/courses/CourseWorkflow';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
 import AdminDashboard from './features/admin/AdminDashboard';
@@ -60,7 +61,7 @@ function App() {
             <Route path='/courses' element={<CourseManager />} />
             <Route
               path='/courses/:courseId/dashboard'
-              element={<CourseDashboard />}
+              element={<CourseWorkflow />}
             />
             <Route path='/course/:id' element={<CourseView />} />
 
