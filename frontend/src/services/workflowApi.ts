@@ -8,7 +8,7 @@ import {
   WorkflowQuestion,
   WorkflowStatus,
   WorkflowStageInfo,
-  CourseStructureResult,
+  UnitStructureResult,
   PDFAnalysisResult,
   WorkflowStage
 } from '../types/workflow';
@@ -71,7 +71,7 @@ class WorkflowAPI {
   /**
    * Generate course structure from workflow decisions
    */
-  async generateCourseStructure(sessionId: string): Promise<CourseStructureResult> {
+  async generateUnitStructure(sessionId: string): Promise<UnitStructureResult> {
     const response = await api.post(`/api/content/workflow/sessions/${sessionId}/generate-structure`);
     return response.data;
   }
@@ -171,7 +171,7 @@ class WorkflowAPI {
   /**
    * Create course structure from PDF
    */
-  async createCourseStructureFromPDF(unitId: string, file: File, autoCreate = true): Promise<any> {
+  async createUnitStructureFromPDF(unitId: string, file: File, autoCreate = true): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('auto_create', autoCreate.toString());

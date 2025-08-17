@@ -62,8 +62,8 @@ class UnitLearningOutcome(Base):
 
     # Links
     unit_id = Column(GUID(), ForeignKey("units.id"), nullable=True, index=True)
-    course_outline_id = Column(
-        GUID(), ForeignKey("course_outlines.id"), nullable=True, index=True
+    unit_outline_id = Column(
+        GUID(), ForeignKey("unit_outlines.id"), nullable=True, index=True
     )
     weekly_topic_id = Column(
         GUID(), ForeignKey("weekly_topics.id"), nullable=True, index=True
@@ -104,7 +104,7 @@ class UnitLearningOutcome(Base):
 
     # Relationships
     unit = relationship("Unit", back_populates="learning_outcomes")
-    course_outline = relationship("CourseOutline", back_populates="learning_outcomes")
+    unit_outline = relationship("UnitOutline", back_populates="learning_outcomes")
     weekly_topic = relationship("WeeklyTopic", back_populates="learning_outcomes")
     created_by = relationship("User", foreign_keys=[created_by_id])
 

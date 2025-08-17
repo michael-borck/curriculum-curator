@@ -111,7 +111,7 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const result = await workflowApi.createCourseStructureFromPDF(unitId, file, true);
+      const result = await workflowApi.createUnitStructureFromPDF(unitId, file, true);
       if (result.status === 'success') {
         setImportSuccess(true);
         if (onImportComplete) {

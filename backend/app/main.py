@@ -129,11 +129,11 @@ try:
         auth,
         content,
         content_workflow,
-        course_structure,
         courses,
         import_content,
         llm,
         monitoring,
+        unit_structure,
         user_export,
     )
 
@@ -141,7 +141,7 @@ try:
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     app.include_router(admin_config.router, prefix="/api/admin", tags=["admin-config"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
-    app.include_router(course_structure.router, prefix="/api", tags=["course-structure"])
+    app.include_router(unit_structure.router, prefix="/api", tags=["unit-structure"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])
     app.include_router(content_workflow.router, prefix="/api/content", tags=["workflow"])

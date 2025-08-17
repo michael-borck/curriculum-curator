@@ -45,7 +45,7 @@ interface Assessment {
   description?: string;
 }
 
-interface CourseOutline {
+interface UnitOutline {
   id: string;
   title: string;
   description?: string;
@@ -56,8 +56,8 @@ interface CourseOutline {
   completion_percentage: number;
 }
 
-interface CourseStructureViewProps {
-  outline: CourseOutline;
+interface UnitStructureViewProps {
+  outline: UnitOutline;
   learningOutcomes: LearningOutcome[];
   weeklyTopics: WeeklyTopic[];
   assessments: Assessment[];
@@ -73,7 +73,7 @@ const BLOOM_COLORS: Record<string, string> = {
   create: 'bg-red-100 text-red-800'
 };
 
-const CourseStructureView: React.FC<CourseStructureViewProps> = ({
+const UnitStructureView: React.FC<UnitStructureViewProps> = ({
   outline,
   learningOutcomes,
   weeklyTopics,
@@ -448,4 +448,4 @@ const CourseStructureView: React.FC<CourseStructureViewProps> = ({
   );
 };
 
-export default CourseStructureView;
+export default UnitStructureView;

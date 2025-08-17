@@ -40,8 +40,8 @@ class WeeklyTopic(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
 
     # Links
-    course_outline_id = Column(
-        GUID(), ForeignKey("course_outlines.id"), nullable=False, index=True
+    unit_outline_id = Column(
+        GUID(), ForeignKey("unit_outlines.id"), nullable=False, index=True
     )
     unit_id = Column(GUID(), ForeignKey("units.id"), nullable=True, index=True)
 
@@ -93,7 +93,7 @@ class WeeklyTopic(Base):
     )
 
     # Relationships
-    course_outline = relationship("CourseOutline", back_populates="weekly_topics")
+    unit_outline = relationship("UnitOutline", back_populates="weekly_topics")
     unit = relationship("Unit")
     created_by = relationship("User", foreign_keys=[created_by_id])
 

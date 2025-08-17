@@ -1,5 +1,5 @@
 """
-Course outline model for structured curriculum content
+Unit outline model for structured curriculum content
 """
 
 import uuid
@@ -22,7 +22,7 @@ from app.core.database import Base
 from app.models.user import GUID
 
 
-class CourseStructureStatus(str, Enum):
+class UnitStructureStatus(str, Enum):
     """Course structure status enumeration"""
 
     PLANNING = "planning"
@@ -32,10 +32,10 @@ class CourseStructureStatus(str, Enum):
     PUBLISHED = "published"
 
 
-class CourseOutline(Base):
-    """Course outline model for structured curriculum development"""
+class UnitOutline(Base):
+    """Unit outline model for structured curriculum development"""
 
-    __tablename__ = "course_outlines"
+    __tablename__ = "unit_outlines"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
 
@@ -66,7 +66,7 @@ class CourseOutline(Base):
 
     # Status tracking
     status = Column(
-        String(20), default=CourseStructureStatus.PLANNING.value, nullable=False
+        String(20), default=UnitStructureStatus.PLANNING.value, nullable=False
     )
     completion_percentage = Column(Float, default=0.0, nullable=False)
 
@@ -84,38 +84,38 @@ class CourseOutline(Base):
     published_at = Column(DateTime, nullable=True)
 
     # Relationships
-    unit = relationship("Unit", back_populates="course_outline")
+    unit = relationship("Unit", back_populates="unit_outline")
     created_by = relationship("User", foreign_keys=[created_by_id])
     updated_by = relationship("User", foreign_keys=[updated_by_id])
     approved_by = relationship("User", foreign_keys=[approved_by_id])
 
     learning_outcomes = relationship(
         "UnitLearningOutcome",
-        back_populates="course_outline",
+        back_populates="unit_outline",
         cascade="all, delete-orphan",
         order_by="UnitLearningOutcome.sequence_order",
     )
 
     weekly_topics = relationship(
         "WeeklyTopic",
-        back_populates="course_outline",
+        back_populates="unit_outline",
         cascade="all, delete-orphan",
         order_by="WeeklyTopic.week_number",
     )
 
     assessment_plans = relationship(
         "AssessmentPlan",
-        back_populates="course_outline",
+        back_populates="unit_outline",
         cascade="all, delete-orphan",
         order_by="AssessmentPlan.due_week",
     )
 
     def __repr__(self):
-        return f"<CourseOutline(id={self.id}, title='{self.title[:50]}...', status='{self.status}')>"
+        return f"<UnitOutline(id={self.id}, title='{self.title[:50]}...', status='{self.status}')>"
 
     @property
     def is_complete(self) -> bool:
-        """Check if course outline is complete"""
+        """Check if unit outline is complete"""
         return (
             self.learning_outcomes
             and self.weekly_topics

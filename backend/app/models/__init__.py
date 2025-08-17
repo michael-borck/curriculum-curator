@@ -9,7 +9,6 @@ from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .content import Content, ContentCategory, ContentStatus, ContentType
 from .content_version import ContentVersion
-from .course_outline import CourseOutline, CourseStructureStatus
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 
@@ -25,6 +24,7 @@ from .system_settings import SystemSettings
 
 # Core academic models
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
+from .unit_outline import UnitOutline, UnitStructureStatus
 from .user import TeachingPhilosophy, User, UserRole
 
 # Validation and search models
@@ -76,8 +76,8 @@ __all__ = [
     "SystemConfig",
     "ConfigCategory",
     # New course structure models
-    "CourseOutline",
-    "CourseStructureStatus",
+    "UnitOutline",
+    "UnitStructureStatus",
     "WeeklyTopic",
     "WeekType",
     "AssessmentPlan",

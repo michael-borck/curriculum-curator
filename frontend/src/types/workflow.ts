@@ -72,7 +72,7 @@ export interface WorkflowStageInfo {
   order: number;
 }
 
-export interface CourseStructureResult {
+export interface UnitStructureResult {
   status: 'success' | 'exists' | 'error';
   message: string;
   outline_id?: string;

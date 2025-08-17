@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import WorkflowWizard from '../../components/Wizard/WorkflowWizard';
 import PDFImportDialog from '../../components/Import/PDFImportDialog';
-import CourseStructureView from '../../components/CourseStructure/CourseStructureView';
+import UnitStructureView from '../../components/UnitStructure/UnitStructureView';
 import api from '../../services/api';
 
 interface Unit {
@@ -26,7 +26,7 @@ interface Unit {
   description: string;
 }
 
-interface CourseOutline {
+interface UnitOutline {
   id: string;
   title: string;
   description?: string;
@@ -42,7 +42,7 @@ const CourseWorkflow: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [unit, setUnit] = useState<Unit | null>(null);
-  const [courseOutline, setCourseOutline] = useState<CourseOutline | null>(null);
+  const [unitOutline, setUnitOutline] = useState<UnitOutline | null>(null);
   const [learningOutcomes, setLearningOutcomes] = useState<any[]>([]);
   const [weeklyTopics, setWeeklyTopics] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
@@ -71,7 +71,7 @@ const CourseWorkflow: React.FC = () => {
       try {
         const outlineResponse = await api.get(`/api/courses/${courseId}/structure`);
         if (outlineResponse.data) {
-          setCourseOutline(outlineResponse.data.outline);
+          setUnitOutline(outlineResponse.data.outline);
           setLearningOutcomes(outlineResponse.data.learning_outcomes || []);
           setWeeklyTopics(outlineResponse.data.weekly_topics || []);
           setAssessments(outlineResponse.data.assessments || []);
@@ -159,7 +159,7 @@ const CourseWorkflow: React.FC = () => {
       </div>
 
       {/* Action Cards or Course Structure */}
-      {!courseOutline ? (
+      {!unitOutline ? (
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
             Get Started with Unit Structure
@@ -266,8 +266,8 @@ const CourseWorkflow: React.FC = () => {
           </div>
         </div>
       ) : (
-        <CourseStructureView
-          outline={courseOutline}
+        <UnitStructureView
+          outline={unitOutline}
           learningOutcomes={learningOutcomes}
           weeklyTopics={weeklyTopics}
           assessments={assessments}

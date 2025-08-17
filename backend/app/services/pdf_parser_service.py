@@ -87,7 +87,7 @@ class PDFParserService:
         if not file_path.exists():
             raise FileNotFoundError(f"PDF file not found: {file_path}")
 
-        with open(file_path, "rb") as f:
+        with file_path.open("rb") as f:
             return await self.extract_from_bytes(f.read(), method)
 
     async def extract_from_bytes(
@@ -288,16 +288,15 @@ class PDFParserService:
 
                 # Extract text blocks for structure analysis
                 blocks = page.get_text("blocks")
-                block_data = []
-                for block in blocks:
-                    if len(block) >= 5:  # Text block
-                        block_data.append(
-                            {
-                                "bbox": block[:4],  # Bounding box
-                                "text": block[4],
-                                "block_no": block[5] if len(block) > 5 else None,
-                            }
-                        )
+                block_data = [
+                    {
+                        "bbox": block[:4],  # Bounding box
+                        "text": block[4],
+                        "block_no": block[5] if len(block) > 5 else None,
+                    }
+                    for block in blocks
+                    if len(block) >= 5  # Text block
+                ]
 
                 # Extract images
                 image_list = page.get_images()
@@ -496,7 +495,7 @@ class PDFParserService:
 
         return text.strip()
 
-    async def convert_to_markdown(self, document: ExtractedDocument) -> str:
+    async def convert_to_markdown(self, document: ExtractedDocument) -> str:  # noqa: PLR0912
         """
         Convert extracted document to Markdown format
 
@@ -537,18 +536,14 @@ class PDFParserService:
                 cleaned_text = self.clean_extracted_text(page.text)
                 # Try to identify and format headings
                 lines = cleaned_text.split("\n")
-                for line in lines:
-                    line = line.strip()
+                for text_line in lines:
+                    line = text_line.strip()
                     if not line:
                         continue
 
                     # Check if line looks like a heading
                     if (
-                        line.isupper()
-                        or line.startswith("Chapter")
-                        or line.startswith("Section")
-                        or line.startswith("Unit")
-                        or line.startswith("Module")
+                        line.isupper() or line.startswith(("Chapter", "Section", "Unit", "Module"))
                     ):
                         markdown_parts.append(f"## {line}\n")
                     else:
@@ -583,8 +578,10 @@ class PDFParserService:
         markdown_lines.append("|" + "|".join([" --- " for _ in header]) + "|")
 
         # Data rows
-        for row in table[1:]:
-            markdown_lines.append("| " + " | ".join(str(cell) for cell in row) + " |")
+        markdown_lines.extend(
+            "| " + " | ".join(str(cell) for cell in row) + " |"
+            for row in table[1:]
+        )
 
         return "\n".join(markdown_lines) + "\n"
 

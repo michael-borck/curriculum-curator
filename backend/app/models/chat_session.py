@@ -54,8 +54,8 @@ class WorkflowChatSession(Base):
     # User and unit association
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=False, index=True)
     unit_id = Column(GUID(), ForeignKey("units.id"), nullable=True, index=True)
-    course_outline_id = Column(
-        GUID(), ForeignKey("course_outlines.id"), nullable=True, index=True
+    unit_outline_id = Column(
+        GUID(), ForeignKey("unit_outlines.id"), nullable=True, index=True
     )
 
     # Session details
@@ -114,7 +114,7 @@ class WorkflowChatSession(Base):
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
     unit = relationship("Unit", back_populates="workflow_chat_sessions")
-    course_outline = relationship("CourseOutline")
+    unit_outline = relationship("UnitOutline")
 
     def __repr__(self):
         return f"<WorkflowChatSession(id={self.id}, user_id={self.user_id}, stage='{self.current_stage}', status='{self.status}')>"

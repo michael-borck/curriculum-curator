@@ -11,10 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     AssessmentPlan,
-    CourseOutline,
     SessionStatus,
     Unit,
     UnitLearningOutcome,
+    UnitOutline,
     WeeklyTopic,
     WorkflowChatSession,
     WorkflowStage,
@@ -413,7 +413,7 @@ class ContentWorkflowService:
 
         # Check if structure already exists
         existing_outline = (
-            self.db.query(CourseOutline).filter(CourseOutline.unit_id == session.unit_id).first()
+            self.db.query(UnitOutline).filter(UnitOutline.unit_id == session.unit_id).first()
         )
 
         if existing_outline:
@@ -427,7 +427,7 @@ class ContentWorkflowService:
             # Create course outline
             duration_weeks = int(decisions.get("duration_weeks", {}).get("value", 12))
 
-            outline = CourseOutline(
+            outline = UnitOutline(
                 id=uuid.uuid4(),
                 unit_id=session.unit_id,
                 title=f"Course Outline: {unit.title}",
@@ -446,7 +446,7 @@ class ContentWorkflowService:
                 outcome = UnitLearningOutcome(
                     id=uuid.uuid4(),
                     unit_id=session.unit_id,
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     **outcome_data,
                     created_by_id=user_id,
                 )
@@ -458,7 +458,7 @@ class ContentWorkflowService:
                 topic = WeeklyTopic(
                     id=uuid.uuid4(),
                     unit_id=session.unit_id,
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     **topic_data,
                     created_by_id=user_id,
                 )
@@ -470,7 +470,7 @@ class ContentWorkflowService:
                 assessment = AssessmentPlan(
                     id=uuid.uuid4(),
                     unit_id=session.unit_id,
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     **assess_data,
                     created_by_id=user_id,
                 )
@@ -510,7 +510,7 @@ class ContentWorkflowService:
         return "".join(parts)
 
     async def _generate_learning_outcomes(
-        self, session: WorkflowChatSession, unit: Unit, outline: CourseOutline
+        self, session: WorkflowChatSession, unit: Unit, outline: UnitOutline
     ) -> list[dict[str, Any]]:
         """Generate learning outcomes based on workflow decisions"""
         decisions = session.decisions_made or {}
@@ -575,7 +575,7 @@ class ContentWorkflowService:
         return f"Students will be able to {verb} key concepts in {unit.title}"
 
     async def _generate_weekly_topics(
-        self, session: WorkflowChatSession, unit: Unit, outline: CourseOutline
+        self, session: WorkflowChatSession, unit: Unit, outline: UnitOutline
     ) -> list[dict[str, Any]]:
         """Generate weekly topics based on workflow decisions"""
         duration_weeks = outline.duration_weeks
@@ -612,7 +612,7 @@ class ContentWorkflowService:
         return topics
 
     async def _generate_assessments(
-        self, session: WorkflowChatSession, unit: Unit, outline: CourseOutline
+        self, session: WorkflowChatSession, unit: Unit, outline: UnitOutline
     ) -> list[dict[str, Any]]:
         """Generate assessment plan based on workflow decisions"""
         decisions = session.decisions_made or {}

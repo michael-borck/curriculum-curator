@@ -5,7 +5,7 @@ Document structure analyzer for course content extraction
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from app.models import BloomLevel, ContentCategory, ContentType, OutcomeType
 from app.services.pdf_parser_service import ExtractedDocument
@@ -94,7 +94,7 @@ class DocumentAnalyzerService:
     """Service for analyzing document structure and extracting course content"""
 
     # Bloom's taxonomy verb mapping
-    BLOOM_VERBS = {
+    BLOOM_VERBS: ClassVar[dict[BloomLevel, list[str]]] = {
         BloomLevel.REMEMBER: [
             "identify",
             "list",
@@ -223,7 +223,7 @@ class DocumentAnalyzerService:
             },
         )
 
-    def _identify_document_type(self, document: ExtractedDocument) -> DocumentType:
+    def _identify_document_type(self, document: ExtractedDocument) -> DocumentType:  # noqa: PLR0911
         """Identify the type of course document"""
         text_lower = document.full_text.lower()
         title_lower = (document.metadata.title or "").lower()
@@ -255,12 +255,11 @@ class DocumentAnalyzerService:
             first_page = document.pages[0].text
             lines = first_page.split("\n")[:10]  # Check first 10 lines
 
-            for line in lines:
-                line = line.strip()
+            for text_line in lines:
+                line = text_line.strip()
                 # Look for lines that might be titles
-                if line and len(line) > 10 and len(line) < 200:
-                    if line.isupper() or line.istitle():
-                        return line
+                if line and len(line) > 10 and len(line) < 200 and (line.isupper() or line.istitle()):
+                    return line
 
         return None
 
@@ -338,8 +337,8 @@ class DocumentAnalyzerService:
         for page in document.pages:
             lines = page.text.split("\n")
 
-            for line in lines:
-                line = line.strip()
+            for text_line in lines:
+                line = text_line.strip()
 
                 if self._is_section_heading(line):
                     # Save previous section
@@ -384,11 +383,7 @@ class DocumentAnalyzerService:
             r"^(Introduction|Overview|Objectives|Outcomes|Assessment|Summary|Conclusion)",
         ]
 
-        for pattern in patterns:
-            if re.match(pattern, text, re.IGNORECASE):
-                return True
-
-        return False
+        return any(re.match(pattern, text, re.IGNORECASE) for pattern in patterns)
 
     def _get_heading_level(self, text: str) -> int:
         """Determine heading level (1-6)"""
@@ -708,9 +703,11 @@ class DocumentAnalyzerService:
 
                 # Also extract full reference lines
                 lines = section.split("\n")
-                for line in lines:
-                    if len(line) > 20 and "(" in line and ")" in line:
-                        references.append(line.strip())
+                references.extend(
+                    line.strip()
+                    for line in lines
+                    if len(line) > 20 and "(" in line and ")" in line
+                )
 
         # Remove duplicates
         return list(set(references))[:30]  # Limit to 30 references
@@ -865,16 +862,16 @@ class DocumentAnalyzerService:
                 )
 
         # Suggest assessment content
-        for assessment in analysis.assessments:
-            suggestions.append(
-                {
-                    "type": ContentType.ASSIGNMENT.value,
-                    "title": assessment.name,
-                    "week_number": assessment.due_week,
-                    "category": ContentCategory.POST_CLASS.value,
-                    "reason": f"Assessment: {assessment.assessment_type}",
-                }
-            )
+        suggestions.extend(
+            {
+                "type": ContentType.ASSIGNMENT.value,
+                "title": assessment.name,
+                "week_number": assessment.due_week,
+                "category": ContentCategory.POST_CLASS.value,
+                "reason": f"Assessment: {assessment.assessment_type}",
+            }
+            for assessment in analysis.assessments
+        )
 
         return suggestions
 

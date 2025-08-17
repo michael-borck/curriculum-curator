@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import (
     AssessmentPlan,
-    CourseOutline,
     Unit,
     UnitLearningOutcome,
+    UnitOutline,
     User,
     WeeklyTopic,
 )
@@ -27,35 +27,23 @@ async def get_course_structure(
     """
     Get complete course structure including outline, outcomes, topics, and assessments
     """
-    # For now, we'll treat course_id as unit_id since that's what our models use
-    # In the future, we should properly link courses and units
-
-    # Check if user has access to this course/unit
-    course = db.query(Course).filter(
-        Course.id == course_id,
-        Course.user_id == current_user.id
+    # Check if user has access to this unit
+    # (course_id is actually unit_id in our system)
+    unit = db.query(Unit).filter(
+        Unit.id == course_id,
+        Unit.owner_id == current_user.id
     ).first()
 
-    if not course:
-        # Try to find as a unit
-        unit = db.query(Unit).filter(
-            Unit.id == course_id,
-            Unit.owner_id == current_user.id
-        ).first()
-
-        if not unit:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found or access denied"
-            )
-        unit_id = unit.id
-    else:
-        # For now, use course_id as unit_id
-        unit_id = course_id
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found or access denied"
+        )
+    unit_id = unit.id
 
     # Get course outline
-    outline = db.query(CourseOutline).filter(
-        CourseOutline.unit_id == unit_id
+    outline = db.query(UnitOutline).filter(
+        UnitOutline.unit_id == unit_id
     ).first()
 
     if not outline:
@@ -142,31 +130,23 @@ async def delete_course_structure(
     Delete course structure (for testing/reset purposes)
     """
     # Check access
-    course = db.query(Course).filter(
-        Course.id == course_id,
-        Course.user_id == current_user.id
+    unit = db.query(Unit).filter(
+        Unit.id == course_id,
+        Unit.owner_id == current_user.id
     ).first()
 
-    if not course:
-        unit = db.query(Unit).filter(
-            Unit.id == course_id,
-            Unit.owner_id == current_user.id
-        ).first()
-
-        if not unit:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Course not found or access denied"
-            )
-        unit_id = unit.id
-    else:
-        unit_id = course_id
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found or access denied"
+        )
+    unit_id = unit.id
 
     # Delete in correct order due to foreign key constraints
     db.query(AssessmentPlan).filter(AssessmentPlan.unit_id == unit_id).delete()
     db.query(WeeklyTopic).filter(WeeklyTopic.unit_id == unit_id).delete()
     db.query(UnitLearningOutcome).filter(UnitLearningOutcome.unit_id == unit_id).delete()
-    db.query(CourseOutline).filter(CourseOutline.unit_id == unit_id).delete()
+    db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).delete()
 
     db.commit()
 

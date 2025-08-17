@@ -111,7 +111,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const result = await workflowApi.generateCourseStructure(session.id);
+      const result = await workflowApi.generateUnitStructure(session.id);
       if (result.status === 'success' && result.outline_id) {
         setCompletionMessage(
           `Course structure generated successfully! Created ${result.components?.learning_outcomes} learning outcomes, ${result.components?.weekly_topics} weekly topics, and ${result.components?.assessments} assessments.`
