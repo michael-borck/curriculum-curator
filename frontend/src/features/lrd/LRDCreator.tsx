@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-interface Course {
+interface Unit {
   id: string;
   title: string;
   code: string;
@@ -72,7 +72,7 @@ interface LRDContent {
 }
 
 interface LRDData {
-  course_id: string | undefined;
+  unit_id: string | undefined;
   version: string;
   status: string;
   content: LRDContent;
@@ -80,17 +80,17 @@ interface LRDData {
 }
 
 const LRDCreator = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { unitId } = useParams<{ unitId: string }>();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [course, setCourse] = useState<Course | null>(null);
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [errors, setErrors] = useState<LRDErrors>({});
 
   // LRD Form State
   const [lrdData, setLrdData] = useState<LRDData>({
-    course_id: courseId,
+    unit_id: unitId,
     version: '1.0',
     status: 'DRAFT',
     content: {
@@ -133,13 +133,13 @@ const LRDCreator = () => {
     },
   });
 
-  // Fetch course details
+  // Fetch unit details
   useEffect(() => {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/courses/${courseId}`);
-        setCourse(response.data);
+        const response = await api.get(`/units/${unitId}`);
+        setUnit(response.data);
 
         // Set teaching philosophy from course
         setLrdData(prev => ({
@@ -150,14 +150,14 @@ const LRDCreator = () => {
           },
         }));
       } catch (error) {
-        console.error('Error fetching course:', error);
+        console.error('Error fetching unit:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCourse();
-  }, [courseId]);
+  }, [unitId]);
 
   // Handle array field operations
   const addArrayItem = (path: string) => {
@@ -316,7 +316,7 @@ const LRDCreator = () => {
         await api.post(`/lrds/${response.data.id}/generate-tasks`);
       }
 
-      navigate(`/courses/${courseId}/lrds`);
+      navigate(`/units/${unitId}/lrds`);
     } catch (error) {
       console.error('Error saving LRD:', error);
       setErrors({
@@ -342,9 +342,9 @@ const LRDCreator = () => {
         <h1 className='text-3xl font-bold text-gray-900 mb-2'>
           Create Learning Resource Document (LRD)
         </h1>
-        {course && (
+        {unit && (
           <p className='text-gray-600'>
-            For: {course.title} ({course.code})
+            For: {unit.title} ({unit.code})
           </p>
         )}
       </div>
@@ -433,7 +433,7 @@ const LRDCreator = () => {
             <select
               value={
                 lrdData.content.teaching_philosophy ||
-                course?.teaching_philosophy ||
+                unit?.teaching_philosophy ||
                 'TRADITIONAL'
               }
               onChange={e =>
@@ -1027,7 +1027,7 @@ const LRDCreator = () => {
       {/* Action Buttons */}
       <div className='flex justify-end space-x-4'>
         <button
-          onClick={() => navigate(`/courses/${courseId}`)}
+          onClick={() => navigate(`/units/${unitId}`)}
           className='px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50'
         >
           Cancel

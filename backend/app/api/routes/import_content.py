@@ -13,9 +13,9 @@ from app.models import (
     Content,
     ContentCategory,
     ContentType,
-    CourseOutline,
     Unit,
     UnitLearningOutcome,
+    UnitOutline,
     User,
     WeeklyTopic,
 )
@@ -192,7 +192,7 @@ async def create_course_structure_from_pdf(
         )
 
     # Check if unit already has a course outline
-    existing_outline = db.query(CourseOutline).filter(CourseOutline.unit_id == unit_id).first()
+    existing_outline = db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first()
     if existing_outline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -223,7 +223,7 @@ async def create_course_structure_from_pdf(
         if auto_create:
             # Create course outline
             outline_data = course_mapping["course_outline"]
-            outline = CourseOutline(
+            outline = UnitOutline(
                 id=uuid.uuid4(),
                 unit_id=unit_id,
                 title=outline_data["title"] or f"Course Outline for {unit.name}",
@@ -431,7 +431,7 @@ async def get_import_suggestions(
 
     # Check what already exists
     has_outline = (
-        db.query(CourseOutline).filter(CourseOutline.unit_id == unit_id).first() is not None
+        db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first() is not None
     )
 
     outcomes_count = (

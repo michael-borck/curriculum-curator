@@ -104,7 +104,7 @@ const LandingPage = () => {
       <section className='bg-gradient-to-br from-purple-50 via-white to-blue-50 py-20'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center'>
           <h1 className='text-5xl font-bold text-gray-900 mb-6'>
-            Create Course Content That{' '}
+            Create Unit Content That{' '}
             <span className='bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent'>
               Teaches Your Way
             </span>
@@ -160,7 +160,7 @@ const LandingPage = () => {
       <section className='py-20 bg-gradient-to-r from-purple-600 to-blue-600'>
         <div className='max-w-4xl mx-auto text-center px-4'>
           <h2 className='text-3xl font-bold text-white mb-6'>
-            Ready to Transform Your Course Creation?
+            Ready to Transform Your Unit Creation?
           </h2>
           <p className='text-xl text-purple-100 mb-8'>
             Join educators who are saving hours while creating better content

@@ -28,7 +28,7 @@ const AIAssistant = () => {
       id: '1',
       role: 'assistant',
       content:
-        "Hi! I'm your AI teaching assistant. I can help you create course content, answer pedagogical questions, and provide teaching suggestions. How can I assist you today?",
+        "Hi! I'm your AI teaching assistant. I can help you create unit content, answer pedagogical questions, and provide teaching suggestions. How can I assist you today?",
       timestamp: new Date(),
     },
   ]);
@@ -245,7 +245,7 @@ const AIAssistant = () => {
               </span>
             </div>
             <div>
-              <span className='text-gray-600'>Active Course:</span>
+              <span className='text-gray-600'>Active Unit:</span>
               <span className='ml-2 font-medium'>None selected</span>
             </div>
             <div>

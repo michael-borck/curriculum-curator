@@ -10,14 +10,14 @@ export enum WorkflowStage {
   WEEKLY_PLANNING = 'weekly_planning',
   CONTENT_GENERATION = 'content_generation',
   QUALITY_REVIEW = 'quality_review',
-  COMPLETED = 'completed'
+  COMPLETED = 'completed',
 }
 
 export enum SessionStatus {
   ACTIVE = 'active',
   PAUSED = 'paused',
   COMPLETED = 'completed',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export interface WorkflowSession {

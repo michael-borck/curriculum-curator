@@ -86,7 +86,7 @@ const Landing = ({ onSignInClick }: LandingProps) => {
       <section className='bg-gradient-to-br from-purple-50 to-indigo-50 px-8 py-20'>
         <div className='max-w-6xl mx-auto text-center'>
           <h1 className='text-5xl font-bold text-gray-900 mb-6 leading-tight'>
-            Create Course Content
+            Create Unit Content
             <br />
             <span className='text-purple-600'>That Teaches Your Way</span>
           </h1>
@@ -193,7 +193,7 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             Ready to Transform Your Content Creation?
           </h2>
           <p className='text-xl opacity-90 mb-8'>
-            Join educators who are already creating better course materials with
+            Join educators who are already creating better unit materials with
             AI assistance.
           </p>
           <button

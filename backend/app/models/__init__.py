@@ -16,6 +16,7 @@ from .email_whitelist import EmailWhitelist
 from .generation_history import GenerationHistory, GenerationType
 from .learning_outcome import BloomLevel, OutcomeType, UnitLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
+from .material import Material, MaterialType
 from .password_reset import PasswordReset
 from .quiz_question import QuestionType, QuizQuestion
 from .security_log import SecurityEventType, SecurityLog
@@ -67,6 +68,9 @@ __all__ = [
     # Generation tracking
     "GenerationHistory",
     "GenerationType",
+    # Materials
+    "Material",
+    "MaterialType",
     # Security
     "LoginAttempt",
     "LoginAttemptType",

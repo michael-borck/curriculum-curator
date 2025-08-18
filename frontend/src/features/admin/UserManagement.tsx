@@ -138,22 +138,31 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string, permanent: boolean = false) => {
+  const handleDeleteUser = async (
+    userId: string,
+    permanent: boolean = false
+  ) => {
     const user = users.find(u => u.id === userId);
     if (!user) return;
 
     const action = permanent ? 'permanently delete' : 'deactivate';
-    const warning = permanent 
+    const warning = permanent
       ? 'This will permanently remove the user and all their data from the database. This action cannot be undone!'
       : 'This will deactivate the user account. They will not be able to login.';
 
-    if (!window.confirm(`Are you sure you want to ${action} user ${user.email}?\n\n${warning}`)) {
+    if (
+      !window.confirm(
+        `Are you sure you want to ${action} user ${user.email}?\n\n${warning}`
+      )
+    ) {
       return;
     }
 
     try {
-      const response = await api.delete(`/api/admin/users/${userId}${permanent ? '?permanent=true' : ''}`);
-      
+      const response = await api.delete(
+        `/api/admin/users/${userId}${permanent ? '?permanent=true' : ''}`
+      );
+
       if (permanent) {
         // Remove from list if permanently deleted
         setUsers(users.filter(user => user.id !== userId));
@@ -165,11 +174,11 @@ const UserManagement = () => {
           )
         );
       }
-      
+
       // Show success message
       const message = response.data?.message || `User ${action}d successfully`;
       window.alert(message);
-      
+
       setShowDropdown(null);
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -298,7 +307,10 @@ const UserManagement = () => {
             </thead>
             <tbody className='bg-white divide-y divide-gray-200'>
               {filteredUsers.map(user => (
-                <tr key={user.id} className={`hover:bg-gray-50 ${!user.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
+                <tr
+                  key={user.id}
+                  className={`hover:bg-gray-50 ${!user.is_active ? 'opacity-60 bg-gray-50' : ''}`}
+                >
                   <td className='px-6 py-4 whitespace-nowrap'>
                     <div>
                       <div className='text-sm font-medium text-gray-900'>

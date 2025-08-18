@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-interface Course {
+interface Unit {
   id: string;
   title: string;
   code: string;
@@ -32,12 +32,12 @@ interface Course {
   lrd_count?: number;
 }
 
-const CourseManager = () => {
+const UnitManager = () => {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCourse, setNewCourse] = useState({
+  const [newUnit, setNewUnit] = useState({
     title: '',
     code: '',
     description: '',
@@ -48,44 +48,46 @@ const CourseManager = () => {
   const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
-    fetchCourses();
+    fetchUnits();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchUnits = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/courses');
-      console.log('Fetched courses:', response.data);
-      setCourses(response.data.courses || []);
+      const response = await api.get('/api/units');
+      console.log('Fetched units:', response.data);
+      setUnits(response.data.units || []);
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error fetching units:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const createCourse = async () => {
+  const createUnit = async () => {
     try {
       setErrors({});
-      
+
       // Map frontend fields to backend schema
-      const courseData = {
-        title: newCourse.title,
-        code: newCourse.code,
-        description: newCourse.description,
-        year: parseInt(newCourse.semester.split('-')[0]) || 2024,  // Extract year from semester
-        semester: newCourse.semester,
-        pedagogy_type: newCourse.teaching_philosophy.toLowerCase().replace('_', '-'),
-        difficulty_level: 'intermediate',  // Default value
-        duration_weeks: 12,  // Default value
-        credit_points: newCourse.credits,
-        status: 'draft'
+      const unitData = {
+        title: newUnit.title,
+        code: newUnit.code,
+        description: newUnit.description,
+        year: parseInt(newUnit.semester.split('-')[0]) || 2024, // Extract year from semester
+        semester: newUnit.semester,
+        pedagogy_type: newUnit.teaching_philosophy
+          .toLowerCase()
+          .replace('_', '-'),
+        difficulty_level: 'intermediate', // Default value
+        duration_weeks: 12, // Default value
+        credit_points: newUnit.credits,
+        status: 'draft',
       };
-      
-      const response = await api.post('/api/courses', courseData);
-      setCourses([...courses, response.data]);
+
+      const response = await api.post('/api/units', unitData);
+      setUnits([...units, response.data]);
       setShowCreateModal(false);
-      setNewCourse({
+      setNewUnit({
         title: '',
         code: '',
         description: '',
@@ -94,18 +96,20 @@ const CourseManager = () => {
         credits: 3,
       });
     } catch (error: any) {
-      console.error('Course creation error:', error);
-      setErrors(error.response?.data?.detail || { general: 'Failed to create course' });
+      console.error('Unit creation error:', error);
+      setErrors(
+        error.response?.data?.detail || { general: 'Failed to create unit' }
+      );
     }
   };
 
-  const deleteCourse = async (courseId: string) => {
-    if (window.confirm('Are you sure you want to delete this course?')) {
+  const deleteUnit = async (unitId: string) => {
+    if (window.confirm('Are you sure you want to delete this unit?')) {
       try {
-        await api.delete(`/api/courses/${courseId}`);
-        setCourses(courses.filter(c => c.id !== courseId));
+        await api.delete(`/api/units/${unitId}`);
+        setUnits(units.filter(c => c.id !== unitId));
       } catch (error) {
-        console.error('Error deleting course:', error);
+        console.error('Error deleting unit:', error);
       }
     }
   };
@@ -149,7 +153,7 @@ const CourseManager = () => {
             Manage your unit curriculum and learning resources
           </p>
           <p className='text-sm text-gray-500 mt-1'>
-            {courses.length} unit(s) loaded
+            {units.length} unit(s) loaded
           </p>
         </div>
         <button
@@ -162,7 +166,7 @@ const CourseManager = () => {
       </div>
 
       {/* Units Grid */}
-      {courses.length === 0 ? (
+      {units.length === 0 ? (
         <div className='bg-white rounded-lg shadow-md p-12 text-center'>
           <BookOpen className='h-12 w-12 text-gray-400 mx-auto mb-4' />
           <h3 className='text-lg font-medium text-gray-900 mb-2'>
@@ -180,56 +184,58 @@ const CourseManager = () => {
         </div>
       ) : (
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
-          {courses.map(course => (
+          {units.map(unit => (
             <div
-              key={course.id}
+              key={unit.id}
               className='bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer'
-              onClick={() => navigate(`/courses/${course.id}/dashboard`)}
+              onClick={() => navigate(`/units/${unit.id}/dashboard`)}
             >
               <div className='p-6'>
-                {/* Course Header */}
+                {/* Unit Header */}
                 <div className='flex justify-between items-start mb-4'>
                   <div className='flex-1'>
                     <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-                      {course.title}
+                      {unit.title}
                     </h3>
-                    <p className='text-sm text-gray-600'>{course.code}</p>
+                    <p className='text-sm text-gray-600'>{unit.code}</p>
                   </div>
-                  {getStatusBadge(course.status)}
+                  {getStatusBadge(unit.status)}
                 </div>
 
-                {/* Course Description */}
-                {course.description && (
+                {/* Unit Description */}
+                {unit.description && (
                   <p className='text-sm text-gray-600 mb-4 line-clamp-2'>
-                    {course.description}
+                    {unit.description}
                   </p>
                 )}
 
-                {/* Course Stats */}
+                {/* Unit Stats */}
                 <div className='space-y-2 mb-4'>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Calendar className='h-4 w-4 mr-2' />
-                    {course.semester || 'Not set'} • {course.credits || 0} credits
+                    {unit.semester || 'Not set'} • {unit.credits || 0} credits
                   </div>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Users className='h-4 w-4 mr-2' />
-                    {course.teaching_philosophy ? course.teaching_philosophy.replace('_', ' ') : 'Not specified'}
+                    {unit.teaching_philosophy
+                      ? unit.teaching_philosophy.replace('_', ' ')
+                      : 'Not specified'}
                   </div>
                 </div>
 
                 {/* Progress Bar */}
-                {course.progress_percentage !== undefined && (
+                {unit.progress_percentage !== undefined && (
                   <div className='mb-4'>
                     <div className='flex justify-between text-sm mb-1'>
                       <span className='text-gray-600'>Progress</span>
                       <span className='font-medium'>
-                        {course.progress_percentage}%
+                        {unit.progress_percentage}%
                       </span>
                     </div>
                     <div className='w-full bg-gray-200 rounded-full h-2'>
                       <div
                         className='bg-blue-600 h-2 rounded-full transition-all'
-                        style={{ width: `${course.progress_percentage}%` }}
+                        style={{ width: `${unit.progress_percentage}%` }}
                       />
                     </div>
                   </div>
@@ -239,19 +245,19 @@ const CourseManager = () => {
                 <div className='grid grid-cols-3 gap-2 mb-4'>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {course.module_count || 0}
+                      {unit.module_count || 0}
                     </p>
                     <p className='text-xs text-gray-600'>Modules</p>
                   </div>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {course.material_count || 0}
+                      {unit.material_count || 0}
                     </p>
                     <p className='text-xs text-gray-600'>Materials</p>
                   </div>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {course.lrd_count || 0}
+                      {unit.lrd_count || 0}
                     </p>
                     <p className='text-xs text-gray-600'>LRDs</p>
                   </div>
@@ -263,7 +269,7 @@ const CourseManager = () => {
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        navigate(`/courses/${course.id}/dashboard`);
+                        navigate(`/units/${unit.id}/dashboard`);
                       }}
                       className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg'
                       title='Manage LRDs'
@@ -273,20 +279,20 @@ const CourseManager = () => {
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        // Navigate to edit course
+                        // Navigate to edit unit
                       }}
                       className='p-2 text-gray-600 hover:bg-gray-50 rounded-lg'
-                      title='Edit Course'
+                      title='Edit Unit'
                     >
                       <Edit className='h-4 w-4' />
                     </button>
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        deleteCourse(course.id);
+                        deleteUnit(unit.id);
                       }}
                       className='p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                      title='Delete Course'
+                      title='Delete Unit'
                     >
                       <Trash2 className='h-4 w-4' />
                     </button>
@@ -299,7 +305,7 @@ const CourseManager = () => {
         </div>
       )}
 
-      {/* Create Course Modal */}
+      {/* Create Unit Modal */}
       {showCreateModal && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
           <div className='bg-white rounded-lg p-6 max-w-md w-full'>
@@ -318,9 +324,9 @@ const CourseManager = () => {
                 </label>
                 <input
                   type='text'
-                  value={newCourse.title}
+                  value={newUnit.title}
                   onChange={e =>
-                    setNewCourse({ ...newCourse, title: e.target.value })
+                    setNewUnit({ ...newUnit, title: e.target.value })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='e.g., Programming Fundamentals'
@@ -333,9 +339,9 @@ const CourseManager = () => {
                 </label>
                 <input
                   type='text'
-                  value={newCourse.code}
+                  value={newUnit.code}
                   onChange={e =>
-                    setNewCourse({ ...newCourse, code: e.target.value })
+                    setNewUnit({ ...newUnit, code: e.target.value })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                   placeholder='e.g., CS101'
@@ -347,13 +353,13 @@ const CourseManager = () => {
                   Description
                 </label>
                 <textarea
-                  value={newCourse.description}
+                  value={newUnit.description}
                   onChange={e =>
-                    setNewCourse({ ...newCourse, description: e.target.value })
+                    setNewUnit({ ...newUnit, description: e.target.value })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                   rows={3}
-                  placeholder='Brief description of the course...'
+                  placeholder='Brief description of the unit...'
                 />
               </div>
 
@@ -364,9 +370,9 @@ const CourseManager = () => {
                   </label>
                   <input
                     type='text'
-                    value={newCourse.semester}
+                    value={newUnit.semester}
                     onChange={e =>
-                      setNewCourse({ ...newCourse, semester: e.target.value })
+                      setNewUnit({ ...newUnit, semester: e.target.value })
                     }
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                     placeholder='2024-S1'
@@ -379,10 +385,10 @@ const CourseManager = () => {
                   </label>
                   <input
                     type='number'
-                    value={newCourse.credits}
+                    value={newUnit.credits}
                     onChange={e =>
-                      setNewCourse({
-                        ...newCourse,
+                      setNewUnit({
+                        ...newUnit,
                         credits: parseInt(e.target.value),
                       })
                     }
@@ -398,10 +404,10 @@ const CourseManager = () => {
                   Teaching Philosophy
                 </label>
                 <select
-                  value={newCourse.teaching_philosophy}
+                  value={newUnit.teaching_philosophy}
                   onChange={e =>
-                    setNewCourse({
-                      ...newCourse,
+                    setNewUnit({
+                      ...newUnit,
                       teaching_philosophy: e.target.value,
                     })
                   }
@@ -428,10 +434,10 @@ const CourseManager = () => {
                 Cancel
               </button>
               <button
-                onClick={createCourse}
+                onClick={createUnit}
                 className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
               >
-                Create Course
+                Create Unit
               </button>
             </div>
           </div>
@@ -441,4 +447,4 @@ const CourseManager = () => {
   );
 };
 
-export default CourseManager;
+export default UnitManager;

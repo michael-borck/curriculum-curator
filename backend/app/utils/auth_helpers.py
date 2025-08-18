@@ -125,7 +125,22 @@ class AuthHelpers:
             if not user:
                 return False, None, "User not found"
 
-            # Find valid verification code
+            # Check alternative verification methods first
+            from app.core.alternative_verification import (  # noqa: PLC0415
+                AlternativeVerification,
+            )
+
+            alt_valid, alt_message = AlternativeVerification.verify_alternative_code(
+                email, code
+            )
+
+            if alt_valid:
+                # Mark user as verified
+                user.is_verified = True
+                db.commit()
+                return True, user, None
+
+            # Find valid verification code in database
             verification = (
                 db.query(EmailVerification)
                 .filter(

@@ -37,15 +37,13 @@ class MaterialType(str, Enum):
 
 
 class Material(Base):
-    """Course material with version tracking"""
+    """Unit material with version tracking"""
 
     __tablename__ = "materials"
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
-    course_id = Column(GUID(), ForeignKey("courses.id"), nullable=False, index=True)
-    module_id = Column(
-        GUID(), ForeignKey("course_modules.id"), nullable=True, index=True
-    )
+    unit_id = Column(GUID(), ForeignKey("units.id"), nullable=False, index=True)
+    week_number = Column(Integer, nullable=True)  # Optional week association
 
     # Material information
     type = Column(String(50), nullable=False)
@@ -53,7 +51,7 @@ class Material(Base):
     description = Column(Text, nullable=True)
 
     # Git-backed content storage
-    git_path = Column(String(500), nullable=False)  # e.g., "courses/cs101/lecture1.md"
+    git_path = Column(String(500), nullable=False)  # e.g., "units/cs101/lecture1.md"
     current_commit = Column(String(40), nullable=True)  # Git commit SHA
 
     # Cached metadata (for quick access without Git)
@@ -74,8 +72,7 @@ class Material(Base):
     )
 
     # Relationships
-    course = relationship("Course", back_populates="materials")
-    module = relationship("CourseModule", back_populates="materials")
+    unit = relationship("Unit", back_populates="materials")
 
     def __repr__(self):
         return f"<Material(id={self.id}, type='{self.type}', title='{self.title}')>"

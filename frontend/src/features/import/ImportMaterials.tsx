@@ -86,19 +86,19 @@ const ImportMaterials = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState('');
+  const [units, setUnits] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchCourses();
+    fetchUnits();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchUnits = async () => {
     try {
-      const response = await api.get('/courses');
-      setCourses(response.data);
+      const response = await api.get('/api/units');
+      setUnits(response.data);
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('Error fetching units:', error);
     }
   };
 
@@ -152,7 +152,7 @@ const ImportMaterials = () => {
   };
 
   const uploadFiles = async () => {
-    if (!selectedCourse) {
+    if (!selectedUnit) {
       window.alert('Please select a course first');
       return;
     }
@@ -192,7 +192,7 @@ const ImportMaterials = () => {
 
         try {
           const response = await api.post(
-            `/content/upload?unit_id=${selectedCourse}`,
+            `/content/upload?unit_id=${selectedUnit}`,
             formData,
             {
               headers: { 'Content-Type': 'multipart/form-data' },
@@ -250,7 +250,7 @@ const ImportMaterials = () => {
       // Batch upload
       try {
         const response = await api.post(
-          `/content/upload/batch?unit_id=${selectedCourse}`,
+          `/content/upload/batch?unit_id=${selectedUnit}`,
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -309,7 +309,7 @@ const ImportMaterials = () => {
           Import Materials
         </h1>
         <p className='text-gray-600'>
-          Upload and import existing course materials for enhancement
+          Upload and import existing unit materials for enhancement
         </p>
       </div>
 
@@ -335,17 +335,17 @@ const ImportMaterials = () => {
       {/* Course Selection */}
       <div className='bg-white rounded-lg shadow-md p-6 mb-6'>
         <label className='block text-sm font-medium text-gray-700 mb-2'>
-          Select Target Course *
+          Select Target Unit *
         </label>
         <select
-          value={selectedCourse}
-          onChange={e => setSelectedCourse(e.target.value)}
+          value={selectedUnit}
+          onChange={e => setSelectedUnit(e.target.value)}
           className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
         >
-          <option value=''>Select a course...</option>
-          {courses.map(course => (
-            <option key={course.id} value={course.id}>
-              {course.title} ({course.code})
+          <option value=''>Select a unit...</option>
+          {units.map(unit => (
+            <option key={unit.id} value={unit.id}>
+              {unit.title} ({unit.code})
             </option>
           ))}
         </select>
@@ -458,7 +458,7 @@ const ImportMaterials = () => {
               </button>
               <button
                 onClick={uploadFiles}
-                disabled={uploading || files.length === 0 || !selectedCourse}
+                disabled={uploading || files.length === 0 || !selectedUnit}
                 className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
               >
                 {uploading ? (

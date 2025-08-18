@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 import type {
   ApiResponse,
-  Course,
+  Unit,
   PedagogyType,
   ContentType,
 } from '../types/index';
@@ -53,18 +53,21 @@ export const enhanceContent = (
 ): Promise<ApiResponse> =>
   api.post('/api/llm/enhance', { content, pedagogy_style: pedagogy });
 
-// Course endpoints
-export const getCourses = (): Promise<ApiResponse<Course[]>> =>
-  api.get('/api/courses');
-export const getCourse = (id: string): Promise<ApiResponse<Course>> =>
-  api.get(`/api/courses/${id}`);
-export const createCourse = (
-  data: Partial<Course>
-): Promise<ApiResponse<Course>> => api.post('/api/courses', data);
-export const updateCourse = (
+// Unit endpoints
+export const getUnits = (): Promise<ApiResponse<Unit[]>> =>
+  api.get('/api/units');
+export const getUnit = (id: string): Promise<ApiResponse<Unit>> =>
+  api.get(`/api/units/${id}`);
+
+// Backwards compatibility aliases
+export const getCourses = getUnits;
+export const getCourse = getUnit;
+export const createUnit = (data: Partial<Unit>): Promise<ApiResponse<Unit>> =>
+  api.post('/api/units', data);
+export const updateUnit = (
   id: string,
-  data: Partial<Course>
-): Promise<ApiResponse<Course>> => api.put(`/api/courses/${id}`, data);
+  data: Partial<Unit>
+): Promise<ApiResponse<Unit>> => api.put(`/api/units/${id}`, data);
 
 // File upload
 export const uploadFile = (file: File): Promise<ApiResponse> => {
@@ -76,3 +79,4 @@ export const uploadFile = (file: File): Promise<ApiResponse> => {
 };
 
 export default api;
+export { api };

@@ -103,7 +103,7 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
         <nav className='flex-1 overflow-y-auto py-4'>
           {menuItems.map(item => {
             const Icon = item.icon;
-            
+
             // Handle submenu items
             if ('submenu' in item && item.submenu) {
               const isExpanded = expandedMenus.has(item.label);
@@ -150,7 +150,7 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
                 </div>
               );
             }
-            
+
             // Regular menu items
             return (
               <button

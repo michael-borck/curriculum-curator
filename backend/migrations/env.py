@@ -10,13 +10,19 @@ from app.core.database import Base
 
 # Import all models so Alembic can detect them
 from app.models import (
-    Conversation,
-    Course,
-    CourseModule,
-    LRD,
+    AssessmentPlan,
+    Content,
+    ContentCategory,
+    ContentType,
+    EmailVerification,
     Material,
-    TaskList,
+    PasswordReset,
+    SystemConfig,
+    Unit,
+    UnitLearningOutcome,
+    UnitOutline,
     User,
+    WeeklyTopic,
 )
 
 # this is the Alembic Config object, which provides

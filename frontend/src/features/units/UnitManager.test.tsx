@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
-import CourseManager from './CourseManager';
+import UnitManager from './UnitManager';
 import { api } from '../../services/api';
 
 // Mock the API
@@ -23,7 +23,7 @@ vi.mock('react-hot-toast', () => ({
   },
 }));
 
-describe('CourseManager Component', () => {
+describe('UnitManager Component', () => {
   const mockCourses = [
     {
       id: '1',
@@ -48,60 +48,60 @@ describe('CourseManager Component', () => {
     (api.get as any).mockResolvedValue({ data: mockCourses });
   });
 
-  const renderCourseManager = () => {
+  const renderUnitManager = () => {
     return render(
       <BrowserRouter>
-        <CourseManager />
+        <UnitManager />
       </BrowserRouter>
     );
   };
 
   it('renders course list on load', async () => {
-    renderCourseManager();
+    renderUnitManager();
 
     await waitFor(() => {
       expect(screen.getByText('Introduction to React')).toBeInTheDocument();
       expect(screen.getByText('Advanced TypeScript')).toBeInTheDocument();
     });
 
-    expect(api.get).toHaveBeenCalledWith('/courses/');
+    expect(api.get).toHaveBeenCalledWith('/units/');
   });
 
   it('displays loading state while fetching courses', () => {
     (api.get as any).mockImplementation(() => new Promise(() => {}));
-    renderCourseManager();
+    renderUnitManager();
 
     expect(screen.getByText(/loading courses/i)).toBeInTheDocument();
   });
 
   it('displays error message on fetch failure', async () => {
     (api.get as any).mockRejectedValue(new Error('Network error'));
-    renderCourseManager();
+    renderUnitManager();
 
     await waitFor(() => {
       expect(screen.getByText(/failed to load courses/i)).toBeInTheDocument();
     });
   });
 
-  it('opens create course modal', async () => {
-    renderCourseManager();
+  it('opens create unit modal', async () => {
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
       expect(screen.getByText('Introduction to React')).toBeInTheDocument();
     });
 
-    const createButton = screen.getByRole('button', { name: /create course/i });
+    const createButton = screen.getByRole('button', { name: /create unit/i });
     await user.click(createButton);
 
     expect(screen.getByText(/new course/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/course title/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/unit title/i)).toBeInTheDocument();
   });
 
   it('creates a new course', async () => {
     const newCourse = {
       id: '3',
-      title: 'New Course',
+      title: 'New Unit',
       description: 'New description',
       duration_weeks: 4,
       objectives: ['Objective 1'],
@@ -109,7 +109,7 @@ describe('CourseManager Component', () => {
 
     (api.post as any).mockResolvedValue({ data: newCourse });
 
-    renderCourseManager();
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -117,11 +117,11 @@ describe('CourseManager Component', () => {
     });
 
     // Open modal
-    const createButton = screen.getByRole('button', { name: /create course/i });
+    const createButton = screen.getByRole('button', { name: /create unit/i });
     await user.click(createButton);
 
     // Fill form
-    await user.type(screen.getByPlaceholderText(/course title/i), 'New Course');
+    await user.type(screen.getByPlaceholderText(/unit title/i), 'New Unit');
     await user.type(
       screen.getByPlaceholderText(/description/i),
       'New description'
@@ -135,9 +135,9 @@ describe('CourseManager Component', () => {
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
-        '/courses/',
+        '/units/',
         expect.objectContaining({
-          title: 'New Course',
+          title: 'New Unit',
           description: 'New description',
           duration_weeks: 4,
         })
@@ -146,7 +146,7 @@ describe('CourseManager Component', () => {
   });
 
   it('edits an existing course', async () => {
-    renderCourseManager();
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -165,7 +165,7 @@ describe('CourseManager Component', () => {
     // Update title
     const titleInput = screen.getByDisplayValue('Introduction to React');
     await user.clear(titleInput);
-    await user.type(titleInput, 'Updated React Course');
+    await user.type(titleInput, 'Updated React Unit');
 
     // Submit
     const saveButton = screen.getByRole('button', { name: /save/i });
@@ -173,9 +173,9 @@ describe('CourseManager Component', () => {
 
     await waitFor(() => {
       expect(api.put).toHaveBeenCalledWith(
-        '/courses/1',
+        '/units/1',
         expect.objectContaining({
-          title: 'Updated React Course',
+          title: 'Updated React Unit',
         })
       );
     });
@@ -184,7 +184,7 @@ describe('CourseManager Component', () => {
   it('deletes a course with confirmation', async () => {
     (api.delete as any).mockResolvedValue({ data: { success: true } });
 
-    renderCourseManager();
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -203,12 +203,12 @@ describe('CourseManager Component', () => {
     await user.click(confirmButton);
 
     await waitFor(() => {
-      expect(api.delete).toHaveBeenCalledWith('/courses/1');
+      expect(api.delete).toHaveBeenCalledWith('/units/1');
     });
   });
 
   it('filters courses by search term', async () => {
-    renderCourseManager();
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -227,7 +227,7 @@ describe('CourseManager Component', () => {
   });
 
   it('sorts courses by different criteria', async () => {
-    renderCourseManager();
+    renderUnitManager();
     const user = userEvent.setup();
 
     await waitFor(() => {
@@ -249,7 +249,7 @@ describe('CourseManager Component', () => {
   });
 
   it('displays course statistics', async () => {
-    renderCourseManager();
+    renderUnitManager();
 
     await waitFor(() => {
       expect(screen.getByText(/total courses: 2/i)).toBeInTheDocument();

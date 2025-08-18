@@ -11,20 +11,20 @@ import {
   Target,
   LucideIcon,
 } from 'lucide-react';
-import type { Course, CourseModule, ContentType } from '../../types/index';
+import type { Unit, UnitModule, ContentType } from '../../types/index';
 
-const CourseView = () => {
+const UnitView = () => {
   const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<Course | null>(null);
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourse = async () => {
       try {
         // Mock course data for now
-        setCourse({
+        setUnit({
           id: id || '1',
-          title: `Course ${id}`,
+          title: `Unit ${id}`,
           description:
             'A comprehensive course created with pedagogically-aware content generation.',
           pedagogy: 'inquiry-based',
@@ -54,7 +54,7 @@ const CourseView = () => {
           createdAt: new Date().toISOString().split('T')[0],
         });
       } catch (error) {
-        console.error('Failed to fetch course:', error);
+        console.error('Failed to fetch unit:', error);
       } finally {
         setLoading(false);
       }
@@ -71,11 +71,11 @@ const CourseView = () => {
     );
   }
 
-  if (!course) {
+  if (!unit) {
     return (
       <div className='text-center py-12'>
         <h2 className='text-2xl font-bold text-gray-900 mb-4'>
-          Course not found
+          Unit not found
         </h2>
         <Link to='/courses' className='text-purple-600 hover:text-purple-700'>
           ← Back to courses
@@ -108,18 +108,18 @@ const CourseView = () => {
         <div className='flex justify-between items-start'>
           <div>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>
-              {course.title}
+              {unit.title}
             </h1>
-            <p className='text-gray-600 text-lg mb-4'>{course.description}</p>
+            <p className='text-gray-600 text-lg mb-4'>{unit.description}</p>
 
             <div className='flex gap-4 text-sm text-gray-500'>
               <span className='flex items-center gap-1'>
                 <Clock size={16} />
-                {course.duration}
+                {unit.duration}
               </span>
-              <span className='capitalize'>{course.difficulty}</span>
+              <span className='capitalize'>{unit.difficulty}</span>
               <span className='capitalize'>
-                {course.pedagogy.replace('-', ' ')}
+                {unit.pedagogy.replace('-', ' ')}
               </span>
             </div>
           </div>
@@ -127,7 +127,7 @@ const CourseView = () => {
           <div className='flex gap-2'>
             <button className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2'>
               <Edit size={18} />
-              Edit Course
+              Edit Unit
             </button>
             <button className='px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2'>
               <Share size={18} />
@@ -144,10 +144,10 @@ const CourseView = () => {
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
         <div className='lg:col-span-2'>
           <div className='bg-white rounded-lg shadow-md p-6'>
-            <h2 className='text-xl font-semibold mb-4'>Course Modules</h2>
+            <h2 className='text-xl font-semibold mb-4'>Unit Modules</h2>
 
             <div className='space-y-4'>
-              {course.modules.map((module: CourseModule, index: number) => {
+              {unit.modules.map((module: UnitModule, index: number) => {
                 const IconComponent = getModuleIcon(module.type);
 
                 return (
@@ -211,7 +211,7 @@ const CourseView = () => {
           <div className='bg-white rounded-lg shadow-md p-6'>
             <h3 className='text-lg font-semibold mb-4'>Learning Objectives</h3>
             <ul className='space-y-2'>
-              {course.learningObjectives.map(
+              {unit.learningObjectives.map(
                 (objective: string, index: number) => (
                   <li key={index} className='flex items-start gap-2'>
                     <Target
@@ -226,31 +226,31 @@ const CourseView = () => {
           </div>
 
           <div className='bg-white rounded-lg shadow-md p-6'>
-            <h3 className='text-lg font-semibold mb-4'>Course Details</h3>
+            <h3 className='text-lg font-semibold mb-4'>Unit Details</h3>
             <div className='space-y-3'>
               <div>
                 <div className='text-sm font-medium text-gray-500'>Created</div>
-                <p className='text-gray-900'>{course.createdAt}</p>
+                <p className='text-gray-900'>{unit.createdAt}</p>
               </div>
               <div>
                 <div className='text-sm font-medium text-gray-500'>
                   Teaching Approach
                 </div>
                 <p className='text-gray-900 capitalize'>
-                  {course.pedagogy.replace('-', ' ')}
+                  {unit.pedagogy.replace('-', ' ')}
                 </p>
               </div>
               <div>
                 <div className='text-sm font-medium text-gray-500'>
                   Difficulty
                 </div>
-                <p className='text-gray-900 capitalize'>{course.difficulty}</p>
+                <p className='text-gray-900 capitalize'>{unit.difficulty}</p>
               </div>
               <div>
                 <div className='text-sm font-medium text-gray-500'>
                   Duration
                 </div>
-                <p className='text-gray-900'>{course.duration}</p>
+                <p className='text-gray-900'>{unit.duration}</p>
               </div>
             </div>
           </div>
@@ -287,4 +287,4 @@ const CourseView = () => {
   );
 };
 
-export default CourseView;
+export default UnitView;

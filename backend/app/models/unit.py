@@ -128,6 +128,9 @@ class Unit(Base):
     workflow_chat_sessions = relationship(
         "WorkflowChatSession", back_populates="unit", cascade="all, delete-orphan"
     )
+    materials = relationship(
+        "Material", back_populates="unit", cascade="all, delete-orphan"
+    )
     unit_outline = relationship(
         "UnitOutline", back_populates="unit", uselist=False, cascade="all, delete-orphan"
     )

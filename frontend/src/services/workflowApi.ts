@@ -10,21 +10,27 @@ import {
   WorkflowStageInfo,
   UnitStructureResult,
   PDFAnalysisResult,
-  WorkflowStage
+  WorkflowStage,
 } from '../types/workflow';
 
 class WorkflowAPI {
   /**
    * Create a new workflow session
    */
-  async createSession(unitId: string, sessionName?: string): Promise<{
+  async createSession(
+    unitId: string,
+    sessionName?: string
+  ): Promise<{
     status: string;
     session: WorkflowSession;
     next_question: WorkflowQuestion;
   }> {
-    const response = await api.post(`/api/content/workflow/sessions/create/${unitId}`, {
-      session_name: sessionName
-    });
+    const response = await api.post(
+      `/api/content/workflow/sessions/create/${unitId}`,
+      {
+        session_name: sessionName,
+      }
+    );
     return response.data;
   }
 
@@ -32,7 +38,9 @@ class WorkflowAPI {
    * Get workflow session status
    */
   async getSessionStatus(sessionId: string): Promise<WorkflowStatus> {
-    const response = await api.get(`/api/content/workflow/sessions/${sessionId}/status`);
+    const response = await api.get(
+      `/api/content/workflow/sessions/${sessionId}/status`
+    );
     return response.data;
   }
 
@@ -46,14 +54,20 @@ class WorkflowAPI {
     current_stage?: WorkflowStage;
     can_generate?: boolean;
   }> {
-    const response = await api.get(`/api/content/workflow/sessions/${sessionId}/next-question`);
+    const response = await api.get(
+      `/api/content/workflow/sessions/${sessionId}/next-question`
+    );
     return response.data;
   }
 
   /**
    * Submit answer to workflow question
    */
-  async submitAnswer(sessionId: string, questionKey: string, answer: any): Promise<{
+  async submitAnswer(
+    sessionId: string,
+    questionKey: string,
+    answer: any
+  ): Promise<{
     status: string;
     next_question?: WorkflowQuestion;
     stage?: WorkflowStage;
@@ -61,18 +75,23 @@ class WorkflowAPI {
     message?: string;
     next_steps?: string[];
   }> {
-    const response = await api.post(`/api/content/workflow/sessions/${sessionId}/answer`, {
-      question_key: questionKey,
-      answer: answer
-    });
+    const response = await api.post(
+      `/api/content/workflow/sessions/${sessionId}/answer`,
+      {
+        question_key: questionKey,
+        answer: answer,
+      }
+    );
     return response.data;
   }
 
   /**
-   * Generate course structure from workflow decisions
+   * Generate unit structure from workflow decisions
    */
   async generateUnitStructure(sessionId: string): Promise<UnitStructureResult> {
-    const response = await api.post(`/api/content/workflow/sessions/${sessionId}/generate-structure`);
+    const response = await api.post(
+      `/api/content/workflow/sessions/${sessionId}/generate-structure`
+    );
     return response.data;
   }
 
@@ -92,19 +111,25 @@ class WorkflowAPI {
     questions: any[];
     question_count: number;
   }> {
-    const response = await api.get(`/api/content/workflow/stages/${stage}/questions`);
+    const response = await api.get(
+      `/api/content/workflow/stages/${stage}/questions`
+    );
     return response.data;
   }
 
   /**
    * List all workflow sessions
    */
-  async listSessions(includeCompleted = true, skip = 0, limit = 20): Promise<{
+  async listSessions(
+    includeCompleted = true,
+    skip = 0,
+    limit = 20
+  ): Promise<{
     total: number;
     sessions: WorkflowSession[];
   }> {
     const response = await api.get('/api/content/workflow/sessions', {
-      params: { include_completed: includeCompleted, skip, limit }
+      params: { include_completed: includeCompleted, skip, limit },
     });
     return response.data;
   }
@@ -112,8 +137,12 @@ class WorkflowAPI {
   /**
    * Delete a workflow session
    */
-  async deleteSession(sessionId: string): Promise<{ status: string; message: string }> {
-    const response = await api.delete(`/api/content/workflow/sessions/${sessionId}`);
+  async deleteSession(
+    sessionId: string
+  ): Promise<{ status: string; message: string }> {
+    const response = await api.delete(
+      `/api/content/workflow/sessions/${sessionId}`
+    );
     return response.data;
   }
 
@@ -125,30 +154,43 @@ class WorkflowAPI {
     message: string;
     next_question: WorkflowQuestion;
   }> {
-    const response = await api.post(`/api/content/workflow/sessions/${sessionId}/reset`);
+    const response = await api.post(
+      `/api/content/workflow/sessions/${sessionId}/reset`
+    );
     return response.data;
   }
 
   /**
    * Analyze PDF document
    */
-  async analyzePDF(file: File, extractionMethod = 'auto'): Promise<PDFAnalysisResult> {
+  async analyzePDF(
+    file: File,
+    extractionMethod = 'auto'
+  ): Promise<PDFAnalysisResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('extraction_method', extractionMethod);
 
-    const response = await api.post('/api/content/import/pdf/analyze', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post(
+      '/api/content/import/pdf/analyze',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   }
 
   /**
    * Extract text from PDF
    */
-  async extractPDFText(file: File, outputFormat = 'markdown', extractionMethod = 'auto'): Promise<{
+  async extractPDFText(
+    file: File,
+    outputFormat = 'markdown',
+    extractionMethod = 'auto'
+  ): Promise<{
     status: string;
     filename: string;
     metadata: any;
@@ -160,27 +202,39 @@ class WorkflowAPI {
     formData.append('extraction_method', extractionMethod);
     formData.append('output_format', outputFormat);
 
-    const response = await api.post('/api/content/import/pdf/extract-text', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post(
+      '/api/content/import/pdf/extract-text',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   }
 
   /**
-   * Create course structure from PDF
+   * Create unit structure from PDF
    */
-  async createUnitStructureFromPDF(unitId: string, file: File, autoCreate = true): Promise<any> {
+  async createUnitStructureFromPDF(
+    unitId: string,
+    file: File,
+    autoCreate = true
+  ): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('auto_create', autoCreate.toString());
 
-    const response = await api.post(`/api/content/import/pdf/create-course-structure/${unitId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post(
+      `/api/content/import/pdf/create-course-structure/${unitId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   }
 

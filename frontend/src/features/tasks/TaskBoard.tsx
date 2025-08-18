@@ -15,7 +15,7 @@ interface Task {
 
 interface TaskList {
   id: string;
-  course_id: string;
+  unit_id: string;
   lrd_id?: string;
   tasks: Task[];
   status: string;
@@ -27,11 +27,11 @@ interface TaskList {
 }
 
 interface TaskBoardProps {
-  courseId?: string;
+  unitId?: string;
   lrdId?: string;
 }
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ courseId, lrdId }) => {
+const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [selectedList, setSelectedList] = useState<TaskList | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +52,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ courseId, lrdId }) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (courseId) params.append('course_id', courseId);
+      if (unitId) params.append('unit_id', unitId);
       if (lrdId) params.append('lrd_id', lrdId);
 
       const response = await api.get(`/tasks?${params.toString()}`);
@@ -67,7 +67,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ courseId, lrdId }) => {
     } finally {
       setLoading(false);
     }
-  }, [courseId, lrdId, selectedList]);
+  }, [unitId, lrdId, selectedList]);
 
   useEffect(() => {
     fetchTaskLists();

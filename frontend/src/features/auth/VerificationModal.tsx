@@ -63,7 +63,8 @@ const VerificationModal = ({
 
           <div className='mt-4 pt-4 border-t border-gray-200'>
             <p className='text-sm text-gray-500 text-center'>
-              Can&apos;t find the email? Check your spam folder or click &quot;Resend Code&quot; above.
+              Can&apos;t find the email? Check your spam folder or click
+              &quot;Resend Code&quot; above.
             </p>
           </div>
         </div>

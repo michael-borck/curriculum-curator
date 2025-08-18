@@ -61,7 +61,7 @@ interface LRD {
   task_lists?: Array<{ id: string }>;
 }
 
-interface Course {
+interface Unit {
   id: string;
   title: string;
   code: string;
@@ -83,11 +83,11 @@ interface TaskList {
 }
 
 const LRDDetail = () => {
-  const { courseId, lrdId } = useParams<{ courseId: string; lrdId: string }>();
+  const { unitId, lrdId } = useParams<{ unitId: string; lrdId: string }>();
   const navigate = useNavigate();
 
   const [lrd, setLrd] = useState<LRD | null>(null);
-  const [course, setCourse] = useState<Course | null>(null);
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [taskList, setTaskList] = useState<TaskList | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -98,11 +98,11 @@ const LRDDetail = () => {
         setLoading(true);
         const [lrdRes, courseRes] = await Promise.all([
           api.get(`/lrds/${lrdId}`),
-          api.get(`/courses/${courseId}`),
+          api.get(`/units/${unitId}`),
         ]);
 
         setLrd(lrdRes.data);
-        setCourse(courseRes.data);
+        setUnit(courseRes.data);
 
         // Fetch associated task list if exists
         if (lrdRes.data.task_lists && lrdRes.data.task_lists.length > 0) {
@@ -119,7 +119,7 @@ const LRDDetail = () => {
     };
 
     fetchData();
-  }, [courseId, lrdId]);
+  }, [unitId, lrdId]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -191,7 +191,7 @@ const LRDDetail = () => {
       {/* Header */}
       <div className='mb-6'>
         <button
-          onClick={() => navigate(`/courses/${courseId}/lrds`)}
+          onClick={() => navigate(`/units/${unitId}/lrds`)}
           className='flex items-center text-gray-600 hover:text-gray-900 mb-4'
         >
           <ArrowLeft className='h-4 w-4 mr-1' />
@@ -231,9 +231,7 @@ const LRDDetail = () => {
             </button>
             {lrd.status === 'DRAFT' && (
               <button
-                onClick={() =>
-                  navigate(`/courses/${courseId}/lrds/${lrdId}/edit`)
-                }
+                onClick={() => navigate(`/units/${unitId}/lrds/${lrdId}/edit`)}
                 className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
               >
                 <Edit className='h-4 w-4 mr-2' />
@@ -329,7 +327,7 @@ const LRDDetail = () => {
                   </label>
                   <p className='text-gray-900'>
                     {lrd.content?.teaching_philosophy?.replace('_', ' ') ||
-                      course?.teaching_philosophy?.replace('_', ' ') ||
+                      unit?.teaching_philosophy?.replace('_', ' ') ||
                       'Not specified'}
                   </p>
                 </div>
@@ -749,9 +747,7 @@ const LRDDetail = () => {
             )}
 
             <button
-              onClick={() =>
-                navigate(`/courses/${courseId}/tasks/${taskList.id}`)
-              }
+              onClick={() => navigate(`/units/${unitId}/tasks/${taskList.id}`)}
               className='mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
             >
               Manage Tasks

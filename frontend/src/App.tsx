@@ -8,10 +8,10 @@ import {
 import { Toaster } from 'react-hot-toast';
 import Dashboard from './components/Layout/Dashboard';
 import ContentCreator from './features/content/ContentCreator';
-import CourseManager from './features/courses/CourseManager';
-import CourseDashboard from './features/courses/CourseDashboard';
-import CourseView from './features/courses/CourseView';
-import CourseWorkflow from './features/courses/CourseWorkflow';
+import UnitManager from './features/units/UnitManager';
+import UnitDashboard from './features/units/UnitDashboard';
+import UnitView from './features/units/UnitView';
+import UnitWorkflow from './features/units/UnitWorkflow';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
 import AdminDashboard from './features/admin/AdminDashboard';
@@ -56,14 +56,11 @@ function App() {
         <Toaster position='top-right' />
         <Dashboard onLogout={handleLogout}>
           <Routes>
-            <Route path='/' element={<CourseManager />} />
-            <Route path='/dashboard' element={<CourseManager />} />
-            <Route path='/courses' element={<CourseManager />} />
-            <Route
-              path='/courses/:courseId/dashboard'
-              element={<CourseWorkflow />}
-            />
-            <Route path='/course/:id' element={<CourseView />} />
+            <Route path='/' element={<UnitManager />} />
+            <Route path='/dashboard' element={<UnitManager />} />
+            <Route path='/units' element={<UnitManager />} />
+            <Route path='/units/:unitId/dashboard' element={<UnitWorkflow />} />
+            <Route path='/units/:id' element={<UnitView />} />
 
             {/* Content Creation */}
             <Route path='/content/new' element={<ContentCreator />} />
@@ -85,17 +82,11 @@ function App() {
             <Route path='/settings' element={<Settings />} />
 
             {/* LRD Routes */}
-            <Route path='/courses/:courseId/lrds' element={<LRDList />} />
+            <Route path='/units/:unitId/lrds' element={<LRDList />} />
+            <Route path='/units/:unitId/lrds/new' element={<LRDCreator />} />
+            <Route path='/units/:unitId/lrds/:lrdId' element={<LRDDetail />} />
             <Route
-              path='/courses/:courseId/lrds/new'
-              element={<LRDCreator />}
-            />
-            <Route
-              path='/courses/:courseId/lrds/:lrdId'
-              element={<LRDDetail />}
-            />
-            <Route
-              path='/courses/:courseId/lrds/:lrdId/edit'
+              path='/units/:unitId/lrds/:lrdId/edit'
               element={<LRDCreator />}
             />
 

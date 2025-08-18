@@ -21,7 +21,7 @@ import {
 import api from '../../services/api';
 import TaskBoard from '../tasks/TaskBoard';
 
-interface CourseDetails {
+interface UnitDetails {
   id: string;
   title: string;
   code: string;
@@ -77,42 +77,42 @@ interface Task {
   assigned_to?: string;
 }
 
-const CourseDashboard = () => {
-  const { courseId } = useParams();
+const UnitDashboard = () => {
+  const { unitId } = useParams();
   const navigate = useNavigate();
-  const [course, setCourse] = useState<CourseDetails | null>(null);
+  const [unit, setUnit] = useState<UnitDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const fetchCourseDetails = async () => {
+    const fetchUnitDetails = async () => {
       try {
-        const response = await api.get(`/api/courses/${courseId}`);
-        setCourse(response.data);
+        const response = await api.get(`/api/units/${unitId}`);
+        setUnit(response.data);
       } catch (error) {
-        console.error('Error fetching course:', error);
+        console.error('Error fetching unit:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchCourseStatistics = async () => {
+    const fetchUnitStatistics = async () => {
       try {
         // Fetch additional statistics
         const [modulesRes, materialsRes, tasksRes] = await Promise.all([
           api
-            .get(`/api/course-modules?course_id=${courseId}`)
+            .get(`/api/unit-modules?unit_id=${unitId}`)
             .catch(() => ({ data: [] })),
           api
-            .get(`/api/materials?course_id=${courseId}&limit=5`)
+            .get(`/api/materials?unit_id=${unitId}&limit=5`)
             .catch(() => ({ data: { items: [] } })),
           api
-            .get(`/api/tasks?course_id=${courseId}&status=pending&limit=5`)
+            .get(`/api/tasks?unit_id=${unitId}&status=pending&limit=5`)
             .catch(() => ({ data: [] })),
         ]);
 
-        setCourse(prev =>
+        setUnit(prev =>
           prev
             ? {
                 ...prev,
@@ -127,9 +127,9 @@ const CourseDashboard = () => {
       }
     };
 
-    fetchCourseDetails();
-    fetchCourseStatistics();
-  }, [courseId]);
+    fetchUnitDetails();
+    fetchUnitStatistics();
+  }, [unitId]);
 
   if (loading) {
     return (
@@ -139,18 +139,16 @@ const CourseDashboard = () => {
     );
   }
 
-  if (!course) {
+  if (!unit) {
     return (
       <div className='text-center py-12'>
         <AlertCircle className='h-12 w-12 text-red-500 mx-auto mb-4' />
-        <h2 className='text-xl font-semibold text-gray-900'>
-          Course not found
-        </h2>
+        <h2 className='text-xl font-semibold text-gray-900'>Unit not found</h2>
         <button
-          onClick={() => navigate('/courses')}
+          onClick={() => navigate('/units')}
           className='mt-4 text-blue-600 hover:underline'
         >
-          Back to courses
+          Back to units
         </button>
       </div>
     );
@@ -159,28 +157,28 @@ const CourseDashboard = () => {
   const stats = [
     {
       title: 'Progress',
-      value: `${course.progress_percentage || 0}%`,
+      value: `${unit.progress_percentage || 0}%`,
       icon: TrendingUp,
       color: 'bg-blue-500',
       change: '+5% this week',
     },
     {
       title: 'Modules',
-      value: course.module_count || 0,
+      value: unit.module_count || 0,
       icon: Layers,
       color: 'bg-green-500',
-      subtitle: `${course.modules?.filter(m => m.status === 'completed').length || 0} completed`,
+      subtitle: `${unit.modules?.filter(m => m.status === 'completed').length || 0} completed`,
     },
     {
       title: 'Materials',
-      value: course.material_count || 0,
+      value: unit.material_count || 0,
       icon: FileText,
       color: 'bg-purple-500',
       subtitle: 'Total resources',
     },
     {
       title: 'Tasks',
-      value: `${course.completed_tasks || 0}/${course.task_count || 0}`,
+      value: `${unit.completed_tasks || 0}/${unit.task_count || 0}`,
       icon: CheckCircle,
       color: 'bg-orange-500',
       subtitle: 'Completed',
@@ -234,26 +232,26 @@ const CourseDashboard = () => {
           <div>
             <div className='flex items-center space-x-2 text-sm text-gray-600 mb-2'>
               <button
-                onClick={() => navigate('/courses')}
+                onClick={() => navigate('/units')}
                 className='hover:text-blue-600'
               >
-                Courses
+                Units
               </button>
               <ChevronRight className='h-4 w-4' />
-              <span>{course.code}</span>
+              <span>{unit.code}</span>
             </div>
-            <h1 className='text-3xl font-bold text-gray-900'>{course.title}</h1>
-            <p className='text-gray-600 mt-2'>{course.description}</p>
+            <h1 className='text-3xl font-bold text-gray-900'>{unit.title}</h1>
+            <p className='text-gray-600 mt-2'>{unit.description}</p>
           </div>
 
           <div className='flex items-center space-x-3'>
             <span
-              className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(course.status)}`}
+              className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(unit.status)}`}
             >
-              {course.status}
+              {unit.status}
             </span>
             <button
-              onClick={() => navigate(`/courses/${courseId}/settings`)}
+              onClick={() => navigate(`/units/${unitId}/settings`)}
               className='p-2 text-gray-600 hover:bg-gray-100 rounded-lg'
             >
               <Settings className='h-5 w-5' />
@@ -264,21 +262,21 @@ const CourseDashboard = () => {
         {/* Quick Actions */}
         <div className='flex space-x-3 mt-4'>
           <button
-            onClick={() => navigate(`/courses/${courseId}/lrd/create`)}
+            onClick={() => navigate(`/units/${unitId}/lrd/create`)}
             className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
           >
             <Plus className='h-4 w-4 mr-2' />
             Create LRD
           </button>
           <button
-            onClick={() => navigate(`/import?course=${courseId}`)}
+            onClick={() => navigate(`/import?unit=${unitId}`)}
             className='px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center'
           >
             <Download className='h-4 w-4 mr-2' />
             Import Materials
           </button>
           <button
-            onClick={() => navigate(`/courses/${courseId}/generate`)}
+            onClick={() => navigate(`/units/${unitId}/generate`)}
             className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center'
           >
             <Activity className='h-4 w-4 mr-2' />
@@ -350,9 +348,9 @@ const CourseDashboard = () => {
                 <FileText className='h-5 w-5 mr-2 text-gray-600' />
                 Recent Materials
               </h3>
-              {course.recent_materials && course.recent_materials.length > 0 ? (
+              {unit.recent_materials && unit.recent_materials.length > 0 ? (
                 <div className='space-y-3'>
-                  {course.recent_materials.map(material => (
+                  {unit.recent_materials.map(material => (
                     <button
                       key={material.id}
                       className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer w-full text-left'
@@ -382,7 +380,7 @@ const CourseDashboard = () => {
                 </p>
               )}
               <button
-                onClick={() => navigate(`/courses/${courseId}/materials`)}
+                onClick={() => navigate(`/units/${unitId}/materials`)}
                 className='mt-4 text-blue-600 hover:underline text-sm'
               >
                 View all materials →
@@ -395,9 +393,9 @@ const CourseDashboard = () => {
                 <Target className='h-5 w-5 mr-2 text-gray-600' />
                 Pending Tasks
               </h3>
-              {course.pending_tasks && course.pending_tasks.length > 0 ? (
+              {unit.pending_tasks && unit.pending_tasks.length > 0 ? (
                 <div className='space-y-3'>
-                  {course.pending_tasks.map(task => (
+                  {unit.pending_tasks.map(task => (
                     <div
                       key={task.id}
                       className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50'
@@ -442,7 +440,7 @@ const CourseDashboard = () => {
                 </p>
               )}
               <button
-                onClick={() => navigate(`/courses/${courseId}/tasks`)}
+                onClick={() => navigate(`/units/${unitId}/tasks`)}
                 className='mt-4 text-blue-600 hover:underline text-sm'
               >
                 Manage all tasks →
@@ -454,9 +452,9 @@ const CourseDashboard = () => {
         {activeTab === 'modules' && (
           <div>
             <div className='flex justify-between items-center mb-4'>
-              <h3 className='text-lg font-semibold'>Course Modules</h3>
+              <h3 className='text-lg font-semibold'>Unit Modules</h3>
               <button
-                onClick={() => navigate(`/courses/${courseId}/modules/create`)}
+                onClick={() => navigate(`/units/${unitId}/modules/create`)}
                 className='px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm flex items-center'
               >
                 <Plus className='h-4 w-4 mr-1' />
@@ -464,9 +462,9 @@ const CourseDashboard = () => {
               </button>
             </div>
 
-            {course.modules && course.modules.length > 0 ? (
+            {unit.modules && unit.modules.length > 0 ? (
               <div className='space-y-4'>
-                {course.modules.map(module => (
+                {unit.modules.map(module => (
                   <div
                     key={module.id}
                     className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow'
@@ -497,7 +495,7 @@ const CourseDashboard = () => {
                       </div>
                       <button
                         onClick={() =>
-                          navigate(`/courses/${courseId}/modules/${module.id}`)
+                          navigate(`/units/${unitId}/modules/${module.id}`)
                         }
                         className='px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg text-sm'
                       >
@@ -530,9 +528,7 @@ const CourseDashboard = () => {
                 <Package className='h-12 w-12 text-gray-400 mx-auto mb-4' />
                 <p className='text-gray-500'>No modules created yet</p>
                 <button
-                  onClick={() =>
-                    navigate(`/courses/${courseId}/modules/create`)
-                  }
+                  onClick={() => navigate(`/units/${unitId}/modules/create`)}
                   className='mt-4 text-blue-600 hover:underline'
                 >
                   Create your first module
@@ -545,7 +541,7 @@ const CourseDashboard = () => {
         {activeTab === 'materials' && (
           <div>
             <div className='flex justify-between items-center mb-4'>
-              <h3 className='text-lg font-semibold'>Course Materials</h3>
+              <h3 className='text-lg font-semibold'>Unit Materials</h3>
               <div className='flex items-center space-x-2'>
                 <button
                   onClick={() => setViewMode('grid')}
@@ -564,7 +560,7 @@ const CourseDashboard = () => {
 
             {viewMode === 'grid' ? (
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {course.recent_materials?.map(material => (
+                {unit.recent_materials?.map(material => (
                   <button
                     key={material.id}
                     className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer w-full text-left'
@@ -596,7 +592,7 @@ const CourseDashboard = () => {
               </div>
             ) : (
               <div className='space-y-2'>
-                {course.recent_materials?.map(material => (
+                {unit.recent_materials?.map(material => (
                   <button
                     key={material.id}
                     className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer w-full text-left'
@@ -640,7 +636,7 @@ const CourseDashboard = () => {
 
         {activeTab === 'analytics' && (
           <div>
-            <h3 className='text-lg font-semibold mb-4'>Course Analytics</h3>
+            <h3 className='text-lg font-semibold mb-4'>Unit Analytics</h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               {/* Progress Chart */}
               <div className='border border-gray-200 rounded-lg p-4'>
@@ -721,9 +717,9 @@ const CourseDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'tasks' && courseId && (
+        {activeTab === 'tasks' && unitId && (
           <div className='h-[600px]'>
-            <TaskBoard courseId={courseId} />
+            <TaskBoard unitId={unitId} />
           </div>
         )}
 
@@ -736,27 +732,27 @@ const CourseDashboard = () => {
         )}
       </div>
 
-      {/* Course Info Footer */}
+      {/* Unit Info Footer */}
       <div className='mt-8 p-4 bg-gray-50 rounded-lg'>
         <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>
           <div>
             <span className='text-gray-600'>Semester:</span>
-            <span className='ml-2 font-medium'>{course.semester}</span>
+            <span className='ml-2 font-medium'>{unit.semester}</span>
           </div>
           <div>
             <span className='text-gray-600'>Credits:</span>
-            <span className='ml-2 font-medium'>{course.credits}</span>
+            <span className='ml-2 font-medium'>{unit.credits}</span>
           </div>
           <div>
             <span className='text-gray-600'>Philosophy:</span>
             <span className='ml-2 font-medium capitalize'>
-              {course.teaching_philosophy.replace(/_/g, ' ').toLowerCase()}
+              {unit.teaching_philosophy.replace(/_/g, ' ').toLowerCase()}
             </span>
           </div>
           <div>
             <span className='text-gray-600'>Created:</span>
             <span className='ml-2 font-medium'>
-              {new Date(course.created_at).toLocaleDateString()}
+              {new Date(unit.created_at).toLocaleDateString()}
             </span>
           </div>
         </div>
@@ -765,4 +761,4 @@ const CourseDashboard = () => {
   );
 };
 
-export default CourseDashboard;
+export default UnitDashboard;

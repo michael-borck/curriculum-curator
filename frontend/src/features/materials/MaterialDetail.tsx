@@ -21,7 +21,7 @@ import RichTextEditor from '../../components/Editor/RichTextEditor';
 
 interface Material {
   id: string;
-  course_id: string;
+  unit_id: string;
   module_id?: string;
   type: string;
   title: string;
@@ -344,8 +344,8 @@ const MaterialDetail: React.FC = () => {
                   <dd className='text-sm font-mono'>{material.id}</dd>
                 </div>
                 <div>
-                  <dt className='text-sm text-gray-500'>Course ID</dt>
-                  <dd className='text-sm font-mono'>{material.course_id}</dd>
+                  <dt className='text-sm text-gray-500'>Unit ID</dt>
+                  <dd className='text-sm font-mono'>{material.unit_id}</dd>
                 </div>
                 {material.module_id && (
                   <div>

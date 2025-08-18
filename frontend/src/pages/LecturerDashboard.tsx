@@ -31,7 +31,7 @@ const LecturerDashboard = () => {
     { label: 'AI Suggestions', value: 12, icon: Brain, color: 'bg-purple-500' },
   ];
 
-  const courses = [
+  const units = [
     {
       id: 1,
       title: 'Introduction to Computer Science',
@@ -119,60 +119,57 @@ const LecturerDashboard = () => {
             <div className='p-6 border-b border-gray-200'>
               <div className='flex items-center justify-between'>
                 <h2 className='text-xl font-semibold text-gray-900'>
-                  Your Courses
+                  Your Units
                 </h2>
                 <button
                   onClick={() => navigate('/create/course')}
                   className='flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium'
                 >
                   <Plus className='w-5 h-5' />
-                  New Course
+                  New Unit
                 </button>
               </div>
             </div>
             <div className='divide-y divide-gray-200'>
-              {courses.map(course => (
-                <div
-                  key={course.id}
-                  className='p-6 hover:bg-gray-50 transition'
-                >
+              {units.map(unit => (
+                <div key={unit.id} className='p-6 hover:bg-gray-50 transition'>
                   <div className='flex items-center justify-between'>
                     <div className='flex-1'>
                       <div className='flex items-center gap-2 mb-2'>
                         <h3 className='text-lg font-semibold text-gray-900'>
-                          {course.title}
+                          {unit.title}
                         </h3>
                         <span className='text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded'>
-                          {course.code}
+                          {unit.code}
                         </span>
                       </div>
                       <div className='flex items-center gap-4 text-sm text-gray-600 mb-3'>
                         <span className='flex items-center gap-1'>
                           <Calendar className='w-4 h-4' />
-                          {course.weeks} weeks
+                          {unit.weeks} weeks
                         </span>
                         <span className='flex items-center gap-1'>
                           <FileText className='w-4 h-4' />
-                          {course.items} items
+                          {unit.items} items
                         </span>
                         <span className='flex items-center gap-1'>
                           <Users className='w-4 h-4' />
-                          {course.students} students
+                          {unit.students} students
                         </span>
                       </div>
                       <div className='flex items-center gap-2'>
                         <div className='flex-1 bg-gray-200 rounded-full h-2'>
                           <div
                             className='bg-purple-600 h-2 rounded-full'
-                            style={{ width: `${course.progress}%` }}
+                            style={{ width: `${unit.progress}%` }}
                           />
                         </div>
                         <span className='text-sm text-gray-600'>
-                          {course.progress}%
+                          {unit.progress}%
                         </span>
                       </div>
                       <p className='text-sm text-orange-600 mt-2'>
-                        Next deadline: {course.nextDeadline}
+                        Next deadline: {unit.nextDeadline}
                       </p>
                     </div>
                     <div className='flex gap-2 ml-4'>

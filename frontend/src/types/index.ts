@@ -1,5 +1,8 @@
 import { ReactNode, FormEvent, ChangeEvent, MouseEvent } from 'react';
 
+// Add Course as an alias for Unit for backwards compatibility
+export type Course = Unit;
+
 // User related types
 export interface User {
   id?: string;
@@ -17,8 +20,8 @@ export interface User {
   };
 }
 
-// Course related types
-export interface CourseModule {
+// Unit related types
+export interface UnitModule {
   id: number | string;
   title: string;
   type: 'lecture' | 'assignment' | 'project' | 'quiz';
@@ -27,7 +30,7 @@ export interface CourseModule {
   duration?: string;
 }
 
-export interface Course {
+export interface Unit {
   id: string | number;
   title: string;
   description: string;
@@ -35,7 +38,7 @@ export interface Course {
   difficulty: DifficultyLevel;
   duration: string;
   learningObjectives: string[];
-  modules: CourseModule[];
+  modules: UnitModule[];
   createdAt: string;
   updatedAt?: string;
   authorId?: string;
@@ -126,7 +129,7 @@ export interface LoginFormData {
   password: string;
 }
 
-export interface CourseFormData {
+export interface UnitFormData {
   title: string;
   description: string;
   pedagogy: PedagogyType;

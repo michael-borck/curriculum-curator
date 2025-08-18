@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 
 # Course Outline Schemas
-class CourseOutlineBase(BaseModel):
+class UnitOutlineBase(BaseModel):
     """Base schema for course outline"""
 
     title: str = Field(..., min_length=1, max_length=500)
@@ -27,13 +27,13 @@ class CourseOutlineBase(BaseModel):
     graduate_attributes: list[str] | None = None
 
 
-class CourseOutlineCreate(CourseOutlineBase):
+class UnitOutlineCreate(UnitOutlineBase):
     """Schema for creating course outline"""
 
     unit_id: UUID
 
 
-class CourseOutlineUpdate(BaseModel):
+class UnitOutlineUpdate(BaseModel):
     """Schema for updating course outline"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -51,7 +51,7 @@ class CourseOutlineUpdate(BaseModel):
     status: str | None = None
 
 
-class CourseOutlineResponse(CourseOutlineBase):
+class UnitOutlineResponse(UnitOutlineBase):
     """Schema for course outline response"""
 
     id: UUID
@@ -86,7 +86,7 @@ class LearningOutcomeCreate(LearningOutcomeBase):
     """Schema for creating learning outcome"""
 
     unit_id: UUID | None = None
-    course_outline_id: UUID | None = None
+    unit_outline_id: UUID | None = None
     weekly_topic_id: UUID | None = None
     parent_outcome_id: UUID | None = None
 
@@ -108,7 +108,7 @@ class LearningOutcomeResponse(LearningOutcomeBase):
 
     id: UUID
     unit_id: UUID | None = None
-    course_outline_id: UUID | None = None
+    unit_outline_id: UUID | None = None
     weekly_topic_id: UUID | None = None
     parent_outcome_id: UUID | None = None
     is_active: bool
@@ -147,7 +147,7 @@ class WeeklyTopicBase(BaseModel):
 class WeeklyTopicCreate(WeeklyTopicBase):
     """Schema for creating weekly topic"""
 
-    course_outline_id: UUID
+    unit_outline_id: UUID
     unit_id: UUID | None = None
 
 
@@ -174,7 +174,7 @@ class WeeklyTopicResponse(WeeklyTopicBase):
     """Schema for weekly topic response"""
 
     id: UUID
-    course_outline_id: UUID
+    unit_outline_id: UUID
     unit_id: UUID | None = None
     is_complete: bool
     content_ready: bool
@@ -219,7 +219,7 @@ class AssessmentPlanBase(BaseModel):
 class AssessmentPlanCreate(AssessmentPlanBase):
     """Schema for creating assessment plan"""
 
-    course_outline_id: UUID
+    unit_outline_id: UUID
     unit_id: UUID | None = None
 
 
@@ -250,7 +250,7 @@ class AssessmentPlanResponse(AssessmentPlanBase):
     """Schema for assessment plan response"""
 
     id: UUID
-    course_outline_id: UUID
+    unit_outline_id: UUID
     unit_id: UUID | None = None
     is_finalized: bool
     materials_ready: bool
@@ -277,7 +277,7 @@ class ChatSessionCreate(ChatSessionBase):
     """Schema for creating chat session"""
 
     unit_id: UUID | None = None
-    course_outline_id: UUID | None = None
+    unit_outline_id: UUID | None = None
 
 
 class ChatSessionUpdate(BaseModel):
@@ -299,7 +299,7 @@ class ChatSessionResponse(ChatSessionBase):
     id: UUID
     user_id: UUID
     unit_id: UUID | None = None
-    course_outline_id: UUID | None = None
+    unit_outline_id: UUID | None = None
     status: str
     current_stage: str
     progress_percentage: float

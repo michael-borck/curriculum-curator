@@ -16,29 +16,29 @@ import {
 import api from '../../services/api';
 
 const LRDList = () => {
-  const { courseId } = useParams();
+  const { unitId } = useParams();
   const navigate = useNavigate();
 
   const [lrds, setLrds] = useState<any[]>([]);
-  const [course, setCourse] = useState<any>(null);
+  const [unit, setUnit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [courseRes, lrdsRes] = await Promise.all([
-        api.get(`/courses/${courseId}`),
-        api.get(`/courses/${courseId}/lrds`),
+      const [unitRes, lrdsRes] = await Promise.all([
+        api.get(`/units/${unitId}`),
+        api.get(`/units/${unitId}/lrds`),
       ]);
 
-      setCourse(courseRes.data);
+      setUnit(unitRes.data);
       setLrds(lrdsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  }, [courseId]);
+  }, [unitId]);
 
   useEffect(() => {
     fetchData();
@@ -79,7 +79,7 @@ const LRDList = () => {
     try {
       const response = await api.post(`/lrds/${lrdId}/generate-tasks`);
       if (response.data.task_list_id) {
-        navigate(`/courses/${courseId}/tasks/${response.data.task_list_id}`);
+        navigate(`/units/${unitId}/tasks/${response.data.task_list_id}`);
       }
     } catch (error) {
       console.error('Error generating tasks:', error);
@@ -100,7 +100,7 @@ const LRDList = () => {
   const handleClone = async (lrdId: string) => {
     try {
       const response = await api.post(`/lrds/${lrdId}/clone`);
-      navigate(`/courses/${courseId}/lrds/${response.data.id}/edit`);
+      navigate(`/units/${unitId}/lrds/${response.data.id}/edit`);
     } catch (error) {
       console.error('Error cloning LRD:', error);
     }
@@ -122,15 +122,15 @@ const LRDList = () => {
           <h1 className='text-3xl font-bold text-gray-900 mb-2'>
             Learning Resource Documents
           </h1>
-          {course && (
+          {unit && (
             <p className='text-gray-600'>
-              {course.title} ({course.code})
+              {unit.title} ({unit.code})
             </p>
           )}
         </div>
 
         <button
-          onClick={() => navigate(`/courses/${courseId}/lrds/new`)}
+          onClick={() => navigate(`/units/${unitId}/lrds/new`)}
           className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
         >
           <Plus className='h-5 w-5 mr-2' />
@@ -146,11 +146,11 @@ const LRDList = () => {
             No LRDs Yet
           </h3>
           <p className='text-gray-600 mb-6'>
-            Create your first Learning Resource Document to define the course
+            Create your first Learning Resource Document to define the unit
             structure
           </p>
           <button
-            onClick={() => navigate(`/courses/${courseId}/lrds/new`)}
+            onClick={() => navigate(`/units/${unitId}/lrds/new`)}
             className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
           >
             Create First LRD
@@ -235,9 +235,7 @@ const LRDList = () => {
                 {/* Actions */}
                 <div className='flex flex-wrap gap-2'>
                   <button
-                    onClick={() =>
-                      navigate(`/courses/${courseId}/lrds/${lrd.id}`)
-                    }
+                    onClick={() => navigate(`/units/${unitId}/lrds/${lrd.id}`)}
                     className='px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 flex items-center'
                   >
                     <Eye className='h-4 w-4 mr-1' />
@@ -248,7 +246,7 @@ const LRDList = () => {
                     <>
                       <button
                         onClick={() =>
-                          navigate(`/courses/${courseId}/lrds/${lrd.id}/edit`)
+                          navigate(`/units/${unitId}/lrds/${lrd.id}/edit`)
                         }
                         className='px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center'
                       >

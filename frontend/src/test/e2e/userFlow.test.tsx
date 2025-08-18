@@ -90,7 +90,7 @@ describe('E2E: Complete User Flow', () => {
       data: [
         {
           id: '1',
-          title: 'Existing Course',
+          title: 'Existing Unit',
           description: 'A pre-existing course',
           duration_weeks: 12,
           objectives: ['Learn basics'],
@@ -104,13 +104,13 @@ describe('E2E: Complete User Flow', () => {
     await user.click(screen.getByText(/courses/i));
 
     await waitFor(() => {
-      expect(screen.getByText('Existing Course')).toBeInTheDocument();
+      expect(screen.getByText('Existing Unit')).toBeInTheDocument();
     });
 
     // Step 5: User creates a new course
-    await user.click(screen.getByRole('button', { name: /create course/i }));
+    await user.click(screen.getByRole('button', { name: /create unit/i }));
 
-    // Fill in course details
+    // Fill in unit details
     const modal = screen.getByRole('dialog');
     const withinModal = within(modal);
 
@@ -154,13 +154,13 @@ describe('E2E: Complete User Flow', () => {
     // Step 7: User opens the new course
     await user.click(screen.getByText('Introduction to AI'));
 
-    // Mock course details
+    // Mock unit details
     (api.get as any).mockResolvedValueOnce({ data: newCourse.data });
     (api.get as any).mockResolvedValueOnce({ data: [] }); // modules
     (api.get as any).mockResolvedValueOnce({ data: [] }); // materials
 
     await waitFor(() => {
-      expect(screen.getByText(/course overview/i)).toBeInTheDocument();
+      expect(screen.getByText(/unit overview/i)).toBeInTheDocument();
       expect(screen.getByText(/8 weeks/i)).toBeInTheDocument();
     });
 
@@ -185,7 +185,7 @@ describe('E2E: Complete User Flow', () => {
         title: 'Lecture 1: Introduction',
         type: 'lecture',
         content: '',
-        course_id: '2',
+        unit_id: '2',
         created_at: new Date().toISOString(),
       },
     };

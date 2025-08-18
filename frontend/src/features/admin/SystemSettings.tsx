@@ -77,10 +77,15 @@ const SystemSettings = () => {
       const response = await api.get('/api/admin/settings');
       // Merge with defaults to ensure all fields are present
       const mergedSettings = {
-        ...settings,  // Start with defaults
-        ...response.data,  // Override with API data
+        ...settings, // Start with defaults
+        ...response.data, // Override with API data
         // Ensure arrays are properly initialized
-        allowed_file_types: response.data.allowed_file_types || ['pdf', 'doc', 'docx', 'txt']
+        allowed_file_types: response.data.allowed_file_types || [
+          'pdf',
+          'doc',
+          'docx',
+          'txt',
+        ],
       };
       setSettings(mergedSettings);
       setOriginalSettings(mergedSettings);
