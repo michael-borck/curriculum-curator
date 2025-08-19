@@ -22,19 +22,46 @@ class Settings(BaseSettings):
     # Email - General
     EMAIL_WHITELIST: list[str] = []
 
-    # Brevo Email Service Configuration
-    BREVO_API_KEY: str | None = None  # This is actually the SMTP password
+    # Flexible Email Configuration (supports multiple providers)
+    EMAIL_PROVIDER: str = "dev"  # Options: gmail, custom, brevo, sendgrid, mailgun, postmark, dev
+
+    # Common SMTP Settings
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+
+    # Email Settings
+    FROM_EMAIL: str = "noreply@curriculum-curator.com"
+    FROM_NAME: str = "Curriculum Curator"
+
+    # Security Settings
+    USE_TLS: bool = True
+    USE_SSL: bool = False
+    VALIDATE_CERTS: bool = True
+
+    # Provider-specific Settings
+    GMAIL_APP_PASSWORD: str | None = None
+    SENDGRID_API_KEY: str | None = None
+    MAILGUN_API_KEY: str | None = None
+    MAILGUN_DOMAIN: str | None = None
+    POSTMARK_SERVER_TOKEN: str | None = None
+
+    # Brevo (legacy support)
+    BREVO_API_KEY: str | None = None
     BREVO_SMTP_HOST: str = "smtp-relay.brevo.com"
     BREVO_SMTP_PORT: int = 587
-    BREVO_SMTP_LOGIN: str = "93b634001@smtp-brevo.com"  # Your SMTP login
+    BREVO_SMTP_LOGIN: str = "93b634001@smtp-brevo.com"
     BREVO_FROM_EMAIL: str = "noreply@curriculum-curator.com"
     BREVO_FROM_NAME: str = "Curriculum Curator"
 
     # Email rate limiting
-    EMAIL_RATE_LIMIT_PER_HOUR: int = 50  # Brevo free tier limit
+    EMAIL_RATE_LIMIT_PER_HOUR: int = 100
+    EMAIL_RATE_LIMIT_PER_DAY: int = 1000
 
-    # Development mode - log emails instead of sending
+    # Development/Testing
     EMAIL_DEV_MODE: bool = True
+    TEST_EMAIL_RECIPIENT: str | None = None
 
     # LLM Configuration
     OPENAI_API_KEY: str | None = None
