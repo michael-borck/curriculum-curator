@@ -40,6 +40,7 @@ const RegistrationModal = ({
   const [isRegistered, setIsRegistered] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [isFirstUser, setIsFirstUser] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   if (!isOpen) return null;
 
@@ -88,6 +89,7 @@ const RegistrationModal = ({
       );
 
       setIsRegistered(true);
+      setRegisteredEmail(formData.email);
 
       // Check if this was the first user (admin)
       if (
@@ -96,21 +98,23 @@ const RegistrationModal = ({
       ) {
         setIsFirstUser(true);
         // First user doesn't need verification, they can login immediately
-        setTimeout(() => {
+        window.setTimeout(() => {
           onSuccess?.();
           onClose();
         }, 2000); // Show success message for 2 seconds
       } else {
         // Regular user needs verification
-        setShowVerification(true);
+        window.setTimeout(() => {
+          setShowVerification(true);
+        }, 2000); // Show success message for 2 seconds before verification
       }
     } catch (error: any) {
       if (error.response?.status === 409) {
         setErrors({ email: 'Email already registered' });
       } else if (error.response?.status === 403) {
         setErrors({
-          email:
-            'Email not authorized for registration. Contact your administrator.',
+          general:
+            'This email domain is not currently authorized for registration. Please contact your system administrator to request access.',
         });
       } else if (error.response?.data?.detail) {
         setErrors({ general: error.response.data.detail });
@@ -136,14 +140,28 @@ const RegistrationModal = ({
     onClose();
   };
 
+  const handleStartOver = () => {
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setErrors({});
+    setIsRegistered(false);
+    setIsFirstUser(false);
+    setShowVerification(false);
+    setRegisteredEmail('');
+  };
+
   if (showVerification) {
     return (
       <div className='fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50'>
         <div className='bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6'>
           <EmailVerificationForm
-            email={formData.email}
+            email={registeredEmail}
             onSuccess={handleVerificationSuccess}
-            onBack={() => setShowVerification(false)}
+            onBack={handleStartOver}
           />
         </div>
       </div>
@@ -298,33 +316,50 @@ const RegistrationModal = ({
           </div>
 
           <div className='flex gap-3 pt-4'>
-            <button
-              type='button'
-              onClick={onClose}
-              className='flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors'
-              disabled={isLoading}
-            >
-              Cancel
-            </button>
-            <button
-              type='submit'
-              className='flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center justify-center gap-2'
-              disabled={isLoading || isRegistered}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className='w-4 h-4 animate-spin' />
-                  Creating Account...
-                </>
-              ) : isRegistered ? (
-                <>
+            {isRegistered && !isFirstUser ? (
+              <>
+                <button
+                  type='button'
+                  onClick={handleStartOver}
+                  className='flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors'
+                >
+                  Start Over
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setShowVerification(true)}
+                  className='flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-2'
+                >
                   <CheckCircle className='w-4 h-4' />
-                  Check Email
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
+                  Enter Code
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type='button'
+                  onClick={onClose}
+                  className='flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors'
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type='submit'
+                  className='flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+                  disabled={isLoading || isRegistered}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className='w-4 h-4 animate-spin' />
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </form>
 

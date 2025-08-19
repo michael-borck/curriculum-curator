@@ -6,6 +6,7 @@ Tests your email configuration without the full application
 
 import smtplib
 import ssl
+import sys
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
@@ -19,7 +20,7 @@ if env_path.exists():
     print("✅ Loaded .env file")
 else:
     print("❌ No .env file found")
-    exit(1)
+    sys.exit(1)
 
 # Get configuration
 smtp_host = os.getenv('SMTP_HOST')
@@ -40,7 +41,7 @@ print(f"   TLS: {use_tls}")
 
 if not all([smtp_host, smtp_username, smtp_password]):
     print("\n❌ Missing required configuration")
-    exit(1)
+    sys.exit(1)
 
 print("\n🔍 Testing SMTP connection...")
 

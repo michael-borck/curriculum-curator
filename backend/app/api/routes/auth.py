@@ -149,29 +149,7 @@ async def register(
                 message="Registration successful! You are the first user and have been granted admin privileges. You can now log in.",
                 user_email=new_user.email,
             )
-        # Check if this is a development/university domain that should bypass email
-        from app.core import dev_config  # noqa: PLC0415
-
-        if dev_config.should_bypass_verification(new_user.email):
-            # For development/university domains, auto-verify with special message
-            new_user.is_verified = True
-            db.commit()
-
-            SecurityLogger.log_authentication_event(
-                db=db,
-                event_type=SecurityEventType.LOGIN_SUCCESS,
-                request=request,
-                user=new_user,
-                success=True,
-                description=f"User auto-verified (university domain): {new_user.email}",
-            )
-
-            return UserRegistrationResponse(
-                message="Registration successful! Your university email has been auto-verified. You can now log in.",
-                user_email=new_user.email,
-            )
-
-        # Regular user - send verification email
+        # All users (except first admin) must verify their email
         success, verification_code = await auth_helpers.create_and_send_verification(
             db, new_user
         )

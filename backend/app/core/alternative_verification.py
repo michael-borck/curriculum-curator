@@ -56,8 +56,4 @@ class AlternativeVerification:
         if code.upper() == expected_admin:
             return True, "Admin override verification successful"
 
-        # Check if it's a development code
-        if code == "DEV123" and email.endswith((".edu.au", "@localhost")):
-            return True, "Development verification successful"
-
         return False, "Invalid verification code"
