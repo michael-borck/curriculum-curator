@@ -47,9 +47,14 @@ const UnitManager = () => {
     title: '',
     code: '',
     description: '',
-    teaching_philosophy: 'TRADITIONAL',
-    semester: '2024-S1',
-    credits: 3,
+    year: new Date().getFullYear(),
+    semester: 'semester_1',
+    pedagogy_type: 'inquiry-based',
+    difficulty_level: 'intermediate',
+    duration_weeks: 12,
+    credit_points: 6,
+    prerequisites: '',
+    learning_hours: 150,
   });
   const [errors, setErrors] = useState<any>({});
 
@@ -62,7 +67,8 @@ const UnitManager = () => {
       setLoading(true);
       const response = await api.get('/api/units');
       console.log('Fetched units:', response.data);
-      setUnits(response.data.units || []);
+      // The backend returns an array directly, not wrapped in an object
+      setUnits(Array.isArray(response.data) ? response.data : response.data.units || []);
     } catch (error) {
       console.error('Error fetching units:', error);
     } finally {
@@ -97,9 +103,14 @@ const UnitManager = () => {
         title: '',
         code: '',
         description: '',
-        teaching_philosophy: 'TRADITIONAL',
-        semester: '2024-S1',
-        credits: 3,
+        year: new Date().getFullYear(),
+        semester: 'semester_1',
+        pedagogy_type: 'inquiry-based',
+        difficulty_level: 'intermediate',
+        duration_weeks: 12,
+        credit_points: 6,
+        prerequisites: '',
+        learning_hours: 150,
       });
     } catch (error: any) {
       console.error('Unit creation error:', error);
@@ -219,12 +230,12 @@ const UnitManager = () => {
                 <div className='space-y-2 mb-4'>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Calendar className='h-4 w-4 mr-2' />
-                    {unit.semester || 'Not set'} • {unit.credits || 0} credits
+                    {unit.semester || 'Not set'} • {unit.credit_points || 0} credits
                   </div>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Users className='h-4 w-4 mr-2' />
-                    {unit.teaching_philosophy
-                      ? unit.teaching_philosophy.replace('_', ' ')
+                    {unit.pedagogy_type
+                      ? unit.pedagogy_type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
                       : 'Not specified'}
                   </div>
                 </div>
