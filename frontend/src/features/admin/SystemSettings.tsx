@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { llmApi } from '../../services/llmApi';
-import type { LLMConfig, LLMProvider } from '../../types/llm';
+import type { LLMProvider } from '../../types/llm';
 
 interface SystemSettingsData {
   // AI Features
@@ -75,6 +75,7 @@ const SystemSettings = () => {
   useEffect(() => {
     fetchSettings();
     fetchConfiguredProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -325,8 +326,8 @@ const SystemSettings = () => {
               >
                 Default LLM Provider
               </label>
-              <a
-                href='#'
+              <button
+                type='button'
                 onClick={e => {
                   e.preventDefault();
                   // Navigate to LLM Configuration tab
@@ -339,7 +340,7 @@ const SystemSettings = () => {
               >
                 <Settings2 className='w-3 h-3' />
                 Configure Providers
-              </a>
+              </button>
             </div>
             {configuredProviders.filter(p => p.configured).length === 0 ? (
               <div className='p-3 bg-amber-50 border border-amber-200 rounded-md'>

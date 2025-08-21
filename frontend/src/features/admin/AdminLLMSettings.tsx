@@ -19,7 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import { llmApi } from '../../services/llmApi';
-import type { LLMConfig, LLMProvider, TokenStats } from '../../types/llm';
+import { LLMProvider } from '../../types/llm';
+import type { LLMConfig, TokenUsageStats } from '../../types/llm';
 
 interface AdminLLMSettingsProps {
   onClose?: () => void;
@@ -43,7 +44,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
 
   // Form data
   const [formData, setFormData] = useState<Partial<LLMConfig>>({
-    provider: 'openai',
+    provider: LLMProvider.OPENAI,
     is_default: false,
     temperature: 0.7,
     max_tokens: 4096,
@@ -54,7 +55,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
   const [loadingModels, setLoadingModels] = useState(false);
 
   // Token usage stats
-  const [tokenStats, setTokenStats] = useState<TokenStats[]>([]);
+  const [tokenStats, setTokenStats] = useState<TokenUsageStats[]>([]);
   const [showStats, setShowStats] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
 
@@ -108,7 +109,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
   };
 
   const handleProviderChange = async (provider: LLMProvider) => {
-    setFormData({ ...formData, provider, model_name: undefined });
+    setFormData({ ...formData, provider, model_name: '' });
     setAvailableModels([]);
 
     if (formData.api_key || provider === 'ollama') {
@@ -144,10 +145,10 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     try {
       const result = await llmApi.testConnection({
         provider: formData.provider!,
-        api_key: formData.api_key,
-        api_url: formData.api_url,
-        bearer_token: formData.bearer_token,
-        model_name: formData.model_name,
+        api_key: formData.api_key || '',
+        api_url: formData.api_url || '',
+        bearer_token: formData.bearer_token || '',
+        model_name: formData.model_name || '',
       });
 
       setTestResult({
@@ -166,7 +167,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
           }));
         }
       }
-    } catch (_error) {
+    } catch {
       setTestResult({
         success: false,
         message: 'Failed to test connection',
@@ -185,13 +186,15 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     setSaving(true);
     try {
       if (isNewConfig) {
-        await llmApi.createSystemConfiguration(formData);
+        await llmApi.createSystemConfiguration(
+          formData as Omit<LLMConfig, 'id'>
+        );
         setMessage({
           type: 'success',
           text: 'Configuration created successfully',
         });
       } else if (selectedConfig) {
-        await llmApi.updateConfiguration(selectedConfig.id, formData);
+        await llmApi.updateConfiguration(selectedConfig.id!, formData);
         setMessage({
           type: 'success',
           text: 'Configuration updated successfully',
@@ -201,7 +204,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
       setSelectedConfig(null);
       setIsNewConfig(false);
       setFormData({
-        provider: 'openai',
+        provider: LLMProvider.OPENAI,
         is_default: false,
         temperature: 0.7,
         max_tokens: 4096,
@@ -231,7 +234,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
       if (selectedConfig?.id === configId) {
         setSelectedConfig(null);
         setFormData({
-          provider: 'openai',
+          provider: LLMProvider.OPENAI,
           is_default: false,
           temperature: 0.7,
           max_tokens: 4096,
@@ -248,12 +251,12 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     setIsNewConfig(false);
     setFormData({
       provider: config.provider,
-      api_key: config.api_key,
-      api_url: config.api_url,
-      bearer_token: config.bearer_token,
-      model_name: config.model_name,
+      api_key: config.api_key || '',
+      api_url: config.api_url || '',
+      bearer_token: config.bearer_token || '',
+      model_name: config.model_name || '',
       temperature: config.temperature,
-      max_tokens: config.max_tokens,
+      max_tokens: config.max_tokens || 4096,
       is_default: config.is_default,
     });
     if (config.model_name) {
@@ -265,7 +268,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     setSelectedConfig(null);
     setIsNewConfig(true);
     setFormData({
-      provider: 'openai',
+      provider: LLMProvider.OPENAI,
       is_default: false,
       temperature: 0.7,
       max_tokens: 4096,
@@ -277,19 +280,19 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     const csv = [
       [
         'User ID',
-        'User Email',
-        'Provider',
+        'Providers',
         'Total Tokens',
         'Total Cost',
-        'Request Count',
+        'Period Start',
+        'Period End',
       ],
       ...tokenStats.map(stat => [
         stat.user_id,
-        stat.user_email || 'N/A',
-        stat.provider,
+        Object.keys(stat.by_provider).join(', '),
         stat.total_tokens.toString(),
         `$${stat.total_cost.toFixed(4)}`,
-        stat.request_count.toString(),
+        stat.period_start,
+        stat.period_end,
       ]),
     ]
       .map(row => row.join(','))
@@ -431,7 +434,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              handleDelete(config.id);
+                              handleDelete(config.id!);
                             }}
                             className='text-red-500 hover:text-red-700'
                           >
@@ -691,7 +694,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                             setSelectedConfig(null);
                             setIsNewConfig(false);
                             setFormData({
-                              provider: 'openai',
+                              provider: LLMProvider.OPENAI,
                               is_default: false,
                               temperature: 0.7,
                               max_tokens: 4096,
@@ -849,19 +852,14 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                       </thead>
                       <tbody>
                         {tokenStats.map(stat => (
-                          <tr
-                            key={`${stat.user_id}-${stat.provider}`}
-                            className='border-b'
-                          >
+                          <tr key={stat.user_id} className='border-b'>
+                            <td className='py-2'>{stat.user_id}</td>
                             <td className='py-2'>
-                              {stat.user_email || stat.user_id}
+                              {Object.keys(stat.by_provider)
+                                .join(', ')
+                                .toUpperCase()}
                             </td>
-                            <td className='py-2'>
-                              {stat.provider.toUpperCase()}
-                            </td>
-                            <td className='text-right py-2'>
-                              {stat.request_count}
-                            </td>
+                            <td className='text-right py-2'>-</td>
                             <td className='text-right py-2'>
                               {stat.total_tokens.toLocaleString()}
                             </td>
@@ -876,12 +874,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                           <td colSpan={2} className='py-2'>
                             Total
                           </td>
-                          <td className='text-right py-2'>
-                            {tokenStats.reduce(
-                              (sum, s) => sum + s.request_count,
-                              0
-                            )}
-                          </td>
+                          <td className='text-right py-2'>-</td>
                           <td className='text-right py-2'>
                             {tokenStats
                               .reduce((sum, s) => sum + s.total_tokens, 0)

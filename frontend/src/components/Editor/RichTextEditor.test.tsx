@@ -8,6 +8,7 @@ describe('RichTextEditor Component', () => {
   const defaultProps = {
     value: '',
     onChange: mockOnChange,
+    content: '',
   };
 
   beforeEach(() => {

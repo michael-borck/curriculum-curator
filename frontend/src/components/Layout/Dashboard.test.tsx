@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
@@ -41,7 +41,9 @@ describe('Dashboard Component', () => {
   const renderDashboard = () => {
     return render(
       <BrowserRouter>
-        <Dashboard />
+        <Dashboard onLogout={mockLogout}>
+          <div>Test Content</div>
+        </Dashboard>
       </BrowserRouter>
     );
   };

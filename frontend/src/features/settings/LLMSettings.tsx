@@ -16,10 +16,10 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import llmApi from '../../services/llmApi';
-import { useAuthStore } from '../../stores/authStore';
+// import { useAuthStore } from '../../stores/authStore';
+import { LLMProvider } from '../../types/llm';
 import type {
   LLMConfig,
-  LLMProvider,
   LLMTestResponse,
   TokenUsageStats,
 } from '../../types/llm';
@@ -40,18 +40,18 @@ const LLMSettings: React.FC = () => {
     'configurations'
   );
 
-  const user = useAuthStore(state => state.user);
+  // const user = useAuthStore(state => state.user);
   // const isAdmin = user?.role === 'admin'; // Reserved for future admin features
 
   // Form state for new/edit configuration
   const [formData, setFormData] = useState<Partial<LLMConfig>>({
-    provider: 'openai' as LLMProvider,
+    provider: LLMProvider.OPENAI,
     api_key: '',
     api_url: '',
     bearer_token: '',
     model_name: '',
     temperature: 0.7,
-    max_tokens: undefined,
+    max_tokens: 4096,
     is_default: false,
   });
 
@@ -60,6 +60,7 @@ const LLMSettings: React.FC = () => {
   useEffect(() => {
     loadConfigurations();
     loadTokenStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadConfigurations = async () => {
@@ -112,10 +113,10 @@ const LLMSettings: React.FC = () => {
     try {
       const result = await llmApi.testConnection({
         provider: formData.provider!,
-        api_key: formData.api_key,
-        api_url: formData.api_url,
-        bearer_token: formData.bearer_token,
-        model_name: formData.model_name,
+        api_key: formData.api_key || '',
+        api_url: formData.api_url || '',
+        bearer_token: formData.bearer_token || '',
+        model_name: formData.model_name || '',
       });
 
       setTestResult(result);
@@ -131,12 +132,13 @@ const LLMSettings: React.FC = () => {
           }));
         }
       }
-    } catch {
+    } catch (error: any) {
       setError('Connection test failed');
       setTestResult({
         success: false,
         message: 'Connection test failed',
-        error: error.response?.data?.detail || error.message,
+        error:
+          error?.response?.data?.detail || error?.message || 'Unknown error',
       });
     } finally {
       setIsTesting(false);
@@ -192,8 +194,8 @@ const LLMSettings: React.FC = () => {
 
       setIsEditing(false);
       resetForm();
-    } catch {
-      setError(error.response?.data?.detail || 'Failed to save configuration');
+    } catch (error: any) {
+      setError(error?.response?.data?.detail || 'Failed to save configuration');
     } finally {
       setIsSaving(false);
     }
@@ -250,13 +252,13 @@ const LLMSettings: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      provider: 'openai' as LLMProvider,
+      provider: LLMProvider.OPENAI,
       api_key: '',
       api_url: '',
       bearer_token: '',
       model_name: '',
       temperature: 0.7,
-      max_tokens: undefined,
+      max_tokens: 4096,
       is_default: false,
     });
     setTestResult(null);
@@ -283,7 +285,7 @@ const LLMSettings: React.FC = () => {
                   setFormData({ ...formData, api_key: e.target.value })
                 }
                 className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                placeholder={`Enter your ${PROVIDER_DISPLAY_NAMES[provider]} API key`}
+                placeholder={`Enter your ${PROVIDER_DISPLAY_NAMES[formData.provider || LLMProvider.OPENAI]} API key`}
               />
             </div>
           </div>
@@ -511,7 +513,7 @@ const LLMSettings: React.FC = () => {
                       ...formData,
                       max_tokens: e.target.value
                         ? parseInt(e.target.value)
-                        : undefined,
+                        : 4096,
                     })
                   }
                   className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'

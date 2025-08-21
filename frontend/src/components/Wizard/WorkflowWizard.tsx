@@ -56,6 +56,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
   // Initialize workflow session
   useEffect(() => {
     initializeSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
   const initializeSession = async () => {

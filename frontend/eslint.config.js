@@ -15,6 +15,7 @@ export default [
       '.eslintrc.cjs',
       'node_modules',
       '*.config.js',
+      'vitest.config.ts',
       'coverage'
     ],
   },

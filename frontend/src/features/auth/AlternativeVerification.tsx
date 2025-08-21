@@ -13,16 +13,16 @@ const AlternativeVerification = ({
   const [showCodes, setShowCodes] = useState(false);
 
   // Generate codes client-side for display (not secure, just for UX)
-  const generateDisplayCode = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const hash = email.toLowerCase() + today;
-    return hash
-      .split('')
-      .reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
-      .toString(16)
-      .toUpperCase()
-      .slice(-8);
-  };
+  // const generateDisplayCode = () => {
+  //   const today = new Date().toISOString().split('T')[0];
+  //   const hash = email.toLowerCase() + today;
+  //   return hash
+  //     .split('')
+  //     .reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
+  //     .toString(16)
+  //     .toUpperCase()
+  //     .slice(-8);
+  // };
 
   const isUniversityEmail = email.toLowerCase().includes('curtin.edu.au');
 

@@ -120,7 +120,7 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
       if (result.status === 'success') {
         setImportSuccess(true);
         if (onImportComplete) {
-          setTimeout(() => {
+          window.setTimeout(() => {
             onImportComplete();
           }, 2000);
         }

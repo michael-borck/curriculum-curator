@@ -9,7 +9,7 @@ import {
   FileText,
   Plus,
   Loader2,
-  Layout,
+  // Layout,
   Target,
   Calendar,
   Award,
@@ -46,14 +46,15 @@ const UnitWorkflow: React.FC = () => {
   const [learningOutcomes, setLearningOutcomes] = useState<any[]>([]);
   const [weeklyTopics, setWeeklyTopics] = useState<any[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
-  const [activeView, setActiveView] = useState<
-    'structure' | 'wizard' | 'import'
-  >('structure');
+  // const [activeView, setActiveView] = useState<
+  //   'structure' | 'wizard' | 'import'
+  // >('structure');
   const [showPDFImport, setShowPDFImport] = useState(false);
   const [showWorkflowWizard, setShowWorkflowWizard] = useState(false);
 
   useEffect(() => {
     fetchCourseData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
   const fetchCourseData = async () => {
@@ -80,18 +81,18 @@ const UnitWorkflow: React.FC = () => {
           setWeeklyTopics(outlineResponse.data.weekly_topics || []);
           setAssessments(outlineResponse.data.assessments || []);
         }
-      } catch (err) {
+      } catch {
         // No structure exists yet
-        console.log('No unit structure found');
+        // console.log('No unit structure found');
       }
-    } catch (error) {
-      console.error('Error fetching course data:', error);
+    } catch {
+      // console.error('Error fetching course data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleWorkflowComplete = (outlineId: string) => {
+  const handleWorkflowComplete = (_outlineId: string) => {
     setShowWorkflowWizard(false);
     fetchCourseData(); // Refresh data
   };
@@ -233,7 +234,7 @@ const UnitWorkflow: React.FC = () => {
               </p>
               <button
                 onClick={() =>
-                  alert(
+                  window.alert(
                     'Manual structure editor coming soon! For now, use the Guided Workflow or PDF Import.'
                   )
                 }

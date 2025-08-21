@@ -42,7 +42,7 @@ describe('Login Component', () => {
   const renderLogin = () => {
     return render(
       <BrowserRouter>
-        <Login />
+        <Login onBackToLanding={() => {}} />
       </BrowserRouter>
     );
   };
