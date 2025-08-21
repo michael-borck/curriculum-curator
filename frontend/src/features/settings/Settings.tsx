@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Settings as SettingsIcon,
   User,
   Bell,
   Shield,
@@ -8,9 +7,11 @@ import {
   Key,
   Save,
   CheckCircle,
+  Brain,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
+import LLMSettings from './LLMSettings';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -110,7 +111,7 @@ const Settings = () => {
     { id: 'preferences', label: 'Preferences', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
-    { id: 'llm', label: 'AI/LLM Settings', icon: SettingsIcon },
+    { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
   ];
 
   return (
@@ -492,7 +493,9 @@ const Settings = () => {
             </div>
           )}
 
-          {activeTab === 'llm' && (
+          {activeTab === 'llm' && <LLMSettings />}
+
+          {activeTab === 'llm-old' && (
             <div className='bg-white rounded-lg shadow-md p-6'>
               <h2 className='text-xl font-semibold mb-6'>AI/LLM Settings</h2>
 
