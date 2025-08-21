@@ -53,7 +53,7 @@ def init_db():
     )
     from app.models.llm_config import (  # pyright: ignore[reportUnusedImport]
         LLMConfiguration,
-        TokenUsage,
+        TokenUsageLog,
     )
 
     # Create all tables

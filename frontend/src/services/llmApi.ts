@@ -139,4 +139,6 @@ class LLMApiService {
   }
 }
 
-export default new LLMApiService();
+const llmApi = new LLMApiService();
+export { llmApi };
+export default llmApi;
