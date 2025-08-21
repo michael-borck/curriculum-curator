@@ -106,8 +106,10 @@ class WeeklyTopic(Base):
     contents = relationship(
         "Content",
         foreign_keys="Content.week_number",
-        primaryjoin=("and_(WeeklyTopic.unit_id==Content.unit_id, "
-                     "WeeklyTopic.week_number==Content.week_number)"),
+        primaryjoin=(
+            "and_(WeeklyTopic.unit_id==Content.unit_id, "
+            "WeeklyTopic.week_number==Content.week_number)"
+        ),
         viewonly=True,
     )
 

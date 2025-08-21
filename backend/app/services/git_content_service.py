@@ -23,7 +23,9 @@ class GitContentService:
         """
         # Use a local path instead of Docker path
         default_path = Path.cwd() / "content_repo"
-        self.repo_path = Path(repo_path or os.getenv("CONTENT_REPO_PATH", str(default_path)))
+        self.repo_path = Path(
+            repo_path or os.getenv("CONTENT_REPO_PATH", str(default_path))
+        )
         self._ensure_repo_initialized()
 
     def _ensure_repo_initialized(self) -> None:
@@ -40,7 +42,9 @@ class GitContentService:
 
             # Create initial commit
             readme_path = self.repo_path / "README.md"
-            readme_path.write_text("# Curriculum Curator Content Repository\n\nThis repository stores all course content.\n")
+            readme_path.write_text(
+                "# Curriculum Curator Content Repository\n\nThis repository stores all course content.\n"
+            )
             self._run_git("add", "README.md")
             self._run_git("commit", "-m", "Initial repository setup")
 
@@ -58,7 +62,9 @@ class GitContentService:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
 
-    def _generate_content_path(self, course_id: str, material_type: str, material_id: str) -> str:
+    def _generate_content_path(
+        self, course_id: str, material_type: str, material_id: str
+    ) -> str:
         """
         Generate a consistent path for content storage
 
@@ -77,11 +83,7 @@ class GitContentService:
         return f"courses/{course_short}/{material_type}/{material_short}.md"
 
     def save_content(
-        self,
-        path: str,
-        content: str,
-        user_email: str,
-        message: str | None = None
+        self, path: str, content: str, user_email: str, message: str | None = None
     ) -> str:
         """
         Save content to Git repository
@@ -155,28 +157,26 @@ class GitContentService:
             # Get commit history with formatted output
             log_format = "%H|%ai|%an|%ae|%s"
             log_output = self._run_git(
-                "log",
-                f"--max-count={limit}",
-                f"--format={log_format}",
-                "--",
-                path
+                "log", f"--max-count={limit}", f"--format={log_format}", "--", path
             )
 
             if not log_output:
                 return []
 
             commits = []
-            for line in log_output.split('\n'):
+            for line in log_output.split("\n"):
                 if line:
-                    parts = line.split('|')
+                    parts = line.split("|")
                     if len(parts) >= 5:
-                        commits.append({
-                            "commit": parts[0],
-                            "date": parts[1],
-                            "author_name": parts[2],
-                            "author_email": parts[3],
-                            "message": parts[4]
-                        })
+                        commits.append(
+                            {
+                                "commit": parts[0],
+                                "date": parts[1],
+                                "author_name": parts[2],
+                                "author_email": parts[3],
+                                "message": parts[4],
+                            }
+                        )
 
             return commits
         except subprocess.CalledProcessError:
@@ -236,10 +236,7 @@ class GitContentService:
 
         # Save as new version
         return self.save_content(
-            path,
-            old_content,
-            user_email,
-            f"Reverted to version {commit[:8]}"
+            path, old_content, user_email, f"Reverted to version {commit[:8]}"
         )
 
     def delete_content(self, path: str, user_email: str) -> str:
@@ -271,7 +268,9 @@ class GitContentService:
         except subprocess.CalledProcessError:
             return False
 
-    def search_content(self, query: str, file_pattern: str | None = "*.md") -> list[dict[str, Any]]:
+    def search_content(
+        self, query: str, file_pattern: str | None = "*.md"
+    ) -> list[dict[str, Any]]:
         """
         Search content in repository
 
@@ -290,19 +289,21 @@ class GitContentService:
                 "-n",  # Show line numbers
                 "--",
                 query,
-                file_pattern
+                file_pattern,
             )
 
             results = []
-            for line in grep_output.split('\n'):
-                if ':' in line:
-                    parts = line.split(':', 2)
+            for line in grep_output.split("\n"):
+                if ":" in line:
+                    parts = line.split(":", 2)
                     if len(parts) >= 3:
-                        results.append({
-                            "file": parts[0],
-                            "line": parts[1],
-                            "content": parts[2].strip()
-                        })
+                        results.append(
+                            {
+                                "file": parts[0],
+                                "line": parts[1],
+                                "content": parts[2].strip(),
+                            }
+                        )
 
             return results
         except subprocess.CalledProcessError:
@@ -317,26 +318,28 @@ class GitContentService:
         """
         try:
             # Count files
-            file_count = len(self._run_git("ls-files").split('\n'))
+            file_count = len(self._run_git("ls-files").split("\n"))
 
             # Count commits
-            commit_count = len(self._run_git("log", "--oneline").split('\n'))
+            commit_count = len(self._run_git("log", "--oneline").split("\n"))
 
             # Get repository size
-            repo_size = sum(f.stat().st_size for f in self.repo_path.rglob('*') if f.is_file())
+            repo_size = sum(
+                f.stat().st_size for f in self.repo_path.rglob("*") if f.is_file()
+            )
 
             return {
                 "file_count": file_count,
                 "commit_count": commit_count,
                 "repository_size_bytes": repo_size,
-                "repository_path": str(self.repo_path)
+                "repository_path": str(self.repo_path),
             }
         except subprocess.CalledProcessError:
             return {
                 "file_count": 0,
                 "commit_count": 0,
                 "repository_size_bytes": 0,
-                "repository_path": str(self.repo_path)
+                "repository_path": str(self.repo_path),
             }
 
 

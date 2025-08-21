@@ -2,7 +2,6 @@
 Email service using Brevo (formerly SendinBlue) via fastapi-mail
 """
 
-import os
 import secrets
 import smtplib
 import string
@@ -37,7 +36,7 @@ class EmailService:
 
     def _load_smtp_config(self) -> SMTPConfig:
         """Load SMTP configuration from environment variables"""
-        provider = os.getenv("EMAIL_PROVIDER", "dev").lower()
+        provider = settings.EMAIL_PROVIDER.lower()
 
         # Map provider string to enum
         provider_map = {
@@ -53,31 +52,30 @@ class EmailService:
         config = SMTPConfig(
             provider=provider_map.get(provider, EmailProvider.DEV_MODE),
             # Common SMTP settings
-            smtp_host=os.getenv("SMTP_HOST"),
-            smtp_port=int(os.getenv("SMTP_PORT", "587")),
-            smtp_username=os.getenv("SMTP_USERNAME"),
-            smtp_password=os.getenv("SMTP_PASSWORD"),
+            smtp_host=settings.SMTP_HOST,
+            smtp_port=settings.SMTP_PORT,
+            smtp_username=settings.SMTP_USERNAME,
+            smtp_password=settings.SMTP_PASSWORD,
             # Email settings
-            from_email=os.getenv("FROM_EMAIL", settings.BREVO_FROM_EMAIL),
-            from_name=os.getenv("FROM_NAME", settings.BREVO_FROM_NAME),
+            from_email=settings.FROM_EMAIL,
+            from_name=settings.FROM_NAME,
             # Security settings
-            use_tls=os.getenv("USE_TLS", "true").lower() == "true",
-            use_ssl=os.getenv("USE_SSL", "false").lower() == "true",
-            validate_certs=os.getenv("VALIDATE_CERTS", "true").lower() == "true",
+            use_tls=settings.USE_TLS,
+            use_ssl=settings.USE_SSL,
+            validate_certs=settings.VALIDATE_CERTS,
             # Provider-specific settings
-            gmail_app_password=os.getenv("GMAIL_APP_PASSWORD"),
-            brevo_api_key=os.getenv("BREVO_API_KEY", settings.BREVO_API_KEY),
-            sendgrid_api_key=os.getenv("SENDGRID_API_KEY"),
-            mailgun_api_key=os.getenv("MAILGUN_API_KEY"),
-            mailgun_domain=os.getenv("MAILGUN_DOMAIN"),
-            postmark_server_token=os.getenv("POSTMARK_SERVER_TOKEN"),
+            gmail_app_password=settings.GMAIL_APP_PASSWORD,
+            brevo_api_key=settings.BREVO_API_KEY,
+            sendgrid_api_key=settings.SENDGRID_API_KEY,
+            mailgun_api_key=settings.MAILGUN_API_KEY,
+            mailgun_domain=settings.MAILGUN_DOMAIN,
+            postmark_server_token=settings.POSTMARK_SERVER_TOKEN,
             # Development/Testing
-            dev_mode=os.getenv("EMAIL_DEV_MODE", str(settings.EMAIL_DEV_MODE)).lower()
-            == "true",
-            test_recipient=os.getenv("TEST_EMAIL_RECIPIENT"),
+            dev_mode=settings.EMAIL_DEV_MODE,
+            test_recipient=settings.TEST_EMAIL_RECIPIENT,
             # Rate limiting
-            rate_limit_per_hour=int(os.getenv("EMAIL_RATE_LIMIT_PER_HOUR", "100")),
-            rate_limit_per_day=int(os.getenv("EMAIL_RATE_LIMIT_PER_DAY", "1000")),
+            rate_limit_per_hour=settings.EMAIL_RATE_LIMIT_PER_HOUR,
+            rate_limit_per_day=settings.EMAIL_RATE_LIMIT_PER_DAY,
         )
 
         # Print configuration status

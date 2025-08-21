@@ -344,8 +344,8 @@ async def login(
                 "error": "email_not_verified",
                 "message": "Email address not verified. Please check your email for the verification code.",
                 "email": user.email,
-                "action": "redirect_to_verification"
-            }
+                "action": "redirect_to_verification",
+            },
         )
 
     # Create access token with enhanced security

@@ -11,6 +11,7 @@ from app.plugins.base import PluginResult, ValidatorPlugin
 # Try to import spellchecker - it's optional
 try:
     from spellchecker import SpellChecker as PySpellChecker
+
     has_spellchecker = True
 except ImportError:
     PySpellChecker = None

@@ -58,13 +58,17 @@ async def analyze_pdf(
 
     try:
         # Extract content from PDF
-        extracted_doc = await pdf_parser_service.extract_from_bytes(contents, extraction_method)
+        extracted_doc = await pdf_parser_service.extract_from_bytes(
+            contents, extraction_method
+        )
 
         # Analyze document structure
         analysis = await document_analyzer_service.analyze_document(extracted_doc)
 
         # Map to course structure
-        course_mapping = await document_analyzer_service.map_to_course_structure(analysis)
+        course_mapping = await document_analyzer_service.map_to_course_structure(
+            analysis
+        )
 
         return {
             "status": "success",
@@ -134,7 +138,9 @@ async def extract_pdf_text(
 
     try:
         # Extract content from PDF
-        extracted_doc = await pdf_parser_service.extract_from_bytes(contents, extraction_method)
+        extracted_doc = await pdf_parser_service.extract_from_bytes(
+            contents, extraction_method
+        )
 
         # Format output based on request
         if output_format == "markdown":
@@ -184,7 +190,11 @@ async def create_course_structure_from_pdf(
     - auto_create: Automatically create all extracted elements
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -192,7 +202,9 @@ async def create_course_structure_from_pdf(
         )
 
     # Check if unit already has a course outline
-    existing_outline = db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first()
+    existing_outline = (
+        db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first()
+    )
     if existing_outline:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -211,7 +223,9 @@ async def create_course_structure_from_pdf(
         # Extract and analyze PDF
         extracted_doc = await pdf_parser_service.extract_from_bytes(contents)
         analysis = await document_analyzer_service.analyze_document(extracted_doc)
-        course_mapping = await document_analyzer_service.map_to_course_structure(analysis)
+        course_mapping = await document_analyzer_service.map_to_course_structure(
+            analysis
+        )
 
         created_items = {
             "course_outline": None,
@@ -267,7 +281,11 @@ async def create_course_structure_from_pdf(
                 )
                 db.add(topic)
                 created_items["weekly_topics"].append(
-                    {"id": str(topic.id), "week": topic.week_number, "title": topic.topic_title}
+                    {
+                        "id": str(topic.id),
+                        "week": topic.week_number,
+                        "title": topic.topic_title,
+                    }
                 )
 
             # Create assessments
@@ -346,7 +364,11 @@ async def create_content_from_pdf(
     - week_number: Optional week number
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -375,7 +397,8 @@ async def create_content_from_pdf(
             content_markdown=markdown_content,
             week_number=week_number,
             content_category=content_category.value,
-            estimated_duration_minutes=extracted_doc.metadata.page_count * 3,  # Rough estimate
+            estimated_duration_minutes=extracted_doc.metadata.page_count
+            * 3,  # Rough estimate
             generation_metadata={
                 "source": "pdf_import",
                 "filename": file.filename,
@@ -422,7 +445,11 @@ async def get_import_suggestions(
     - Gaps in current content
     """
     # Verify unit exists and user has access
-    unit = db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == current_user.id).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -435,7 +462,9 @@ async def get_import_suggestions(
     )
 
     outcomes_count = (
-        db.query(UnitLearningOutcome).filter(UnitLearningOutcome.unit_id == unit_id).count()
+        db.query(UnitLearningOutcome)
+        .filter(UnitLearningOutcome.unit_id == unit_id)
+        .count()
     )
 
     weekly_topics_count = (
@@ -458,7 +487,11 @@ async def get_import_suggestions(
                 "type": "course_outline",
                 "title": "Import Unit Outline",
                 "description": "Start by importing a unit outline PDF to establish course structure",
-                "recommended_file_types": ["Unit outline", "Course syllabus", "Study guide"],
+                "recommended_file_types": [
+                    "Unit outline",
+                    "Course syllabus",
+                    "Study guide",
+                ],
             }
         )
 
@@ -502,7 +535,11 @@ async def get_import_suggestions(
                 "type": "content",
                 "title": "Add Course Content",
                 "description": f"Currently have {content_count} content items. Consider adding lecture notes, worksheets, and activities.",
-                "recommended_file_types": ["Lecture slides", "Tutorial guides", "Workshop materials"],
+                "recommended_file_types": [
+                    "Lecture slides",
+                    "Tutorial guides",
+                    "Workshop materials",
+                ],
             }
         )
 
@@ -553,4 +590,3 @@ async def get_import_suggestions(
             "5. Generate student-facing materials",
         ],
     }
-

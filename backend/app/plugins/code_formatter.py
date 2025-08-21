@@ -89,7 +89,9 @@ class CodeFormatter(RemediatorPlugin):
                     return language
             elif any(keyword in code for keyword in keywords):
                 # Special handling for TypeScript
-                if language == "javascript" and ("interface " in code or ": string" in code or ": number" in code):
+                if language == "javascript" and (
+                    "interface " in code or ": string" in code or ": number" in code
+                ):
                     return "typescript"
                 return language
 
@@ -150,13 +152,19 @@ class CodeFormatter(RemediatorPlugin):
                     continue
 
                 # Decrease indent for these keywords
-                if stripped.startswith(("return", "break", "continue", "pass")) and indent_level > 0:
+                if (
+                    stripped.startswith(("return", "break", "continue", "pass"))
+                    and indent_level > 0
+                ):
                     indent_level -= 1
 
                 # Decrease indent for dedent keywords
-                if stripped.startswith(
-                    ("else:", "elif ", "except:", "finally:", "except ")
-                ) and indent_level > 0:
+                if (
+                    stripped.startswith(
+                        ("else:", "elif ", "except:", "finally:", "except ")
+                    )
+                    and indent_level > 0
+                ):
                     indent_level -= 1
 
                 # Add proper indentation

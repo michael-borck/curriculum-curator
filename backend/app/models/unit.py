@@ -132,7 +132,10 @@ class Unit(Base):
         "Material", back_populates="unit", cascade="all, delete-orphan"
     )
     unit_outline = relationship(
-        "UnitOutline", back_populates="unit", uselist=False, cascade="all, delete-orphan"
+        "UnitOutline",
+        back_populates="unit",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

@@ -57,7 +57,9 @@ class GrammarValidator(ValidatorPlugin):
             stripped_sentence = sentence.strip()
             if stripped_sentence:
                 # Get first word
-                first_word = stripped_sentence.split()[0] if stripped_sentence.split() else ""
+                first_word = (
+                    stripped_sentence.split()[0] if stripped_sentence.split() else ""
+                )
                 if first_word:
                     starters.append(first_word.lower())
 

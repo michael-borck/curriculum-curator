@@ -17,6 +17,7 @@ from app.schemas.llm import (
 # Try to import LLM providers - they're optional
 try:
     import openai
+
     has_openai = True
 except ImportError:
     openai = None
@@ -24,6 +25,7 @@ except ImportError:
 
 try:
     import anthropic
+
     has_anthropic = True
 except ImportError:
     anthropic = None

@@ -393,4 +393,3 @@ async def reset_workflow_session(
         "message": "Workflow session reset successfully",
         "next_question": first_question,
     }
-

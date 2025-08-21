@@ -59,9 +59,14 @@ class BasicRemediator(RemediatorPlugin):
         # Ensure sentences end with punctuation
         lines = content.split("\n")
         for i, line in enumerate(lines):
-            if (line and not line.startswith("#") and not line.startswith("-") and
-                re.match(r".*[a-zA-Z0-9]$", line.strip()) and
-                not re.match(r"^\d+\.", line) and len(line) > 20):
+            if (
+                line
+                and not line.startswith("#")
+                and not line.startswith("-")
+                and re.match(r".*[a-zA-Z0-9]$", line.strip())
+                and not re.match(r"^\d+\.", line)
+                and len(line) > 20
+            ):
                 lines[i] = line + "."
                 changes.append(f"Added missing period to line {i + 1}")
 

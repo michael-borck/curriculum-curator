@@ -49,6 +49,7 @@ async def lifespan(app: FastAPI):
 
         # Initialize configuration service
         from app.services.config_service import ConfigService  # noqa: PLC0415
+
         db = SessionLocal()
         try:
             ConfigService.initialize(db)
@@ -132,6 +133,7 @@ try:
         courses,
         import_content,
         llm,
+        llm_config,
         monitoring,
         unit_structure,
         user_export,
@@ -144,8 +146,11 @@ try:
     app.include_router(unit_structure.router, prefix="/api", tags=["unit-structure"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])
-    app.include_router(content_workflow.router, prefix="/api/content", tags=["workflow"])
+    app.include_router(
+        content_workflow.router, prefix="/api/content", tags=["workflow"]
+    )
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
+    app.include_router(llm_config.router, prefix="/api/llm-config", tags=["llm-config"])
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(user_export.router, prefix="/api/user", tags=["user"])
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])

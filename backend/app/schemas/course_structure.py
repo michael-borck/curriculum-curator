@@ -74,7 +74,9 @@ class LearningOutcomeBase(BaseModel):
     outcome_type: str = Field(..., pattern="^(clo|ulo|wlo)$")
     outcome_code: str | None = Field(None, max_length=20)
     outcome_text: str = Field(..., min_length=10)
-    bloom_level: str = Field(..., pattern="^(remember|understand|apply|analyze|evaluate|create)$")
+    bloom_level: str = Field(
+        ..., pattern="^(remember|understand|apply|analyze|evaluate|create)$"
+    )
     cognitive_processes: str | None = None
     sequence_order: int = Field(default=0, ge=0)
     assessment_methods: str | None = None
@@ -124,7 +126,9 @@ class WeeklyTopicBase(BaseModel):
     """Base schema for weekly topic"""
 
     week_number: int = Field(..., ge=1, le=52)
-    week_type: str = Field(default="regular", pattern="^(regular|revision|assessment|break|holiday)$")
+    week_type: str = Field(
+        default="regular", pattern="^(regular|revision|assessment|break|holiday)$"
+    )
     topic_title: str = Field(..., min_length=1, max_length=500)
     topic_description: str | None = None
     key_concepts: list[str] | None = None
@@ -191,7 +195,10 @@ class AssessmentPlanBase(BaseModel):
     """Base schema for assessment plan"""
 
     assessment_name: str = Field(..., min_length=1, max_length=500)
-    assessment_type: str = Field(..., pattern="^(quiz|assignment|exam|project|presentation|participation|lab_report|portfolio|peer_review|reflection)$")
+    assessment_type: str = Field(
+        ...,
+        pattern="^(quiz|assignment|exam|project|presentation|participation|lab_report|portfolio|peer_review|reflection)$",
+    )
     assessment_mode: str = Field(default="summative", pattern="^(formative|summative)$")
     description: str = Field(..., min_length=10)
     weight_percentage: float = Field(..., ge=0, le=100)

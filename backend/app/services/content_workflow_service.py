@@ -197,7 +197,11 @@ class ContentWorkflowService:
     ) -> WorkflowChatSession:
         """Create a new workflow session for guided content creation"""
         # Find the unit
-        unit = self.db.query(Unit).filter(Unit.id == unit_id, Unit.owner_id == user_id).first()
+        unit = (
+            self.db.query(Unit)
+            .filter(Unit.id == unit_id, Unit.owner_id == user_id)
+            .first()
+        )
 
         if not unit:
             raise ValueError("Unit not found or access denied")
@@ -235,7 +239,10 @@ class ContentWorkflowService:
         """Get the next question in the workflow"""
         session = (
             self.db.query(WorkflowChatSession)
-            .filter(WorkflowChatSession.id == session_id, WorkflowChatSession.user_id == user_id)
+            .filter(
+                WorkflowChatSession.id == session_id,
+                WorkflowChatSession.user_id == user_id,
+            )
             .first()
         )
 
@@ -272,7 +279,10 @@ class ContentWorkflowService:
         """Submit an answer to a workflow question"""
         session = (
             self.db.query(WorkflowChatSession)
-            .filter(WorkflowChatSession.id == session_id, WorkflowChatSession.user_id == user_id)
+            .filter(
+                WorkflowChatSession.id == session_id,
+                WorkflowChatSession.user_id == user_id,
+            )
             .first()
         )
 
@@ -347,7 +357,9 @@ class ContentWorkflowService:
 
         return True
 
-    async def _get_next_stage(self, current_stage: WorkflowStage) -> WorkflowStage | None:
+    async def _get_next_stage(
+        self, current_stage: WorkflowStage
+    ) -> WorkflowStage | None:
         """Get the next stage in the workflow"""
         stage_order = [
             WorkflowStage.INITIAL,
@@ -385,7 +397,9 @@ class ContentWorkflowService:
 
         return "\n".join(summary_parts)
 
-    async def _get_completion_next_steps(self, session: WorkflowChatSession) -> list[str]:
+    async def _get_completion_next_steps(
+        self, session: WorkflowChatSession
+    ) -> list[str]:
         """Get next steps after workflow completion"""
         return [
             "1. Review the generated course structure",
@@ -401,7 +415,10 @@ class ContentWorkflowService:
         """Generate course structure based on workflow decisions"""
         session = (
             self.db.query(WorkflowChatSession)
-            .filter(WorkflowChatSession.id == session_id, WorkflowChatSession.user_id == user_id)
+            .filter(
+                WorkflowChatSession.id == session_id,
+                WorkflowChatSession.user_id == user_id,
+            )
             .first()
         )
 
@@ -413,7 +430,9 @@ class ContentWorkflowService:
 
         # Check if structure already exists
         existing_outline = (
-            self.db.query(UnitOutline).filter(UnitOutline.unit_id == session.unit_id).first()
+            self.db.query(UnitOutline)
+            .filter(UnitOutline.unit_id == session.unit_id)
+            .first()
         )
 
         if existing_outline:
@@ -517,7 +536,9 @@ class ContentWorkflowService:
 
         # Determine number of outcomes
         outcome_count = 5  # Default
-        outcome_count_str = decisions.get("learning_outcome_count", {}).get("value", "5-6 outcomes")
+        outcome_count_str = decisions.get("learning_outcome_count", {}).get(
+            "value", "5-6 outcomes"
+        )
         if "3-4" in outcome_count_str:
             outcome_count = 4
         elif "7-8" in outcome_count_str:
@@ -535,7 +556,14 @@ class ContentWorkflowService:
         elif "Higher order" in bloom_focus:
             bloom_levels = ["evaluate", "create"]
         else:
-            bloom_levels = ["remember", "understand", "apply", "analyze", "evaluate", "create"]
+            bloom_levels = [
+                "remember",
+                "understand",
+                "apply",
+                "analyze",
+                "evaluate",
+                "create",
+            ]
 
         # Generate outcomes
         outcomes = []
@@ -555,7 +583,9 @@ class ContentWorkflowService:
 
         return outcomes
 
-    async def _generate_outcome_text(self, unit: Unit, bloom_level: str, number: int) -> str:
+    async def _generate_outcome_text(
+        self, unit: Unit, bloom_level: str, number: int
+    ) -> str:
         """Generate a learning outcome text"""
         # Simple template-based generation
         # In production, this would use LLM service
@@ -619,7 +649,9 @@ class ContentWorkflowService:
 
         # Determine number of assessments
         assessment_count = 3  # Default
-        count_str = decisions.get("assessment_count", {}).get("value", "2-3 assessments")
+        count_str = decisions.get("assessment_count", {}).get(
+            "value", "2-3 assessments"
+        )
         if "4-5" in count_str:
             assessment_count = 4
         elif "6+" in count_str:
@@ -659,17 +691,25 @@ class ContentWorkflowService:
                     "assessment_mode": "summative",
                     "description": f"Assessment task {i + 1}",
                     "weight_percentage": round(weight, 1),
-                    "due_week": min((i + 1) * (outline.duration_weeks // assessment_count), outline.duration_weeks),
+                    "due_week": min(
+                        (i + 1) * (outline.duration_weeks // assessment_count),
+                        outline.duration_weeks,
+                    ),
                 }
             )
 
         return assessments
 
-    async def get_workflow_status(self, session_id: str, user_id: str) -> dict[str, Any]:
+    async def get_workflow_status(
+        self, session_id: str, user_id: str
+    ) -> dict[str, Any]:
         """Get current workflow status and progress"""
         session = (
             self.db.query(WorkflowChatSession)
-            .filter(WorkflowChatSession.id == session_id, WorkflowChatSession.user_id == user_id)
+            .filter(
+                WorkflowChatSession.id == session_id,
+                WorkflowChatSession.user_id == user_id,
+            )
             .first()
         )
 
@@ -702,4 +742,3 @@ class ContentWorkflowService:
             }
             for q in questions
         ]
-

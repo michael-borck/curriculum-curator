@@ -201,7 +201,9 @@ async def delete_user(
         # Hard delete - remove from database permanently
         # First delete related records
         # Delete email verifications
-        db.query(EmailVerification).filter(EmailVerification.user_id == user.id).delete()
+        db.query(EmailVerification).filter(
+            EmailVerification.user_id == user.id
+        ).delete()
 
         # Delete password resets
         db.query(PasswordReset).filter(PasswordReset.user_id == user.id).delete()
@@ -226,7 +228,7 @@ async def delete_user(
 
         return {
             "message": f"User {user_email} has been permanently deleted",
-            "permanent": True
+            "permanent": True,
         }
     # Soft delete - just mark as inactive
     user.is_active = False
@@ -240,10 +242,7 @@ async def delete_user(
         target_user_id=user.id,
     )
 
-    return {
-        "message": f"User {user_email} has been deactivated",
-        "permanent": False
-    }
+    return {"message": f"User {user_email} has been deactivated", "permanent": False}
 
 
 @router.get("/users/stats", response_model=UserStatsResponse)

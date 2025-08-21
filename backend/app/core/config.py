@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     EMAIL_WHITELIST: list[str] = []
 
     # Flexible Email Configuration (supports multiple providers)
-    EMAIL_PROVIDER: str = "dev"  # Options: gmail, custom, brevo, sendgrid, mailgun, postmark, dev
+    EMAIL_PROVIDER: str = "dev"  # Options: gmail, custom, brevo, sendgrid, mailgun, postmark, dev - default fallback only
 
     # Common SMTP Settings
     SMTP_HOST: str | None = None
@@ -60,7 +60,9 @@ class Settings(BaseSettings):
     EMAIL_RATE_LIMIT_PER_DAY: int = 1000
 
     # Development/Testing
-    EMAIL_DEV_MODE: bool = True
+    EMAIL_DEV_MODE: bool = (
+        False  # Changed default to False - will be overridden by .env
+    )
     TEST_EMAIL_RECIPIENT: str | None = None
 
     # LLM Configuration

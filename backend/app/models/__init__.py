@@ -15,6 +15,7 @@ from .email_whitelist import EmailWhitelist
 # Generation tracking
 from .generation_history import GenerationHistory, GenerationType
 from .learning_outcome import BloomLevel, OutcomeType, UnitLearningOutcome
+from .llm_config import LLMConfiguration, TokenUsageLog
 from .login_attempt import LoginAttempt, LoginAttemptType
 from .material import Material, MaterialType
 from .password_reset import PasswordReset
@@ -68,6 +69,9 @@ __all__ = [
     # Generation tracking
     "GenerationHistory",
     "GenerationType",
+    # LLM Configuration
+    "LLMConfiguration",
+    "TokenUsageLog",
     # Materials
     "Material",
     "MaterialType",

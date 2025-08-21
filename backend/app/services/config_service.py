@@ -120,7 +120,9 @@ class ConfigService:
         if key:
             config = db.query(SystemConfig).filter(SystemConfig.key == key).first()
             if config:
-                cls._cache[config.key] = cls._parse_value(config.value, config.value_type)
+                cls._cache[config.key] = cls._parse_value(
+                    config.value, config.value_type
+                )
         else:
             cls.initialize(db)
 
@@ -208,7 +210,9 @@ class ConfigService:
             "username": cls.get("email.smtp_username"),
             "password": cls.get("email.smtp_password"),
             "use_tls": cls.get_bool("email.smtp_use_tls", True),
-            "from_email": cls.get("email.from_address", "noreply@curriculum-curator.local"),
+            "from_email": cls.get(
+                "email.from_address", "noreply@curriculum-curator.local"
+            ),
             "from_name": cls.get("email.from_name", "Curriculum Curator"),
         }
 
@@ -230,8 +234,9 @@ class ConfigService:
         return {
             "quarto_path": cls.get("tools.quarto_path", "quarto"),
             "pandoc_path": cls.get("tools.pandoc_path", "pandoc"),
-            "formats_enabled": cls.get_list("export.formats_enabled",
-                                           ["pdf", "docx", "pptx", "html", "markdown"]),
+            "formats_enabled": cls.get_list(
+                "export.formats_enabled", ["pdf", "docx", "pptx", "html", "markdown"]
+            ),
             "max_export_size_mb": cls.get_int("export.max_size_mb", 100),
         }
 
@@ -241,12 +246,12 @@ class ConfigService:
         return {
             "enabled": cls.get_bool("features.enable_file_upload", True),
             "max_size_mb": cls.get_int("upload.max_file_size_mb", 10),
-            "allowed_extensions": cls.get_list("upload.allowed_extensions",
-                                             [".pdf", ".doc", ".docx", ".txt", ".md"]),
+            "allowed_extensions": cls.get_list(
+                "upload.allowed_extensions", [".pdf", ".doc", ".docx", ".txt", ".md"]
+            ),
         }
 
     @classmethod
     def is_ai_enabled(cls) -> bool:
         """Check if AI features are enabled"""
         return cls.get_bool("features.enable_ai_features", True)
-

@@ -138,7 +138,7 @@ class Content(Base):
         "UnitLearningOutcome",
         secondary="content_outcomes",
         back_populates="contents",
-        overlaps="contents"  # Avoid warning about overlapping relationships
+        overlaps="contents",  # Avoid warning about overlapping relationships
     )
 
     def __repr__(self):

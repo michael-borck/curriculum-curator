@@ -42,9 +42,7 @@ def get_current_user(
         # Decode JWT token - no IP verification for now
         # IP verification was causing issues with local testing
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         user_id: str | None = payload.get("sub")
         if user_id is None:

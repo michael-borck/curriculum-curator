@@ -11,6 +11,7 @@ from app.models import ConfigCategory
 
 class ConfigBase(BaseModel):
     """Base configuration schema"""
+
     key: str = Field(..., description="Configuration key")
     value: str = Field(..., description="Configuration value")
     category: ConfigCategory = Field(..., description="Configuration category")
@@ -30,6 +31,7 @@ class ConfigCreate(ConfigBase):
 
 class ConfigUpdate(BaseModel):
     """Schema for updating a configuration"""
+
     value: str | None = Field(None, description="New value")
     description: str | None = Field(None, description="New description")
     validation_regex: str | None = Field(None, description="New validation regex")
@@ -40,11 +42,13 @@ class ConfigUpdate(BaseModel):
 
 class ConfigBulkUpdate(BaseModel):
     """Schema for bulk updating configurations"""
+
     updates: dict[str, str] = Field(..., description="Map of key to new value")
 
 
 class ConfigResponse(ConfigBase):
     """Response schema for a configuration"""
+
     id: str
     created_at: str
     updated_at: str
@@ -53,6 +57,7 @@ class ConfigResponse(ConfigBase):
 
 class ConfigListResponse(BaseModel):
     """Response schema for configuration list"""
+
     configs: list[ConfigResponse]
     total: int
     skip: int
@@ -61,6 +66,7 @@ class ConfigListResponse(BaseModel):
 
 class ConfigExport(BaseModel):
     """Schema for configuration export"""
+
     version: str
     exported_at: str
     exported_by: str

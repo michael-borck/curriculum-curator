@@ -169,9 +169,7 @@ class DocumentAnalyzerService:
         ],
     }
 
-    async def analyze_document(
-        self, document: ExtractedDocument
-    ) -> DocumentAnalysis:
+    async def analyze_document(self, document: ExtractedDocument) -> DocumentAnalysis:
         """
         Analyze document structure and extract course content
 
@@ -258,7 +256,12 @@ class DocumentAnalyzerService:
             for text_line in lines:
                 line = text_line.strip()
                 # Look for lines that might be titles
-                if line and len(line) > 10 and len(line) < 200 and (line.isupper() or line.istitle()):
+                if (
+                    line
+                    and len(line) > 10
+                    and len(line) < 200
+                    and (line.isupper() or line.istitle())
+                ):
                     return line
 
         return None
@@ -272,7 +275,9 @@ class DocumentAnalyzerService:
             for item in document.toc:
                 # Find section content in pages
                 start_page = item["page"]
-                section_text = self._extract_section_text(document, item["title"], start_page)
+                section_text = self._extract_section_text(
+                    document, item["title"], start_page
+                )
 
                 sections.append(
                     AnalyzedSection(
@@ -344,7 +349,9 @@ class DocumentAnalyzerService:
                     # Save previous section
                     if current_section:
                         current_section.content = "\n".join(current_content)
-                        current_section.word_count = len(current_section.content.split())
+                        current_section.word_count = len(
+                            current_section.content.split()
+                        )
                         sections.append(current_section)
 
                     # Start new section
@@ -391,7 +398,9 @@ class DocumentAnalyzerService:
             return 1
         if re.match(r"^(Section|Module)\s+", text, re.IGNORECASE):
             return 2
-        if re.match(r"^(Week|Topic)\s+", text, re.IGNORECASE) or re.match(r"^\d+\.\d+\.\d+", text):
+        if re.match(r"^(Week|Topic)\s+", text, re.IGNORECASE) or re.match(
+            r"^\d+\.\d+\.\d+", text
+        ):
             return 3
         if re.match(r"^\d+\.\d+", text):
             return 2
@@ -482,7 +491,11 @@ class DocumentAnalyzerService:
         topics = self._extract_topics(text)
 
         return ExtractedLearningOutcome(
-            text=text, outcome_type=outcome_type, bloom_level=bloom_level, verbs=verbs, topics=topics
+            text=text,
+            outcome_type=outcome_type,
+            bloom_level=bloom_level,
+            verbs=verbs,
+            topics=topics,
         )
 
     def _extract_topics(self, text: str) -> list[str]:
@@ -533,7 +546,9 @@ class DocumentAnalyzerService:
 
         # Extract assessment name
         name = "Assessment"
-        name_match = re.search(r"(Assignment|Quiz|Exam|Test|Project)\s*\d*", text, re.IGNORECASE)
+        name_match = re.search(
+            r"(Assignment|Quiz|Exam|Test|Project)\s*\d*", text, re.IGNORECASE
+        )
         if name_match:
             name = name_match.group()
 
@@ -728,7 +743,9 @@ class DocumentAnalyzerService:
             "course_outline": {
                 "title": analysis.title,
                 "description": self._generate_description(analysis),
-                "duration_weeks": len(analysis.weekly_content) if analysis.weekly_content else 12,
+                "duration_weeks": len(analysis.weekly_content)
+                if analysis.weekly_content
+                else 12,
             },
             "learning_outcomes": [],
             "weekly_topics": [],
@@ -742,7 +759,9 @@ class DocumentAnalyzerService:
                 {
                     "outcome_type": outcome.outcome_type,
                     "outcome_text": outcome.text,
-                    "bloom_level": outcome.bloom_level.value if outcome.bloom_level else None,
+                    "bloom_level": outcome.bloom_level.value
+                    if outcome.bloom_level
+                    else None,
                 }
             )
 
@@ -878,4 +897,3 @@ class DocumentAnalyzerService:
 
 # Singleton instance
 document_analyzer_service = DocumentAnalyzerService()
-

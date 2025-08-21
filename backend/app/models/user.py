@@ -99,6 +99,14 @@ class User(Base):
     llm_config = Column(JSON, nullable=True)  # API keys (encrypted), model preferences
     content_generation_context = Column(Text, nullable=True)  # Default context for LLM
 
+    # Relationships
+    llm_configs = relationship(
+        "LLMConfiguration", back_populates="user", cascade="all, delete-orphan"
+    )
+    token_usage = relationship(
+        "TokenUsageLog", back_populates="user", cascade="all, delete-orphan"
+    )
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(

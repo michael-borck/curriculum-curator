@@ -54,7 +54,9 @@ class UnitOutline(Base):
 
     # Teaching approach
     delivery_mode = Column(String(50), nullable=True)  # face-to-face, online, blended
-    teaching_pattern = Column(Text, nullable=True)  # e.g., "2hr lecture + 2hr lab weekly"
+    teaching_pattern = Column(
+        Text, nullable=True
+    )  # e.g., "2hr lecture + 2hr lab weekly"
 
     # Prerequisites and requirements
     prerequisites = Column(Text, nullable=True)

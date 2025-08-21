@@ -96,9 +96,7 @@ class TOCGenerator(RemediatorPlugin):
 
                 # Build number string (e.g., "1.2.3")
                 num_parts = [
-                    str(numbering[j])
-                    for j in range(1, level + 1)
-                    if numbering[j] > 0
+                    str(numbering[j]) for j in range(1, level + 1) if numbering[j] > 0
                 ]
                 num_str = ".".join(num_parts) + ". "
             else:
@@ -146,7 +144,10 @@ class TOCGenerator(RemediatorPlugin):
         for i, line in enumerate(lines):
             if "<!-- TOC -->" in line or "<!-- toc -->" in line.lower():
                 for j in range(i + 1, len(lines)):
-                    if "<!-- /TOC -->" in lines[j] or "<!-- /toc -->" in lines[j].lower():
+                    if (
+                        "<!-- /TOC -->" in lines[j]
+                        or "<!-- /toc -->" in lines[j].lower()
+                    ):
                         return (i, j + 1)
                 break
         return None
@@ -224,9 +225,7 @@ class TOCGenerator(RemediatorPlugin):
             # Clean up formatting
             new_content = re.sub(r"\n{3,}", "\n\n", new_content)
 
-            return self._success_result(
-                new_content, action, headings, toc, options
-            )
+            return self._success_result(new_content, action, headings, toc, options)
 
         except Exception as e:
             return PluginResult(

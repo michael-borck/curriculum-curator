@@ -29,8 +29,7 @@ def get_current_admin_user(
     """Ensure current user is an admin"""
     if current_user.role != UserRole.ADMIN.value:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )
     return current_user
 
@@ -54,8 +53,8 @@ async def list_configurations(
     if search:
         search_term = f"%{search}%"
         query = query.filter(
-            (SystemConfig.key.ilike(search_term)) |
-            (SystemConfig.description.ilike(search_term))
+            (SystemConfig.key.ilike(search_term))
+            | (SystemConfig.description.ilike(search_term))
         )
 
     # Get total count
@@ -86,10 +85,7 @@ async def list_configurations(
     ]
 
     return ConfigListResponse(
-        configs=config_responses,
-        total=total,
-        skip=skip,
-        limit=limit
+        configs=config_responses, total=total, skip=skip, limit=limit
     )
 
 
@@ -104,8 +100,7 @@ async def get_configuration(
 
     if not config:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Configuration not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not found"
         )
 
     return ConfigResponse(
@@ -134,14 +129,14 @@ async def create_configuration(
 ):
     """Create a new configuration setting"""
     # Check if key already exists
-    existing = db.query(SystemConfig).filter(
-        SystemConfig.key == config_data.key
-    ).first()
+    existing = (
+        db.query(SystemConfig).filter(SystemConfig.key == config_data.key).first()
+    )
 
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Configuration key already exists"
+            detail="Configuration key already exists",
         )
 
     # Validate value based on type and constraints
@@ -209,8 +204,7 @@ async def update_configuration(
 
     if not config:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Configuration not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not found"
         )
 
     # Validate and update value if provided
@@ -304,10 +298,7 @@ async def bulk_update_configurations(
         config = db.query(SystemConfig).filter(SystemConfig.key == key).first()
 
         if not config:
-            errors.append({
-                "key": key,
-                "error": "Configuration not found"
-            })
+            errors.append({"key": key, "error": "Configuration not found"})
             continue
 
         try:
@@ -328,10 +319,7 @@ async def bulk_update_configurations(
                 restart_required = True
 
         except ValueError as e:
-            errors.append({
-                "key": key,
-                "error": str(e)
-            })
+            errors.append({"key": key, "error": str(e)})
 
     if updated_configs:
         db.commit()
@@ -350,7 +338,9 @@ async def bulk_update_configurations(
     }
 
     if restart_required:
-        response["warning"] = "Some configuration changes require a system restart to take effect"
+        response["warning"] = (
+            "Some configuration changes require a system restart to take effect"
+        )
 
     return response
 
@@ -366,15 +356,14 @@ async def delete_configuration(
 
     if not config:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Configuration not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Configuration not found"
         )
 
     # Prevent deletion of core system configs
     if config.category in [ConfigCategory.SECURITY, ConfigCategory.EMAIL]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete core system configurations"
+            detail="Cannot delete core system configurations",
         )
 
     db.delete(config)
@@ -408,9 +397,9 @@ async def reset_to_defaults(
 
     reset_count = 0
     for default in default_configs:
-        config = db.query(SystemConfig).filter(
-            SystemConfig.key == default["key"]
-        ).first()
+        config = (
+            db.query(SystemConfig).filter(SystemConfig.key == default["key"]).first()
+        )
 
         if config:
             config.value = default["value"]
@@ -450,13 +439,15 @@ async def export_configurations(
         "version": "1.0",
         "exported_at": datetime.utcnow().isoformat(),
         "exported_by": admin_user.email,
-        "configs": []
+        "configs": [],
     }
 
     for config in configs:
         config_dict = {
             "key": config.key,
-            "value": config.value if (not config.is_sensitive or include_sensitive) else "***HIDDEN***",
+            "value": config.value
+            if (not config.is_sensitive or include_sensitive)
+            else "***HIDDEN***",
             "category": config.category.value,
             "value_type": config.value_type,
             "description": config.description,

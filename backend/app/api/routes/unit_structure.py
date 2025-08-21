@@ -29,45 +29,53 @@ async def get_course_structure(
     """
     # Check if user has access to this unit
     # (course_id is actually unit_id in our system)
-    unit = db.query(Unit).filter(
-        Unit.id == course_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == course_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found or access denied"
+            detail="Unit not found or access denied",
         )
     unit_id = unit.id
 
     # Get course outline
-    outline = db.query(UnitOutline).filter(
-        UnitOutline.unit_id == unit_id
-    ).first()
+    outline = db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first()
 
     if not outline:
         return {
             "outline": None,
             "learning_outcomes": [],
             "weekly_topics": [],
-            "assessments": []
+            "assessments": [],
         }
 
     # Get learning outcomes
-    learning_outcomes = db.query(UnitLearningOutcome).filter(
-        UnitLearningOutcome.unit_id == unit_id
-    ).order_by(UnitLearningOutcome.sequence_order).all()
+    learning_outcomes = (
+        db.query(UnitLearningOutcome)
+        .filter(UnitLearningOutcome.unit_id == unit_id)
+        .order_by(UnitLearningOutcome.sequence_order)
+        .all()
+    )
 
     # Get weekly topics
-    weekly_topics = db.query(WeeklyTopic).filter(
-        WeeklyTopic.unit_id == unit_id
-    ).order_by(WeeklyTopic.week_number).all()
+    weekly_topics = (
+        db.query(WeeklyTopic)
+        .filter(WeeklyTopic.unit_id == unit_id)
+        .order_by(WeeklyTopic.week_number)
+        .all()
+    )
 
     # Get assessments
-    assessments = db.query(AssessmentPlan).filter(
-        AssessmentPlan.unit_id == unit_id
-    ).order_by(AssessmentPlan.due_week).all()
+    assessments = (
+        db.query(AssessmentPlan)
+        .filter(AssessmentPlan.unit_id == unit_id)
+        .order_by(AssessmentPlan.due_week)
+        .all()
+    )
 
     return {
         "outline": {
@@ -78,7 +86,7 @@ async def get_course_structure(
             "delivery_mode": outline.delivery_mode,
             "teaching_pattern": outline.teaching_pattern,
             "is_complete": outline.is_complete,
-            "completion_percentage": outline.completion_percentage
+            "completion_percentage": outline.completion_percentage,
         },
         "learning_outcomes": [
             {
@@ -86,7 +94,7 @@ async def get_course_structure(
                 "outcome_code": lo.outcome_code,
                 "outcome_text": lo.outcome_text,
                 "outcome_type": lo.outcome_type,
-                "bloom_level": lo.bloom_level
+                "bloom_level": lo.bloom_level,
             }
             for lo in learning_outcomes
         ],
@@ -101,7 +109,7 @@ async def get_course_structure(
                 "pre_class_modules": topic.pre_class_modules,
                 "in_class_activities": topic.in_class_activities,
                 "post_class_tasks": topic.post_class_tasks,
-                "required_readings": topic.required_readings
+                "required_readings": topic.required_readings,
             }
             for topic in weekly_topics
         ],
@@ -113,10 +121,10 @@ async def get_course_structure(
                 "assessment_mode": assessment.assessment_mode,
                 "weight_percentage": assessment.weight_percentage,
                 "due_week": assessment.due_week,
-                "description": assessment.description
+                "description": assessment.description,
             }
             for assessment in assessments
-        ]
+        ],
     }
 
 
@@ -130,22 +138,25 @@ async def delete_course_structure(
     Delete course structure (for testing/reset purposes)
     """
     # Check access
-    unit = db.query(Unit).filter(
-        Unit.id == course_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == course_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not unit:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found or access denied"
+            detail="Unit not found or access denied",
         )
     unit_id = unit.id
 
     # Delete in correct order due to foreign key constraints
     db.query(AssessmentPlan).filter(AssessmentPlan.unit_id == unit_id).delete()
     db.query(WeeklyTopic).filter(WeeklyTopic.unit_id == unit_id).delete()
-    db.query(UnitLearningOutcome).filter(UnitLearningOutcome.unit_id == unit_id).delete()
+    db.query(UnitLearningOutcome).filter(
+        UnitLearningOutcome.unit_id == unit_id
+    ).delete()
     db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).delete()
 
     db.commit()

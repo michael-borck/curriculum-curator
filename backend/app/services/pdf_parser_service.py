@@ -223,7 +223,10 @@ class PDFParserService:
                     table_data = None
                     if tables:
                         table_data = [
-                            [[str(cell) if cell else "" for cell in row] for row in table]
+                            [
+                                [str(cell) if cell else "" for cell in row]
+                                for row in table
+                            ]
                             for table in tables
                         ]
 
@@ -337,9 +340,7 @@ class PDFParserService:
             self.errors.append(f"pymupdf extraction error: {e!s}")
             raise
 
-    async def extract_structure(
-        self, document: ExtractedDocument
-    ) -> dict[str, Any]:
+    async def extract_structure(self, document: ExtractedDocument) -> dict[str, Any]:
         """
         Analyze and extract document structure
 
@@ -542,8 +543,8 @@ class PDFParserService:
                         continue
 
                     # Check if line looks like a heading
-                    if (
-                        line.isupper() or line.startswith(("Chapter", "Section", "Unit", "Module"))
+                    if line.isupper() or line.startswith(
+                        ("Chapter", "Section", "Unit", "Module")
                     ):
                         markdown_parts.append(f"## {line}\n")
                     else:
@@ -579,8 +580,7 @@ class PDFParserService:
 
         # Data rows
         markdown_lines.extend(
-            "| " + " | ".join(str(cell) for cell in row) + " |"
-            for row in table[1:]
+            "| " + " | ".join(str(cell) for cell in row) + " |" for row in table[1:]
         )
 
         return "\n".join(markdown_lines) + "\n"
@@ -588,4 +588,3 @@ class PDFParserService:
 
 # Singleton instance
 pdf_parser_service = PDFParserService()
-

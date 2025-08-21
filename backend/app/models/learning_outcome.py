@@ -48,7 +48,9 @@ content_outcomes = Table(
     Base.metadata,
     Column("content_id", GUID(), ForeignKey("contents.id", ondelete="CASCADE")),
     Column(
-        "outcome_id", GUID(), ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE")
+        "outcome_id",
+        GUID(),
+        ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
     ),
 )
 
@@ -156,12 +158,52 @@ class UnitLearningOutcome(Base):
         """Create outcome from text with automatic Bloom's level detection"""
         # Common Bloom's taxonomy verbs
         bloom_verbs = {
-            BloomLevel.REMEMBER: ["identify", "list", "name", "recall", "recognize", "state"],
-            BloomLevel.UNDERSTAND: ["describe", "explain", "summarize", "classify", "discuss"],
-            BloomLevel.APPLY: ["apply", "demonstrate", "implement", "solve", "use", "execute"],
-            BloomLevel.ANALYZE: ["analyze", "compare", "contrast", "examine", "investigate"],
-            BloomLevel.EVALUATE: ["evaluate", "assess", "critique", "judge", "justify", "defend"],
-            BloomLevel.CREATE: ["create", "design", "develop", "construct", "produce", "formulate"],
+            BloomLevel.REMEMBER: [
+                "identify",
+                "list",
+                "name",
+                "recall",
+                "recognize",
+                "state",
+            ],
+            BloomLevel.UNDERSTAND: [
+                "describe",
+                "explain",
+                "summarize",
+                "classify",
+                "discuss",
+            ],
+            BloomLevel.APPLY: [
+                "apply",
+                "demonstrate",
+                "implement",
+                "solve",
+                "use",
+                "execute",
+            ],
+            BloomLevel.ANALYZE: [
+                "analyze",
+                "compare",
+                "contrast",
+                "examine",
+                "investigate",
+            ],
+            BloomLevel.EVALUATE: [
+                "evaluate",
+                "assess",
+                "critique",
+                "judge",
+                "justify",
+                "defend",
+            ],
+            BloomLevel.CREATE: [
+                "create",
+                "design",
+                "develop",
+                "construct",
+                "produce",
+                "formulate",
+            ],
         }
 
         # Detect Bloom's level from text

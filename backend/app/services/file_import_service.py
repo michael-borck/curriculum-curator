@@ -316,18 +316,14 @@ class FileImportService:
         doc = Document(docx_file)
 
         text_content.extend(
-            paragraph.text
-            for paragraph in doc.paragraphs
-            if paragraph.text.strip()
+            paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()
         )
 
         # Also extract from tables
         for table in doc.tables:
             for row in table.rows:
                 row_text = [
-                    cell.text.strip()
-                    for cell in row.cells
-                    if cell.text.strip()
+                    cell.text.strip() for cell in row.cells if cell.text.strip()
                 ]
                 if row_text:
                     text_content.append(" | ".join(row_text))
@@ -492,7 +488,9 @@ class FileImportService:
         suggestions.extend(self._get_general_suggestions(content, content_lower))
 
         # Add type-specific suggestions
-        type_suggestions = self._get_type_specific_suggestions(content, content_lower, content_type)
+        type_suggestions = self._get_type_specific_suggestions(
+            content, content_lower, content_type
+        )
         suggestions.extend(type_suggestions)
 
         # Add accessibility suggestions
@@ -505,7 +503,9 @@ class FileImportService:
         suggestions = []
 
         if len(content.split()) < 300:
-            suggestions.append("Content appears brief. Consider expanding with more details.")
+            suggestions.append(
+                "Content appears brief. Consider expanding with more details."
+            )
 
         if "objective" not in content_lower and "goal" not in content_lower:
             suggestions.append("Add clear learning objectives at the beginning.")
@@ -587,7 +587,9 @@ class FileImportService:
         if not re.search(r"(image|figure|diagram|chart|graph)", content_lower):
             suggestions.append("Consider adding visual aids to enhance understanding.")
         else:
-            suggestions.append("Ensure all images have descriptive alt text for accessibility.")
+            suggestions.append(
+                "Ensure all images have descriptive alt text for accessibility."
+            )
 
         return suggestions
 

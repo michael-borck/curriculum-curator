@@ -203,12 +203,8 @@ class URLVerifier(ValidatorPlugin):
     ) -> httpx.Response:
         """Make HTTP request with specified method."""
         if method == "HEAD":
-            return await client.head(
-                url, follow_redirects=True, timeout=self._timeout
-            )
-        return await client.get(
-            url, follow_redirects=True, timeout=self._timeout
-        )
+            return await client.head(url, follow_redirects=True, timeout=self._timeout)
+        return await client.get(url, follow_redirects=True, timeout=self._timeout)
 
     def _process_response(
         self, response: httpx.Response, url: str, result: dict
@@ -254,7 +250,9 @@ class URLVerifier(ValidatorPlugin):
     def _is_captcha_redirect(self, redirect_url: str) -> bool:
         """Check if URL is a captcha or verification page."""
         captcha_indicators = ["captcha", "challenge", "verify", "bot-check"]
-        return any(indicator in redirect_url.lower() for indicator in captcha_indicators)
+        return any(
+            indicator in redirect_url.lower() for indicator in captcha_indicators
+        )
 
     async def _verify_urls(self, urls: list[tuple[str, str]]) -> list[dict[str, Any]]:
         """Verify multiple URLs concurrently"""
@@ -316,7 +314,9 @@ class URLVerifier(ValidatorPlugin):
     def _handle_suspicious_url(self, url: str, result: dict) -> tuple[str, str]:
         """Handle suspicious URL."""
         issue = f"Suspicious URL pattern: {url[:100]}..."
-        suggestion = f"Verify this URL is correct: {result.get('error', 'Pattern match')}"
+        suggestion = (
+            f"Verify this URL is correct: {result.get('error', 'Pattern match')}"
+        )
         return issue, suggestion
 
     def _handle_bot_blocked_url(self, url: str, result: dict) -> tuple[str, str]:
@@ -338,7 +338,9 @@ class URLVerifier(ValidatorPlugin):
 
         return issue, suggestion
 
-    def _handle_invalid_url(self, url: str, context: str, result: dict) -> tuple[str, str]:
+    def _handle_invalid_url(
+        self, url: str, context: str, result: dict
+    ) -> tuple[str, str]:
         """Handle invalid URL."""
         error = result.get("error", "")
         status_code = result.get("status_code")
@@ -346,11 +348,11 @@ class URLVerifier(ValidatorPlugin):
         error_handlers = {
             "Connection failed": (
                 f"Unreachable URL: {url[:100]}... ({context})",
-                "Check if the URL is correct or if the site is temporarily down"
+                "Check if the URL is correct or if the site is temporarily down",
             ),
             "timeout": (
                 f"URL timeout: {url[:100]}... ({context})",
-                "The URL took too long to respond, verify it's correct"
+                "The URL took too long to respond, verify it's correct",
             ),
         }
 
@@ -363,20 +365,17 @@ class URLVerifier(ValidatorPlugin):
         if status_code == 404:
             return (
                 f"Broken link (404): {url[:100]}... ({context})",
-                "This page doesn't exist, find the correct URL or remove the link"
+                "This page doesn't exist, find the correct URL or remove the link",
             )
 
         if status_code and status_code >= 500:
             return (
                 f"Server error ({status_code}): {url[:100]}...",
-                "The server returned an error, the link may be temporarily broken"
+                "The server returned an error, the link may be temporarily broken",
             )
 
         # Default case
-        return (
-            f"Invalid URL: {url[:100]}... - {error}",
-            "Verify and correct this URL"
-        )
+        return (f"Invalid URL: {url[:100]}... - {error}", "Verify and correct this URL")
 
     def _handle_redirect(self, url: str, result: dict) -> tuple[str | None, str | None]:
         """Handle URL redirect."""
@@ -386,8 +385,10 @@ class URLVerifier(ValidatorPlugin):
         original_parsed = urlparse(url)
         redirect_parsed = urlparse(redirect_url)
 
-        if (original_parsed.netloc != redirect_parsed.netloc or
-            original_parsed.path != redirect_parsed.path):
+        if (
+            original_parsed.netloc != redirect_parsed.netloc
+            or original_parsed.path != redirect_parsed.path
+        ):
             issue = f"URL redirects: {url[:50]}... → {redirect_url[:50]}..."
             suggestion = f"Update to use the final URL: {redirect_url}"
             return issue, suggestion
