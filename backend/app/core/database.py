@@ -51,6 +51,10 @@ def init_db():
         SystemSettings,
         User,
     )
+    from app.models.llm_config import (  # pyright: ignore[reportUnusedImport]
+        LLMConfiguration,
+        TokenUsage,
+    )
 
     # Create all tables
     Base.metadata.create_all(bind=engine)

@@ -53,7 +53,7 @@ def run_startup_checks(db: Session) -> None:
     # The EmailStr validation was using the wrong method signature
     # and deleting users with valid emails like "211934g@curtin.edu.au"
     # validate_and_clean_emails(db)
-    
+
     # Instead, just log the user count for monitoring
     user_count = db.query(User).count()
     logger.info(f"Current user count: {user_count}")
