@@ -57,6 +57,20 @@ const AdminDashboard = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    // Listen for navigation events from SystemSettings
+    const handleNavigateToTab = (event: CustomEvent) => {
+      if (event.detail === 'llm') {
+        setActiveTab('llm');
+      }
+    };
+    
+    window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+    return () => {
+      window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+    };
+  }, []);
+
   const fetchDashboardStats = async () => {
     try {
       setIsLoadingStats(true);

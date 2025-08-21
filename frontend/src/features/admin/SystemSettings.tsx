@@ -8,13 +8,16 @@ import {
   Upload,
   Shield,
   Database,
+  Settings2,
 } from 'lucide-react';
 import api from '../../services/api';
+import { llmApi } from '../../services/llmApi';
+import type { LLMConfig, LLMProvider } from '../../types/llm';
 
 interface SystemSettingsData {
   // AI Features
   enable_ai_features: boolean;
-  default_llm_provider: 'openai' | 'anthropic' | 'gemini';
+  default_llm_provider: LLMProvider | '';
 
   // File Upload
   enable_file_upload: boolean;
@@ -35,10 +38,17 @@ interface SystemSettingsData {
   backup_schedule: 'daily' | 'weekly' | 'monthly';
 }
 
+interface ConfiguredProvider {
+  provider: LLMProvider;
+  name: string;
+  configured: boolean;
+  hasDefault: boolean;
+}
+
 const SystemSettings = () => {
   const [settings, setSettings] = useState<SystemSettingsData>({
     enable_ai_features: true,
-    default_llm_provider: 'openai',
+    default_llm_provider: '',
     enable_file_upload: true,
     max_file_size_mb: 10,
     allowed_file_types: ['pdf', 'doc', 'docx', 'txt'],
@@ -58,9 +68,11 @@ const SystemSettings = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  const [configuredProviders, setConfiguredProviders] = useState<ConfiguredProvider[]>([]);
 
   useEffect(() => {
     fetchSettings();
+    fetchConfiguredProviders();
   }, []);
 
   useEffect(() => {
@@ -70,6 +82,50 @@ const SystemSettings = () => {
       );
     }
   }, [settings, originalSettings]);
+
+  const fetchConfiguredProviders = async () => {
+    try {
+      const configs = await llmApi.getSystemConfigurations();
+      
+      // Get unique providers that are configured
+      const providerMap = new Map<LLMProvider, boolean>();
+      configs.forEach(config => {
+        if (config.api_key || config.provider === 'ollama') {
+          providerMap.set(config.provider as LLMProvider, config.is_default || false);
+        }
+      });
+
+      // Create provider list
+      const allProviders: ConfiguredProvider[] = [
+        { provider: 'openai' as LLMProvider, name: 'OpenAI', configured: false, hasDefault: false },
+        { provider: 'anthropic' as LLMProvider, name: 'Anthropic', configured: false, hasDefault: false },
+        { provider: 'gemini' as LLMProvider, name: 'Google Gemini', configured: false, hasDefault: false },
+        { provider: 'ollama' as LLMProvider, name: 'Ollama (Local)', configured: false, hasDefault: false },
+      ];
+
+      // Mark configured providers
+      allProviders.forEach(p => {
+        if (providerMap.has(p.provider)) {
+          p.configured = true;
+          p.hasDefault = providerMap.get(p.provider) || false;
+        }
+      });
+
+      setConfiguredProviders(allProviders);
+
+      // Auto-select if only one configured
+      const configured = allProviders.filter(p => p.configured);
+      if (configured.length === 1 && !settings.default_llm_provider) {
+        setSettings(prev => ({ ...prev, default_llm_provider: configured[0].provider }));
+      } else if (configured.length > 0 && !settings.default_llm_provider) {
+        // Select the one marked as default, or the first configured
+        const defaultProvider = configured.find(p => p.hasDefault) || configured[0];
+        setSettings(prev => ({ ...prev, default_llm_provider: defaultProvider.provider }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch configured providers:', error);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -230,28 +286,66 @@ const SystemSettings = () => {
           </div>
 
           <div>
-            <label
-              htmlFor='llm-provider'
-              className='block text-sm font-medium text-gray-700 mb-1'
-            >
-              Default LLM Provider
-            </label>
-            <select
-              id='llm-provider'
-              value={settings.default_llm_provider}
-              onChange={e =>
-                setSettings({
-                  ...settings,
-                  default_llm_provider: e.target.value as any,
-                })
-              }
-              disabled={!settings.enable_ai_features}
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100'
-            >
-              <option value='openai'>OpenAI</option>
-              <option value='anthropic'>Anthropic</option>
-              <option value='gemini'>Google Gemini</option>
-            </select>
+            <div className='flex items-center justify-between mb-1'>
+              <label
+                htmlFor='llm-provider'
+                className='block text-sm font-medium text-gray-700'
+              >
+                Default LLM Provider
+              </label>
+              <a
+                href='#'
+                onClick={e => {
+                  e.preventDefault();
+                  // Navigate to LLM Configuration tab
+                  const event = new CustomEvent('navigate-to-tab', { detail: 'llm' });
+                  window.dispatchEvent(event);
+                }}
+                className='text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1'
+              >
+                <Settings2 className='w-3 h-3' />
+                Configure Providers
+              </a>
+            </div>
+            {configuredProviders.filter(p => p.configured).length === 0 ? (
+              <div className='p-3 bg-amber-50 border border-amber-200 rounded-md'>
+                <p className='text-sm text-amber-700'>
+                  No LLM providers configured. Please configure at least one provider in the LLM Configuration section.
+                </p>
+              </div>
+            ) : (
+              <select
+                id='llm-provider'
+                value={settings.default_llm_provider}
+                onChange={e =>
+                  setSettings({
+                    ...settings,
+                    default_llm_provider: e.target.value as LLMProvider,
+                  })
+                }
+                disabled={!settings.enable_ai_features}
+                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100'
+              >
+                <option value=''>Select a provider</option>
+                {configuredProviders.map(provider => (
+                  <option
+                    key={provider.provider}
+                    value={provider.provider}
+                    disabled={!provider.configured}
+                    className={!provider.configured ? 'text-gray-400' : ''}
+                  >
+                    {provider.name}
+                    {provider.configured ? '' : ' (Not Configured)'}
+                    {provider.hasDefault ? ' ★' : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+            {configuredProviders.filter(p => p.configured).length === 1 && (
+              <p className='text-xs text-gray-500 mt-1'>
+                Auto-selected as the only configured provider
+              </p>
+            )}
           </div>
         </div>
       </div>
