@@ -24,8 +24,8 @@ def validate_and_clean_emails(db: Session) -> None:
         for user in users:
             try:
                 # Test if email passes Pydantic validation
-                # Use the validation method properly
-                EmailStr._validate(user.email, None)
+                # Simply create an EmailStr instance to validate
+                EmailStr(user.email)
             except (ValidationError, ValueError, TypeError) as e:
                 logger.warning(f"Invalid email found: {user.email} - {e}")
                 invalid_users.append(user)
@@ -49,7 +49,13 @@ def run_startup_checks(db: Session) -> None:
     """
     logger.info("Running startup checks...")
 
-    # Clean invalid emails
-    validate_and_clean_emails(db)
+    # DISABLED: Email validation was incorrectly removing valid users
+    # The EmailStr validation was using the wrong method signature
+    # and deleting users with valid emails like "211934g@curtin.edu.au"
+    # validate_and_clean_emails(db)
+    
+    # Instead, just log the user count for monitoring
+    user_count = db.query(User).count()
+    logger.info(f"Current user count: {user_count}")
 
     logger.info("Startup checks completed")
