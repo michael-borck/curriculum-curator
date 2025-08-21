@@ -64,10 +64,16 @@ const AdminDashboard = () => {
         setActiveTab('llm');
       }
     };
-    
-    window.addEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+
+    window.addEventListener(
+      'navigate-to-tab',
+      handleNavigateToTab as EventListener
+    );
     return () => {
-      window.removeEventListener('navigate-to-tab', handleNavigateToTab as EventListener);
+      window.removeEventListener(
+        'navigate-to-tab',
+        handleNavigateToTab as EventListener
+      );
     };
   }, []);
 

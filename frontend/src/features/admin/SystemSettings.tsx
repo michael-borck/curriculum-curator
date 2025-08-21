@@ -68,7 +68,9 @@ const SystemSettings = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
-  const [configuredProviders, setConfiguredProviders] = useState<ConfiguredProvider[]>([]);
+  const [configuredProviders, setConfiguredProviders] = useState<
+    ConfiguredProvider[]
+  >([]);
 
   useEffect(() => {
     fetchSettings();
@@ -86,21 +88,44 @@ const SystemSettings = () => {
   const fetchConfiguredProviders = async () => {
     try {
       const configs = await llmApi.getSystemConfigurations();
-      
+
       // Get unique providers that are configured
       const providerMap = new Map<LLMProvider, boolean>();
       configs.forEach(config => {
         if (config.api_key || config.provider === 'ollama') {
-          providerMap.set(config.provider as LLMProvider, config.is_default || false);
+          providerMap.set(
+            config.provider as LLMProvider,
+            config.is_default || false
+          );
         }
       });
 
       // Create provider list
       const allProviders: ConfiguredProvider[] = [
-        { provider: 'openai' as LLMProvider, name: 'OpenAI', configured: false, hasDefault: false },
-        { provider: 'anthropic' as LLMProvider, name: 'Anthropic', configured: false, hasDefault: false },
-        { provider: 'gemini' as LLMProvider, name: 'Google Gemini', configured: false, hasDefault: false },
-        { provider: 'ollama' as LLMProvider, name: 'Ollama (Local)', configured: false, hasDefault: false },
+        {
+          provider: 'openai' as LLMProvider,
+          name: 'OpenAI',
+          configured: false,
+          hasDefault: false,
+        },
+        {
+          provider: 'anthropic' as LLMProvider,
+          name: 'Anthropic',
+          configured: false,
+          hasDefault: false,
+        },
+        {
+          provider: 'gemini' as LLMProvider,
+          name: 'Google Gemini',
+          configured: false,
+          hasDefault: false,
+        },
+        {
+          provider: 'ollama' as LLMProvider,
+          name: 'Ollama (Local)',
+          configured: false,
+          hasDefault: false,
+        },
       ];
 
       // Mark configured providers
@@ -116,11 +141,18 @@ const SystemSettings = () => {
       // Auto-select if only one configured
       const configured = allProviders.filter(p => p.configured);
       if (configured.length === 1 && !settings.default_llm_provider) {
-        setSettings(prev => ({ ...prev, default_llm_provider: configured[0].provider }));
+        setSettings(prev => ({
+          ...prev,
+          default_llm_provider: configured[0].provider,
+        }));
       } else if (configured.length > 0 && !settings.default_llm_provider) {
         // Select the one marked as default, or the first configured
-        const defaultProvider = configured.find(p => p.hasDefault) || configured[0];
-        setSettings(prev => ({ ...prev, default_llm_provider: defaultProvider.provider }));
+        const defaultProvider =
+          configured.find(p => p.hasDefault) || configured[0];
+        setSettings(prev => ({
+          ...prev,
+          default_llm_provider: defaultProvider.provider,
+        }));
       }
     } catch (error) {
       console.error('Failed to fetch configured providers:', error);
@@ -298,7 +330,9 @@ const SystemSettings = () => {
                 onClick={e => {
                   e.preventDefault();
                   // Navigate to LLM Configuration tab
-                  const event = new CustomEvent('navigate-to-tab', { detail: 'llm' });
+                  const event = new CustomEvent('navigate-to-tab', {
+                    detail: 'llm',
+                  });
                   window.dispatchEvent(event);
                 }}
                 className='text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1'
@@ -310,7 +344,8 @@ const SystemSettings = () => {
             {configuredProviders.filter(p => p.configured).length === 0 ? (
               <div className='p-3 bg-amber-50 border border-amber-200 rounded-md'>
                 <p className='text-sm text-amber-700'>
-                  No LLM providers configured. Please configure at least one provider in the LLM Configuration section.
+                  No LLM providers configured. Please configure at least one
+                  provider in the LLM Configuration section.
                 </p>
               </div>
             ) : (

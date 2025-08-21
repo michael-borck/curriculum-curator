@@ -66,9 +66,10 @@ const UnitManager = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/units');
-      console.log('Fetched units:', response.data);
       // The backend returns an array directly, not wrapped in an object
-      setUnits(Array.isArray(response.data) ? response.data : response.data.units || []);
+      setUnits(
+        Array.isArray(response.data) ? response.data : response.data.units || []
+      );
     } catch (error) {
       console.error('Error fetching units:', error);
     } finally {
@@ -230,12 +231,15 @@ const UnitManager = () => {
                 <div className='space-y-2 mb-4'>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Calendar className='h-4 w-4 mr-2' />
-                    {unit.semester || 'Not set'} • {unit.credit_points || 0} credits
+                    {unit.semester || 'Not set'} • {unit.credit_points || 0}{' '}
+                    credits
                   </div>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Users className='h-4 w-4 mr-2' />
                     {unit.pedagogy_type
-                      ? unit.pedagogy_type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                      ? unit.pedagogy_type
+                          .replace(/-/g, ' ')
+                          .replace(/\b\w/g, l => l.toUpperCase())
                       : 'Not specified'}
                   </div>
                 </div>

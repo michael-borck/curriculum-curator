@@ -9,7 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import Dashboard from './components/Layout/Dashboard';
 import ContentCreator from './features/content/ContentCreator';
 import UnitManager from './features/units/UnitManager';
-import UnitDashboard from './features/units/UnitDashboard';
+// import UnitDashboard from './features/units/UnitDashboard'; // TODO: Re-enable when ready
 import UnitView from './features/units/UnitView';
 import UnitWorkflow from './features/units/UnitWorkflow';
 import Login from './features/auth/Login';
