@@ -22,6 +22,7 @@ export interface LLMConfig {
   is_default: boolean;
   is_active?: boolean;
   user_id?: string | null;
+  user_email?: string | null;
 }
 
 export interface LLMTestRequest {
@@ -49,6 +50,15 @@ export interface TokenUsageStats {
   by_model: Record<string, number>;
   period_start: string;
   period_end: string;
+}
+
+export interface TokenStats {
+  user_id: string;
+  user_email?: string;
+  provider: string;
+  total_tokens: number;
+  total_cost: number;
+  request_count: number;
 }
 
 export const PROVIDER_DISPLAY_NAMES: Record<LLMProvider, string> = {

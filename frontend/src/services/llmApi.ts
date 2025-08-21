@@ -88,6 +88,16 @@ class LLMApiService {
   }
 
   /**
+   * Get all user configurations (admin only)
+   */
+  async getAllUserConfigurations(): Promise<LLMConfig[]> {
+    const response = await api.get<LLMConfig[]>(
+      '/api/llm-config/configurations/users'
+    );
+    return response.data;
+  }
+
+  /**
    * Update an LLM configuration
    */
   async updateConfiguration(

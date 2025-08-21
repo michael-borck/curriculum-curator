@@ -11,14 +11,16 @@ import {
   Home,
   Activity,
   Loader2,
+  Brain,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import UserManagement from './UserManagement';
 import EmailWhitelist from './EmailWhitelist';
 import SystemSettings from './SystemSettings';
+import { AdminLLMSettings } from './AdminLLMSettings';
 import api from '../../services/api';
 
-type TabType = 'overview' | 'users' | 'whitelist' | 'settings';
+type TabType = 'overview' | 'users' | 'whitelist' | 'settings' | 'llm';
 
 interface DashboardStats {
   total_users: number;
@@ -138,6 +140,7 @@ const AdminDashboard = () => {
     { id: 'users', label: 'User Management', icon: Users },
     { id: 'whitelist', label: 'Email Whitelist', icon: Mail },
     { id: 'settings', label: 'System Settings', icon: Settings },
+    { id: 'llm', label: 'LLM Configuration', icon: Brain },
   ] as const;
 
   const renderContent = () => {
@@ -291,6 +294,8 @@ const AdminDashboard = () => {
         return <EmailWhitelist />;
       case 'settings':
         return <SystemSettings />;
+      case 'llm':
+        return <AdminLLMSettings />;
       default:
         return null;
     }

@@ -93,6 +93,28 @@ def get_system_configurations(
     return [LLMConfig.from_orm(config) for config in configs]
 
 
+@router.get("/configurations/users", response_model=list[LLMConfig])
+def get_all_user_configurations(
+    current_user: User = Depends(deps.get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Get all user LLM configurations (admin only)"""
+    configs = (
+        db.query(LLMConfiguration, User.email)
+        .join(User, LLMConfiguration.user_id == User.id)
+        .filter(LLMConfiguration.user_id.isnot(None), LLMConfiguration.is_active)
+        .all()
+    )
+
+    result = []
+    for config, email in configs:
+        config_dict = LLMConfig.from_orm(config)
+        config_dict.user_email = email
+        result.append(config_dict)
+
+    return result
+
+
 @router.post("/configurations", response_model=LLMConfig)
 def create_configuration(
     config: LLMConfigCreate,

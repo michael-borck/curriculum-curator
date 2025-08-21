@@ -48,6 +48,7 @@ class LLMConfigUpdate(BaseModel):
 class LLMConfig(LLMConfigBase):
     id: str
     user_id: str | None = None  # None for system-wide config
+    user_email: str | None = None  # User email for display
     is_active: bool = True
 
     class Config:
