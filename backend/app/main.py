@@ -136,6 +136,7 @@ try:
         llm_config,
         monitoring,
         unit_structure,
+        units,
         user_export,
     )
 
@@ -143,6 +144,7 @@ try:
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
     app.include_router(admin_config.router, prefix="/api/admin", tags=["admin-config"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+    app.include_router(units.router, prefix="/api/units", tags=["units"])
     app.include_router(unit_structure.router, prefix="/api", tags=["unit-structure"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])

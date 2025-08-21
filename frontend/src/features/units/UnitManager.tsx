@@ -19,13 +19,19 @@ interface Unit {
   id: string;
   title: string;
   code: string;
-  description: string;
+  description?: string;
   status: string;
-  teaching_philosophy: string;
+  year: number;
   semester: string;
-  credits: number;
+  pedagogy_type: string;
+  difficulty_level: string;
+  duration_weeks: number;
+  credit_points: number;
+  prerequisites?: string;
+  learning_hours?: number;
   created_at: string;
-  is_active: boolean;
+  updated_at: string;
+  owner_id: string;
   progress_percentage?: number;
   module_count?: number;
   material_count?: number;
@@ -73,14 +79,14 @@ const UnitManager = () => {
         title: newUnit.title,
         code: newUnit.code,
         description: newUnit.description,
-        year: parseInt(newUnit.semester.split('-')[0]) || 2024, // Extract year from semester
+        year: newUnit.year,
         semester: newUnit.semester,
-        pedagogy_type: newUnit.teaching_philosophy
-          .toLowerCase()
-          .replace('_', '-'),
-        difficulty_level: 'intermediate', // Default value
-        duration_weeks: 12, // Default value
-        credit_points: newUnit.credits,
+        pedagogy_type: newUnit.pedagogy_type,
+        difficulty_level: newUnit.difficulty_level,
+        duration_weeks: newUnit.duration_weeks,
+        credit_points: newUnit.credit_points,
+        prerequisites: newUnit.prerequisites,
+        learning_hours: newUnit.learning_hours,
         status: 'draft',
       };
 
@@ -366,62 +372,122 @@ const UnitManager = () => {
               <div className='grid grid-cols-2 gap-4'>
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-1'>
-                    Semester
+                    Year
                   </label>
                   <input
-                    type='text'
-                    value={newUnit.semester}
+                    type='number'
+                    value={newUnit.year}
                     onChange={e =>
-                      setNewUnit({ ...newUnit, semester: e.target.value })
+                      setNewUnit({ ...newUnit, year: parseInt(e.target.value) })
                     }
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                    placeholder='2024-S1'
+                    min='2020'
+                    max='2100'
                   />
                 </div>
 
                 <div>
                   <label className='block text-sm font-medium text-gray-700 mb-1'>
-                    Credits
+                    Semester
+                  </label>
+                  <select
+                    value={newUnit.semester}
+                    onChange={e =>
+                      setNewUnit({ ...newUnit, semester: e.target.value })
+                    }
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                  >
+                    <option value='semester_1'>Semester 1</option>
+                    <option value='semester_2'>Semester 2</option>
+                    <option value='summer'>Summer</option>
+                    <option value='winter'>Winter</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    Credit Points
                   </label>
                   <input
                     type='number'
-                    value={newUnit.credits}
+                    value={newUnit.credit_points}
                     onChange={e =>
                       setNewUnit({
                         ...newUnit,
-                        credits: parseInt(e.target.value),
+                        credit_points: parseInt(e.target.value),
                       })
                     }
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                     min='1'
-                    max='6'
+                    max='12'
+                  />
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    Duration (weeks)
+                  </label>
+                  <input
+                    type='number'
+                    value={newUnit.duration_weeks}
+                    onChange={e =>
+                      setNewUnit({
+                        ...newUnit,
+                        duration_weeks: parseInt(e.target.value),
+                      })
+                    }
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                    min='1'
+                    max='52'
                   />
                 </div>
               </div>
 
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Teaching Philosophy
+                  Pedagogy Type
                 </label>
                 <select
-                  value={newUnit.teaching_philosophy}
+                  value={newUnit.pedagogy_type}
                   onChange={e =>
                     setNewUnit({
                       ...newUnit,
-                      teaching_philosophy: e.target.value,
+                      pedagogy_type: e.target.value,
                     })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                 >
-                  <option value='TRADITIONAL'>Traditional</option>
-                  <option value='FLIPPED_CLASSROOM'>Flipped Classroom</option>
-                  <option value='CONSTRUCTIVIST'>Constructivist</option>
-                  <option value='PROJECT_BASED'>Project Based</option>
-                  <option value='INQUIRY_BASED'>Inquiry Based</option>
-                  <option value='COLLABORATIVE'>Collaborative</option>
-                  <option value='EXPERIENTIAL'>Experiential</option>
-                  <option value='PROBLEM_BASED'>Problem Based</option>
-                  <option value='MIXED_APPROACH'>Mixed Approach</option>
+                  <option value='inquiry-based'>Inquiry Based</option>
+                  <option value='project-based'>Project Based</option>
+                  <option value='traditional'>Traditional</option>
+                  <option value='collaborative'>Collaborative</option>
+                  <option value='game-based'>Game Based</option>
+                  <option value='constructivist'>Constructivist</option>
+                  <option value='problem-based'>Problem Based</option>
+                  <option value='experiential'>Experiential</option>
+                  <option value='competency-based'>Competency Based</option>
+                </select>
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Difficulty Level
+                </label>
+                <select
+                  value={newUnit.difficulty_level}
+                  onChange={e =>
+                    setNewUnit({
+                      ...newUnit,
+                      difficulty_level: e.target.value,
+                    })
+                  }
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                >
+                  <option value='beginner'>Beginner</option>
+                  <option value='intermediate'>Intermediate</option>
+                  <option value='advanced'>Advanced</option>
                 </select>
               </div>
             </div>
