@@ -75,7 +75,23 @@ def get_user_configurations(
         .all()
     )
 
-    return [LLMConfig.from_orm(config) for config in configs]
+    result = []
+    for config in configs:
+        config_dict = {
+            "id": str(config.id),
+            "user_id": str(config.user_id) if config.user_id else None,
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "api_url": config.api_url,
+            "bearer_token": config.bearer_token,
+            "model_name": config.model_name,
+            "temperature": config.temperature,
+            "max_tokens": config.max_tokens,
+            "is_default": config.is_default,
+            "is_active": config.is_active,
+        }
+        result.append(LLMConfig(**config_dict))
+    return result
 
 
 @router.get("/configurations/system", response_model=list[LLMConfig])
@@ -90,7 +106,23 @@ def get_system_configurations(
         .all()
     )
 
-    return [LLMConfig.from_orm(config) for config in configs]
+    result = []
+    for config in configs:
+        config_dict = {
+            "id": str(config.id),
+            "user_id": str(config.user_id) if config.user_id else None,
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "api_url": config.api_url,
+            "bearer_token": config.bearer_token,
+            "model_name": config.model_name,
+            "temperature": config.temperature,
+            "max_tokens": config.max_tokens,
+            "is_default": config.is_default,
+            "is_active": config.is_active,
+        }
+        result.append(LLMConfig(**config_dict))
+    return result
 
 
 @router.get("/configurations/users", response_model=list[LLMConfig])
@@ -108,9 +140,21 @@ def get_all_user_configurations(
 
     result = []
     for config, email in configs:
-        config_dict = LLMConfig.from_orm(config)
-        config_dict.user_email = email
-        result.append(config_dict)
+        config_dict = {
+            "id": str(config.id),
+            "user_id": str(config.user_id) if config.user_id else None,
+            "user_email": email,
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "api_url": config.api_url,
+            "bearer_token": config.bearer_token,
+            "model_name": config.model_name,
+            "temperature": config.temperature,
+            "max_tokens": config.max_tokens,
+            "is_default": config.is_default,
+            "is_active": config.is_active,
+        }
+        result.append(LLMConfig(**config_dict))
 
     return result
 
@@ -145,7 +189,19 @@ def create_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig.from_orm(db_config)
+    return LLMConfig(
+        id=str(db_config.id),
+        user_id=str(db_config.user_id) if db_config.user_id else None,
+        provider=db_config.provider,
+        api_key=db_config.api_key,
+        api_url=db_config.api_url,
+        bearer_token=db_config.bearer_token,
+        model_name=db_config.model_name,
+        temperature=db_config.temperature,
+        max_tokens=db_config.max_tokens,
+        is_default=db_config.is_default,
+        is_active=db_config.is_active,
+    )
 
 
 @router.post("/configurations/system", response_model=LLMConfig)
@@ -177,7 +233,19 @@ def create_system_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig.from_orm(db_config)
+    return LLMConfig(
+        id=str(db_config.id),
+        user_id=str(db_config.user_id) if db_config.user_id else None,
+        provider=db_config.provider,
+        api_key=db_config.api_key,
+        api_url=db_config.api_url,
+        bearer_token=db_config.bearer_token,
+        model_name=db_config.model_name,
+        temperature=db_config.temperature,
+        max_tokens=db_config.max_tokens,
+        is_default=db_config.is_default,
+        is_active=db_config.is_active,
+    )
 
 
 @router.put("/configurations/{config_id}", response_model=LLMConfig)
@@ -217,7 +285,19 @@ def update_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig.from_orm(db_config)
+    return LLMConfig(
+        id=str(db_config.id),
+        user_id=str(db_config.user_id) if db_config.user_id else None,
+        provider=db_config.provider,
+        api_key=db_config.api_key,
+        api_url=db_config.api_url,
+        bearer_token=db_config.bearer_token,
+        model_name=db_config.model_name,
+        temperature=db_config.temperature,
+        max_tokens=db_config.max_tokens,
+        is_default=db_config.is_default,
+        is_active=db_config.is_active,
+    )
 
 
 @router.delete("/configurations/{config_id}")
