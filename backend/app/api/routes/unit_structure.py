@@ -40,7 +40,7 @@ async def get_course_structure(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found or access denied",
         )
-    unit_id = unit.id
+    unit_id = str(unit.id)
 
     # Get course outline
     outline = db.query(UnitOutline).filter(UnitOutline.unit_id == unit_id).first()
@@ -128,19 +128,19 @@ async def get_course_structure(
     }
 
 
-@router.delete("/courses/{course_id}/structure")
-async def delete_course_structure(
-    course_id: str,
+@router.delete("/units/{unit_id}/structure")
+async def delete_unit_structure(
+    unit_id: str,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
-    Delete course structure (for testing/reset purposes)
+    Delete unit structure (for testing/reset purposes)
     """
     # Check access
     unit = (
         db.query(Unit)
-        .filter(Unit.id == course_id, Unit.owner_id == current_user.id)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
         .first()
     )
 
@@ -149,7 +149,7 @@ async def delete_course_structure(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Unit not found or access denied",
         )
-    unit_id = unit.id
+    unit_id = str(unit.id)
 
     # Delete in correct order due to foreign key constraints
     db.query(AssessmentPlan).filter(AssessmentPlan.unit_id == unit_id).delete()

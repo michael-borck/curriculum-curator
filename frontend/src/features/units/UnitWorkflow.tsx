@@ -61,20 +61,18 @@ const UnitWorkflow: React.FC = () => {
     try {
       setLoading(true);
 
-      // Fetch unit/course data
-      const courseResponse = await api.get(`/api/courses/${unitId}`);
+      // Fetch unit data
+      const unitResponse = await api.get(`/api/units/${unitId}`);
       setUnit({
-        id: courseResponse.data.id,
-        name: courseResponse.data.title,
-        code: courseResponse.data.code,
-        description: courseResponse.data.description,
+        id: unitResponse.data.id,
+        name: unitResponse.data.title,
+        code: unitResponse.data.code,
+        description: unitResponse.data.description,
       });
 
       // Try to fetch unit structure if it exists
       try {
-        const outlineResponse = await api.get(
-          `/api/courses/${unitId}/structure`
-        );
+        const outlineResponse = await api.get(`/api/units/${unitId}/structure`);
         if (outlineResponse.data) {
           setUnitOutline(outlineResponse.data.outline);
           setLearningOutcomes(outlineResponse.data.learning_outcomes || []);

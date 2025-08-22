@@ -173,8 +173,8 @@ async def extract_pdf_text(
         )
 
 
-@router.post("/import/pdf/create-course-structure/{unit_id}")
-async def create_course_structure_from_pdf(
+@router.post("/import/pdf/create-unit-structure/{unit_id}")
+async def create_unit_structure_from_pdf(
     unit_id: str,
     file: UploadFile = File(...),
     auto_create: bool = True,
@@ -182,10 +182,10 @@ async def create_course_structure_from_pdf(
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
-    Import PDF and create course structure (outline, outcomes, topics, assessments)
+    Import PDF and create unit structure (outline, outcomes, topics, assessments)
 
     Parameters:
-    - unit_id: Target unit for the course structure
+    - unit_id: Target unit for the unit structure
     - file: PDF file to import
     - auto_create: Automatically create all extracted elements
     """

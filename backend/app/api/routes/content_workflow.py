@@ -163,23 +163,23 @@ async def submit_workflow_answer(
 
 
 @router.post("/workflow/sessions/{session_id}/generate-structure")
-async def generate_course_structure(
+async def generate_unit_structure(
     session_id: str,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
-    Generate course structure based on workflow decisions
+    Generate unit structure based on workflow decisions
 
     This creates:
-    - Course outline with description
+    - Unit outline with description
     - Learning outcomes based on pedagogy choices
     - Weekly topics following the selected pattern
     - Assessment plan matching the chosen strategy
     """
     try:
         workflow_service = ContentWorkflowService(db)
-        return await workflow_service.generate_course_structure(
+        return await workflow_service.generate_unit_structure(
             session_id=session_id,
             user_id=str(current_user.id),
         )

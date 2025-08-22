@@ -409,10 +409,10 @@ class ContentWorkflowService:
             "5. Review and refine learning outcomes",
         ]
 
-    async def generate_course_structure(
+    async def generate_unit_structure(
         self, session_id: str, user_id: str
     ) -> dict[str, Any]:
-        """Generate course structure based on workflow decisions"""
+        """Generate unit structure based on workflow decisions"""
         session = (
             self.db.query(WorkflowChatSession)
             .filter(

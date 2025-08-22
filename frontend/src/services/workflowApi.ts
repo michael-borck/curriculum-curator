@@ -227,7 +227,7 @@ class WorkflowAPI {
     formData.append('auto_create', autoCreate.toString());
 
     const response = await api.post(
-      `/api/content/import/pdf/create-course-structure/${unitId}`,
+      `/api/content/import/pdf/create-unit-structure/${unitId}`,
       formData,
       {
         headers: {
