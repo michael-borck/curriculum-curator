@@ -372,7 +372,7 @@ async def reset_workflow_session(
     session.current_stage = WorkflowStage.COURSE_OVERVIEW
     session.progress_percentage = 0.0
     session.decisions_made = {}
-    session.chat_history = []
+    session.messages = []
     session.message_count = 0
     session.workflow_data = {
         "reset_at": session.updated_at.isoformat(),

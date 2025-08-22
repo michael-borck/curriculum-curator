@@ -172,7 +172,7 @@ const LRDList = () => {
                     </h3>
                     <p className='text-sm text-gray-600'>
                       Version {lrd.version} • Created{' '}
-                      {new Date(lrd.created_at).toLocaleDateString()}
+                      {new Date(lrd.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   {getStatusBadge(lrd.status)}
@@ -225,7 +225,7 @@ const LRDList = () => {
                       <div
                         className='bg-blue-600 h-2 rounded-full'
                         style={{
-                          width: `${lrd.task_lists[0].progress_percentage || 0}%`,
+                          width: `${lrd.task_lists[0].progressPercentage || 0}%`,
                         }}
                       />
                     </div>

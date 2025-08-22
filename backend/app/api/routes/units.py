@@ -2,7 +2,6 @@
 API routes for unit CRUD operations
 """
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -48,7 +47,17 @@ def get_units(
         )
 
     # Apply pagination
-    return query.offset(skip).limit(limit).all()
+    units = query.offset(skip).limit(limit).all()
+
+    # Convert UUIDs to strings for each unit
+    for unit in units:
+        unit.id = str(unit.id)
+        unit.owner_id = str(unit.owner_id)
+        unit.created_by_id = str(unit.created_by_id)
+        if unit.updated_by_id:
+            unit.updated_by_id = str(unit.updated_by_id)
+
+    return units
 
 
 @router.get("/{unit_id}", response_model=UnitResponse)
@@ -60,16 +69,23 @@ def get_unit(
     """
     Get a specific unit by ID
     """
-    unit = db.query(Unit).filter(
-        Unit.id == unit_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not unit:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
+
+    # Convert UUIDs to strings for response
+    unit.id = str(unit.id)
+    unit.owner_id = str(unit.owner_id)
+    unit.created_by_id = str(unit.created_by_id)
+    if unit.updated_by_id:
+        unit.updated_by_id = str(unit.updated_by_id)
 
     return unit
 
@@ -83,16 +99,27 @@ def create_unit(
     """
     Create a new unit
     """
-    # Check if unit code already exists for this user
-    existing_unit = db.query(Unit).filter(
-        Unit.code == unit_data.code,
-        Unit.owner_id == current_user.id
-    ).first()
+    # Check if unit with same code, year, and semester already exists for this user
+    existing_unit = (
+        db.query(Unit)
+        .filter(
+            Unit.code == unit_data.code,
+            Unit.year == unit_data.year,
+            Unit.semester
+            == (
+                unit_data.semester.value
+                if unit_data.semester
+                else Semester.SEMESTER_1.value
+            ),
+            Unit.owner_id == current_user.id,
+        )
+        .first()
+    )
 
     if existing_unit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unit with this code already exists"
+            detail=f"Unit with code {unit_data.code} already exists for {unit_data.year} {unit_data.semester.value if unit_data.semester else 'Semester 1'}",
         )
 
     # Create new unit
@@ -101,10 +128,16 @@ def create_unit(
         code=unit_data.code,
         description=unit_data.description,
         year=unit_data.year,
-        semester=unit_data.semester.value if unit_data.semester else Semester.SEMESTER_1.value,
+        semester=unit_data.semester.value
+        if unit_data.semester
+        else Semester.SEMESTER_1.value,
         status=unit_data.status.value if unit_data.status else UnitStatus.DRAFT.value,
-        pedagogy_type=unit_data.pedagogy_type.value if unit_data.pedagogy_type else PedagogyType.INQUIRY_BASED.value,
-        difficulty_level=unit_data.difficulty_level.value if unit_data.difficulty_level else DifficultyLevel.INTERMEDIATE.value,
+        pedagogy_type=unit_data.pedagogy_type.value
+        if unit_data.pedagogy_type
+        else PedagogyType.INQUIRY_BASED.value,
+        difficulty_level=unit_data.difficulty_level.value
+        if unit_data.difficulty_level
+        else DifficultyLevel.INTERMEDIATE.value,
         duration_weeks=unit_data.duration_weeks or 12,
         credit_points=unit_data.credit_points or 6,
         prerequisites=unit_data.prerequisites,
@@ -119,6 +152,13 @@ def create_unit(
     db.commit()
     db.refresh(db_unit)
 
+    # Convert UUIDs to strings for response
+    db_unit.id = str(db_unit.id)
+    db_unit.owner_id = str(db_unit.owner_id)
+    db_unit.created_by_id = str(db_unit.created_by_id)
+    if db_unit.updated_by_id:
+        db_unit.updated_by_id = str(db_unit.updated_by_id)
+
     return db_unit
 
 
@@ -132,15 +172,15 @@ def update_unit(
     """
     Update an existing unit
     """
-    unit = db.query(Unit).filter(
-        Unit.id == unit_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not unit:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
 
     # Update fields if provided
@@ -165,6 +205,13 @@ def update_unit(
     db.commit()
     db.refresh(unit)
 
+    # Convert UUIDs to strings for response
+    unit.id = str(unit.id)
+    unit.owner_id = str(unit.owner_id)
+    unit.created_by_id = str(unit.created_by_id)
+    if unit.updated_by_id:
+        unit.updated_by_id = str(unit.updated_by_id)
+
     return unit
 
 
@@ -177,15 +224,15 @@ def delete_unit(
     """
     Delete a unit
     """
-    unit = db.query(Unit).filter(
-        Unit.id == unit_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not unit:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
 
     db.delete(unit)
@@ -205,27 +252,28 @@ def duplicate_unit(
     Duplicate an existing unit with a new code
     """
     # Get original unit
-    original_unit = db.query(Unit).filter(
-        Unit.id == unit_id,
-        Unit.owner_id == current_user.id
-    ).first()
+    original_unit = (
+        db.query(Unit)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if not original_unit:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
 
     # Check if new code already exists
-    existing_unit = db.query(Unit).filter(
-        Unit.code == new_code,
-        Unit.owner_id == current_user.id
-    ).first()
+    existing_unit = (
+        db.query(Unit)
+        .filter(Unit.code == new_code, Unit.owner_id == current_user.id)
+        .first()
+    )
 
     if existing_unit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unit with this code already exists"
+            detail="Unit with this code already exists",
         )
 
     # Create duplicate
@@ -251,5 +299,12 @@ def duplicate_unit(
     db.add(db_unit)
     db.commit()
     db.refresh(db_unit)
+
+    # Convert UUIDs to strings for response
+    db_unit.id = str(db_unit.id)
+    db_unit.owner_id = str(db_unit.owner_id)
+    db_unit.created_by_id = str(db_unit.created_by_id)
+    if db_unit.updated_by_id:
+        db_unit.updated_by_id = str(db_unit.updated_by_id)
 
     return db_unit

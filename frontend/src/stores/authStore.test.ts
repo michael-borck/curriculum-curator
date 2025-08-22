@@ -28,7 +28,7 @@ describe('AuthStore', () => {
       role: 'lecturer' as const,
       is_verified: true,
       is_active: true,
-      created_at: '2024-01-01',
+      createdAt: '2024-01-01',
     };
 
     act(() => {
@@ -50,7 +50,7 @@ describe('AuthStore', () => {
       role: 'lecturer' as const,
       is_verified: true,
       is_active: true,
-      created_at: '2024-01-01',
+      createdAt: '2024-01-01',
     };
 
     act(() => {
@@ -79,7 +79,7 @@ describe('AuthStore', () => {
       role: 'lecturer' as const,
       is_verified: true,
       is_active: true,
-      created_at: '2024-01-01',
+      createdAt: '2024-01-01',
     };
 
     act(() => {
@@ -102,7 +102,7 @@ describe('AuthStore', () => {
       role: 'admin' as const,
       is_verified: true,
       is_active: true,
-      created_at: '2024-01-01',
+      createdAt: '2024-01-01',
     };
 
     act(() => {

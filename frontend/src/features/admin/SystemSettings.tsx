@@ -9,6 +9,7 @@ import {
   Shield,
   Database,
   Settings2,
+  BookOpen,
 } from 'lucide-react';
 import api from '../../services/api';
 import { llmApi } from '../../services/llmApi';
@@ -18,6 +19,10 @@ interface SystemSettingsData {
   // AI Features
   enable_ai_features: boolean;
   default_llm_provider: LLMProvider | '';
+
+  // Unit Defaults
+  default_credit_points: number;
+  default_duration_weeks: number;
 
   // File Upload
   enable_file_upload: boolean;
@@ -49,6 +54,8 @@ const SystemSettings = () => {
   const [settings, setSettings] = useState<SystemSettingsData>({
     enable_ai_features: true,
     default_llm_provider: '',
+    default_credit_points: 25,
+    default_duration_weeks: 12,
     enable_file_upload: true,
     max_file_size_mb: 10,
     allowed_file_types: ['pdf', 'doc', 'docx', 'txt'],
@@ -382,6 +389,60 @@ const SystemSettings = () => {
                 Auto-selected as the only configured provider
               </p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Unit Defaults */}
+      <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+        <div className='flex items-center gap-3 mb-4'>
+          <BookOpen className='w-5 h-5 text-purple-600' />
+          <h3 className='text-lg font-semibold text-gray-900'>Unit Defaults</h3>
+        </div>
+
+        <div className='space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Default Credit Points
+            </label>
+            <input
+              type='number'
+              value={settings.default_credit_points}
+              onChange={e =>
+                setSettings({
+                  ...settings,
+                  default_credit_points: parseInt(e.target.value) || 25,
+                })
+              }
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500'
+              min='1'
+              max='100'
+            />
+            <p className='text-xs text-gray-500 mt-1'>
+              Default credit points for new units (users can change per unit)
+            </p>
+          </div>
+
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              Default Duration (weeks)
+            </label>
+            <input
+              type='number'
+              value={settings.default_duration_weeks}
+              onChange={e =>
+                setSettings({
+                  ...settings,
+                  default_duration_weeks: parseInt(e.target.value) || 12,
+                })
+              }
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500'
+              min='1'
+              max='52'
+            />
+            <p className='text-xs text-gray-500 mt-1'>
+              Default duration in weeks for new units
+            </p>
           </div>
         </div>
       </div>

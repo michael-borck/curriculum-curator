@@ -57,7 +57,7 @@ interface LRD {
   content?: LRDContent;
   version: string;
   status: string;
-  created_at: string;
+  createdAt: string;
   task_lists?: Array<{ id: string }>;
 }
 
@@ -207,7 +207,7 @@ const LRDDetail = () => {
               <span>Version {lrd.version}</span>
               <span>•</span>
               <span>
-                Created {new Date(lrd.created_at).toLocaleDateString()}
+                Created {new Date(lrd.createdAt).toLocaleDateString()}
               </span>
               <span>•</span>
               {getStatusBadge(lrd.status)}

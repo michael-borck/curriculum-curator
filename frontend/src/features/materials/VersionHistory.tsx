@@ -26,7 +26,7 @@ interface MaterialVersion {
   title: string;
   content: any;
   raw_content?: string;
-  created_at: string;
+  createdAt: string;
   created_by?: string;
   change_summary?: string;
   is_latest: boolean;
@@ -254,7 +254,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
                   <div className='flex items-center space-x-4 mt-3 text-sm text-gray-500'>
                     <span className='flex items-center'>
                       <Calendar className='h-4 w-4 mr-1' />
-                      {new Date(version.created_at).toLocaleDateString()}
+                      {new Date(version.createdAt).toLocaleDateString()}
                     </span>
                     {version.created_by && (
                       <span className='flex items-center'>
@@ -390,7 +390,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
                 Version {oldVersion.version}
               </div>
               <div className='text-gray-600 mt-1'>
-                {new Date(oldVersion.created_at).toLocaleString()}
+                {new Date(oldVersion.createdAt).toLocaleString()}
               </div>
               {oldVersion.change_summary && (
                 <div className='text-gray-700 mt-2'>
@@ -403,7 +403,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
                 Version {newVersion.version}
               </div>
               <div className='text-gray-600 mt-1'>
-                {new Date(newVersion.created_at).toLocaleString()}
+                {new Date(newVersion.createdAt).toLocaleString()}
               </div>
               {newVersion.change_summary && (
                 <div className='text-gray-700 mt-2'>

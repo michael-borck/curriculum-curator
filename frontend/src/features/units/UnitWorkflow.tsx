@@ -30,7 +30,7 @@ interface UnitOutline {
   id: string;
   title: string;
   description?: string;
-  duration_weeks: number;
+  durationWeeks: number;
   delivery_mode?: string;
   teaching_pattern?: string;
   is_complete: boolean;
@@ -114,8 +114,8 @@ const UnitWorkflow: React.FC = () => {
         <h2 className='text-2xl font-bold text-gray-900 mb-4'>
           Unit not found
         </h2>
-        <Link to='/courses' className='text-blue-600 hover:text-blue-700'>
-          ← Back to courses
+        <Link to='/units' className='text-blue-600 hover:text-blue-700'>
+          ← Back to units
         </Link>
       </div>
     );
@@ -126,7 +126,7 @@ const UnitWorkflow: React.FC = () => {
       {/* Header */}
       <div className='mb-6'>
         <Link
-          to='/courses'
+          to='/units'
           className='inline-flex items-center text-blue-600 hover:text-blue-700 mb-4'
         >
           <ArrowLeft size={20} className='mr-2' />

@@ -219,7 +219,7 @@ class ContentWorkflowService:
             message_count=0,
             total_tokens_used=0,
             decisions_made={},
-            chat_history=[],
+            messages=[],  # Changed from chat_history to messages
             workflow_data={
                 "unit_name": unit.title,
                 "unit_code": unit.code,
@@ -293,8 +293,8 @@ class ContentWorkflowService:
         session.record_decision(question_key, answer)
 
         # Add to chat history
-        chat_history = session.chat_history or []
-        chat_history.append(
+        messages = session.messages or []
+        messages.append(
             {
                 "timestamp": datetime.utcnow().isoformat(),
                 "type": "answer",
@@ -302,7 +302,7 @@ class ContentWorkflowService:
                 "answer": answer,
             }
         )
-        session.chat_history = chat_history
+        session.messages = messages
         session.message_count += 1
 
         # Check if stage is complete
@@ -316,7 +316,7 @@ class ContentWorkflowService:
 
                 # Generate stage summary
                 summary = await self._generate_stage_summary(session)
-                chat_history.append(
+                messages.append(
                     {
                         "timestamp": datetime.utcnow().isoformat(),
                         "type": "summary",
@@ -324,7 +324,7 @@ class ContentWorkflowService:
                         "content": summary,
                     }
                 )
-                session.chat_history = chat_history
+                session.messages = messages
             else:
                 # Workflow complete
                 session.mark_as_complete()

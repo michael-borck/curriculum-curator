@@ -21,7 +21,7 @@ class UnitBase(BaseModel):
     pedagogy_type: PedagogyType = PedagogyType.INQUIRY_BASED
     difficulty_level: DifficultyLevel = DifficultyLevel.INTERMEDIATE
     duration_weeks: int = Field(12, ge=1, le=52)
-    credit_points: int = Field(6, ge=1, le=12)
+    credit_points: int = Field(25, ge=1, le=100)
     prerequisites: str | None = None
     learning_hours: int | None = Field(None, ge=0, le=1000)
     unit_metadata: dict[str, Any] | None = None

@@ -27,14 +27,18 @@ const UnitView = () => {
           title: `Unit ${id}`,
           description:
             'A comprehensive course created with pedagogically-aware content generation.',
-          pedagogy: 'inquiry-based',
-          difficulty: 'intermediate',
-          duration: '8 weeks',
-          learningObjectives: [
-            'Understand core concepts and principles',
-            'Apply knowledge to real-world scenarios',
-            'Develop critical thinking skills',
-          ],
+          code: `UNIT${id}`,
+          year: 2024,
+          semester: 'semester_1',
+          status: 'active',
+          pedagogyType: 'inquiry-based',
+          difficultyLevel: 'intermediate',
+          durationWeeks: 8,
+          creditPoints: 25,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ownerId: '1',
+          createdById: '1',
           modules: [
             { id: 1, title: 'Introduction', type: 'lecture', completed: true },
             {
@@ -51,7 +55,6 @@ const UnitView = () => {
             },
             { id: 4, title: 'Assessment', type: 'quiz', completed: false },
           ],
-          createdAt: new Date().toISOString().split('T')[0],
         });
       } catch (error) {
         console.error('Failed to fetch unit:', error);
@@ -115,11 +118,11 @@ const UnitView = () => {
             <div className='flex gap-4 text-sm text-gray-500'>
               <span className='flex items-center gap-1'>
                 <Clock size={16} />
-                {unit.duration}
+                {unit.durationWeeks} weeks
               </span>
-              <span className='capitalize'>{unit.difficulty}</span>
+              <span className='capitalize'>{unit.difficultyLevel}</span>
               <span className='capitalize'>
-                {unit.pedagogy.replace('-', ' ')}
+                {unit.pedagogyType.replace('-', ' ')}
               </span>
             </div>
           </div>
@@ -147,7 +150,7 @@ const UnitView = () => {
             <h2 className='text-xl font-semibold mb-4'>Unit Modules</h2>
 
             <div className='space-y-4'>
-              {unit.modules.map((module: UnitModule, index: number) => {
+              {unit.modules?.map((module: UnitModule, index: number) => {
                 const IconComponent = getModuleIcon(module.type);
 
                 return (
@@ -211,17 +214,19 @@ const UnitView = () => {
           <div className='bg-white rounded-lg shadow-md p-6'>
             <h3 className='text-lg font-semibold mb-4'>Learning Objectives</h3>
             <ul className='space-y-2'>
-              {unit.learningObjectives.map(
-                (objective: string, index: number) => (
-                  <li key={index} className='flex items-start gap-2'>
-                    <Target
-                      size={16}
-                      className='text-purple-600 mt-1 flex-shrink-0'
-                    />
-                    <span className='text-gray-700'>{objective}</span>
-                  </li>
-                )
-              )}
+              {[
+                'Understand core concepts',
+                'Apply knowledge',
+                'Develop skills',
+              ].map((objective: string, index: number) => (
+                <li key={index} className='flex items-start gap-2'>
+                  <Target
+                    size={16}
+                    className='text-purple-600 mt-1 flex-shrink-0'
+                  />
+                  <span className='text-gray-700'>{objective}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -237,20 +242,22 @@ const UnitView = () => {
                   Teaching Approach
                 </div>
                 <p className='text-gray-900 capitalize'>
-                  {unit.pedagogy.replace('-', ' ')}
+                  {unit.pedagogyType.replace('-', ' ')}
                 </p>
               </div>
               <div>
                 <div className='text-sm font-medium text-gray-500'>
                   Difficulty
                 </div>
-                <p className='text-gray-900 capitalize'>{unit.difficulty}</p>
+                <p className='text-gray-900 capitalize'>
+                  {unit.difficultyLevel}
+                </p>
               </div>
               <div>
                 <div className='text-sm font-medium text-gray-500'>
                   Duration
                 </div>
-                <p className='text-gray-900'>{unit.duration}</p>
+                <p className='text-gray-900'>{unit.durationWeeks} weeks</p>
               </div>
             </div>
           </div>

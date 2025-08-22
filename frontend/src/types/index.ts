@@ -31,17 +31,32 @@ export interface UnitModule {
 }
 
 export interface Unit {
-  id: string | number;
+  id: string;
   title: string;
-  description: string;
-  pedagogy: PedagogyType;
-  difficulty: DifficultyLevel;
-  duration: string;
-  learningObjectives: string[];
-  modules: UnitModule[];
+  code: string;
+  description?: string;
+  year: number;
+  semester: string;
+  status: string;
+  pedagogyType: string; // Note: backend uses snake_case but our converter handles it
+  difficultyLevel: string;
+  durationWeeks: number;
+  creditPoints: number;
+  prerequisites?: string;
+  learningHours?: number;
+  unitMetadata?: any;
+  generationContext?: string;
+  ownerId: string;
+  createdById: string;
+  updatedById?: string;
   createdAt: string;
-  updatedAt?: string;
-  authorId?: string;
+  updatedAt: string;
+  // Frontend-specific fields (optional)
+  modules?: UnitModule[];
+  progressPercentage?: number;
+  moduleCount?: number;
+  materialCount?: number;
+  lrdCount?: number;
 }
 
 // Content related types

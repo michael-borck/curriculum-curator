@@ -287,7 +287,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
         'Period End',
       ],
       ...tokenStats.map(stat => [
-        stat.user_id,
+        stat.userId,
         Object.keys(stat.by_provider).join(', '),
         stat.total_tokens.toString(),
         `$${stat.total_cost.toFixed(4)}`,
@@ -852,8 +852,8 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                       </thead>
                       <tbody>
                         {tokenStats.map(stat => (
-                          <tr key={stat.user_id} className='border-b'>
-                            <td className='py-2'>{stat.user_id}</td>
+                          <tr key={stat.userId} className='border-b'>
+                            <td className='py-2'>{stat.userId}</td>
                             <td className='py-2'>
                               {Object.keys(stat.by_provider)
                                 .join(', ')

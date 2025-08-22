@@ -21,7 +21,7 @@ import RichTextEditor from '../../components/Editor/RichTextEditor';
 
 interface Material {
   id: string;
-  unit_id: string;
+  unitId: string;
   module_id?: string;
   type: string;
   title: string;
@@ -35,8 +35,8 @@ interface Material {
   quality_score?: number;
   generation_context?: any;
   teaching_philosophy?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   word_count?: number;
 }
 
@@ -208,7 +208,7 @@ const MaterialDetail: React.FC = () => {
               </span>
               <span className='flex items-center'>
                 <Calendar className='h-4 w-4 mr-1' />
-                {new Date(material.updated_at).toLocaleDateString()}
+                {new Date(material.updatedAt).toLocaleDateString()}
               </span>
               <span className='flex items-center'>
                 <User className='h-4 w-4 mr-1' />
@@ -345,7 +345,7 @@ const MaterialDetail: React.FC = () => {
                 </div>
                 <div>
                   <dt className='text-sm text-gray-500'>Unit ID</dt>
-                  <dd className='text-sm font-mono'>{material.unit_id}</dd>
+                  <dd className='text-sm font-mono'>{material.unitId}</dd>
                 </div>
                 {material.module_id && (
                   <div>
@@ -396,13 +396,13 @@ const MaterialDetail: React.FC = () => {
                 <div>
                   <dt className='text-sm text-gray-500'>Created</dt>
                   <dd className='text-sm'>
-                    {new Date(material.created_at).toLocaleString()}
+                    {new Date(material.createdAt).toLocaleString()}
                   </dd>
                 </div>
                 <div>
                   <dt className='text-sm text-gray-500'>Last Updated</dt>
                   <dd className='text-sm'>
-                    {new Date(material.updated_at).toLocaleString()}
+                    {new Date(material.updatedAt).toLocaleString()}
                   </dd>
                 </div>
               </dl>

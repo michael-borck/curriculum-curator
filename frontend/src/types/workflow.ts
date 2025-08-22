@@ -23,12 +23,12 @@ export enum SessionStatus {
 export interface WorkflowSession {
   id: string;
   name: string;
-  unit_id: string;
+  unitId: string;
   status: SessionStatus;
   current_stage: WorkflowStage;
   progress: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   message_count: number;
 }
 
@@ -58,7 +58,7 @@ export interface WorkflowStatus {
   session_id: string;
   status: SessionStatus;
   current_stage: WorkflowStage;
-  progress_percentage: number;
+  progressPercentage: number;
   decisions_made: Record<string, WorkflowDecision>;
   message_count: number;
   can_generate_structure: boolean;

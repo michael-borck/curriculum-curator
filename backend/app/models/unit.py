@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -136,6 +137,17 @@ class Unit(Base):
         back_populates="unit",
         uselist=False,
         cascade="all, delete-orphan",
+    )
+
+    # Add composite unique constraint for code + year + semester per owner
+    __table_args__ = (
+        UniqueConstraint(
+            "code",
+            "year",
+            "semester",
+            "owner_id",
+            name="_unit_code_year_semester_owner_uc",
+        ),
     )
 
     def __repr__(self):

@@ -30,17 +30,17 @@ interface UnitDetails {
   teaching_philosophy: string;
   semester: string;
   credits: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   is_active: boolean;
-  owner_id: string;
+  ownerId: string;
   // Statistics
-  module_count: number;
-  material_count: number;
-  lrd_count: number;
+  moduleCount: number;
+  materialCount: number;
+  lrdCount: number;
   task_count: number;
   completed_tasks: number;
-  progress_percentage: number;
+  progressPercentage: number;
   // Additional data
   modules?: Module[];
   recent_materials?: Material[];
@@ -53,7 +53,7 @@ interface Module {
   description: string;
   order: number;
   status: string;
-  material_count: number;
+  materialCount: number;
   completed_count: number;
 }
 
@@ -62,7 +62,7 @@ interface Material {
   title: string;
   type: string;
   status: string;
-  created_at: string;
+  createdAt: string;
   version: number;
   word_count?: number;
 }
@@ -157,21 +157,21 @@ const UnitDashboard = () => {
   const stats = [
     {
       title: 'Progress',
-      value: `${unit.progress_percentage || 0}%`,
+      value: `${unit.progressPercentage || 0}%`,
       icon: TrendingUp,
       color: 'bg-blue-500',
       change: '+5% this week',
     },
     {
       title: 'Modules',
-      value: unit.module_count || 0,
+      value: unit.moduleCount || 0,
       icon: Layers,
       color: 'bg-green-500',
       subtitle: `${unit.modules?.filter(m => m.status === 'completed').length || 0} completed`,
     },
     {
       title: 'Materials',
-      value: unit.material_count || 0,
+      value: unit.materialCount || 0,
       icon: FileText,
       color: 'bg-purple-500',
       subtitle: 'Total resources',
@@ -478,7 +478,7 @@ const UnitDashboard = () => {
                           {module.description}
                         </p>
                         <div className='flex items-center space-x-4 mt-3 text-sm text-gray-500'>
-                          <span>{module.material_count} materials</span>
+                          <span>{module.materialCount} materials</span>
                           <span>•</span>
                           <span>{module.completed_count} completed</span>
                           <span>•</span>
@@ -510,9 +510,9 @@ const UnitDashboard = () => {
                           className='bg-blue-600 h-2 rounded-full'
                           style={{
                             width: `${
-                              module.material_count > 0
+                              module.materialCount > 0
                                 ? (module.completed_count /
-                                    module.material_count) *
+                                    module.materialCount) *
                                   100
                                 : 0
                             }%`,
@@ -584,7 +584,7 @@ const UnitDashboard = () => {
                       <p>{material.word_count || 0} words</p>
                       <p className='mt-2 text-xs'>
                         Created{' '}
-                        {new Date(material.created_at).toLocaleDateString()}
+                        {new Date(material.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </button>
@@ -752,7 +752,7 @@ const UnitDashboard = () => {
           <div>
             <span className='text-gray-600'>Created:</span>
             <span className='ml-2 font-medium'>
-              {new Date(unit.created_at).toLocaleDateString()}
+              {new Date(unit.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>

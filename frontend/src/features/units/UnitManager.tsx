@@ -15,51 +15,36 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-interface Unit {
-  id: string;
-  title: string;
-  code: string;
-  description?: string;
-  status: string;
-  year: number;
-  semester: string;
-  pedagogy_type: string;
-  difficulty_level: string;
-  duration_weeks: number;
-  credit_points: number;
-  prerequisites?: string;
-  learning_hours?: number;
-  created_at: string;
-  updated_at: string;
-  owner_id: string;
-  progress_percentage?: number;
-  module_count?: number;
-  material_count?: number;
-  lrd_count?: number;
-}
+// Import Unit type from global types
+import type { Unit } from '../../types';
 
 const UnitManager = () => {
   const navigate = useNavigate();
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [systemDefaults, setSystemDefaults] = useState({
+    creditPoints: 25,
+    durationWeeks: 12,
+  });
   const [newUnit, setNewUnit] = useState({
     title: '',
     code: '',
     description: '',
     year: new Date().getFullYear(),
     semester: 'semester_1',
-    pedagogy_type: 'inquiry-based',
-    difficulty_level: 'intermediate',
-    duration_weeks: 12,
-    credit_points: 6,
+    pedagogyType: 'inquiry-based',
+    difficultyLevel: 'intermediate',
+    durationWeeks: 12,
+    creditPoints: 25,
     prerequisites: '',
-    learning_hours: 150,
+    learningHours: 150,
   });
   const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
     fetchUnits();
+    fetchSystemDefaults();
   }, []);
 
   const fetchUnits = async () => {
@@ -70,10 +55,32 @@ const UnitManager = () => {
       setUnits(
         Array.isArray(response.data) ? response.data : response.data.units || []
       );
-    } catch (error) {
-      console.error('Error fetching units:', error);
+    } catch {
+      // Handle error silently
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSystemDefaults = async () => {
+    try {
+      const response = await api.get('/api/admin/settings');
+      if (response.data) {
+        const defaults = {
+          creditPoints: response.data.defaultCreditPoints || 25,
+          durationWeeks: response.data.defaultDurationWeeks || 12,
+        };
+        setSystemDefaults(defaults);
+        // Update the newUnit state with fetched defaults
+        setNewUnit(prev => ({
+          ...prev,
+          creditPoints: defaults.creditPoints,
+          durationWeeks: defaults.durationWeeks,
+        }));
+      }
+    } catch {
+      // Use default values if settings can't be fetched
+      // This might happen for non-admin users
     }
   };
 
@@ -81,23 +88,31 @@ const UnitManager = () => {
     try {
       setErrors({});
 
+      // Validate required fields
+      if (!newUnit.title || !newUnit.code) {
+        setErrors({ general: 'Unit title and code are required' });
+        return;
+      }
+
       // Map frontend fields to backend schema
       const unitData = {
         title: newUnit.title,
         code: newUnit.code,
-        description: newUnit.description,
+        description: newUnit.description || '',
         year: newUnit.year,
         semester: newUnit.semester,
-        pedagogy_type: newUnit.pedagogy_type,
-        difficulty_level: newUnit.difficulty_level,
-        duration_weeks: newUnit.duration_weeks,
-        credit_points: newUnit.credit_points,
-        prerequisites: newUnit.prerequisites,
-        learning_hours: newUnit.learning_hours,
+        pedagogyType: newUnit.pedagogyType,
+        difficultyLevel: newUnit.difficultyLevel,
+        durationWeeks: newUnit.durationWeeks,
+        creditPoints: newUnit.creditPoints,
+        prerequisites: newUnit.prerequisites || '',
+        learningHours: newUnit.learningHours || 150,
         status: 'draft',
       };
 
       const response = await api.post('/api/units', unitData);
+
+      // Add the new unit to the list
       setUnits([...units, response.data]);
       setShowCreateModal(false);
       setNewUnit({
@@ -106,19 +121,87 @@ const UnitManager = () => {
         description: '',
         year: new Date().getFullYear(),
         semester: 'semester_1',
-        pedagogy_type: 'inquiry-based',
-        difficulty_level: 'intermediate',
-        duration_weeks: 12,
-        credit_points: 6,
+        pedagogyType: 'inquiry-based',
+        difficultyLevel: 'intermediate',
+        durationWeeks: systemDefaults.durationWeeks,
+        creditPoints: systemDefaults.creditPoints,
         prerequisites: '',
-        learning_hours: 150,
+        learningHours: 150,
       });
     } catch (error: any) {
-      console.error('Unit creation error:', error);
-      setErrors(
-        error.response?.data?.detail || { general: 'Failed to create unit' }
-      );
+      const errorDetail = error.response?.data?.detail;
+      if (typeof errorDetail === 'string') {
+        setErrors({ general: errorDetail });
+      } else if (Array.isArray(errorDetail)) {
+        // Handle validation errors from FastAPI
+        const fieldErrors: any = {};
+        const generalErrors: string[] = [];
+
+        errorDetail.forEach((err: any) => {
+          // Check if error has location info for specific field
+          if (err.loc && err.loc.length > 1) {
+            const fieldName = err.loc[err.loc.length - 1];
+            // Map backend field names to user-friendly names
+            const fieldMapping: any = {
+              creditPoints: 'Credit Points',
+              durationWeeks: 'Duration',
+              learningHours: 'Learning Hours',
+              title: 'Unit Title',
+              code: 'Unit Code',
+              year: 'Year',
+            };
+            const displayName = fieldMapping[fieldName] || fieldName;
+
+            // Extract the validation constraint from the error message
+            let errorMsg = err.msg || 'Invalid value';
+            if (errorMsg.includes('less than or equal to')) {
+              const match = errorMsg.match(/less than or equal to (\d+)/);
+              if (match) {
+                errorMsg = `Must be ${match[1]} or less`;
+              }
+            } else if (errorMsg.includes('greater than or equal to')) {
+              const match = errorMsg.match(/greater than or equal to (\d+)/);
+              if (match) {
+                errorMsg = `Must be ${match[1]} or more`;
+              }
+            }
+
+            fieldErrors[fieldName] = `${displayName}: ${errorMsg}`;
+          } else {
+            generalErrors.push(err.msg || err.message);
+          }
+        });
+
+        // Combine field-specific and general errors
+        const allErrors = [...Object.values(fieldErrors), ...generalErrors];
+        setErrors({ general: allErrors.join('. ') });
+      } else if (errorDetail) {
+        setErrors(errorDetail);
+      } else {
+        setErrors({
+          general:
+            'Failed to create unit. Please check all required fields and try again.',
+        });
+      }
     }
+  };
+
+  const openCreateModal = () => {
+    setNewUnit({
+      title: '',
+      code: '',
+      description: '',
+      year: new Date().getFullYear(),
+      semester: 'semester_1',
+      pedagogyType: 'inquiry-based',
+      difficultyLevel: 'intermediate',
+      durationWeeks: systemDefaults.durationWeeks,
+      creditPoints: systemDefaults.creditPoints,
+      prerequisites: '',
+      learningHours: 150,
+    });
+    setErrors({});
+    setShowCreateModal(true);
   };
 
   const deleteUnit = async (unitId: string) => {
@@ -126,8 +209,8 @@ const UnitManager = () => {
       try {
         await api.delete(`/api/units/${unitId}`);
         setUnits(units.filter(c => c.id !== unitId));
-      } catch (error) {
-        console.error('Error deleting unit:', error);
+      } catch {
+        // Handle deletion error silently
       }
     }
   };
@@ -175,7 +258,7 @@ const UnitManager = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={openCreateModal}
           className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
         >
           <Plus className='h-5 w-5 mr-2' />
@@ -194,7 +277,7 @@ const UnitManager = () => {
             Create your first unit to start building curriculum
           </p>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={openCreateModal}
             className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
           >
             Create Your First Unit
@@ -231,13 +314,13 @@ const UnitManager = () => {
                 <div className='space-y-2 mb-4'>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Calendar className='h-4 w-4 mr-2' />
-                    {unit.semester || 'Not set'} • {unit.credit_points || 0}{' '}
+                    {unit.semester || 'Not set'} • {unit.creditPoints || 0}{' '}
                     credits
                   </div>
                   <div className='flex items-center text-sm text-gray-600'>
                     <Users className='h-4 w-4 mr-2' />
-                    {unit.pedagogy_type
-                      ? unit.pedagogy_type
+                    {unit.pedagogyType
+                      ? unit.pedagogyType
                           .replace(/-/g, ' ')
                           .replace(/\b\w/g, l => l.toUpperCase())
                       : 'Not specified'}
@@ -245,18 +328,18 @@ const UnitManager = () => {
                 </div>
 
                 {/* Progress Bar */}
-                {unit.progress_percentage !== undefined && (
+                {unit.progressPercentage !== undefined && (
                   <div className='mb-4'>
                     <div className='flex justify-between text-sm mb-1'>
                       <span className='text-gray-600'>Progress</span>
                       <span className='font-medium'>
-                        {unit.progress_percentage}%
+                        {unit.progressPercentage}%
                       </span>
                     </div>
                     <div className='w-full bg-gray-200 rounded-full h-2'>
                       <div
                         className='bg-blue-600 h-2 rounded-full transition-all'
-                        style={{ width: `${unit.progress_percentage}%` }}
+                        style={{ width: `${unit.progressPercentage}%` }}
                       />
                     </div>
                   </div>
@@ -266,19 +349,19 @@ const UnitManager = () => {
                 <div className='grid grid-cols-3 gap-2 mb-4'>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {unit.module_count || 0}
+                      {unit.moduleCount || 0}
                     </p>
                     <p className='text-xs text-gray-600'>Modules</p>
                   </div>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {unit.material_count || 0}
+                      {unit.materialCount || 0}
                     </p>
                     <p className='text-xs text-gray-600'>Materials</p>
                   </div>
                   <div className='text-center'>
                     <p className='text-lg font-semibold text-gray-900'>
-                      {unit.lrd_count || 0}
+                      {unit.lrdCount || 0}
                     </p>
                     <p className='text-xs text-gray-600'>LRDs</p>
                   </div>
@@ -427,16 +510,16 @@ const UnitManager = () => {
                   </label>
                   <input
                     type='number'
-                    value={newUnit.credit_points}
+                    value={newUnit.creditPoints}
                     onChange={e =>
                       setNewUnit({
                         ...newUnit,
-                        credit_points: parseInt(e.target.value),
+                        creditPoints: parseInt(e.target.value),
                       })
                     }
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
                     min='1'
-                    max='12'
+                    max='100'
                   />
                 </div>
 
@@ -446,11 +529,11 @@ const UnitManager = () => {
                   </label>
                   <input
                     type='number'
-                    value={newUnit.duration_weeks}
+                    value={newUnit.durationWeeks}
                     onChange={e =>
                       setNewUnit({
                         ...newUnit,
-                        duration_weeks: parseInt(e.target.value),
+                        durationWeeks: parseInt(e.target.value),
                       })
                     }
                     className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
@@ -465,11 +548,11 @@ const UnitManager = () => {
                   Pedagogy Type
                 </label>
                 <select
-                  value={newUnit.pedagogy_type}
+                  value={newUnit.pedagogyType}
                   onChange={e =>
                     setNewUnit({
                       ...newUnit,
-                      pedagogy_type: e.target.value,
+                      pedagogyType: e.target.value,
                     })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
@@ -491,11 +574,11 @@ const UnitManager = () => {
                   Difficulty Level
                 </label>
                 <select
-                  value={newUnit.difficulty_level}
+                  value={newUnit.difficultyLevel}
                   onChange={e =>
                     setNewUnit({
                       ...newUnit,
-                      difficulty_level: e.target.value,
+                      difficultyLevel: e.target.value,
                     })
                   }
                   className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'

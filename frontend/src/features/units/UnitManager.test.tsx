@@ -29,17 +29,17 @@ describe('UnitManager Component', () => {
       id: '1',
       title: 'Introduction to React',
       description: 'Learn React basics',
-      duration_weeks: 8,
+      durationWeeks: 8,
       objectives: ['Learn components', 'Understand hooks'],
-      created_at: '2024-01-01',
+      createdAt: '2024-01-01',
     },
     {
       id: '2',
       title: 'Advanced TypeScript',
       description: 'Master TypeScript',
-      duration_weeks: 6,
+      durationWeeks: 6,
       objectives: ['Type safety', 'Generics'],
-      created_at: '2024-01-15',
+      createdAt: '2024-01-15',
     },
   ];
 
@@ -103,7 +103,7 @@ describe('UnitManager Component', () => {
       id: '3',
       title: 'New Unit',
       description: 'New description',
-      duration_weeks: 4,
+      durationWeeks: 4,
       objectives: ['Objective 1'],
     };
 
@@ -139,7 +139,7 @@ describe('UnitManager Component', () => {
         expect.objectContaining({
           title: 'New Unit',
           description: 'New description',
-          duration_weeks: 4,
+          durationWeeks: 4,
         })
       );
     });

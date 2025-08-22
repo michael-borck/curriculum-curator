@@ -92,9 +92,9 @@ describe('E2E: Complete User Flow', () => {
           id: '1',
           title: 'Existing Unit',
           description: 'A pre-existing course',
-          duration_weeks: 12,
+          durationWeeks: 12,
           objectives: ['Learn basics'],
-          created_at: '2024-01-01',
+          createdAt: '2024-01-01',
         },
       ],
     };
@@ -133,9 +133,9 @@ describe('E2E: Complete User Flow', () => {
         id: '2',
         title: 'Introduction to AI',
         description: 'Learn AI fundamentals',
-        duration_weeks: 8,
+        durationWeeks: 8,
         objectives: ['Understand ML basics', 'Build AI models'],
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       },
     };
 
@@ -185,8 +185,8 @@ describe('E2E: Complete User Flow', () => {
         title: 'Lecture 1: Introduction',
         type: 'lecture',
         content: '',
-        unit_id: '2',
-        created_at: new Date().toISOString(),
+        unitId: '2',
+        createdAt: new Date().toISOString(),
       },
     };
 

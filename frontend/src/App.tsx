@@ -59,6 +59,7 @@ function App() {
             <Route path='/' element={<UnitManager />} />
             <Route path='/dashboard' element={<UnitManager />} />
             <Route path='/units' element={<UnitManager />} />
+            <Route path='/courses' element={<Navigate to='/units' replace />} />
             <Route path='/units/:unitId/dashboard' element={<UnitWorkflow />} />
             <Route path='/units/:id' element={<UnitView />} />
 

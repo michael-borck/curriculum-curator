@@ -15,15 +15,15 @@ interface Task {
 
 interface TaskList {
   id: string;
-  unit_id: string;
+  unitId: string;
   lrd_id?: string;
   tasks: Task[];
   status: string;
   total_tasks: number;
   completed_tasks: number;
-  progress_percentage: number;
-  created_at: string;
-  updated_at: string;
+  progressPercentage: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TaskBoardProps {
@@ -154,11 +154,11 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
                 <div className='w-32 bg-gray-200 rounded-full h-2'>
                   <div
                     className='bg-green-600 h-2 rounded-full transition-all'
-                    style={{ width: `${selectedList.progress_percentage}%` }}
+                    style={{ width: `${selectedList.progressPercentage}%` }}
                   />
                 </div>
                 <span className='text-sm text-gray-600'>
-                  {Math.round(selectedList.progress_percentage)}%
+                  {Math.round(selectedList.progressPercentage)}%
                 </span>
               </div>
             )}

@@ -5,6 +5,7 @@ import type {
   PedagogyType,
   ContentType,
 } from '../types/index';
+import { transformResponse, transformRequest } from '../utils/caseConverter';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -15,25 +16,52 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Add auth token to requests and transform request data
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Transform request data from camelCase to snake_case
+  if (config.data && typeof config.data === 'object') {
+    config.data = transformRequest(config.data);
+  }
+
   return config;
 });
 
-// Auth endpoints
+// Transform response data from snake_case to camelCase
+api.interceptors.response.use(
+  response => {
+    if (response.data) {
+      response.data = transformResponse(response.data);
+    }
+    return response;
+  },
+  error => {
+    // Also transform error response
+    if (error.response?.data) {
+      error.response.data = transformResponse(error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth endpoints - Note: backend expects 'username' for login (not 'email')
 export const login = (email: string, password: string): Promise<ApiResponse> =>
-  api.post('/api/auth/login', { email, password });
+  api.post(
+    '/api/auth/login',
+    new URLSearchParams({ username: email, password }),
+    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+  );
 
 export const register = (
   email: string,
   password: string,
   name: string
 ): Promise<ApiResponse> =>
-  api.post('/api/auth/register', { email, password, name });
+  api.post('/api/auth/register', { email, password, fullName: name });
 
 // Content endpoints
 export const generateContent = (

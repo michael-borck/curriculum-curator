@@ -18,9 +18,9 @@ from app.models import (
 router = APIRouter()
 
 
-@router.get("/courses/{course_id}/structure")
+@router.get("/units/{unit_id}/structure")
 async def get_course_structure(
-    course_id: str,
+    unit_id: str,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -28,10 +28,9 @@ async def get_course_structure(
     Get complete course structure including outline, outcomes, topics, and assessments
     """
     # Check if user has access to this unit
-    # (course_id is actually unit_id in our system)
     unit = (
         db.query(Unit)
-        .filter(Unit.id == course_id, Unit.owner_id == current_user.id)
+        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
         .first()
     )
 

@@ -43,7 +43,7 @@ export interface LLMTestResponse {
 }
 
 export interface TokenUsageStats {
-  user_id: string;
+  userId: string;
   total_tokens: number;
   total_cost: number;
   by_provider: Record<string, number>;
@@ -53,7 +53,7 @@ export interface TokenUsageStats {
 }
 
 export interface TokenStats {
-  user_id: string;
+  userId: string;
   user_email?: string;
   provider: string;
   total_tokens: number;

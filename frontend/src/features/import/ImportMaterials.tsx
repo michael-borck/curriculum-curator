@@ -641,7 +641,7 @@ const ImportMaterials = () => {
                         <div className='text-sm text-blue-800'>
                           <span>
                             Difficulty:{' '}
-                            {file.result.categorization.difficulty_level}
+                            {file.result.categorization.difficultyLevel}
                           </span>
                           <span className='mx-2'>•</span>
                           <span>

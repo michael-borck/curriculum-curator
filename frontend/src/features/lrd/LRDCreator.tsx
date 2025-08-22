@@ -72,7 +72,7 @@ interface LRDContent {
 }
 
 interface LRDData {
-  unit_id: string | undefined;
+  unitId: string | undefined;
   version: string;
   status: string;
   content: LRDContent;
@@ -90,7 +90,7 @@ const LRDCreator = () => {
 
   // LRD Form State
   const [lrdData, setLrdData] = useState<LRDData>({
-    unit_id: unitId,
+    unitId: unitId,
     version: '1.0',
     status: 'DRAFT',
     content: {

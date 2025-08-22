@@ -22,7 +22,7 @@ interface User {
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
   is_active: boolean;
   is_verified: boolean;
-  created_at: string;
+  createdAt: string;
   last_login?: string;
 }
 
@@ -363,7 +363,7 @@ const UserManagement = () => {
                     )}
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                    {formatDate(user.created_at)}
+                    {formatDate(user.createdAt)}
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
                     {user.last_login ? formatDate(user.last_login) : 'Never'}

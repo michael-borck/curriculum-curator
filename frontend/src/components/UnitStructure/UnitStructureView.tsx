@@ -49,7 +49,7 @@ interface UnitOutline {
   id: string;
   title: string;
   description?: string;
-  duration_weeks: number;
+  durationWeeks: number;
   delivery_mode?: string;
   teaching_pattern?: string;
   is_complete: boolean;
@@ -158,7 +158,7 @@ const UnitStructureView: React.FC<UnitStructureViewProps> = ({
                 <div className='flex items-center'>
                   <Clock className='w-4 h-4 text-gray-400 mr-2' />
                   <span className='text-sm text-gray-600'>
-                    {outline.duration_weeks} weeks
+                    {outline.durationWeeks} weeks
                   </span>
                 </div>
                 {outline.delivery_mode && (
