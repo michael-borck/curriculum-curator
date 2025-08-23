@@ -62,35 +62,11 @@ def reset_database():
     Base.metadata.create_all(bind=engine)
     print("✅ All tables created")
     
-    # Create default admin user
-    print("\n👤 Creating default admin user...")
+    # Add default system configuration only (no users)
+    print("\n⚙️  Adding default system configuration...")
     from sqlalchemy.orm import Session
     
     with Session(engine) as db:
-        # Create admin user
-        admin_user = User(
-            id=uuid.uuid4(),
-            email="admin@example.com",
-            name="System Administrator",
-            password_hash=get_password_hash("admin123"),
-            is_active=True,
-            is_verified=True,
-            role="admin"
-        )
-        db.add(admin_user)
-        
-        # Create test lecturer user
-        lecturer_user = User(
-            id=uuid.uuid4(),
-            email="test@example.com",
-            name="Test Lecturer",
-            password_hash=get_password_hash("testpassword123"),
-            is_active=True,
-            is_verified=True,
-            role="lecturer"
-        )
-        db.add(lecturer_user)
-        
         # Add default system configuration
         default_config = SystemConfig(
             id=uuid.uuid4(),
@@ -111,9 +87,8 @@ def reset_database():
         db.add(default_duration)
         
         db.commit()
-        print(f"✅ Created admin user: admin@example.com (password: admin123)")
-        print(f"✅ Created test user: test@example.com (password: testpassword123)")
         print(f"✅ Added default configurations")
+        print(f"ℹ️  No users created - first registered user will become admin")
     
     # Run any pending migrations
     print("\n🔄 Checking for database migrations...")
@@ -130,15 +105,19 @@ def reset_database():
     
     print("\n" + "=" * 60)
     print("✅ Database reset complete!")
-    print("\nDefault users created:")
-    print("  Admin: admin@example.com / admin123")
-    print("  Test:  test@example.com / testpassword123")
+    print("\n📝 Notes:")
+    print("  • No users created")
+    print("  • First user to register will automatically become admin")
+    print("  • Default credit points: 25")
+    print("  • Default duration: 12 weeks")
     
     if backup_path:
+        db_path = settings.DATABASE_URL.replace("sqlite:///", "")
         print(f"\n💾 Your old database is backed up at: {backup_path}")
-        print("   To restore: cp {backup_path} {db_path}")
+        print(f"   To restore: cp {backup_path} {db_path}")
     
     print("\n🚀 You can now start fresh with a clean database!")
+    print("   Register your first user to become the system administrator.")
 
 if __name__ == "__main__":
     reset_database()

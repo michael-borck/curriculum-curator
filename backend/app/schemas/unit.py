@@ -5,12 +5,13 @@ Pydantic schemas for Unit models
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.models.unit import DifficultyLevel, PedagogyType, Semester, UnitStatus
+from app.schemas.base import CamelModel
 
 
-class UnitBase(BaseModel):
+class UnitBase(CamelModel):
     """Base unit schema with common fields"""
 
     title: str = Field(..., min_length=1, max_length=500)
@@ -34,7 +35,7 @@ class UnitCreate(UnitBase):
     status: UnitStatus = UnitStatus.DRAFT
 
 
-class UnitUpdate(BaseModel):
+class UnitUpdate(CamelModel):
     """Schema for updating an existing unit"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -53,7 +54,7 @@ class UnitUpdate(BaseModel):
     generation_context: str | None = None
 
 
-class UnitResponse(BaseModel):
+class UnitResponse(CamelModel):
     """Schema for unit responses"""
 
     id: str
@@ -81,7 +82,7 @@ class UnitResponse(BaseModel):
         from_attributes = True
 
 
-class UnitList(BaseModel):
+class UnitList(CamelModel):
     """Schema for paginated unit list"""
 
     units: list[UnitResponse]

@@ -50,10 +50,10 @@ interface UnitOutline {
   title: string;
   description?: string;
   durationWeeks: number;
-  delivery_mode?: string;
-  teaching_pattern?: string;
-  is_complete: boolean;
-  completion_percentage: number;
+  deliveryMode?: string;
+  teachingPattern?: string;
+  isComplete: boolean;
+  completionPercentage: number;
 }
 
 interface UnitStructureViewProps {
@@ -161,36 +161,36 @@ const UnitStructureView: React.FC<UnitStructureViewProps> = ({
                     {outline.durationWeeks} weeks
                   </span>
                 </div>
-                {outline.delivery_mode && (
+                {outline.deliveryMode && (
                   <div className='flex items-center'>
                     <Users className='w-4 h-4 text-gray-400 mr-2' />
                     <span className='text-sm text-gray-600'>
-                      {outline.delivery_mode}
+                      {outline.deliveryMode}
                     </span>
                   </div>
                 )}
-                {outline.teaching_pattern && (
+                {outline.teachingPattern && (
                   <div className='flex items-center'>
                     <Calendar className='w-4 h-4 text-gray-400 mr-2' />
                     <span className='text-sm text-gray-600'>
-                      {outline.teaching_pattern}
+                      {outline.teachingPattern}
                     </span>
                   </div>
                 )}
                 <div className='flex items-center'>
                   <Activity className='w-4 h-4 text-gray-400 mr-2' />
                   <span className='text-sm text-gray-600'>
-                    {outline.completion_percentage}% complete
+                    {outline.completionPercentage}% complete
                   </span>
                 </div>
               </div>
 
-              {outline.completion_percentage < 100 && (
+              {outline.completionPercentage < 100 && (
                 <div className='mt-4'>
                   <div className='w-full bg-gray-200 rounded-full h-2'>
                     <div
                       className='bg-blue-500 h-2 rounded-full'
-                      style={{ width: `${outline.completion_percentage}%` }}
+                      style={{ width: `${outline.completionPercentage}%` }}
                     />
                   </div>
                 </div>

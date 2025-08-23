@@ -6,7 +6,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 class ModuleType(str, Enum):
@@ -20,7 +22,7 @@ class ModuleType(str, Enum):
     MIXED = "mixed"
 
 
-class ModuleContent(BaseModel):
+class ModuleContent(CamelModel):
     """Content structure for a module"""
 
     pre_class_content: dict[str, Any] | None = Field(
@@ -40,7 +42,7 @@ class ModuleContent(BaseModel):
     )
 
 
-class CourseModuleBase(BaseModel):
+class CourseModuleBase(CamelModel):
     """Base course module properties"""
 
     number: int = Field(..., description="Module number in sequence")
@@ -61,7 +63,7 @@ class CourseModuleCreate(CourseModuleBase):
     content: ModuleContent | None = None
 
 
-class CourseModuleUpdate(BaseModel):
+class CourseModuleUpdate(CamelModel):
     """Properties that can be updated"""
 
     title: str | None = None
@@ -93,7 +95,7 @@ class CourseModuleResponse(CourseModuleBase):
         from_attributes = True
 
 
-class CourseModuleListResponse(BaseModel):
+class CourseModuleListResponse(CamelModel):
     """List of course modules"""
 
     modules: list[CourseModuleResponse]
@@ -101,7 +103,7 @@ class CourseModuleListResponse(BaseModel):
     course_id: str
 
 
-class ModuleBulkOperation(BaseModel):
+class ModuleBulkOperation(CamelModel):
     """Bulk operation on modules"""
 
     module_ids: list[str] = Field(..., description="Module IDs to operate on")
@@ -109,7 +111,7 @@ class ModuleBulkOperation(BaseModel):
     data: dict[str, Any] | None = Field(None, description="Additional operation data")
 
 
-class ModuleReorder(BaseModel):
+class ModuleReorder(CamelModel):
     """Reorder modules in a course"""
 
     module_order: list[dict[str, int]] = Field(
@@ -117,7 +119,7 @@ class ModuleReorder(BaseModel):
     )
 
 
-class CourseClone(BaseModel):
+class CourseClone(CamelModel):
     """Clone course request"""
 
     new_title: str = Field(..., description="Title for the cloned course")
@@ -128,7 +130,7 @@ class CourseClone(BaseModel):
     semester: str | None = Field(None, description="Target semester")
 
 
-class CourseTemplate(BaseModel):
+class CourseTemplate(CamelModel):
     """Course template definition"""
 
     name: str = Field(..., description="Template name")
@@ -143,7 +145,7 @@ class CourseTemplate(BaseModel):
     )
 
 
-class CourseProgress(BaseModel):
+class CourseProgress(CamelModel):
     """Course progress tracking"""
 
     course_id: str
@@ -157,7 +159,7 @@ class CourseProgress(BaseModel):
     milestones: list[dict[str, Any]] = Field(default_factory=list)
 
 
-class CourseStatistics(BaseModel):
+class CourseStatistics(CamelModel):
     """Course statistics and analytics"""
 
     course_id: str

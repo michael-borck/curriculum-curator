@@ -2,10 +2,12 @@
 Course (Unit) schemas for API requests and responses
 """
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
-class CourseBase(BaseModel):
+class CourseBase(CamelModel):
     """Base course schema with common fields"""
 
     title: str = Field(..., min_length=1, max_length=500)
@@ -25,7 +27,7 @@ class CourseCreate(CourseBase):
     status: str | None = Field(default="draft")
 
 
-class CourseUpdate(BaseModel):
+class CourseUpdate(CamelModel):
     """Schema for updating a course - all fields optional"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -52,7 +54,7 @@ class CourseResponse(CourseBase):
         from_attributes = True
 
 
-class CourseListResponse(BaseModel):
+class CourseListResponse(CamelModel):
     """Schema for paginated course list responses"""
 
     courses: list[CourseResponse]

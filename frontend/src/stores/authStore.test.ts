@@ -26,8 +26,8 @@ describe('AuthStore', () => {
       email: 'test@example.com',
       name: 'Test User',
       role: 'lecturer' as const,
-      is_verified: true,
-      is_active: true,
+      isVerified: true,
+      isActive: true,
       createdAt: '2024-01-01',
     };
 
@@ -48,8 +48,8 @@ describe('AuthStore', () => {
       email: 'test@example.com',
       name: 'Test User',
       role: 'lecturer' as const,
-      is_verified: true,
-      is_active: true,
+      isVerified: true,
+      isActive: true,
       createdAt: '2024-01-01',
     };
 
@@ -77,8 +77,8 @@ describe('AuthStore', () => {
       email: 'test@example.com',
       name: 'Test User',
       role: 'lecturer' as const,
-      is_verified: true,
-      is_active: true,
+      isVerified: true,
+      isActive: true,
       createdAt: '2024-01-01',
     };
 
@@ -100,8 +100,8 @@ describe('AuthStore', () => {
       email: 'admin@example.com',
       name: 'Admin User',
       role: 'admin' as const,
-      is_verified: true,
-      is_active: true,
+      isVerified: true,
+      isActive: true,
       createdAt: '2024-01-01',
     };
 

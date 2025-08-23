@@ -6,10 +6,12 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
-class TaskUpdate(BaseModel):
+class TaskUpdate(CamelModel):
     """Update a single task within a task list"""
 
     status: str | None = None
@@ -21,7 +23,7 @@ class TaskUpdate(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
-class TaskListCreate(BaseModel):
+class TaskListCreate(CamelModel):
     """Create a new task list"""
 
     course_id: UUID
@@ -29,7 +31,7 @@ class TaskListCreate(BaseModel):
     tasks: list[dict[str, Any]] = Field(default_factory=list)
 
 
-class TaskListUpdate(BaseModel):
+class TaskListUpdate(CamelModel):
     """Update a task list"""
 
     status: str | None = None
@@ -37,7 +39,7 @@ class TaskListUpdate(BaseModel):
     progress: dict[str, Any] | None = None
 
 
-class TaskListResponse(BaseModel):
+class TaskListResponse(CamelModel):
     """Task list response"""
 
     id: UUID

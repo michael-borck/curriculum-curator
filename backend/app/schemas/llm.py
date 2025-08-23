@@ -5,7 +5,9 @@ LLM-related schemas for AI integration
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 class LLMProvider(str, Enum):
@@ -35,7 +37,7 @@ class LLMModel(str, Enum):
     GEMINI_PRO_VISION = "gemini-pro-vision"
 
 
-class ContentEnhanceRequest(BaseModel):
+class ContentEnhanceRequest(CamelModel):
     """Request for content enhancement"""
 
     content: str = Field(..., description="Content to enhance")
@@ -55,7 +57,7 @@ class ContentEnhanceRequest(BaseModel):
     )
 
 
-class PedagogyAnalysisRequest(BaseModel):
+class PedagogyAnalysisRequest(CamelModel):
     """Request for pedagogy analysis"""
 
     content: str = Field(..., description="Content to analyze")
@@ -70,7 +72,7 @@ class PedagogyAnalysisRequest(BaseModel):
     )
 
 
-class PedagogyAnalysisResponse(BaseModel):
+class PedagogyAnalysisResponse(CamelModel):
     """Response from pedagogy analysis"""
 
     current_style: str = Field(..., description="Detected pedagogy style")
@@ -83,7 +85,7 @@ class PedagogyAnalysisResponse(BaseModel):
     )
 
 
-class QuestionGenerationRequest(BaseModel):
+class QuestionGenerationRequest(CamelModel):
     """Request for question generation"""
 
     content: str = Field(..., description="Content to generate questions from")
@@ -100,7 +102,7 @@ class QuestionGenerationRequest(BaseModel):
     )
 
 
-class GeneratedQuestion(BaseModel):
+class GeneratedQuestion(CamelModel):
     """A generated question with metadata"""
 
     question: str = Field(..., description="The question text")
@@ -113,7 +115,7 @@ class GeneratedQuestion(BaseModel):
     points: int = Field(1, description="Suggested point value")
 
 
-class ContentTranslationRequest(BaseModel):
+class ContentTranslationRequest(CamelModel):
     """Request for content translation/adaptation"""
 
     content: str = Field(..., description="Content to translate")
@@ -127,7 +129,7 @@ class ContentTranslationRequest(BaseModel):
     )
 
 
-class SummaryGenerationRequest(BaseModel):
+class SummaryGenerationRequest(CamelModel):
     """Request for summary generation"""
 
     content: str = Field(..., description="Content to summarize")
@@ -139,7 +141,7 @@ class SummaryGenerationRequest(BaseModel):
     bullet_points: bool = Field(True, description="Format as bullet points")
 
 
-class FeedbackGenerationRequest(BaseModel):
+class FeedbackGenerationRequest(CamelModel):
     """Request for automated feedback generation"""
 
     student_work: str = Field(..., description="Student submission")
@@ -154,7 +156,7 @@ class FeedbackGenerationRequest(BaseModel):
     highlight_strengths: bool = Field(True, description="Highlight what was done well")
 
 
-class GeneratedFeedback(BaseModel):
+class GeneratedFeedback(CamelModel):
     """Generated feedback response"""
 
     overall_feedback: str = Field(..., description="Overall feedback message")
@@ -165,7 +167,7 @@ class GeneratedFeedback(BaseModel):
     rubric_scores: dict[str, float] | None = Field(None, description="Rubric scores")
 
 
-class LLMResponse(BaseModel):
+class LLMResponse(CamelModel):
     """Generic LLM response"""
 
     content: str = Field(..., description="Generated content")
@@ -177,7 +179,7 @@ class LLMResponse(BaseModel):
     )
 
 
-class ChatMessage(BaseModel):
+class ChatMessage(CamelModel):
     """Chat message for conversational AI"""
 
     role: str = Field(..., description="Role: system, user, assistant")
@@ -185,7 +187,7 @@ class ChatMessage(BaseModel):
     metadata: dict[str, Any] | None = Field(None, description="Additional metadata")
 
 
-class ChatCompletionRequest(BaseModel):
+class ChatCompletionRequest(CamelModel):
     """Request for chat completion"""
 
     messages: list[ChatMessage] = Field(..., description="Conversation history")

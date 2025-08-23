@@ -16,11 +16,11 @@ interface Task {
 interface TaskList {
   id: string;
   unitId: string;
-  lrd_id?: string;
+  lrdId?: string;
   tasks: Task[];
   status: string;
-  total_tasks: number;
-  completed_tasks: number;
+  totalTasks: number;
+  completedTasks: number;
   progressPercentage: number;
   createdAt: string;
   updatedAt: string;
@@ -52,8 +52,8 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (unitId) params.append('unit_id', unitId);
-      if (lrdId) params.append('lrd_id', lrdId);
+      if (unitId) params.append('unitId', unitId);
+      if (lrdId) params.append('lrdId', lrdId);
 
       const response = await api.get(`/tasks?${params.toString()}`);
       setTaskLists(response.data);
@@ -148,7 +148,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
             {selectedList && (
               <div className='flex items-center space-x-2'>
                 <div className='text-sm text-gray-500'>
-                  {selectedList.completed_tasks} / {selectedList.total_tasks}{' '}
+                  {selectedList.completedTasks} / {selectedList.totalTasks}{' '}
                   tasks
                 </div>
                 <div className='w-32 bg-gray-200 rounded-full h-2'>

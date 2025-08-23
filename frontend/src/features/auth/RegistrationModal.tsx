@@ -61,9 +61,13 @@ const RegistrationModal = ({
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(formData.password)) {
+    } else if (
+      !/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:,.<>?])/.test(
+        formData.password
+      )
+    ) {
       newErrors.password =
-        'Password must contain uppercase, lowercase, and number';
+        'Password must contain uppercase, lowercase, number, and special character';
     }
 
     if (formData.password !== formData.confirmPassword) {

@@ -20,8 +20,8 @@ export interface LLMConfig {
   temperature: number;
   max_tokens?: number;
   is_default: boolean;
-  is_active?: boolean;
-  user_id?: string | null;
+  isActive?: boolean;
+  userId?: string | null;
   user_email?: string | null;
 }
 

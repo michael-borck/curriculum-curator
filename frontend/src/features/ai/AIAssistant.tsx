@@ -88,7 +88,7 @@ const AIAssistant = () => {
       const response = await api.post('/llm/generate', {
         context: input,
         content_type: 'assistant_response',
-        pedagogy_style: user?.teaching_philosophy || 'mixed_approach',
+        pedagogy_style: user?.teachingPhilosophy || 'mixed_approach',
         stream: false,
       });
 
@@ -239,7 +239,7 @@ const AIAssistant = () => {
             <div>
               <span className='text-gray-600'>Teaching Style:</span>
               <span className='ml-2 font-medium'>
-                {user?.teaching_philosophy
+                {user?.teachingPhilosophy
                   ?.replace(/_/g, ' ')
                   .replace(/\b\w/g, l => l.toUpperCase()) || 'Mixed Approach'}
               </span>
@@ -251,7 +251,7 @@ const AIAssistant = () => {
             <div>
               <span className='text-gray-600'>Language:</span>
               <span className='ml-2 font-medium'>
-                {user?.language_preference || 'English (AU)'}
+                {user?.languagePreference || 'English (AU)'}
               </span>
             </div>
           </div>

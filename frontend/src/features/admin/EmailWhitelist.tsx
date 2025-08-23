@@ -14,7 +14,7 @@ interface WhitelistEntry {
   id: string;
   pattern: string;
   description?: string;
-  is_active: boolean;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -259,7 +259,7 @@ const EmailWhitelist = () => {
                     )}
                     <p className='text-xs text-gray-500'>
                       Added on {formatDate(entry.createdAt)}
-                      {!entry.is_active && (
+                      {!entry.isActive && (
                         <span className='ml-2 text-red-500'>(Inactive)</span>
                       )}
                     </p>
@@ -282,8 +282,8 @@ const EmailWhitelist = () => {
       {/* Summary */}
       <div className='text-sm text-gray-600'>
         Total entries: {entries.length} (
-        {entries.filter(e => e.is_active).length} active,{' '}
-        {entries.filter(e => !e.is_active).length} inactive)
+        {entries.filter(e => e.isActive).length} active,{' '}
+        {entries.filter(e => !e.isActive).length} inactive)
       </div>
     </div>
   );

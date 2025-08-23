@@ -192,7 +192,7 @@ const ImportMaterials = () => {
 
         try {
           const response = await api.post(
-            `/content/upload?unit_id=${selectedUnit}`,
+            `/content/upload?unitId=${selectedUnit}`,
             formData,
             {
               headers: { 'Content-Type': 'multipart/form-data' },
@@ -250,7 +250,7 @@ const ImportMaterials = () => {
       // Batch upload
       try {
         const response = await api.post(
-          `/content/upload/batch?unit_id=${selectedUnit}`,
+          `/content/upload/batch?unitId=${selectedUnit}`,
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -568,7 +568,7 @@ const ImportMaterials = () => {
                         <div>
                           <span className='text-gray-600'>Words:</span>
                           <span className='ml-2 font-medium'>
-                            {file.result.word_count}
+                            {file.result.wordCount}
                           </span>
                         </div>
                         <div>
@@ -646,7 +646,7 @@ const ImportMaterials = () => {
                           <span className='mx-2'>•</span>
                           <span>
                             Duration:{' '}
-                            {file.result.categorization.estimated_duration} min
+                            {file.result.categorization.estimatedDuration} min
                           </span>
                         </div>
                       </div>

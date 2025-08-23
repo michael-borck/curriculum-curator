@@ -4,10 +4,12 @@ Authentication API schemas
 
 import re
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import EmailStr, Field, field_validator
+
+from app.schemas.base import CamelModel
 
 
-class UserRegistrationRequest(BaseModel):
+class UserRegistrationRequest(CamelModel):
     """Request schema for user registration"""
 
     email: EmailStr
@@ -54,7 +56,7 @@ class UserRegistrationRequest(BaseModel):
         return v
 
 
-class UserRegistrationResponse(BaseModel):
+class UserRegistrationResponse(CamelModel):
     """Response schema for user registration"""
 
     message: str
@@ -62,7 +64,7 @@ class UserRegistrationResponse(BaseModel):
     user_email: str
 
 
-class EmailVerificationRequest(BaseModel):
+class EmailVerificationRequest(CamelModel):
     """Request schema for email verification"""
 
     email: EmailStr
@@ -81,27 +83,28 @@ class EmailVerificationRequest(BaseModel):
         return v
 
 
-class EmailVerificationResponse(BaseModel):
+class EmailVerificationResponse(CamelModel):
     """Response schema for email verification"""
 
-    access_token: str
-    token_type: str = "bearer"
+    # OAuth2 standard fields - keep as snake_case
+    access_token: str = Field(alias="access_token")
+    token_type: str = Field(default="bearer", alias="token_type")
     user: "UserResponse"
 
 
-class ForgotPasswordRequest(BaseModel):
+class ForgotPasswordRequest(CamelModel):
     """Request schema for forgot password"""
 
     email: EmailStr
 
 
-class ForgotPasswordResponse(BaseModel):
+class ForgotPasswordResponse(CamelModel):
     """Response schema for forgot password"""
 
     message: str
 
 
-class ResetPasswordRequest(BaseModel):
+class ResetPasswordRequest(CamelModel):
     """Request schema for password reset"""
 
     email: EmailStr
@@ -139,13 +142,13 @@ class ResetPasswordRequest(BaseModel):
         return v
 
 
-class ResetPasswordResponse(BaseModel):
+class ResetPasswordResponse(CamelModel):
     """Response schema for password reset"""
 
     message: str
 
 
-class UserResponse(BaseModel):
+class UserResponse(CamelModel):
     """Response schema for user information"""
 
     id: str
@@ -160,21 +163,22 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
-class LoginResponse(BaseModel):
+class LoginResponse(CamelModel):
     """Response schema for login"""
 
-    access_token: str
-    token_type: str = "bearer"
+    # OAuth2 standard fields - keep as snake_case
+    access_token: str = Field(alias="access_token")
+    token_type: str = Field(default="bearer", alias="token_type")
     user: UserResponse
 
 
-class ResendVerificationRequest(BaseModel):
+class ResendVerificationRequest(CamelModel):
     """Request schema for resending verification email"""
 
     email: EmailStr
 
 
-class ResendVerificationResponse(BaseModel):
+class ResendVerificationResponse(CamelModel):
     """Response schema for resending verification"""
 
     message: str

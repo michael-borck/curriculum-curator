@@ -45,11 +45,11 @@ const Settings = () => {
   });
 
   const [llmSettings, setLlmSettings] = useState({
-    provider: user?.llm_config?.provider || 'system',
+    provider: user?.llmConfig?.provider || 'system',
     openaiApiKey: '',
     anthropicApiKey: '',
     geminiApiKey: '',
-    modelPreference: user?.llm_config?.model || '',
+    modelPreference: user?.llmConfig?.model || '',
     useSystemDefault: true,
   });
 
@@ -770,24 +770,24 @@ const Settings = () => {
                           llmSettings.provider === 'openai' &&
                           llmSettings.openaiApiKey
                         ) {
-                          llmConfig.openai_api_key = llmSettings.openaiApiKey;
+                          llmConfig.openaiApiKey = llmSettings.openaiApiKey;
                         }
                         if (
                           llmSettings.provider === 'anthropic' &&
                           llmSettings.anthropicApiKey
                         ) {
-                          llmConfig.anthropic_api_key =
+                          llmConfig.anthropicApiKey =
                             llmSettings.anthropicApiKey;
                         }
                         if (
                           llmSettings.provider === 'gemini' &&
                           llmSettings.geminiApiKey
                         ) {
-                          llmConfig.gemini_api_key = llmSettings.geminiApiKey;
+                          llmConfig.geminiApiKey = llmSettings.geminiApiKey;
                         }
 
                         await api.patch('/auth/profile', {
-                          llm_config: llmConfig,
+                          llmConfig: llmConfig,
                         });
 
                         setSaved(true);

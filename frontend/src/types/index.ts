@@ -9,14 +9,14 @@ export interface User {
   email: string;
   name: string;
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
-  teaching_philosophy?: string;
-  language_preference?: string;
-  llm_config?: {
+  teachingPhilosophy?: string;
+  languagePreference?: string;
+  llmConfig?: {
     provider?: string;
     model?: string;
-    openai_api_key?: string;
-    anthropic_api_key?: string;
-    gemini_api_key?: string;
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
+    geminiApiKey?: string;
   };
 }
 
@@ -38,7 +38,7 @@ export interface Unit {
   year: number;
   semester: string;
   status: string;
-  pedagogyType: string; // Note: backend uses snake_case but our converter handles it
+  pedagogyType: string;
   difficultyLevel: string;
   durationWeeks: number;
   creditPoints: number;

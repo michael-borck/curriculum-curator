@@ -105,12 +105,7 @@ def create_unit(
         .filter(
             Unit.code == unit_data.code,
             Unit.year == unit_data.year,
-            Unit.semester
-            == (
-                unit_data.semester.value
-                if unit_data.semester
-                else Semester.SEMESTER_1.value
-            ),
+            Unit.semester == unit_data.semester,
             Unit.owner_id == current_user.id,
         )
         .first()
@@ -119,7 +114,7 @@ def create_unit(
     if existing_unit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unit with code {unit_data.code} already exists for {unit_data.year} {unit_data.semester.value if unit_data.semester else 'Semester 1'}",
+            detail=f"Unit with code {unit_data.code} already exists for {unit_data.year} {unit_data.semester if unit_data.semester else 'Semester 1'}",
         )
 
     # Create new unit
@@ -128,16 +123,10 @@ def create_unit(
         code=unit_data.code,
         description=unit_data.description,
         year=unit_data.year,
-        semester=unit_data.semester.value
-        if unit_data.semester
-        else Semester.SEMESTER_1.value,
-        status=unit_data.status.value if unit_data.status else UnitStatus.DRAFT.value,
-        pedagogy_type=unit_data.pedagogy_type.value
-        if unit_data.pedagogy_type
-        else PedagogyType.INQUIRY_BASED.value,
-        difficulty_level=unit_data.difficulty_level.value
-        if unit_data.difficulty_level
-        else DifficultyLevel.INTERMEDIATE.value,
+        semester=unit_data.semester if unit_data.semester else Semester.SEMESTER_1.value,
+        status=unit_data.status if unit_data.status else UnitStatus.DRAFT.value,
+        pedagogy_type=unit_data.pedagogy_type if unit_data.pedagogy_type else PedagogyType.INQUIRY_BASED.value,
+        difficulty_level=unit_data.difficulty_level if unit_data.difficulty_level else DifficultyLevel.INTERMEDIATE.value,
         duration_weeks=unit_data.duration_weeks or 12,
         credit_points=unit_data.credit_points or 6,
         prerequisites=unit_data.prerequisites,
@@ -186,15 +175,7 @@ def update_unit(
     # Update fields if provided
     update_data = unit_data.dict(exclude_unset=True)
 
-    # Convert enums to values
-    if update_data.get("semester"):
-        update_data["semester"] = update_data["semester"].value
-    if update_data.get("status"):
-        update_data["status"] = update_data["status"].value
-    if update_data.get("pedagogy_type"):
-        update_data["pedagogy_type"] = update_data["pedagogy_type"].value
-    if update_data.get("difficulty_level"):
-        update_data["difficulty_level"] = update_data["difficulty_level"].value
+    # Enums are already converted to strings by Pydantic CamelModel
 
     # Track who made the update
     update_data["updated_by_id"] = current_user.id

@@ -31,10 +31,10 @@ interface UnitOutline {
   title: string;
   description?: string;
   durationWeeks: number;
-  delivery_mode?: string;
-  teaching_pattern?: string;
-  is_complete: boolean;
-  completion_percentage: number;
+  deliveryMode?: string;
+  teachingPattern?: string;
+  isComplete: boolean;
+  completionPercentage: number;
 }
 
 const UnitWorkflow: React.FC = () => {

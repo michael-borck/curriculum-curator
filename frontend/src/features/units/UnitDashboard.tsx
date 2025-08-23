@@ -27,24 +27,24 @@ interface UnitDetails {
   code: string;
   description: string;
   status: string;
-  teaching_philosophy: string;
+  teachingPhilosophy: string;
   semester: string;
   credits: number;
   createdAt: string;
   updatedAt: string;
-  is_active: boolean;
+  isActive: boolean;
   ownerId: string;
   // Statistics
   moduleCount: number;
   materialCount: number;
   lrdCount: number;
-  task_count: number;
-  completed_tasks: number;
+  taskCount: number;
+  completedTasks: number;
   progressPercentage: number;
   // Additional data
   modules?: Module[];
-  recent_materials?: Material[];
-  pending_tasks?: Task[];
+  recentMaterials?: Material[];
+  pendingTasks?: Task[];
 }
 
 interface Module {
@@ -54,7 +54,7 @@ interface Module {
   order: number;
   status: string;
   materialCount: number;
-  completed_count: number;
+  completedCount: number;
 }
 
 interface Material {
@@ -64,7 +64,7 @@ interface Material {
   status: string;
   createdAt: string;
   version: number;
-  word_count?: number;
+  wordCount?: number;
 }
 
 interface Task {
@@ -102,7 +102,7 @@ const UnitDashboard = () => {
         // Fetch additional statistics
         const [modulesRes, materialsRes, tasksRes] = await Promise.all([
           api
-            .get(`/api/unit-modules?unit_id=${unitId}`)
+            .get(`/api/unit-modules?unitId=${unitId}`)
             .catch(() => ({ data: [] })),
           api
             .get(`/api/materials?unit_id=${unitId}&limit=5`)
@@ -117,8 +117,8 @@ const UnitDashboard = () => {
             ? {
                 ...prev,
                 modules: modulesRes.data,
-                recent_materials: materialsRes.data.items || [],
-                pending_tasks: tasksRes.data,
+                recentMaterials: materialsRes.data.items || [],
+                pendingTasks: tasksRes.data,
               }
             : null
         );
@@ -178,7 +178,7 @@ const UnitDashboard = () => {
     },
     {
       title: 'Tasks',
-      value: `${unit.completed_tasks || 0}/${unit.task_count || 0}`,
+      value: `${unit.completedTasks || 0}/${unit.taskCount || 0}`,
       icon: CheckCircle,
       color: 'bg-orange-500',
       subtitle: 'Completed',
@@ -348,9 +348,9 @@ const UnitDashboard = () => {
                 <FileText className='h-5 w-5 mr-2 text-gray-600' />
                 Recent Materials
               </h3>
-              {unit.recent_materials && unit.recent_materials.length > 0 ? (
+              {unit.recentMaterials && unit.recentMaterials.length > 0 ? (
                 <div className='space-y-3'>
-                  {unit.recent_materials.map(material => (
+                  {unit.recentMaterials.map(material => (
                     <button
                       key={material.id}
                       className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer w-full text-left'
@@ -366,7 +366,7 @@ const UnitDashboard = () => {
                           </p>
                           <p className='text-sm text-gray-500'>
                             Version {material.version} •{' '}
-                            {material.word_count || 0} words
+                            {material.wordCount || 0} words
                           </p>
                         </div>
                       </div>
@@ -393,9 +393,9 @@ const UnitDashboard = () => {
                 <Target className='h-5 w-5 mr-2 text-gray-600' />
                 Pending Tasks
               </h3>
-              {unit.pending_tasks && unit.pending_tasks.length > 0 ? (
+              {unit.pendingTasks && unit.pendingTasks.length > 0 ? (
                 <div className='space-y-3'>
-                  {unit.pending_tasks.map(task => (
+                  {unit.pendingTasks.map(task => (
                     <div
                       key={task.id}
                       className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50'
@@ -480,7 +480,7 @@ const UnitDashboard = () => {
                         <div className='flex items-center space-x-4 mt-3 text-sm text-gray-500'>
                           <span>{module.materialCount} materials</span>
                           <span>•</span>
-                          <span>{module.completed_count} completed</span>
+                          <span>{module.completedCount} completed</span>
                           <span>•</span>
                           <span
                             className={`font-medium ${
@@ -511,7 +511,7 @@ const UnitDashboard = () => {
                           style={{
                             width: `${
                               module.materialCount > 0
-                                ? (module.completed_count /
+                                ? (module.completedCount /
                                     module.materialCount) *
                                   100
                                 : 0
@@ -560,7 +560,7 @@ const UnitDashboard = () => {
 
             {viewMode === 'grid' ? (
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {unit.recent_materials?.map(material => (
+                {unit.recentMaterials?.map(material => (
                   <button
                     key={material.id}
                     className='border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer w-full text-left'
@@ -581,7 +581,7 @@ const UnitDashboard = () => {
                     </h4>
                     <div className='text-sm text-gray-500'>
                       <p>Version {material.version}</p>
-                      <p>{material.word_count || 0} words</p>
+                      <p>{material.wordCount || 0} words</p>
                       <p className='mt-2 text-xs'>
                         Created{' '}
                         {new Date(material.createdAt).toLocaleDateString()}
@@ -592,7 +592,7 @@ const UnitDashboard = () => {
               </div>
             ) : (
               <div className='space-y-2'>
-                {unit.recent_materials?.map(material => (
+                {unit.recentMaterials?.map(material => (
                   <button
                     key={material.id}
                     className='flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer w-full text-left'
@@ -608,7 +608,7 @@ const UnitDashboard = () => {
                         </p>
                         <p className='text-sm text-gray-500'>
                           {material.type} • Version {material.version} •{' '}
-                          {material.word_count || 0} words
+                          {material.wordCount || 0} words
                         </p>
                       </div>
                     </div>
@@ -746,7 +746,7 @@ const UnitDashboard = () => {
           <div>
             <span className='text-gray-600'>Philosophy:</span>
             <span className='ml-2 font-medium capitalize'>
-              {unit.teaching_philosophy.replace(/_/g, ' ').toLowerCase()}
+              {unit.teachingPhilosophy.replace(/_/g, ' ').toLowerCase()}
             </span>
           </div>
           <div>

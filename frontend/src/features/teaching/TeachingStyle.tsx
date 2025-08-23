@@ -126,7 +126,7 @@ const teachingStyles = [
 const TeachingStyle = () => {
   const { user } = useAuthStore();
   const [selectedStyle, setSelectedStyle] = useState(
-    user?.teaching_philosophy || 'TRADITIONAL'
+    user?.teachingPhilosophy || 'TRADITIONAL'
   );
   const [quizStarted, setQuizStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -248,11 +248,11 @@ const TeachingStyle = () => {
     try {
       setSaving(true);
       await api.patch('/auth/profile', {
-        teaching_philosophy: selectedStyle,
+        teachingPhilosophy: selectedStyle,
       });
       // Update local store
       if (user) {
-        const updatedUser = { ...user, teaching_philosophy: selectedStyle };
+        const updatedUser = { ...user, teachingPhilosophy: selectedStyle };
         useAuthStore.setState({ user: updatedUser });
       }
     } catch (error) {

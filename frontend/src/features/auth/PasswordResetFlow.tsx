@@ -84,8 +84,14 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
       setError('Password must be at least 8 characters');
       return;
     }
-    if (!/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(newPassword)) {
-      setError('Password must contain uppercase, lowercase, and number');
+    if (
+      !/(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:,.<>?])/.test(
+        newPassword
+      )
+    ) {
+      setError(
+        'Password must contain uppercase, lowercase, number, and special character'
+      );
       return;
     }
     if (newPassword !== confirmPassword) {

@@ -20,14 +20,14 @@ interface Unit {
   id: string;
   title: string;
   code: string;
-  teaching_philosophy: string;
+  teachingPhilosophy: string;
 }
 
 interface LRDErrors {
   topic?: string;
   duration?: string;
   objectives?: string;
-  learning_outcomes?: string;
+  learningOutcomes?: string;
   submit?: string;
 }
 
@@ -35,20 +35,20 @@ interface LRDContent {
   topic: string;
   duration: string;
   objectives: string[];
-  learning_outcomes: string[];
+  learningOutcomes: string[];
   prerequisites: string[];
   structure: {
-    pre_class: {
+    preClass: {
       activities: string[];
       duration: string;
       materials: string[];
     };
-    in_class: {
+    inClass: {
       activities: string[];
       duration: string;
       materials: string[];
     };
-    post_class: {
+    postClass: {
       activities: string[];
       duration: string;
       materials: string[];
@@ -65,10 +65,10 @@ interface LRDContent {
     recommended: string[];
     supplementary: string[];
   };
-  pedagogy_notes: string;
+  pedagogyNotes: string;
   differentiation: string;
-  technology_requirements: string[];
-  teaching_philosophy?: string;
+  technologyRequirements: string[];
+  teachingPhilosophy?: string;
 }
 
 interface LRDData {
@@ -97,20 +97,20 @@ const LRDCreator = () => {
       topic: '',
       duration: '',
       objectives: [''],
-      learning_outcomes: [''],
+      learningOutcomes: [''],
       prerequisites: [''],
       structure: {
-        pre_class: {
+        preClass: {
           activities: [''],
           duration: '',
           materials: [''],
         },
-        in_class: {
+        inClass: {
           activities: [''],
           duration: '',
           materials: [''],
         },
-        post_class: {
+        postClass: {
           activities: [''],
           duration: '',
           materials: [''],
@@ -127,9 +127,9 @@ const LRDCreator = () => {
         recommended: [''],
         supplementary: [''],
       },
-      pedagogy_notes: '',
+      pedagogyNotes: '',
       differentiation: '',
-      technology_requirements: [''],
+      technologyRequirements: [''],
     },
   });
 
@@ -146,7 +146,7 @@ const LRDCreator = () => {
           ...prev,
           content: {
             ...prev.content,
-            teaching_philosophy: response.data.teaching_philosophy,
+            teachingPhilosophy: response.data.teachingPhilosophy,
           },
         }));
       } catch (error) {
@@ -225,12 +225,17 @@ const LRDCreator = () => {
       newErrors.duration = 'Duration is required';
     }
 
-    if (lrdData.content.objectives.filter(o => o.trim()).length === 0) {
+    if (
+      lrdData.content.objectives.filter((o: string) => o.trim()).length === 0
+    ) {
       newErrors.objectives = 'At least one objective is required';
     }
 
-    if (lrdData.content.learning_outcomes.filter(o => o.trim()).length === 0) {
-      newErrors.learning_outcomes = 'At least one learning outcome is required';
+    if (
+      lrdData.content.learningOutcomes.filter((o: string) => o.trim())
+        .length === 0
+    ) {
+      newErrors.learningOutcomes = 'At least one learning outcome is required';
     }
 
     setErrors(newErrors);
@@ -251,56 +256,64 @@ const LRDCreator = () => {
         ...lrdData,
         content: {
           ...lrdData.content,
-          objectives: lrdData.content.objectives.filter(o => o.trim()),
-          learning_outcomes: lrdData.content.learning_outcomes.filter(o =>
+          objectives: lrdData.content.objectives.filter((o: string) =>
             o.trim()
           ),
-          prerequisites: lrdData.content.prerequisites.filter(p => p.trim()),
+          learningOutcomes: lrdData.content.learningOutcomes.filter(
+            (o: string) => o.trim()
+          ),
+          prerequisites: lrdData.content.prerequisites.filter((p: string) =>
+            p.trim()
+          ),
           structure: {
-            pre_class: {
-              ...lrdData.content.structure.pre_class,
-              activities: lrdData.content.structure.pre_class.activities.filter(
-                a => a.trim()
+            preClass: {
+              ...lrdData.content.structure.preClass,
+              activities: lrdData.content.structure.preClass.activities.filter(
+                (a: string) => a.trim()
               ),
-              materials: lrdData.content.structure.pre_class.materials.filter(
-                m => m.trim()
-              ),
-            },
-            in_class: {
-              ...lrdData.content.structure.in_class,
-              activities: lrdData.content.structure.in_class.activities.filter(
-                a => a.trim()
-              ),
-              materials: lrdData.content.structure.in_class.materials.filter(
-                m => m.trim()
+              materials: lrdData.content.structure.preClass.materials.filter(
+                (m: string) => m.trim()
               ),
             },
-            post_class: {
-              ...lrdData.content.structure.post_class,
-              activities:
-                lrdData.content.structure.post_class.activities.filter(a =>
-                  a.trim()
-                ),
-              materials: lrdData.content.structure.post_class.materials.filter(
-                m => m.trim()
+            inClass: {
+              ...lrdData.content.structure.inClass,
+              activities: lrdData.content.structure.inClass.activities.filter(
+                (a: string) => a.trim()
+              ),
+              materials: lrdData.content.structure.inClass.materials.filter(
+                (m: string) => m.trim()
+              ),
+            },
+            postClass: {
+              ...lrdData.content.structure.postClass,
+              activities: lrdData.content.structure.postClass.activities.filter(
+                (a: string) => a.trim()
+              ),
+              materials: lrdData.content.structure.postClass.materials.filter(
+                (m: string) => m.trim()
               ),
             },
           },
           assessment: {
             ...lrdData.content.assessment,
-            criteria: lrdData.content.assessment.criteria.filter(c => c.trim()),
+            criteria: lrdData.content.assessment.criteria.filter((c: string) =>
+              c.trim()
+            ),
           },
           resources: {
-            required: lrdData.content.resources.required.filter(r => r.trim()),
-            recommended: lrdData.content.resources.recommended.filter(r =>
+            required: lrdData.content.resources.required.filter((r: string) =>
               r.trim()
             ),
-            supplementary: lrdData.content.resources.supplementary.filter(r =>
-              r.trim()
+            recommended: lrdData.content.resources.recommended.filter(
+              (r: string) => r.trim()
+            ),
+            supplementary: lrdData.content.resources.supplementary.filter(
+              (r: string) => r.trim()
             ),
           },
-          technology_requirements:
-            lrdData.content.technology_requirements.filter(t => t.trim()),
+          technologyRequirements: lrdData.content.technologyRequirements.filter(
+            (t: string) => t.trim()
+          ),
         },
       };
 
@@ -432,8 +445,8 @@ const LRDCreator = () => {
             </label>
             <select
               value={
-                lrdData.content.teaching_philosophy ||
-                unit?.teaching_philosophy ||
+                lrdData.content.teachingPhilosophy ||
+                unit?.teachingPhilosophy ||
                 'TRADITIONAL'
               }
               onChange={e =>
@@ -441,7 +454,7 @@ const LRDCreator = () => {
                   ...prev,
                   content: {
                     ...prev.content,
-                    teaching_philosophy: e.target.value,
+                    teachingPhilosophy: e.target.value,
                   },
                 }))
               }
@@ -511,14 +524,14 @@ const LRDCreator = () => {
             <label className='block text-sm font-medium text-gray-700 mb-2'>
               Learning Outcomes *
             </label>
-            {lrdData.content.learning_outcomes.map((outcome, index) => (
+            {lrdData.content.learningOutcomes.map((outcome, index) => (
               <div key={index} className='flex mb-2'>
                 <input
                   type='text'
                   value={outcome}
                   onChange={e =>
                     updateArrayItem(
-                      'content.learning_outcomes',
+                      'content.learningOutcomes',
                       index,
                       e.target.value
                     )
@@ -528,25 +541,25 @@ const LRDCreator = () => {
                 />
                 <button
                   onClick={() =>
-                    removeArrayItem('content.learning_outcomes', index)
+                    removeArrayItem('content.learningOutcomes', index)
                   }
                   className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                  disabled={lrdData.content.learning_outcomes.length === 1}
+                  disabled={lrdData.content.learningOutcomes.length === 1}
                 >
                   <X className='h-5 w-5' />
                 </button>
               </div>
             ))}
             <button
-              onClick={() => addArrayItem('content.learning_outcomes')}
+              onClick={() => addArrayItem('content.learningOutcomes')}
               className='mt-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center'
             >
               <Plus className='h-4 w-4 mr-1' />
               Add Outcome
             </button>
-            {errors.learning_outcomes && (
+            {errors.learningOutcomes && (
               <p className='text-red-500 text-sm mt-1'>
-                {errors.learning_outcomes}
+                {errors.learningOutcomes}
               </p>
             )}
           </div>
@@ -611,7 +624,7 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.pre_class.duration}
+                value={lrdData.content.structure.preClass.duration}
                 onChange={e =>
                   setLrdData(prev => ({
                     ...prev,
@@ -619,8 +632,8 @@ const LRDCreator = () => {
                       ...prev.content,
                       structure: {
                         ...prev.content.structure,
-                        pre_class: {
-                          ...prev.content.structure.pre_class,
+                        preClass: {
+                          ...prev.content.structure.preClass,
                           duration: e.target.value,
                         },
                       },
@@ -636,7 +649,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.pre_class.activities.map(
+              {lrdData.content.structure.preClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -644,7 +657,7 @@ const LRDCreator = () => {
                       value={activity}
                       onChange={e =>
                         updateArrayItem(
-                          'content.structure.pre_class.activities',
+                          'content.structure.preClass.activities',
                           index,
                           e.target.value
                         )
@@ -655,14 +668,14 @@ const LRDCreator = () => {
                     <button
                       onClick={() =>
                         removeArrayItem(
-                          'content.structure.pre_class.activities',
+                          'content.structure.preClass.activities',
                           index
                         )
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.pre_class.activities
-                          .length === 1
+                        lrdData.content.structure.preClass.activities.length ===
+                        1
                       }
                     >
                       <X className='h-5 w-5' />
@@ -672,7 +685,7 @@ const LRDCreator = () => {
               )}
               <button
                 onClick={() =>
-                  addArrayItem('content.structure.pre_class.activities')
+                  addArrayItem('content.structure.preClass.activities')
                 }
                 className='mt-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center'
               >
@@ -692,7 +705,7 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.in_class.duration}
+                value={lrdData.content.structure.inClass.duration}
                 onChange={e =>
                   setLrdData(prev => ({
                     ...prev,
@@ -700,8 +713,8 @@ const LRDCreator = () => {
                       ...prev.content,
                       structure: {
                         ...prev.content.structure,
-                        in_class: {
-                          ...prev.content.structure.in_class,
+                        inClass: {
+                          ...prev.content.structure.inClass,
                           duration: e.target.value,
                         },
                       },
@@ -717,7 +730,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.in_class.activities.map(
+              {lrdData.content.structure.inClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -725,7 +738,7 @@ const LRDCreator = () => {
                       value={activity}
                       onChange={e =>
                         updateArrayItem(
-                          'content.structure.in_class.activities',
+                          'content.structure.inClass.activities',
                           index,
                           e.target.value
                         )
@@ -736,13 +749,13 @@ const LRDCreator = () => {
                     <button
                       onClick={() =>
                         removeArrayItem(
-                          'content.structure.in_class.activities',
+                          'content.structure.inClass.activities',
                           index
                         )
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.in_class.activities.length ===
+                        lrdData.content.structure.inClass.activities.length ===
                         1
                       }
                     >
@@ -753,7 +766,7 @@ const LRDCreator = () => {
               )}
               <button
                 onClick={() =>
-                  addArrayItem('content.structure.in_class.activities')
+                  addArrayItem('content.structure.inClass.activities')
                 }
                 className='mt-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center'
               >
@@ -773,7 +786,7 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.post_class.duration}
+                value={lrdData.content.structure.postClass.duration}
                 onChange={e =>
                   setLrdData(prev => ({
                     ...prev,
@@ -781,8 +794,8 @@ const LRDCreator = () => {
                       ...prev.content,
                       structure: {
                         ...prev.content.structure,
-                        post_class: {
-                          ...prev.content.structure.post_class,
+                        postClass: {
+                          ...prev.content.structure.postClass,
                           duration: e.target.value,
                         },
                       },
@@ -798,7 +811,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.post_class.activities.map(
+              {lrdData.content.structure.postClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -806,7 +819,7 @@ const LRDCreator = () => {
                       value={activity}
                       onChange={e =>
                         updateArrayItem(
-                          'content.structure.post_class.activities',
+                          'content.structure.postClass.activities',
                           index,
                           e.target.value
                         )
@@ -817,13 +830,13 @@ const LRDCreator = () => {
                     <button
                       onClick={() =>
                         removeArrayItem(
-                          'content.structure.post_class.activities',
+                          'content.structure.postClass.activities',
                           index
                         )
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.post_class.activities
+                        lrdData.content.structure.postClass.activities
                           .length === 1
                       }
                     >
@@ -834,7 +847,7 @@ const LRDCreator = () => {
               )}
               <button
                 onClick={() =>
-                  addArrayItem('content.structure.post_class.activities')
+                  addArrayItem('content.structure.postClass.activities')
                 }
                 className='mt-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center'
               >
@@ -991,11 +1004,11 @@ const LRDCreator = () => {
               Pedagogy Notes
             </label>
             <textarea
-              value={lrdData.content.pedagogy_notes}
+              value={lrdData.content.pedagogyNotes}
               onChange={e =>
                 setLrdData(prev => ({
                   ...prev,
-                  content: { ...prev.content, pedagogy_notes: e.target.value },
+                  content: { ...prev.content, pedagogyNotes: e.target.value },
                 }))
               }
               className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'

@@ -212,20 +212,20 @@ const LRDList = () => {
                 </div>
 
                 {/* Task Progress */}
-                {lrd.task_lists && lrd.task_lists.length > 0 && (
+                {lrd.taskLists && lrd.taskLists.length > 0 && (
                   <div className='mb-4'>
                     <div className='flex justify-between text-sm mb-1'>
                       <span className='text-gray-600'>Task Progress</span>
                       <span className='font-medium'>
-                        {lrd.task_lists[0].completed_tasks}/
-                        {lrd.task_lists[0].total_tasks}
+                        {lrd.taskLists[0].completedTasks}/
+                        {lrd.taskLists[0].totalTasks}
                       </span>
                     </div>
                     <div className='w-full bg-gray-200 rounded-full h-2'>
                       <div
                         className='bg-blue-600 h-2 rounded-full'
                         style={{
-                          width: `${lrd.task_lists[0].progressPercentage || 0}%`,
+                          width: `${lrd.taskLists[0].progressPercentage || 0}%`,
                         }}
                       />
                     </div>

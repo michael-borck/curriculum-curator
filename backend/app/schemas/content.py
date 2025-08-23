@@ -4,10 +4,12 @@ Content schemas for API requests and responses
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
-class ContentBase(BaseModel):
+class ContentBase(CamelModel):
     """Base content schema with common fields"""
 
     title: str = Field(..., min_length=1, max_length=500)
@@ -28,7 +30,7 @@ class ContentCreate(ContentBase):
     status: str | None = Field(default="draft")
 
 
-class ContentUpdate(BaseModel):
+class ContentUpdate(CamelModel):
     """Schema for updating content - all fields optional"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -57,7 +59,7 @@ class ContentResponse(ContentBase):
         from_attributes = True
 
 
-class ContentListResponse(BaseModel):
+class ContentListResponse(CamelModel):
     """Schema for paginated content list responses"""
 
     contents: list[ContentResponse]
@@ -67,7 +69,7 @@ class ContentListResponse(BaseModel):
 
 
 # Legacy schemas for LLM generation (kept for compatibility)
-class ContentGenerationRequest(BaseModel):
+class ContentGenerationRequest(CamelModel):
     """Request schema for content generation via LLM"""
 
     content_type: str
@@ -76,7 +78,7 @@ class ContentGenerationRequest(BaseModel):
     stream: bool = False
 
 
-class ContentEnhanceRequest(BaseModel):
+class ContentEnhanceRequest(CamelModel):
     """Request schema for content enhancement via LLM"""
 
     content: str
@@ -84,7 +86,7 @@ class ContentEnhanceRequest(BaseModel):
     suggestions: list | None = None
 
 
-class ContentValidationResponse(BaseModel):
+class ContentValidationResponse(CamelModel):
     """Response schema for content validation"""
 
     is_valid: bool
@@ -93,7 +95,7 @@ class ContentValidationResponse(BaseModel):
 
 
 # Simplified schemas for backward compatibility
-class ContentGenerate(BaseModel):
+class ContentGenerate(CamelModel):
     """Request schema for content generation"""
 
     topic: str
@@ -101,7 +103,7 @@ class ContentGenerate(BaseModel):
     content_type: str
 
 
-class ContentEnhance(BaseModel):
+class ContentEnhance(CamelModel):
     """Request schema for content enhancement"""
 
     content: str

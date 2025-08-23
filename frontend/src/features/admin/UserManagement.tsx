@@ -20,10 +20,10 @@ interface User {
   email: string;
   name: string;
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
-  is_active: boolean;
-  is_verified: boolean;
+  isActive: boolean;
+  isVerified: boolean;
   createdAt: string;
-  last_login?: string;
+  lastLogin?: string;
 }
 
 const UserManagement = () => {
@@ -83,7 +83,7 @@ const UserManagement = () => {
     // Status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(user =>
-        filterStatus === 'active' ? user.is_active : !user.is_active
+        filterStatus === 'active' ? user.isActive : !user.isActive
       );
     }
 
@@ -96,7 +96,7 @@ const UserManagement = () => {
 
       setUsers(
         users.map(user =>
-          user.id === userId ? { ...user, is_active: !currentStatus } : user
+          user.id === userId ? { ...user, isActive: !currentStatus } : user
         )
       );
 
@@ -112,7 +112,7 @@ const UserManagement = () => {
 
       setUsers(
         users.map(user =>
-          user.id === userId ? { ...user, is_verified: true } : user
+          user.id === userId ? { ...user, isVerified: true } : user
         )
       );
 
@@ -170,7 +170,7 @@ const UserManagement = () => {
         // Update user status if soft deleted
         setUsers(
           users.map(user =>
-            user.id === userId ? { ...user, is_active: false } : user
+            user.id === userId ? { ...user, isActive: false } : user
           )
         );
       }
@@ -309,7 +309,7 @@ const UserManagement = () => {
               {filteredUsers.map(user => (
                 <tr
                   key={user.id}
-                  className={`hover:bg-gray-50 ${!user.is_active ? 'opacity-60 bg-gray-50' : ''}`}
+                  className={`hover:bg-gray-50 ${!user.isActive ? 'opacity-60 bg-gray-50' : ''}`}
                 >
                   <td className='px-6 py-4 whitespace-nowrap'>
                     <div>
@@ -337,12 +337,12 @@ const UserManagement = () => {
                   <td className='px-6 py-4 whitespace-nowrap'>
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.is_active
+                        user.isActive
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {user.is_active ? (
+                      {user.isActive ? (
                         <>
                           <CheckCircle className='w-3 h-3' />
                           Active
@@ -356,7 +356,7 @@ const UserManagement = () => {
                     </span>
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap'>
-                    {user.is_verified ? (
+                    {user.isVerified ? (
                       <CheckCircle className='w-5 h-5 text-green-600' />
                     ) : (
                       <XCircle className='w-5 h-5 text-gray-400' />
@@ -366,7 +366,7 @@ const UserManagement = () => {
                     {formatDate(user.createdAt)}
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-                    {user.last_login ? formatDate(user.last_login) : 'Never'}
+                    {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-right text-sm font-medium'>
                     <div className='relative'>
@@ -384,7 +384,7 @@ const UserManagement = () => {
                       {showDropdown === user.id && (
                         <div className='absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200'>
                           <div className='py-1'>
-                            {!user.is_verified && (
+                            {!user.isVerified && (
                               <button
                                 onClick={() => handleVerifyUser(user.id)}
                                 className='flex items-center gap-2 px-4 py-2 text-sm text-green-700 hover:bg-green-50 w-full text-left'
@@ -395,11 +395,11 @@ const UserManagement = () => {
                             )}
                             <button
                               onClick={() =>
-                                handleToggleStatus(user.id, user.is_active)
+                                handleToggleStatus(user.id, user.isActive)
                               }
                               className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left'
                             >
-                              {user.is_active ? (
+                              {user.isActive ? (
                                 <>
                                   <Lock className='w-4 h-4' />
                                   Deactivate
@@ -424,7 +424,7 @@ const UserManagement = () => {
                               Make{' '}
                               {user.role === 'admin' ? 'Lecturer' : 'Admin'}
                             </button>
-                            {user.is_active && (
+                            {user.isActive && (
                               <button
                                 onClick={() => handleDeleteUser(user.id, false)}
                                 className='flex items-center gap-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 w-full text-left'

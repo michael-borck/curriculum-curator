@@ -20,18 +20,18 @@ import { diffLines } from 'diff';
 
 interface MaterialVersion {
   id: string;
-  material_id: string;
+  materialId: string;
   version: number;
-  parent_version_id?: string;
+  parentVersionId?: string;
   title: string;
   content: any;
   raw_content?: string;
   createdAt: string;
-  created_by?: string;
-  change_summary?: string;
-  is_latest: boolean;
-  word_count?: number;
-  quality_score?: number;
+  createdBy?: string;
+  changeSummary?: string;
+  isLatest: boolean;
+  wordCount?: number;
+  qualityScore?: number;
 }
 
 interface VersionHistoryProps {
@@ -198,7 +198,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     <div className='space-y-4'>
       {versions.map((version, index) => {
         const isExpanded = expandedVersions.has(version.id);
-        const isLatest = version.is_latest;
+        const isLatest = version.isLatest;
         const isCurrent = version.version === currentVersion;
 
         return (
@@ -245,9 +245,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
                 <div className='ml-8 mt-2'>
                   <p className='text-gray-900 font-medium'>{version.title}</p>
-                  {version.change_summary && (
+                  {version.changeSummary && (
                     <p className='text-gray-600 text-sm mt-1'>
-                      {version.change_summary}
+                      {version.changeSummary}
                     </p>
                   )}
 
@@ -256,23 +256,23 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
                       <Calendar className='h-4 w-4 mr-1' />
                       {new Date(version.createdAt).toLocaleDateString()}
                     </span>
-                    {version.created_by && (
+                    {version.createdBy && (
                       <span className='flex items-center'>
                         <User className='h-4 w-4 mr-1' />
-                        {version.created_by}
+                        {version.createdBy}
                       </span>
                     )}
-                    {version.word_count && (
+                    {version.wordCount && (
                       <span className='flex items-center'>
                         <FileText className='h-4 w-4 mr-1' />
-                        {version.word_count} words
+                        {version.wordCount} words
                       </span>
                     )}
-                    {version.quality_score !== null &&
-                      version.quality_score !== undefined && (
+                    {version.qualityScore !== null &&
+                      version.qualityScore !== undefined && (
                         <span className='flex items-center'>
                           <CheckCircle className='h-4 w-4 mr-1' />
-                          Quality: {version.quality_score}%
+                          Quality: {version.qualityScore}%
                         </span>
                       )}
                   </div>
@@ -392,9 +392,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
               <div className='text-gray-600 mt-1'>
                 {new Date(oldVersion.createdAt).toLocaleString()}
               </div>
-              {oldVersion.change_summary && (
+              {oldVersion.changeSummary && (
                 <div className='text-gray-700 mt-2'>
-                  {oldVersion.change_summary}
+                  {oldVersion.changeSummary}
                 </div>
               )}
             </div>
@@ -405,9 +405,9 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
               <div className='text-gray-600 mt-1'>
                 {new Date(newVersion.createdAt).toLocaleString()}
               </div>
-              {newVersion.change_summary && (
+              {newVersion.changeSummary && (
                 <div className='text-gray-700 mt-2'>
-                  {newVersion.change_summary}
+                  {newVersion.changeSummary}
                 </div>
               )}
             </div>

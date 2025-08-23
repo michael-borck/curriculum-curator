@@ -2,13 +2,14 @@
 Admin-related Pydantic schemas
 """
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.schemas.base import CamelModel
 from app.schemas.user import UserResponse
 
 
 # Email Whitelist schemas
-class EmailWhitelistBase(BaseModel):
+class EmailWhitelistBase(CamelModel):
     pattern: str = Field(
         ..., description="Email pattern (e.g., @example.com or user@example.com)"
     )
@@ -20,7 +21,7 @@ class EmailWhitelistCreate(EmailWhitelistBase):
     pass
 
 
-class EmailWhitelistUpdate(BaseModel):
+class EmailWhitelistUpdate(CamelModel):
     pattern: str | None = None
     description: str | None = None
     is_active: bool | None = None
@@ -33,14 +34,14 @@ class EmailWhitelistResponse(EmailWhitelistBase):
 
 
 # User management schemas
-class UserListResponse(BaseModel):
+class UserListResponse(CamelModel):
     users: list[UserResponse]
     total: int
     skip: int
     limit: int
 
 
-class UserStatsResponse(BaseModel):
+class UserStatsResponse(CamelModel):
     total_users: int
     verified_users: int
     active_users: int
@@ -50,7 +51,7 @@ class UserStatsResponse(BaseModel):
 
 
 # System settings schemas
-class SystemSettingsBase(BaseModel):
+class SystemSettingsBase(CamelModel):
     # Password policy
     password_min_length: int = Field(8, ge=6, le=32)
     password_require_uppercase: bool = True
@@ -72,7 +73,7 @@ class SystemSettingsResponse(SystemSettingsBase):
     pass
 
 
-class SystemSettingsUpdate(BaseModel):
+class SystemSettingsUpdate(CamelModel):
     # All fields optional for partial updates
     password_min_length: int | None = Field(None, ge=6, le=32)
     password_require_uppercase: bool | None = None
@@ -89,7 +90,7 @@ class SystemSettingsUpdate(BaseModel):
 
 
 # Audit log schemas
-class AuditLogResponse(BaseModel):
+class AuditLogResponse(CamelModel):
     id: str
     event_type: str
     user_id: str | None
@@ -101,7 +102,7 @@ class AuditLogResponse(BaseModel):
     details: dict | None = None
 
 
-class DatabaseBackupResponse(BaseModel):
+class DatabaseBackupResponse(CamelModel):
     message: str
     backup_path: str | None
     timestamp: str

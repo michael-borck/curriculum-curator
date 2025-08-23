@@ -14,8 +14,8 @@ from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models import User, UserRole
 
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+# OAuth2 scheme - using actual route prefix /api/auth/login instead of /api/v1/auth/login
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 def get_db() -> Generator[Session, None, None]:

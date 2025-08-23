@@ -760,7 +760,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                               </span>
                             )}
                             <span className='ml-2 text-sm text-gray-400'>
-                              User: {config.user_email || config.user_id}
+                              User: {config.user_email || config.userId}
                             </span>
                             {config.is_default && (
                               <span className='ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded'>

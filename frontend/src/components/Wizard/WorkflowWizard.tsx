@@ -100,7 +100,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
         setCurrentQuestion(response.next_question || null);
         setProgress(response.progress || progress);
         if (response.stage) {
-          setSession({ ...session, current_stage: response.stage });
+          setSession({ ...session, currentStage: response.stage });
         }
       }
       setSelectedAnswer(null);
@@ -148,7 +148,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
       setProgress(0);
       setCompletionMessage(null);
       setNextSteps([]);
-      setSession({ ...session, current_stage: WorkflowStage.COURSE_OVERVIEW });
+      setSession({ ...session, currentStage: WorkflowStage.COURSE_OVERVIEW });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to reset session');
     } finally {
@@ -250,7 +250,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
     ];
 
     const currentStageIndex = session
-      ? stages.indexOf(session.current_stage)
+      ? stages.indexOf(session.currentStage)
       : -1;
 
     return (
@@ -322,9 +322,7 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
             </h2>
             <p className='text-gray-600 mt-1'>
               {unitName} -{' '}
-              {session
-                ? STAGE_LABELS[session.current_stage]
-                : 'Initializing...'}
+              {session ? STAGE_LABELS[session.currentStage] : 'Initializing...'}
             </p>
           </div>
           {onCancel && (

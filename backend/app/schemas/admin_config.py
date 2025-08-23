@@ -4,12 +4,13 @@ Schemas for admin configuration management
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from app.models import ConfigCategory
+from app.schemas.base import CamelModel
 
 
-class ConfigBase(BaseModel):
+class ConfigBase(CamelModel):
     """Base configuration schema"""
 
     key: str = Field(..., description="Configuration key")
@@ -29,7 +30,7 @@ class ConfigCreate(ConfigBase):
     """Schema for creating a configuration"""
 
 
-class ConfigUpdate(BaseModel):
+class ConfigUpdate(CamelModel):
     """Schema for updating a configuration"""
 
     value: str | None = Field(None, description="New value")
@@ -40,7 +41,7 @@ class ConfigUpdate(BaseModel):
     allowed_values: list[str] | None = Field(None, description="New allowed values")
 
 
-class ConfigBulkUpdate(BaseModel):
+class ConfigBulkUpdate(CamelModel):
     """Schema for bulk updating configurations"""
 
     updates: dict[str, str] = Field(..., description="Map of key to new value")
@@ -55,7 +56,7 @@ class ConfigResponse(ConfigBase):
     warning: str | None = None
 
 
-class ConfigListResponse(BaseModel):
+class ConfigListResponse(CamelModel):
     """Response schema for configuration list"""
 
     configs: list[ConfigResponse]
@@ -64,7 +65,7 @@ class ConfigListResponse(BaseModel):
     limit: int
 
 
-class ConfigExport(BaseModel):
+class ConfigExport(CamelModel):
     """Schema for configuration export"""
 
     version: str

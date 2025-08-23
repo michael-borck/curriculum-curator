@@ -25,11 +25,11 @@ export interface WorkflowSession {
   name: string;
   unitId: string;
   status: SessionStatus;
-  current_stage: WorkflowStage;
+  currentStage: WorkflowStage;
   progress: number;
   createdAt: string;
   updatedAt: string;
-  message_count: number;
+  messageCount: number;
 }
 
 export interface WorkflowQuestion {
@@ -57,12 +57,12 @@ export interface WorkflowDecision {
 export interface WorkflowStatus {
   session_id: string;
   status: SessionStatus;
-  current_stage: WorkflowStage;
+  currentStage: WorkflowStage;
   progressPercentage: number;
-  decisions_made: Record<string, WorkflowDecision>;
-  message_count: number;
-  can_generate_structure: boolean;
-  duration_minutes?: number;
+  decisionsMade: Record<string, WorkflowDecision>;
+  messageCount: number;
+  canGenerateStructure: boolean;
+  durationMinutes?: number;
 }
 
 export interface WorkflowStageInfo {
@@ -90,7 +90,7 @@ export interface PDFAnalysisResult {
   metadata: {
     title: string;
     page_count: number;
-    word_count: number;
+    wordCount: number;
     has_toc: boolean;
   };
   extracted_content: {
@@ -105,6 +105,6 @@ export interface PDFAnalysisResult {
     title: string;
     level: number;
     page_start: number;
-    word_count: number;
+    wordCount: number;
   }>;
 }

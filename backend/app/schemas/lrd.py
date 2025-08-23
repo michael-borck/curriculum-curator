@@ -6,7 +6,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 class LRDStatus(str, Enum):
@@ -19,7 +21,7 @@ class LRDStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class LRDTargetAudience(BaseModel):
+class LRDTargetAudience(CamelModel):
     """Target audience information"""
 
     level: str = Field(
@@ -32,7 +34,7 @@ class LRDTargetAudience(BaseModel):
     age_group: str | None = Field(None, description="Target age group")
 
 
-class LRDStructure(BaseModel):
+class LRDStructure(CamelModel):
     """Course structure definition"""
 
     pre_class: str | None = Field(None, description="Pre-class activities")
@@ -42,7 +44,7 @@ class LRDStructure(BaseModel):
     hours_per_week: int = Field(3, description="Hours per week")
 
 
-class LRDAssessment(BaseModel):
+class LRDAssessment(CamelModel):
     """Assessment strategy"""
 
     formative: list[dict[str, Any]] = Field(
@@ -56,7 +58,7 @@ class LRDAssessment(BaseModel):
     )
 
 
-class LRDContent(BaseModel):
+class LRDContent(CamelModel):
     """Complete LRD content structure"""
 
     topic: str = Field(..., description="Course topic")
@@ -75,7 +77,7 @@ class LRDContent(BaseModel):
     )
 
 
-class ApprovalRecord(BaseModel):
+class ApprovalRecord(CamelModel):
     """Record of an approval action"""
 
     date: datetime
@@ -85,7 +87,7 @@ class ApprovalRecord(BaseModel):
     comments: str | None = None
 
 
-class LRDBase(BaseModel):
+class LRDBase(CamelModel):
     """Base LRD properties"""
 
     version: str = Field("1.0", description="LRD version")
@@ -99,14 +101,14 @@ class LRDCreate(LRDBase):
     course_id: str
 
 
-class LRDUpdate(BaseModel):
+class LRDUpdate(CamelModel):
     """Properties that can be updated"""
 
     status: LRDStatus | None = None
     content: LRDContent | None = None
 
 
-class LRDApproval(BaseModel):
+class LRDApproval(CamelModel):
     """Approval/rejection request"""
 
     status: LRDStatus = Field(..., description="New status (approved/rejected)")
@@ -129,7 +131,7 @@ class LRDResponse(LRDBase):
         from_attributes = True
 
 
-class LRDListResponse(BaseModel):
+class LRDListResponse(CamelModel):
     """List of LRDs with pagination"""
 
     lrds: list[LRDResponse]
@@ -138,7 +140,7 @@ class LRDListResponse(BaseModel):
     limit: int
 
 
-class TaskGeneration(BaseModel):
+class TaskGeneration(CamelModel):
     """Task generation request from LRD"""
 
     include_optional: bool = Field(True, description="Include optional tasks")
@@ -146,7 +148,7 @@ class TaskGeneration(BaseModel):
     auto_assign: bool = Field(False, description="Auto-assign tasks to modules")
 
 
-class GeneratedTasks(BaseModel):
+class GeneratedTasks(CamelModel):
     """Generated task list from LRD"""
 
     lrd_id: str

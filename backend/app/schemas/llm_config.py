@@ -4,7 +4,9 @@ Schemas for LLM configuration management
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 class LLMProvider(str, Enum):
@@ -15,7 +17,7 @@ class LLMProvider(str, Enum):
     CUSTOM = "custom"
 
 
-class LLMConfigBase(BaseModel):
+class LLMConfigBase(CamelModel):
     provider: LLMProvider
     api_key: str | None = Field(None, description="API key for the provider")
     api_url: str | None = Field(
@@ -34,7 +36,7 @@ class LLMConfigCreate(LLMConfigBase):
     pass
 
 
-class LLMConfigUpdate(BaseModel):
+class LLMConfigUpdate(CamelModel):
     provider: LLMProvider | None = None
     api_key: str | None = None
     api_url: str | None = None
@@ -55,7 +57,7 @@ class LLMConfig(LLMConfigBase):
         from_attributes = True
 
 
-class LLMModelInfo(BaseModel):
+class LLMModelInfo(CamelModel):
     """Information about an available model"""
 
     id: str
@@ -66,7 +68,7 @@ class LLMModelInfo(BaseModel):
     supports_functions: bool = False
 
 
-class LLMTestRequest(BaseModel):
+class LLMTestRequest(CamelModel):
     """Request to test LLM connection"""
 
     provider: LLMProvider
@@ -77,7 +79,7 @@ class LLMTestRequest(BaseModel):
     test_prompt: str = "Hello, please respond with 'Connection successful!'"
 
 
-class LLMTestResponse(BaseModel):
+class LLMTestResponse(CamelModel):
     """Response from LLM connection test"""
 
     success: bool
@@ -87,7 +89,7 @@ class LLMTestResponse(BaseModel):
     error: str | None = None
 
 
-class TokenUsage(BaseModel):
+class TokenUsage(CamelModel):
     """Token usage tracking"""
 
     prompt_tokens: int
@@ -98,7 +100,7 @@ class TokenUsage(BaseModel):
     cost_estimate: float | None = None
 
 
-class UserTokenStats(BaseModel):
+class UserTokenStats(CamelModel):
     """User token usage statistics"""
 
     user_id: str

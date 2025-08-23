@@ -6,7 +6,9 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 class MaterialType(str, Enum):
@@ -36,7 +38,7 @@ class MaterialFormat(str, Enum):
     SLIDES = "slides"
 
 
-class QualityMetrics(BaseModel):
+class QualityMetrics(CamelModel):
     """Quality scoring metrics for materials"""
 
     completeness: float = Field(0.0, ge=0, le=100, description="Content completeness %")
@@ -47,7 +49,7 @@ class QualityMetrics(BaseModel):
     overall: float = Field(0.0, ge=0, le=100, description="Overall quality score %")
 
 
-class MaterialContent(BaseModel):
+class MaterialContent(CamelModel):
     """Structured content for materials"""
 
     format: MaterialFormat = Field(
@@ -71,7 +73,7 @@ class MaterialContent(BaseModel):
     )
 
 
-class MaterialBase(BaseModel):
+class MaterialBase(CamelModel):
     """Base material properties"""
 
     type: MaterialType = Field(..., description="Material type")
@@ -100,7 +102,7 @@ class MaterialCreate(MaterialBase):
     is_draft: bool = Field(True, description="Whether this is a draft")
 
 
-class MaterialUpdate(BaseModel):
+class MaterialUpdate(CamelModel):
     """Properties that can be updated"""
 
     title: str | None = None
@@ -114,7 +116,7 @@ class MaterialUpdate(BaseModel):
     is_draft: bool | None = None
 
 
-class MaterialVersion(BaseModel):
+class MaterialVersion(CamelModel):
     """Version information for a material"""
 
     version: int = Field(..., description="Version number")
@@ -151,7 +153,7 @@ class MaterialResponse(MaterialBase):
         from_attributes = True
 
 
-class MaterialListResponse(BaseModel):
+class MaterialListResponse(CamelModel):
     """List of materials with pagination"""
 
     materials: list[MaterialResponse]
@@ -160,7 +162,7 @@ class MaterialListResponse(BaseModel):
     limit: int
 
 
-class MaterialVersionHistory(BaseModel):
+class MaterialVersionHistory(CamelModel):
     """Version history for a material"""
 
     material_id: str
@@ -169,7 +171,7 @@ class MaterialVersionHistory(BaseModel):
     total_versions: int
 
 
-class MaterialDiff(BaseModel):
+class MaterialDiff(CamelModel):
     """Difference between two material versions"""
 
     from_version: int
@@ -180,7 +182,7 @@ class MaterialDiff(BaseModel):
     modified_sections: list[str] = Field(default_factory=list)
 
 
-class MaterialTemplate(BaseModel):
+class MaterialTemplate(CamelModel):
     """Template for creating materials"""
 
     type: MaterialType
@@ -194,7 +196,7 @@ class MaterialTemplate(BaseModel):
     )
 
 
-class MaterialBulkOperation(BaseModel):
+class MaterialBulkOperation(CamelModel):
     """Bulk operation on materials"""
 
     material_ids: list[str] = Field(..., description="Material IDs to operate on")
@@ -204,7 +206,7 @@ class MaterialBulkOperation(BaseModel):
     data: dict[str, Any] | None = Field(None, description="Operation-specific data")
 
 
-class MaterialImport(BaseModel):
+class MaterialImport(CamelModel):
     """Import materials from external source"""
 
     source_type: str = Field(..., description="Source type: file, url, lms")
@@ -215,7 +217,7 @@ class MaterialImport(BaseModel):
     preserve_formatting: bool = Field(True, description="Preserve original formatting")
 
 
-class MaterialExport(BaseModel):
+class MaterialExport(CamelModel):
     """Export materials configuration"""
 
     format: str = Field(
@@ -226,7 +228,7 @@ class MaterialExport(BaseModel):
     combine_materials: bool = Field(False, description="Combine into single file")
 
 
-class MaterialAnalytics(BaseModel):
+class MaterialAnalytics(CamelModel):
     """Analytics for a material"""
 
     material_id: str
@@ -239,7 +241,7 @@ class MaterialAnalytics(BaseModel):
     engagement_metrics: dict[str, float] = Field(default_factory=dict)
 
 
-class MaterialSearch(BaseModel):
+class MaterialSearch(CamelModel):
     """Search parameters for materials"""
 
     query: str | None = Field(None, description="Search query")
@@ -254,7 +256,7 @@ class MaterialSearch(BaseModel):
     only_latest: bool = Field(True)
 
 
-class MaterialClone(BaseModel):
+class MaterialClone(CamelModel):
     """Clone material request"""
 
     target_course_id: str = Field(..., description="Target course ID")
@@ -266,7 +268,7 @@ class MaterialClone(BaseModel):
     create_as_draft: bool = Field(True, description="Create as draft")
 
 
-class ContentValidation(BaseModel):
+class ContentValidation(CamelModel):
     """Content validation results"""
 
     is_valid: bool

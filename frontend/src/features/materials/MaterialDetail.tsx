@@ -29,15 +29,15 @@ interface Material {
   content: any;
   raw_content?: string;
   version: number;
-  parent_version_id?: string;
-  is_latest: boolean;
-  validation_results?: any;
-  quality_score?: number;
-  generation_context?: any;
-  teaching_philosophy?: string;
+  parentVersionId?: string;
+  isLatest: boolean;
+  validationResults?: any;
+  qualityScore?: number;
+  generationContext?: any;
+  teachingPhilosophy?: string;
   createdAt: string;
   updatedAt: string;
-  word_count?: number;
+  wordCount?: number;
 }
 
 const MaterialDetail: React.FC = () => {
@@ -212,15 +212,15 @@ const MaterialDetail: React.FC = () => {
               </span>
               <span className='flex items-center'>
                 <User className='h-4 w-4 mr-1' />
-                {material.word_count || 0} words
+                {material.wordCount || 0} words
               </span>
-              {material.quality_score !== null &&
-                material.quality_score !== undefined && (
+              {material.qualityScore !== null &&
+                material.qualityScore !== undefined && (
                   <span
-                    className={`flex items-center px-2 py-1 rounded-full ${getStatusColor(material.quality_score)}`}
+                    className={`flex items-center px-2 py-1 rounded-full ${getStatusColor(material.qualityScore)}`}
                   >
                     <CheckCircle className='h-4 w-4 mr-1' />
-                    Quality: {material.quality_score}%
+                    Quality: {material.qualityScore}%
                   </span>
                 )}
             </div>
@@ -362,7 +362,7 @@ const MaterialDetail: React.FC = () => {
                 <div>
                   <dt className='text-sm text-gray-500'>Teaching Philosophy</dt>
                   <dd className='text-sm capitalize'>
-                    {material.teaching_philosophy
+                    {material.teachingPhilosophy
                       ?.replace(/_/g, ' ')
                       .toLowerCase() || 'Not specified'}
                   </dd>
@@ -382,14 +382,14 @@ const MaterialDetail: React.FC = () => {
                 <div>
                   <dt className='text-sm text-gray-500'>Is Latest</dt>
                   <dd className='text-sm'>
-                    {material.is_latest ? 'Yes' : 'No'}
+                    {material.isLatest ? 'Yes' : 'No'}
                   </dd>
                 </div>
-                {material.parent_version_id && (
+                {material.parentVersionId && (
                   <div>
                     <dt className='text-sm text-gray-500'>Parent Version</dt>
                     <dd className='text-sm font-mono'>
-                      {material.parent_version_id}
+                      {material.parentVersionId}
                     </dd>
                   </div>
                 )}
@@ -409,24 +409,24 @@ const MaterialDetail: React.FC = () => {
             </div>
           </div>
 
-          {material.validation_results && (
+          {material.validationResults && (
             <div className='mt-6'>
               <h4 className='font-medium text-gray-700 mb-3'>
                 Validation Results
               </h4>
               <pre className='bg-gray-50 rounded-lg p-4 text-xs overflow-x-auto'>
-                {JSON.stringify(material.validation_results, null, 2)}
+                {JSON.stringify(material.validationResults, null, 2)}
               </pre>
             </div>
           )}
 
-          {material.generation_context && (
+          {material.generationContext && (
             <div className='mt-6'>
               <h4 className='font-medium text-gray-700 mb-3'>
                 Generation Context
               </h4>
               <pre className='bg-gray-50 rounded-lg p-4 text-xs overflow-x-auto'>
-                {JSON.stringify(material.generation_context, null, 2)}
+                {JSON.stringify(material.generationContext, null, 2)}
               </pre>
             </div>
           )}

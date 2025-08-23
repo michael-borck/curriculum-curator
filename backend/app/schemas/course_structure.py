@@ -6,11 +6,13 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.schemas.base import CamelModel
 
 
 # Course Outline Schemas
-class UnitOutlineBase(BaseModel):
+class UnitOutlineBase(CamelModel):
     """Base schema for course outline"""
 
     title: str = Field(..., min_length=1, max_length=500)
@@ -33,7 +35,7 @@ class UnitOutlineCreate(UnitOutlineBase):
     unit_id: UUID
 
 
-class UnitOutlineUpdate(BaseModel):
+class UnitOutlineUpdate(CamelModel):
     """Schema for updating course outline"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -68,7 +70,7 @@ class UnitOutlineResponse(UnitOutlineBase):
 
 
 # Learning Outcome Schemas
-class LearningOutcomeBase(BaseModel):
+class LearningOutcomeBase(CamelModel):
     """Base schema for learning outcome"""
 
     outcome_type: str = Field(..., pattern="^(clo|ulo|wlo)$")
@@ -93,7 +95,7 @@ class LearningOutcomeCreate(LearningOutcomeBase):
     parent_outcome_id: UUID | None = None
 
 
-class LearningOutcomeUpdate(BaseModel):
+class LearningOutcomeUpdate(CamelModel):
     """Schema for updating learning outcome"""
 
     outcome_text: str | None = Field(None, min_length=10)
@@ -122,7 +124,7 @@ class LearningOutcomeResponse(LearningOutcomeBase):
 
 
 # Weekly Topic Schemas
-class WeeklyTopicBase(BaseModel):
+class WeeklyTopicBase(CamelModel):
     """Base schema for weekly topic"""
 
     week_number: int = Field(..., ge=1, le=52)
@@ -155,7 +157,7 @@ class WeeklyTopicCreate(WeeklyTopicBase):
     unit_id: UUID | None = None
 
 
-class WeeklyTopicUpdate(BaseModel):
+class WeeklyTopicUpdate(CamelModel):
     """Schema for updating weekly topic"""
 
     topic_title: str | None = Field(None, min_length=1, max_length=500)
@@ -191,7 +193,7 @@ class WeeklyTopicResponse(WeeklyTopicBase):
 
 
 # Assessment Plan Schemas
-class AssessmentPlanBase(BaseModel):
+class AssessmentPlanBase(CamelModel):
     """Base schema for assessment plan"""
 
     assessment_name: str = Field(..., min_length=1, max_length=500)
@@ -230,7 +232,7 @@ class AssessmentPlanCreate(AssessmentPlanBase):
     unit_id: UUID | None = None
 
 
-class AssessmentPlanUpdate(BaseModel):
+class AssessmentPlanUpdate(CamelModel):
     """Schema for updating assessment plan"""
 
     assessment_name: str | None = Field(None, min_length=1, max_length=500)
@@ -270,7 +272,7 @@ class AssessmentPlanResponse(AssessmentPlanBase):
 
 
 # Chat Session Schemas
-class ChatSessionBase(BaseModel):
+class ChatSessionBase(CamelModel):
     """Base schema for chat session"""
 
     session_name: str | None = Field(None, max_length=500)
@@ -287,7 +289,7 @@ class ChatSessionCreate(ChatSessionBase):
     unit_outline_id: UUID | None = None
 
 
-class ChatSessionUpdate(BaseModel):
+class ChatSessionUpdate(CamelModel):
     """Schema for updating chat session"""
 
     session_name: str | None = Field(None, max_length=500)
@@ -322,7 +324,7 @@ class ChatSessionResponse(ChatSessionBase):
         from_attributes = True
 
 
-class ChatMessage(BaseModel):
+class ChatMessage(CamelModel):
     """Schema for chat message"""
 
     role: str = Field(..., pattern="^(user|assistant|system)$")
@@ -330,7 +332,7 @@ class ChatMessage(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
-class ChatWorkflowStatus(BaseModel):
+class ChatWorkflowStatus(CamelModel):
     """Schema for chat workflow status"""
 
     session_id: UUID

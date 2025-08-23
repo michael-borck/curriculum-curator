@@ -51,7 +51,7 @@ class WorkflowAPI {
     status: string;
     question?: WorkflowQuestion;
     workflow_status?: string;
-    current_stage?: WorkflowStage;
+    currentStage?: WorkflowStage;
     can_generate?: boolean;
   }> {
     const response = await api.get(

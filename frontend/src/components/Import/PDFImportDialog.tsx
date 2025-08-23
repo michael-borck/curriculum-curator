@@ -286,7 +286,7 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
                       <div>
                         <span className='text-gray-500'>Word Count:</span>
                         <span className='ml-2 font-medium'>
-                          {analysisResult.metadata.word_count.toLocaleString()}
+                          {analysisResult.metadata.wordCount.toLocaleString()}
                         </span>
                       </div>
                       <div>
