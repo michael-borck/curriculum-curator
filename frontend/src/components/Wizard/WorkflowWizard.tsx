@@ -89,13 +89,18 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
         selectedAnswer
       );
 
-      if (response.status === 'completed' || response.status === 'ready_to_generate') {
+      if (
+        response.status === 'completed' ||
+        response.status === 'ready_to_generate'
+      ) {
         setCompletionMessage(
           response.message || 'Workflow completed successfully!'
         );
         setNextSteps(response.next_steps || []);
         setCurrentQuestion(null);
-        setProgress(response.status === 'completed' ? 100 : response.progress || progress);
+        setProgress(
+          response.status === 'completed' ? 100 : response.progress || progress
+        );
       } else {
         setCurrentQuestion(response.next_question || null);
         setProgress(response.progress || progress);
@@ -122,11 +127,11 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
         const structureType = useAI ? 'AI-assisted' : 'empty';
         setCompletionMessage(
           `${structureType} unit structure generated successfully! 
-          ${result.structure?.learning_outcomes?.length || 0} learning outcomes, 
-          ${result.structure?.weekly_topics?.length || 0} weekly topics, and 
-          ${result.structure?.assessments?.length || 0} assessments created.`
+          ${result.components?.learning_outcomes || 0} learning outcomes, 
+          ${result.components?.weekly_topics || 0} weekly topics, and 
+          ${result.components?.assessments || 0} assessments created.`
         );
-        if (onComplete) {
+        if (onComplete && result.outline_id) {
           onComplete(result.outline_id);
         }
       } else if (result.status === 'exists') {

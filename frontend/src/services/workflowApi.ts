@@ -88,7 +88,10 @@ class WorkflowAPI {
   /**
    * Generate unit structure from workflow decisions
    */
-  async generateUnitStructure(sessionId: string, useAI: boolean = true): Promise<UnitStructureResult> {
+  async generateUnitStructure(
+    sessionId: string,
+    useAI: boolean = true
+  ): Promise<UnitStructureResult> {
     const response = await api.post(
       `/api/content/workflow/sessions/${sessionId}/generate-structure`,
       { use_ai: useAI }
