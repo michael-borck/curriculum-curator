@@ -72,7 +72,7 @@ class MaterialsService:
 
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to create material: {e}")
+            logger.exception("Failed to create material")
             raise ValueError("Failed to create material") from e
 
     async def update_material(
@@ -101,7 +101,7 @@ class MaterialsService:
             return material
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to update material: {e}")
+            logger.exception("Failed to update material")
             raise ValueError("Update would violate constraints") from e
 
     async def delete_material(

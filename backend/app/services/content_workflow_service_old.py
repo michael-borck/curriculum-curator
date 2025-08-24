@@ -263,7 +263,7 @@ class ContentWorkflowService:
                     session.add_decision("duration_weeks", session.workflow_data["duration_weeks"])
                     self.db.commit()
                     continue
-                
+
                 # Check dependencies
                 if question.depends_on and question.depends_on not in decisions_made:
                     continue
@@ -287,7 +287,7 @@ class ContentWorkflowService:
                 self.db.commit()
                 # Try to get question from new stage
                 return await self.get_next_question(session_id, user_id)
-        
+
         return None
 
     async def submit_answer(
@@ -355,14 +355,14 @@ class ContentWorkflowService:
                 "message": "Workflow completed successfully!",
                 "next_steps": await self._get_completion_next_steps(session),
             }
-        
+
         next_question = await self.get_next_question(session_id, user_id)
-        
+
         # Update progress based on stage and questions answered
         progress = await self._calculate_progress(session)
         session.progress_percentage = progress
         self.db.commit()
-        
+
         if next_question:
             return {
                 "status": "in_progress",
@@ -370,16 +370,15 @@ class ContentWorkflowService:
                 "stage": session.current_stage,
                 "progress": progress,
             }
-        else:
-            # No more questions but not completed - this might be an error state
-            # or we're ready to generate the structure
-            return {
-                "status": "ready_to_generate",
-                "message": f"Stage {session.current_stage} complete. Ready to generate structure.",
-                "stage": session.current_stage,
-                "progress": progress,
-                "next_steps": ["Review your answers", "Generate unit structure"],
-            }
+        # No more questions but not completed - this might be an error state
+        # or we're ready to generate the structure
+        return {
+            "status": "ready_to_generate",
+            "message": f"Stage {session.current_stage} complete. Ready to generate structure.",
+            "stage": session.current_stage,
+            "progress": progress,
+            "next_steps": ["Review your answers", "Generate unit structure"],
+        }
 
     async def _calculate_progress(self, session: WorkflowChatSession) -> float:
         """Calculate overall workflow progress"""
@@ -391,13 +390,13 @@ class ContentWorkflowService:
             WorkflowStage.CONTENT_GENERATION,
             WorkflowStage.QUALITY_REVIEW,
         ]
-        
+
         current_stage_index = stage_order.index(session.current_stage)
         total_stages = len(stage_order)
-        
+
         # Base progress from completed stages
         base_progress = (current_stage_index / total_stages) * 100
-        
+
         # Add progress within current stage
         stage_questions = self.WORKFLOW_QUESTIONS.get(session.current_stage, [])
         if stage_questions:
@@ -405,9 +404,9 @@ class ContentWorkflowService:
             questions_answered = sum(1 for q in stage_questions if q.key in decisions_made)
             stage_progress = (questions_answered / len(stage_questions)) * (100 / total_stages)
             return base_progress + stage_progress
-        
+
         return base_progress
-    
+
     async def _is_stage_complete(self, session: WorkflowChatSession) -> bool:
         """Check if current stage is complete"""
         stage_questions = self.WORKFLOW_QUESTIONS.get(session.current_stage, [])

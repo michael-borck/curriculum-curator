@@ -68,7 +68,7 @@ class ULOService:
 
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to create ULO: {e}")
+            logger.exception("Failed to create ULO")
             raise ValueError(f"ULO with code {ulo_data.code} already exists") from e
 
     async def update_ulo(
@@ -113,7 +113,7 @@ class ULOService:
             return ulo
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to update ULO: {e}")
+            logger.exception("Failed to update ULO")
             raise ValueError("Update would violate constraints") from e
 
     async def delete_ulo(
@@ -272,7 +272,7 @@ class ULOService:
             return created_ulos
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to bulk create ULOs: {e}")
+            logger.exception("Failed to bulk create ULOs")
             raise ValueError("One or more ULO codes already exist") from e
 
     async def get_ulo_coverage(

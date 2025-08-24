@@ -5,11 +5,11 @@ Clean architecture with proper method calls and error handling
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy.orm import Session
 
-from app.models import Unit, User, WorkflowChatSession, WorkflowStage, SessionStatus
+from app.models import SessionStatus, Unit, WorkflowChatSession, WorkflowStage
 
 
 class WorkflowQuestion:
@@ -38,7 +38,7 @@ class ContentWorkflowService:
     """Service for managing content creation workflow"""
 
     # Define workflow questions for each stage
-    WORKFLOW_QUESTIONS = {
+    WORKFLOW_QUESTIONS: ClassVar[dict] = {
         WorkflowStage.COURSE_OVERVIEW: [
             WorkflowQuestion(
                 key="unit_type",
@@ -229,7 +229,7 @@ class ContentWorkflowService:
             # Check if already answered
             if question.key in decisions_made:
                 continue
-                
+
             # Check dependencies
             if question.depends_on and question.depends_on not in decisions_made:
                 continue
@@ -266,7 +266,7 @@ class ContentWorkflowService:
 
         # Record the decision
         session.add_decision(question_key, answer)
-        
+
         # Add to message history
         session.add_message(
             role="user",
@@ -278,26 +278,26 @@ class ContentWorkflowService:
         if await self._is_stage_complete(session):
             # Advance to next stage
             next_stage = self._get_next_stage(session.current_stage)
-            
+
             if next_stage and next_stage != WorkflowStage.COMPLETED:
                 session.advance_stage()
                 self.db.commit()
-                
+
                 # Get next question from new stage
                 next_question = await self.get_next_question(session_id, user_id)
-                
+
                 return {
                     "status": "in_progress",
                     "next_question": next_question,
                     "stage": session.current_stage,
                     "progress": session.progress_percentage,
                 }
-            elif next_stage == WorkflowStage.COMPLETED:
+            if next_stage == WorkflowStage.COMPLETED:
                 # Questions complete, ready to generate structure
                 session.current_stage = WorkflowStage.COMPLETED
                 session.progress_percentage = 100
                 self.db.commit()
-                
+
                 return {
                     "status": "ready_to_generate",
                     "message": "All questions completed! Choose how to create your unit structure.",
@@ -312,29 +312,27 @@ class ContentWorkflowService:
                         "Generate unit structure"
                     ],
                 }
-            else:
-                # No more stages, ready to generate
-                return {
-                    "status": "ready_to_generate",
-                    "message": "All questions answered. Ready to generate unit structure.",
-                    "stage": session.current_stage,
-                    "progress": session.progress_percentage,
-                    "next_steps": [
-                        "Review your answers",
-                        "Generate unit structure"
-                    ],
-                }
-        else:
-            # Stage not complete, get next question
-            self.db.commit()
-            next_question = await self.get_next_question(session_id, user_id)
-            
+            # No more stages, ready to generate
             return {
-                "status": "in_progress",
-                "next_question": next_question,
+                "status": "ready_to_generate",
+                "message": "All questions answered. Ready to generate unit structure.",
                 "stage": session.current_stage,
                 "progress": session.progress_percentage,
+                "next_steps": [
+                    "Review your answers",
+                    "Generate unit structure"
+                ],
             }
+        # Stage not complete, get next question
+        self.db.commit()
+        next_question = await self.get_next_question(session_id, user_id)
+
+        return {
+            "status": "in_progress",
+            "next_question": next_question,
+            "stage": session.current_stage,
+            "progress": session.progress_percentage,
+        }
 
     async def _is_stage_complete(self, session: WorkflowChatSession) -> bool:
         """Check if all required questions in current stage are answered"""
@@ -363,7 +361,7 @@ class ContentWorkflowService:
             if current_index < len(question_stages) - 1:
                 return question_stages[current_index + 1]
             # After WEEKLY_PLANNING, we're done with questions
-            elif current_stage == WorkflowStage.WEEKLY_PLANNING:
+            if current_stage == WorkflowStage.WEEKLY_PLANNING:
                 return WorkflowStage.COMPLETED  # Ready to generate structure
         except ValueError:
             pass
@@ -375,10 +373,10 @@ class ContentWorkflowService:
         session = self.db.query(WorkflowChatSession).filter(
             WorkflowChatSession.id == session_id
         ).first()
-        
+
         if not session:
             raise ValueError("Session not found")
-            
+
         # Reset session state
         session.current_stage = WorkflowStage.COURSE_OVERVIEW
         session.decisions_made = {}
@@ -387,16 +385,16 @@ class ContentWorkflowService:
         session.progress_percentage = 0.0
         session.stages_completed = []
         session.status = SessionStatus.ACTIVE
-        
+
         # Re-add duration_weeks if available
         if session.workflow_data.get("duration_weeks"):
             session.add_decision("duration_weeks", session.workflow_data["duration_weeks"])
-        
+
         self.db.commit()
-        
+
         # Get first question
         first_question = await self.get_next_question(session_id, session.user_id)
-        
+
         return {
             "status": "reset",
             "message": "Session reset successfully",
@@ -432,16 +430,16 @@ class ContentWorkflowService:
         """Check if enough information is collected to generate structure"""
         # At minimum, need to complete COURSE_OVERVIEW and LEARNING_OUTCOMES
         required_stages = [WorkflowStage.COURSE_OVERVIEW, WorkflowStage.LEARNING_OUTCOMES]
-        
+
         for stage in required_stages:
             # Check if all questions in this stage are answered
             stage_questions = self.WORKFLOW_QUESTIONS.get(stage, [])
             decisions_made = session.decisions_made or {}
-            
+
             for question in stage_questions:
                 if question.required and question.key not in decisions_made:
                     return False
-                    
+
         return True
 
     async def generate_unit_structure(
@@ -449,7 +447,7 @@ class ContentWorkflowService:
     ) -> dict[str, Any]:
         """
         Generate unit structure based on workflow decisions
-        
+
         Args:
             session_id: The workflow session ID
             user_id: The user ID
@@ -473,7 +471,7 @@ class ContentWorkflowService:
         # Get context from decisions
         decisions = session.decisions_made or {}
         unit = self.db.query(Unit).filter(Unit.id == session.unit_id).first()
-        
+
         if use_ai:
             # Generate AI-assisted structure with suggestions
             structure = await self._generate_ai_structure(session, unit, decisions)
@@ -482,11 +480,11 @@ class ContentWorkflowService:
             # Generate empty structure for manual completion
             structure = await self._generate_empty_structure(session, unit, decisions)
             message = "Empty unit structure created for manual completion"
-        
+
         # Mark session as complete
         session.mark_completed()
         self.db.commit()
-        
+
         return {
             "status": "success",
             "message": message,
@@ -494,7 +492,7 @@ class ContentWorkflowService:
             "outline_id": str(uuid.uuid4()),  # TODO: Create actual outline in DB
             "structure": structure,
         }
-    
+
     async def _generate_ai_structure(
         self, session: WorkflowChatSession, unit: Unit, decisions: dict
     ) -> dict[str, Any]:
@@ -515,25 +513,25 @@ class ContentWorkflowService:
             "formative_assessment": decisions.get("formative_assessment", {}).get("value", "Yes, occasionally"),
             "weekly_structure": decisions.get("weekly_structure", {}).get("value", "Lecture + Tutorial"),
         }
-        
+
         # TODO: Call LLM service to generate suggestions based on context
         # For now, return a structured template with example suggestions
-        
+
         num_weeks = int(context["duration_weeks"])
-        
+
         return {
             "learning_outcomes": self._generate_sample_clos(context),
             "weekly_topics": self._generate_weekly_topics(num_weeks, context),
             "assessments": self._generate_assessment_plan(context),
             "teaching_activities": self._generate_teaching_activities(context),
         }
-    
+
     async def _generate_empty_structure(
         self, session: WorkflowChatSession, unit: Unit, decisions: dict
     ) -> dict[str, Any]:
         """Generate empty structure for manual completion"""
         num_weeks = int(session.workflow_data.get("duration_weeks", 12))
-        
+
         # Extract assessment count
         assessment_count_str = decisions.get("assessment_count", {}).get("value", "4-5 assessments")
         if "2-3" in assessment_count_str:
@@ -542,10 +540,10 @@ class ContentWorkflowService:
             num_assessments = 4
         else:
             num_assessments = 6
-            
+
         return {
             "learning_outcomes": [
-                {"id": i, "description": "", "bloom_level": ""} 
+                {"id": i, "description": "", "bloom_level": ""}
                 for i in range(1, 6)
             ],
             "weekly_topics": [
@@ -563,7 +561,7 @@ class ContentWorkflowService:
                 "online": []
             }
         }
-    
+
     def _generate_sample_clos(self, context: dict) -> list[dict]:
         """Generate sample CLOs based on context (for AI-assisted)"""
         # This is a placeholder - real implementation would use LLM
@@ -594,7 +592,7 @@ class ContentWorkflowService:
                 "bloom_level": "Creating"
             }
         ]
-    
+
     def _generate_weekly_topics(self, num_weeks: int, context: dict) -> list[dict]:
         """Generate weekly topic suggestions (for AI-assisted)"""
         # This is a placeholder - real implementation would use LLM
@@ -608,7 +606,7 @@ class ContentWorkflowService:
                 topic = "Mid-semester Review and Integration"
             else:
                 topic = f"Module {week - 1}: Topic to be defined"
-                
+
             topics.append({
                 "week": week,
                 "topic": topic,
@@ -616,12 +614,12 @@ class ContentWorkflowService:
                 "activities": [context['weekly_structure']]
             })
         return topics
-    
+
     def _generate_assessment_plan(self, context: dict) -> list[dict]:
         """Generate assessment suggestions (for AI-assisted)"""
         # This is a placeholder - real implementation would use LLM
         assessments = []
-        
+
         if "2-3" in context["assessment_count"]:
             assessments = [
                 {"id": 1, "name": "Assignment 1", "type": "Individual Assignment", "weight": "30%", "due_week": 5},
@@ -646,9 +644,9 @@ class ContentWorkflowService:
                     "weight": f"{100//6}%",
                     "due_week": i * 2
                 })
-                
+
         return assessments
-    
+
     def _generate_teaching_activities(self, context: dict) -> dict:
         """Generate teaching activity suggestions (for AI-assisted)"""
         # This is a placeholder - real implementation would use LLM
@@ -658,7 +656,7 @@ class ContentWorkflowService:
             "labs": [],
             "online": []
         }
-        
+
         if "Lecture" in context["weekly_structure"]:
             activities["lectures"] = ["2-hour weekly lectures covering theoretical concepts"]
         if "Tutorial" in context["weekly_structure"]:
@@ -667,7 +665,7 @@ class ContentWorkflowService:
             activities["labs"] = ["2-hour weekly practical sessions"]
         if context["delivery_mode"] in ["Online", "Blended/Hybrid"]:
             activities["online"] = ["Asynchronous online materials and discussion forums"]
-            
+
         return activities
 
     async def _get_completion_next_steps(self, session: WorkflowChatSession) -> list[str]:
@@ -683,13 +681,13 @@ class ContentWorkflowService:
         """Generate a summary of decisions made in current stage"""
         stage = session.current_stage
         decisions = session.decisions_made or {}
-        
+
         stage_questions = self.WORKFLOW_QUESTIONS.get(stage, [])
         summary_parts = []
-        
+
         for question in stage_questions:
             if question.key in decisions:
                 value = decisions[question.key].get("value") if isinstance(decisions[question.key], dict) else decisions[question.key]
                 summary_parts.append(f"{question.question}: {value}")
-                
+
         return f"Stage '{stage}' completed. Decisions: " + "; ".join(summary_parts)

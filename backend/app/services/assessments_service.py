@@ -57,7 +57,7 @@ class AssessmentsService:
 
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to create assessment: {e}")
+            logger.exception("Failed to create assessment")
             raise ValueError("Failed to create assessment") from e
 
     async def update_assessment(
@@ -90,7 +90,7 @@ class AssessmentsService:
             return assessment
         except IntegrityError as e:
             db.rollback()
-            logger.error(f"Failed to update assessment: {e}")
+            logger.exception("Failed to update assessment")
             raise ValueError("Update would violate constraints") from e
 
     async def delete_assessment(

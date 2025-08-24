@@ -39,7 +39,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_weekly_materials_unit_id'), 'weekly_materials', ['unit_id'], unique=False)
     op.create_index(op.f('ix_weekly_materials_week_number'), 'weekly_materials', ['week_number'], unique=False)
     op.create_index(op.f('ix_weekly_materials_type'), 'weekly_materials', ['type'], unique=False)
-    
+
     # Create assessments table (doesn't exist yet)
     op.create_table('assessments',
         sa.Column('id', GUID(), nullable=False),
@@ -69,7 +69,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_assessments_unit_id'), 'assessments', ['unit_id'], unique=False)
     op.create_index(op.f('ix_assessments_type'), 'assessments', ['type'], unique=False)
     op.create_index(op.f('ix_assessments_category'), 'assessments', ['category'], unique=False)
-    
+
     # Create local_learning_outcomes table
     op.create_table('local_learning_outcomes',
         sa.Column('id', GUID(), nullable=False),
@@ -82,7 +82,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_local_learning_outcomes_material_id'), 'local_learning_outcomes', ['material_id'], unique=False)
-    
+
     # Create weekly_learning_outcomes table
     op.create_table('weekly_learning_outcomes',
         sa.Column('id', GUID(), nullable=False),
@@ -97,7 +97,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_weekly_learning_outcomes_unit_id'), 'weekly_learning_outcomes', ['unit_id'], unique=False)
     op.create_index(op.f('ix_weekly_learning_outcomes_week_number'), 'weekly_learning_outcomes', ['week_number'], unique=False)
-    
+
     # Create assessment_learning_outcomes table
     op.create_table('assessment_learning_outcomes',
         sa.Column('id', GUID(), nullable=False),
@@ -110,9 +110,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_assessment_learning_outcomes_assessment_id'), 'assessment_learning_outcomes', ['assessment_id'], unique=False)
-    
+
     # Create mapping tables
-    
+
     # Material to ULO mappings
     op.create_table('material_ulo_mappings',
         sa.Column('material_id', GUID(), nullable=False),
@@ -122,7 +122,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['ulo_id'], ['unit_learning_outcomes.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('material_id', 'ulo_id')
     )
-    
+
     # Assessment to ULO mappings
     op.create_table('assessment_ulo_mappings',
         sa.Column('assessment_id', GUID(), nullable=False),
@@ -132,7 +132,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['ulo_id'], ['unit_learning_outcomes.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('assessment_id', 'ulo_id')
     )
-    
+
     # Weekly Learning Outcome to ULO mappings
     op.create_table('wlo_ulo_mappings',
         sa.Column('wlo_id', GUID(), nullable=False),
@@ -142,7 +142,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['ulo_id'], ['unit_learning_outcomes.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('wlo_id', 'ulo_id')
     )
-    
+
     # Assessment to Material links
     op.create_table('assessment_material_links',
         sa.Column('assessment_id', GUID(), nullable=False),
@@ -160,12 +160,12 @@ def downgrade() -> None:
     op.drop_table('wlo_ulo_mappings')
     op.drop_table('assessment_ulo_mappings')
     op.drop_table('material_ulo_mappings')
-    
+
     # Drop learning outcome tables
     op.drop_table('assessment_learning_outcomes')
     op.drop_table('weekly_learning_outcomes')
     op.drop_table('local_learning_outcomes')
-    
+
     # Drop main tables
     op.drop_table('assessments')
     op.drop_table('weekly_materials')
