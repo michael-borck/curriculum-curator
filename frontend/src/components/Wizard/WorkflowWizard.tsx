@@ -89,13 +89,13 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
         selectedAnswer
       );
 
-      if (response.status === 'completed') {
+      if (response.status === 'completed' || response.status === 'ready_to_generate') {
         setCompletionMessage(
           response.message || 'Workflow completed successfully!'
         );
         setNextSteps(response.next_steps || []);
         setCurrentQuestion(null);
-        setProgress(100);
+        setProgress(response.status === 'completed' ? 100 : response.progress || progress);
       } else {
         setCurrentQuestion(response.next_question || null);
         setProgress(response.progress || progress);
@@ -111,16 +111,20 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
     }
   };
 
-  const handleGenerateStructure = async () => {
+  const handleGenerateStructure = async (useAI: boolean = true) => {
     if (!session) return;
 
     setLoading(true);
     setError(null);
     try {
-      const result = await workflowApi.generateUnitStructure(session.id);
-      if (result.status === 'success' && result.outline_id) {
+      const result = await workflowApi.generateUnitStructure(session.id, useAI);
+      if (result.status === 'success') {
+        const structureType = useAI ? 'AI-assisted' : 'empty';
         setCompletionMessage(
-          `Unit structure generated successfully! Created ${result.components?.learning_outcomes} learning outcomes, ${result.components?.weekly_topics} weekly topics, and ${result.components?.assessments} assessments.`
+          `${structureType} unit structure generated successfully! 
+          ${result.structure?.learning_outcomes?.length || 0} learning outcomes, 
+          ${result.structure?.weekly_topics?.length || 0} weekly topics, and 
+          ${result.structure?.assessments?.length || 0} assessments created.`
         );
         if (onComplete) {
           onComplete(result.outline_id);
@@ -373,13 +377,22 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
               </div>
 
               {session?.status !== SessionStatus.COMPLETED && (
-                <button
-                  onClick={handleGenerateStructure}
-                  className='w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center'
-                >
-                  <FileText className='w-5 h-5 mr-2' />
-                  Generate Unit Structure
-                </button>
+                <div className='space-y-3'>
+                  <button
+                    onClick={() => handleGenerateStructure(true)}
+                    className='w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center'
+                  >
+                    <FileText className='w-5 h-5 mr-2' />
+                    Generate with AI Assistance
+                  </button>
+                  <button
+                    onClick={() => handleGenerateStructure(false)}
+                    className='w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center'
+                  >
+                    <FileText className='w-5 h-5 mr-2' />
+                    Create Empty Structure
+                  </button>
+                </div>
               )}
             </div>
           ) : currentQuestion ? (

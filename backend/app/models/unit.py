@@ -139,6 +139,14 @@ class Unit(Base):
         cascade="all, delete-orphan",
     )
 
+    # New relationships for unit structure
+    weekly_materials = relationship(
+        "WeeklyMaterial", back_populates="unit", cascade="all, delete-orphan"
+    )
+    assessments = relationship(
+        "Assessment", back_populates="unit", cascade="all, delete-orphan"
+    )
+
     # Add composite unique constraint for code + year + semester per owner
     __table_args__ = (
         UniqueConstraint(

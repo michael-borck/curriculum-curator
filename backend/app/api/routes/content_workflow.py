@@ -5,6 +5,7 @@ API routes for guided content creation workflow
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -14,10 +15,23 @@ from app.services.content_workflow_service import ContentWorkflowService
 router = APIRouter()
 
 
+class WorkflowAnswerRequest(BaseModel):
+    question_key: str
+    answer: Any
+
+
+class WorkflowSessionRequest(BaseModel):
+    session_name: str | None = None
+
+
+class GenerateStructureRequest(BaseModel):
+    use_ai: bool = True  # Default to AI-assisted
+
+
 @router.post("/workflow/sessions/create/{unit_id}")
 async def create_workflow_session(
     unit_id: str,
-    session_name: str | None = None,
+    request: WorkflowSessionRequest,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -38,7 +52,7 @@ async def create_workflow_session(
         session = await workflow_service.create_workflow_session(
             unit_id=unit_id,
             user_id=str(current_user.id),
-            session_name=session_name,
+            session_name=request.session_name,
         )
 
         # Get first question
@@ -132,8 +146,7 @@ async def get_next_question(
 @router.post("/workflow/sessions/{session_id}/answer")
 async def submit_workflow_answer(
     session_id: str,
-    question_key: str,
-    answer: Any,
+    request: WorkflowAnswerRequest,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
@@ -151,8 +164,8 @@ async def submit_workflow_answer(
         return await workflow_service.submit_answer(
             session_id=session_id,
             user_id=str(current_user.id),
-            question_key=question_key,
-            answer=answer,
+            question_key=request.question_key,
+            answer=request.answer,
         )
 
     except ValueError as e:
@@ -165,23 +178,29 @@ async def submit_workflow_answer(
 @router.post("/workflow/sessions/{session_id}/generate-structure")
 async def generate_unit_structure(
     session_id: str,
+    request: GenerateStructureRequest,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
     Generate unit structure based on workflow decisions
 
+    Args:
+        use_ai: If true, generates AI-assisted structure with suggestions.
+                If false, creates empty structure for manual completion.
+
     This creates:
     - Unit outline with description
-    - Learning outcomes based on pedagogy choices
-    - Weekly topics following the selected pattern
-    - Assessment plan matching the chosen strategy
+    - Learning outcomes (AI-suggested or empty templates)
+    - Weekly topics (AI-suggested or empty templates)
+    - Assessment plan (AI-suggested or empty templates)
     """
     try:
         workflow_service = ContentWorkflowService(db)
         return await workflow_service.generate_unit_structure(
             session_id=session_id,
             user_id=str(current_user.id),
+            use_ai=request.use_ai,
         )
 
     except ValueError as e:

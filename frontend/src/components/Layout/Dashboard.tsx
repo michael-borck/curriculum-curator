@@ -44,10 +44,9 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-    { icon: BookOpen, label: 'My Units', path: '/units' },
     {
       icon: Layout,
-      label: 'Unit Structure',
+      label: 'Create Unit Structure',
       submenu: [
         { icon: Wand2, label: 'Guided Workflow', path: '/workflow/guided' },
         { icon: FileText, label: 'Manual Structure', path: '/workflow/manual' },
