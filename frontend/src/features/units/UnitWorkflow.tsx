@@ -144,6 +144,13 @@ const UnitWorkflow: React.FC = () => {
 
           <div className='flex gap-2'>
             <button
+              onClick={() => navigate(`/units/${unitId}/structure`)}
+              className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2'
+            >
+              <Target size={18} />
+              Manage Structure
+            </button>
+            <button
               onClick={() => navigate(`/content/new?unitId=${unitId}`)}
               className='px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2'
             >
@@ -231,11 +238,7 @@ const UnitWorkflow: React.FC = () => {
                 detail
               </p>
               <button
-                onClick={() =>
-                  window.alert(
-                    'Manual structure editor coming soon! For now, use the Guided Workflow or PDF Import.'
-                  )
-                }
+                onClick={() => navigate(`/units/${unitId}/structure`)}
                 className='w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700'
               >
                 Create Manually

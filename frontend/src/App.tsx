@@ -24,6 +24,7 @@ import TeachingStyle from './features/teaching/TeachingStyle';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
 import { useAuthStore } from './stores/authStore';
+import UnitStructure from './features/units/UnitStructure';
 
 function App() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -61,6 +62,7 @@ function App() {
             <Route path='/units' element={<UnitManager />} />
             <Route path='/courses' element={<Navigate to='/units' replace />} />
             <Route path='/units/:unitId/dashboard' element={<UnitWorkflow />} />
+            <Route path='/units/:unitId/structure' element={<UnitStructure />} />
             <Route path='/units/:id' element={<UnitView />} />
 
             {/* Content Creation */}

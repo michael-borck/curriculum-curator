@@ -12,6 +12,7 @@ import {
   Loader2,
   CheckCircle,
   Clock,
+  Target,
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -370,6 +371,16 @@ const UnitManager = () => {
                 {/* Actions */}
                 <div className='flex justify-between items-center'>
                   <div className='flex space-x-2'>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/units/${unit.id}/structure`);
+                      }}
+                      className='p-2 text-purple-600 hover:bg-purple-50 rounded-lg'
+                      title='Unit Structure'
+                    >
+                      <Target className='h-4 w-4' />
+                    </button>
                     <button
                       onClick={e => {
                         e.stopPropagation();

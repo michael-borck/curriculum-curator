@@ -43,6 +43,7 @@ const Dashboard = ({ children, onLogout }: DashboardProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: GraduationCap, label: 'My Units', path: '/units' },
     {
       icon: Layout,
       label: 'Create Unit Structure',
