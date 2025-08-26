@@ -17,8 +17,8 @@ def run_tests_without_rate_limit():
 
     # Set environment variables to disable rate limiting
     env = os.environ.copy()
-    env['TESTING'] = 'true'
-    env['DISABLE_RATE_LIMIT'] = 'true'
+    env["TESTING"] = "true"
+    env["DISABLE_RATE_LIMIT"] = "true"
 
     # Clear any existing login attempts from the database
     print("\nClearing login attempts and security logs...")
@@ -39,18 +39,20 @@ print("✓ Cleared security records")
 time.sleep(2)  # Give database time to commit
 """
 
-    subprocess.run([sys.executable, '-c', clear_script], check=False, env=env)
+    subprocess.run([sys.executable, "-c", clear_script], check=False, env=env)
 
     # Run pytest with coverage
     cmd = [
-        sys.executable, '-m', 'pytest',
-        '--cov=app',
-        '--cov-report=term-missing:skip-covered',
-        '--cov-report=html',
-        '--tb=short',
-        '-v',
-        '--maxfail=5',  # Stop after 5 failures
-        '-x',  # Stop on first failure
+        sys.executable,
+        "-m",
+        "pytest",
+        "--cov=app",
+        "--cov-report=term-missing:skip-covered",
+        "--cov-report=html",
+        "--tb=short",
+        "-v",
+        "--maxfail=5",  # Stop after 5 failures
+        "-x",  # Stop on first failure
     ]
 
     result = subprocess.run(cmd, check=False, env=env)
@@ -61,6 +63,7 @@ time.sleep(2)  # Give database time to commit
     print("=" * 60)
 
     return result.returncode
+
 
 if __name__ == "__main__":
     sys.exit(run_tests_without_rate_limit())

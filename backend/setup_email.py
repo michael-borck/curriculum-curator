@@ -48,7 +48,11 @@ class EmailSetup:
             with self.env_file.open() as f:
                 for line in f:
                     line_content = line.strip()
-                    if line_content and not line_content.startswith("#") and "=" in line_content:
+                    if (
+                        line_content
+                        and not line_content.startswith("#")
+                        and "=" in line_content
+                    ):
                         key, value = line_content.split("=", 1)
                         self.env_vars[key.strip()] = value.strip().strip('"').strip("'")
 

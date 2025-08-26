@@ -5,6 +5,7 @@ Revises: 93df335a628a
 Create Date: 2025-08-21 16:14:07.423536
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '340f082dc2fc'
-down_revision: str | Sequence[str] | None = '93df335a628a'
+revision: str = "340f082dc2fc"
+down_revision: str | Sequence[str] | None = "93df335a628a"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

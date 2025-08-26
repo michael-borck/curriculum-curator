@@ -75,10 +75,10 @@ export interface WorkflowStageInfo {
 export interface UnitStructureResult {
   status: 'success' | 'exists' | 'error';
   message: string;
-  outline_id?: string;
+  outlineId?: string;
   components?: {
-    learning_outcomes: number;
-    weekly_topics: number;
+    learningOutcomes: number;
+    weeklyTopics: number;
     assessments: number;
   };
 }

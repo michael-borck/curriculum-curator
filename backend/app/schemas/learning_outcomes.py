@@ -6,12 +6,16 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.schemas.base import CamelModel
+
 
 # Unit Learning Outcome schemas
-class ULOBase(BaseModel):
+class ULOBase(CamelModel):
     """Base schema for Unit Learning Outcomes"""
 
-    code: str = Field(..., min_length=1, max_length=20, description="Outcome code (e.g., ULO1)")
+    code: str = Field(
+        ..., min_length=1, max_length=20, description="Outcome code (e.g., ULO1)"
+    )
     description: str = Field(..., min_length=1, description="Outcome description")
     bloom_level: str = Field(..., description="Bloom's taxonomy level")
     order_index: int = Field(default=0, ge=0, description="Display order")
@@ -21,8 +25,7 @@ class ULOCreate(ULOBase):
     """Schema for creating a Unit Learning Outcome"""
 
 
-
-class ULOUpdate(BaseModel):
+class ULOUpdate(CamelModel):
     """Schema for updating a Unit Learning Outcome"""
 
     code: str | None = Field(None, min_length=1, max_length=20)
@@ -63,7 +66,6 @@ class WLOCreate(WLOBase):
     """Schema for creating a Weekly Learning Outcome"""
 
 
-
 class WLOUpdate(BaseModel):
     """Schema for updating a Weekly Learning Outcome"""
 
@@ -94,7 +96,6 @@ class LLOBase(BaseModel):
 
 class LLOCreate(LLOBase):
     """Schema for creating a Local Learning Outcome"""
-
 
 
 class LLOUpdate(BaseModel):
@@ -128,7 +129,6 @@ class ALOCreate(ALOBase):
     """Schema for creating an Assessment Learning Outcome"""
 
 
-
 class ALOUpdate(BaseModel):
     """Schema for updating an Assessment Learning Outcome"""
 
@@ -152,7 +152,9 @@ class ALOResponse(ALOBase):
 class OutcomeReorder(BaseModel):
     """Schema for reordering outcomes"""
 
-    outcome_ids: list[str] = Field(..., min_length=1, description="Ordered list of outcome IDs")
+    outcome_ids: list[str] = Field(
+        ..., min_length=1, description="Ordered list of outcome IDs"
+    )
 
 
 # Bulk operations
@@ -166,4 +168,6 @@ class BulkWLOCreate(BaseModel):
     """Schema for creating multiple WLOs at once"""
 
     week_number: int = Field(..., ge=1, le=52)
-    outcomes: list[str] = Field(..., min_length=1, max_length=20, description="List of outcome descriptions")
+    outcomes: list[str] = Field(
+        ..., min_length=1, max_length=20, description="List of outcome descriptions"
+    )

@@ -282,7 +282,9 @@ async def delete_assessment(
     return {"message": "Assessment deleted successfully"}
 
 
-@router.get("/units/{unit_id}/assessments/grade-distribution", response_model=GradeDistribution)
+@router.get(
+    "/units/{unit_id}/assessments/grade-distribution", response_model=GradeDistribution
+)
 async def get_grade_distribution(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -308,7 +310,9 @@ async def validate_assessment_weights(
     )
 
 
-@router.get("/units/{unit_id}/assessments/timeline", response_model=list[AssessmentTimeline])
+@router.get(
+    "/units/{unit_id}/assessments/timeline", response_model=list[AssessmentTimeline]
+)
 async def get_assessment_timeline(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -369,7 +373,9 @@ async def get_assessment_workload(
     )
 
 
-@router.put("/assessments/{assessment_id}/mappings", response_model=AssessmentWithOutcomes)
+@router.put(
+    "/assessments/{assessment_id}/mappings", response_model=AssessmentWithOutcomes
+)
 async def update_assessment_mappings(
     assessment_id: UUID,
     mapping_data: AssessmentMapping,
@@ -441,7 +447,9 @@ async def update_assessment_mappings(
         ) from e
 
 
-@router.put("/assessments/{assessment_id}/materials", response_model=AssessmentWithOutcomes)
+@router.put(
+    "/assessments/{assessment_id}/materials", response_model=AssessmentWithOutcomes
+)
 async def update_assessment_materials(
     assessment_id: UUID,
     link_data: AssessmentMaterialLink,

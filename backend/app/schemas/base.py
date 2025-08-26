@@ -1,14 +1,15 @@
 """
 Base Pydantic model with camelCase serialization support
 """
+
 from pydantic import BaseModel, ConfigDict
 
 
 def snake_to_camel(snake_str: str) -> str:
     """Convert snake_case to camelCase for JSON serialization"""
-    components = snake_str.split('_')
+    components = snake_str.split("_")
     # Keep the first component as-is, capitalize the rest
-    return components[0] + ''.join(x.title() for x in components[1:])
+    return components[0] + "".join(x.title() for x in components[1:])
 
 
 class CamelModel(BaseModel):
@@ -20,6 +21,7 @@ class CamelModel(BaseModel):
     - Input: Accepts both camelCase and snake_case
     - Python: Always snake_case internally
     """
+
     model_config = ConfigDict(
         # Convert snake_case to camelCase for JSON output
         alias_generator=snake_to_camel,
@@ -33,5 +35,5 @@ class CamelModel(BaseModel):
         # (you can override this per model if needed)
         json_encoders={
             # Add any custom encoders here if needed
-        }
+        },
     )

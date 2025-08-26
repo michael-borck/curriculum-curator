@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 interface UnitStructureDashboardProps {
   unitId: string;
   unitName?: string;
+  durationWeeks?: number;
 }
 
 type TabType =
@@ -57,6 +58,7 @@ const StatCard: React.FC<{
 export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
   unitId,
   unitName = 'Unit',
+  durationWeeks = 12,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -363,11 +365,13 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                 onChange={e => setSelectedWeek(parseInt(e.target.value))}
                 className='block w-full md:w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
               >
-                {Array.from({ length: 52 }, (_, i) => i + 1).map(week => (
-                  <option key={week} value={week}>
-                    Week {week}
-                  </option>
-                ))}
+                {Array.from({ length: durationWeeks }, (_, i) => i + 1).map(
+                  week => (
+                    <option key={week} value={week}>
+                      Week {week}
+                    </option>
+                  )
+                )}
               </select>
             </div>
 

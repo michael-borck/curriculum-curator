@@ -222,7 +222,9 @@ class ULOService:
             ulo.sequence_order = index
 
         db.commit()
-        logger.info(f"Reordered {len(reorder_data.outcome_ids)} ULOs for unit {unit_id}")
+        logger.info(
+            f"Reordered {len(reorder_data.outcome_ids)} ULOs for unit {unit_id}"
+        )
 
         return await self.get_ulos_by_unit(db, unit_id)
 

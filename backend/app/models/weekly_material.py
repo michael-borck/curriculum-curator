@@ -64,7 +64,9 @@ class WeeklyMaterial(Base):
     # Content and metadata
     duration_minutes = Column(Integer, nullable=True)  # Estimated time to complete
     file_path = Column(String(500), nullable=True)  # Path to git-stored content
-    material_metadata = Column("metadata", JSON, nullable=True)  # Additional data (pages, questions, etc.)
+    material_metadata = Column(
+        "metadata", JSON, nullable=True
+    )  # Additional data (pages, questions, etc.)
 
     # Organization
     order_index = Column(Integer, nullable=False, default=0)
@@ -88,16 +90,14 @@ class WeeklyMaterial(Base):
 
     # Many-to-many with ULOs through mapping table
     learning_outcomes = relationship(
-        "UnitLearningOutcome",
-        secondary="material_ulo_mappings",
-        backref="materials"
+        "UnitLearningOutcome", secondary="material_ulo_mappings", backref="materials"
     )
 
     # Many-to-many with assessments through mapping table
     assessments = relationship(
         "Assessment",
         secondary="assessment_material_links",
-        back_populates="linked_materials"
+        back_populates="linked_materials",
     )
 
     def __repr__(self):
@@ -106,7 +106,10 @@ class WeeklyMaterial(Base):
     @property
     def is_complete(self) -> bool:
         """Check if material is complete"""
-        return self.status in [MaterialStatus.COMPLETE.value, MaterialStatus.PUBLISHED.value]
+        return self.status in [
+            MaterialStatus.COMPLETE.value,
+            MaterialStatus.PUBLISHED.value,
+        ]
 
     @property
     def estimated_hours(self) -> float:

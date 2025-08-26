@@ -62,7 +62,10 @@ function App() {
             <Route path='/units' element={<UnitManager />} />
             <Route path='/courses' element={<Navigate to='/units' replace />} />
             <Route path='/units/:unitId/dashboard' element={<UnitWorkflow />} />
-            <Route path='/units/:unitId/structure' element={<UnitStructure />} />
+            <Route
+              path='/units/:unitId/structure'
+              element={<UnitStructure />}
+            />
             <Route path='/units/:id' element={<UnitView />} />
 
             {/* Content Creation */}

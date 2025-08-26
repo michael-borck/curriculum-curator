@@ -303,7 +303,9 @@ const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
   };
 
   const handleDelete = async (uloId: string) => {
-    if (!window.confirm('Are you sure you want to delete this learning outcome?')) {
+    if (
+      !window.confirm('Are you sure you want to delete this learning outcome?')
+    ) {
       return;
     }
 

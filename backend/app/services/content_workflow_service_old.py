@@ -223,7 +223,8 @@ class ContentWorkflowService:
             workflow_data={
                 "unit_name": unit.title,
                 "unit_code": unit.code,
-                "duration_weeks": getattr(unit, 'duration_weeks', None) or getattr(unit, 'weeks', 12),
+                "duration_weeks": getattr(unit, "duration_weeks", None)
+                or getattr(unit, "weeks", 12),
                 "started_at": datetime.utcnow().isoformat(),
             },
         )
@@ -258,9 +259,13 @@ class ContentWorkflowService:
         for question in stage_questions:
             if question.key not in decisions_made:
                 # Skip duration_weeks if we already have it from the unit
-                if question.key == "duration_weeks" and session.workflow_data.get("duration_weeks"):
+                if question.key == "duration_weeks" and session.workflow_data.get(
+                    "duration_weeks"
+                ):
                     # Auto-fill this answer from unit data
-                    session.add_decision("duration_weeks", session.workflow_data["duration_weeks"])
+                    session.add_decision(
+                        "duration_weeks", session.workflow_data["duration_weeks"]
+                    )
                     self.db.commit()
                     continue
 
@@ -401,8 +406,12 @@ class ContentWorkflowService:
         stage_questions = self.WORKFLOW_QUESTIONS.get(session.current_stage, [])
         if stage_questions:
             decisions_made = session.decisions_made or {}
-            questions_answered = sum(1 for q in stage_questions if q.key in decisions_made)
-            stage_progress = (questions_answered / len(stage_questions)) * (100 / total_stages)
+            questions_answered = sum(
+                1 for q in stage_questions if q.key in decisions_made
+            )
+            stage_progress = (questions_answered / len(stage_questions)) * (
+                100 / total_stages
+            )
             return base_progress + stage_progress
 
         return base_progress
@@ -414,10 +423,14 @@ class ContentWorkflowService:
 
         for question in stage_questions:
             if question.required and question.key not in decisions_made:
-                print(f"DEBUG: Stage {session.current_stage} incomplete - missing {question.key}")
+                print(
+                    f"DEBUG: Stage {session.current_stage} incomplete - missing {question.key}"
+                )
                 return False
 
-        print(f"DEBUG: Stage {session.current_stage} is complete with decisions: {list(decisions_made.keys())}")
+        print(
+            f"DEBUG: Stage {session.current_stage} is complete with decisions: {list(decisions_made.keys())}"
+        )
         return True
 
     async def _get_next_stage(

@@ -108,7 +108,9 @@ async def get_unit_materials(
     ]
 
 
-@router.get("/units/{unit_id}/weeks/{week_number}/materials", response_model=WeekMaterials)
+@router.get(
+    "/units/{unit_id}/weeks/{week_number}/materials", response_model=WeekMaterials
+)
 async def get_week_materials(
     unit_id: UUID,
     week_number: int,
@@ -323,7 +325,10 @@ async def duplicate_material(
         ) from e
 
 
-@router.post("/units/{unit_id}/weeks/{week_number}/materials/reorder", response_model=list[MaterialResponse])
+@router.post(
+    "/units/{unit_id}/weeks/{week_number}/materials/reorder",
+    response_model=list[MaterialResponse],
+)
 async def reorder_materials(
     unit_id: UUID,
     week_number: int,

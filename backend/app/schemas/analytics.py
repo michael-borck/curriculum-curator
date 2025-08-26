@@ -7,9 +7,12 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.schemas.base import CamelModel
 
-class UnitOverview(BaseModel):
+
+class UnitOverview(CamelModel):
     """Overview statistics for a unit"""
+
     unit_id: str
     ulo_count: int
     materials: dict[str, Any]
@@ -19,8 +22,9 @@ class UnitOverview(BaseModel):
     last_updated: datetime
 
 
-class ProgressReport(BaseModel):
+class ProgressReport(CamelModel):
     """Progress report for unit components"""
+
     unit_id: str
     materials: dict[str, Any]
     assessments: dict[str, Any]
@@ -28,8 +32,9 @@ class ProgressReport(BaseModel):
     incomplete_items: dict[str, list[dict]] | None = None
 
 
-class CompletionReport(BaseModel):
+class CompletionReport(CamelModel):
     """Completion status report"""
+
     unit_id: str
     ulo_completion: list[dict[str, Any]]
     ulos_fully_covered: int
@@ -39,16 +44,18 @@ class CompletionReport(BaseModel):
     completion_percentage: float
 
 
-class AlignmentReport(BaseModel):
+class AlignmentReport(CamelModel):
     """Learning outcome alignment report"""
+
     unit_id: str
     alignment_details: list[dict[str, Any]]
     summary: dict[str, Any]
     recommendations: list[str]
 
 
-class WeeklyWorkload(BaseModel):
+class WeeklyWorkload(CamelModel):
     """Weekly workload analysis"""
+
     week_number: int
     material_count: int
     material_duration_minutes: int
@@ -60,8 +67,9 @@ class WeeklyWorkload(BaseModel):
     assessments: list[dict[str, Any]]
 
 
-class QualityScore(BaseModel):
+class QualityScore(CamelModel):
     """Quality score for a unit"""
+
     unit_id: str
     overall_score: float = Field(ge=0, le=100)
     sub_scores: dict[str, float]
@@ -69,8 +77,9 @@ class QualityScore(BaseModel):
     calculated_at: datetime
 
 
-class ValidationResult(BaseModel):
+class ValidationResult(CamelModel):
     """Unit validation result"""
+
     unit_id: str
     is_valid: bool
     errors: list[str]
@@ -79,8 +88,9 @@ class ValidationResult(BaseModel):
     validated_at: datetime
 
 
-class UnitStatistics(BaseModel):
+class UnitStatistics(CamelModel):
     """Detailed statistics for a unit"""
+
     unit_id: str
     materials: dict[str, Any]
     assessments: dict[str, Any]
@@ -90,6 +100,7 @@ class UnitStatistics(BaseModel):
 
 class Recommendation(BaseModel):
     """Improvement recommendation"""
+
     category: str
     priority: str
     issue: str
@@ -98,6 +109,7 @@ class Recommendation(BaseModel):
 
 class RecommendationReport(BaseModel):
     """Recommendations for unit improvement"""
+
     unit_id: str
     recommendations: list[Recommendation]
     generated_at: datetime
@@ -105,6 +117,7 @@ class RecommendationReport(BaseModel):
 
 class ExportData(BaseModel):
     """Export data container"""
+
     unit_id: str
     export_date: str
     format: str

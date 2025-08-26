@@ -150,9 +150,13 @@ try:
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(units.router, prefix="/api/units", tags=["units"])
     app.include_router(unit_structure.router, prefix="/api", tags=["unit-structure"])
-    app.include_router(learning_outcomes.router, prefix="/api/outcomes", tags=["learning-outcomes"])
+    app.include_router(
+        learning_outcomes.router, prefix="/api/outcomes", tags=["learning-outcomes"]
+    )
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
-    app.include_router(assessments.router, prefix="/api/assessments", tags=["assessments"])
+    app.include_router(
+        assessments.router, prefix="/api/assessments", tags=["assessments"]
+    )
     app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])

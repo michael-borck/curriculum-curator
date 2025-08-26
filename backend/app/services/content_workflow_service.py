@@ -9,7 +9,18 @@ from typing import Any, ClassVar
 
 from sqlalchemy.orm import Session
 
-from app.models import SessionStatus, Unit, WorkflowChatSession, WorkflowStage
+from app.models import SessionStatus, Unit, User, WorkflowChatSession, WorkflowStage
+from app.models.unit_outline import UnitOutline
+from app.schemas.llm_generation import (
+    AssessmentStrategy,
+    PedagogyApproach,
+    UnitStructureContext,
+    UnitStructureResponse,
+    get_json_schema_for_prompt,
+)
+from app.services.llm_service import llm_service
+from app.services.prompt_templates import prepare_unit_structure_prompt
+from app.services.workflow_structure_creator import WorkflowStructureCreator
 
 
 class WorkflowQuestion:
@@ -188,7 +199,8 @@ class ContentWorkflowService:
                 "unit_name": unit.title,
                 "unit_code": unit.code,
                 # Store unit duration to skip redundant question
-                "duration_weeks": getattr(unit, 'duration_weeks', None) or getattr(unit, 'weeks', 12),
+                "duration_weeks": getattr(unit, "duration_weeks", None)
+                or getattr(unit, "weeks", 12),
                 "started_at": datetime.utcnow().isoformat(),
             },
         )
@@ -199,7 +211,9 @@ class ContentWorkflowService:
 
         # Auto-fill duration_weeks decision immediately
         if session.workflow_data.get("duration_weeks"):
-            session.add_decision("duration_weeks", session.workflow_data["duration_weeks"])
+            session.add_decision(
+                "duration_weeks", session.workflow_data["duration_weeks"]
+            )
             self.db.commit()
 
         return session
@@ -271,7 +285,7 @@ class ContentWorkflowService:
         session.add_message(
             role="user",
             content=f"Answer to '{question_key}': {answer}",
-            metadata={"question_key": question_key, "stage": session.current_stage}
+            metadata={"question_key": question_key, "stage": session.current_stage},
         )
 
         # Check if current stage is complete
@@ -304,12 +318,12 @@ class ContentWorkflowService:
                     "progress": 100,
                     "generation_options": {
                         "ai_assisted": "Generate structure with AI recommendations",
-                        "empty_structure": "Create empty structure to fill manually"
+                        "empty_structure": "Create empty structure to fill manually",
                     },
                     "next_steps": [
                         "Review your answers",
                         "Choose generation method",
-                        "Generate unit structure"
+                        "Generate unit structure",
                     ],
                 }
             # No more stages, ready to generate
@@ -318,10 +332,7 @@ class ContentWorkflowService:
                 "message": "All questions answered. Ready to generate unit structure.",
                 "stage": session.current_stage,
                 "progress": session.progress_percentage,
-                "next_steps": [
-                    "Review your answers",
-                    "Generate unit structure"
-                ],
+                "next_steps": ["Review your answers", "Generate unit structure"],
             }
         # Stage not complete, get next question
         self.db.commit()
@@ -370,9 +381,11 @@ class ContentWorkflowService:
 
     async def reset_session(self, session_id: str) -> dict[str, Any]:
         """Reset a workflow session to start over"""
-        session = self.db.query(WorkflowChatSession).filter(
-            WorkflowChatSession.id == session_id
-        ).first()
+        session = (
+            self.db.query(WorkflowChatSession)
+            .filter(WorkflowChatSession.id == session_id)
+            .first()
+        )
 
         if not session:
             raise ValueError("Session not found")
@@ -388,7 +401,9 @@ class ContentWorkflowService:
 
         # Re-add duration_weeks if available
         if session.workflow_data.get("duration_weeks"):
-            session.add_decision("duration_weeks", session.workflow_data["duration_weeks"])
+            session.add_decision(
+                "duration_weeks", session.workflow_data["duration_weeks"]
+            )
 
         self.db.commit()
 
@@ -429,7 +444,10 @@ class ContentWorkflowService:
     async def _can_generate_structure(self, session: WorkflowChatSession) -> bool:
         """Check if enough information is collected to generate structure"""
         # At minimum, need to complete COURSE_OVERVIEW and LEARNING_OUTCOMES
-        required_stages = [WorkflowStage.COURSE_OVERVIEW, WorkflowStage.LEARNING_OUTCOMES]
+        required_stages = [
+            WorkflowStage.COURSE_OVERVIEW,
+            WorkflowStage.LEARNING_OUTCOMES,
+        ]
 
         for stage in required_stages:
             # Check if all questions in this stage are answered
@@ -472,6 +490,21 @@ class ContentWorkflowService:
         decisions = session.decisions_made or {}
         unit = self.db.query(Unit).filter(Unit.id == session.unit_id).first()
 
+        if not unit:
+            raise ValueError("Unit not found")
+
+        # Check if unit already has an outline
+        existing_outline = (
+            self.db.query(UnitOutline).filter(UnitOutline.unit_id == unit.id).first()
+        )
+
+        if existing_outline:
+            return {
+                "status": "exists",
+                "message": "Unit already has a structure. Navigate to Unit Structure to edit it.",
+                "outlineId": str(existing_outline.id),
+            }
+
         if use_ai:
             # Generate AI-assisted structure with suggestions
             structure = await self._generate_ai_structure(session, unit, decisions)
@@ -481,6 +514,12 @@ class ContentWorkflowService:
             structure = await self._generate_empty_structure(session, unit, decisions)
             message = "Empty unit structure created for manual completion"
 
+        # Use WorkflowStructureCreator to create actual database records
+        creator = WorkflowStructureCreator(self.db)
+        result = creator.create_unit_structure(
+            session=session, unit=unit, structure_data=structure, use_ai=use_ai
+        )
+
         # Mark session as complete
         session.mark_completed()
         self.db.commit()
@@ -489,7 +528,8 @@ class ContentWorkflowService:
             "status": "success",
             "message": message,
             "use_ai": use_ai,
-            "outline_id": str(uuid.uuid4()),  # TODO: Create actual outline in DB
+            "outlineId": result["outlineId"],
+            "components": result["components"],
             "structure": structure,
         }
 
@@ -497,33 +537,163 @@ class ContentWorkflowService:
         self, session: WorkflowChatSession, unit: Unit, decisions: dict
     ) -> dict[str, Any]:
         """Generate AI-assisted structure with recommendations"""
-        # Extract key decisions for context
-        context = {
-            "unit_name": unit.title,
-            "unit_code": unit.code,
-            "duration_weeks": session.workflow_data.get("duration_weeks", 12),
-            "unit_type": decisions.get("unit_type", {}).get("value", "Mixed Theory & Practice"),
-            "student_level": decisions.get("student_level", {}).get("value", "Intermediate"),
-            "delivery_mode": decisions.get("delivery_mode", {}).get("value", "Blended/Hybrid"),
-            "pedagogy_approach": decisions.get("pedagogy_approach", {}).get("value", "Problem-Based Learning"),
-            "num_learning_outcomes": decisions.get("num_learning_outcomes", {}).get("value", "5-6 CLOs"),
-            "outcome_focus": decisions.get("outcome_focus", {}).get("value", "Balanced Mix"),
-            "assessment_strategy": decisions.get("assessment_strategy", {}).get("value", "Balanced mix"),
-            "assessment_count": decisions.get("assessment_count", {}).get("value", "4-5 assessments"),
-            "formative_assessment": decisions.get("formative_assessment", {}).get("value", "Yes, occasionally"),
-            "weekly_structure": decisions.get("weekly_structure", {}).get("value", "Lecture + Tutorial"),
+        # Map decisions to structured context
+        pedagogy_map = {
+            "Flipped Classroom": PedagogyApproach.FLIPPED,
+            "Problem-Based Learning": PedagogyApproach.PROBLEM_BASED,
+            "Project-Based Learning": PedagogyApproach.PROJECT_BASED,
+            "Traditional Lectures + Tutorials": PedagogyApproach.TRADITIONAL,
+            "Workshop-Based": PedagogyApproach.COLLABORATIVE,
+            "Research-Led Teaching": PedagogyApproach.INQUIRY_BASED,
+            "Collaborative Learning": PedagogyApproach.COLLABORATIVE,
         }
 
-        # TODO: Call LLM service to generate suggestions based on context
-        # For now, return a structured template with example suggestions
+        assessment_map = {
+            "Continuous assessment (many small tasks)": AssessmentStrategy.CONTINUOUS,
+            "Major assessments (few large tasks)": AssessmentStrategy.MAJOR,
+            "Balanced mix": AssessmentStrategy.BALANCED,
+            "Portfolio-based": AssessmentStrategy.PORTFOLIO,
+            "Exam-heavy": AssessmentStrategy.EXAM_HEAVY,
+            "Project-focused": AssessmentStrategy.PROJECT_FOCUSED,
+        }
 
-        num_weeks = int(context["duration_weeks"])
+        # Extract decisions with proper typing
+        pedagogy_value = decisions.get("pedagogy_approach", {}).get(
+            "value", "Problem-Based Learning"
+        )
+        assessment_value = decisions.get("assessment_strategy", {}).get(
+            "value", "Balanced mix"
+        )
 
+        # Build context for LLM
+        context = UnitStructureContext(
+            unit_name=unit.title,
+            unit_code=unit.code,
+            unit_description=unit.description,
+            duration_weeks=session.workflow_data.get("duration_weeks", 12),
+            unit_type=decisions.get("unit_type", {}).get(
+                "value", "Mixed Theory & Practice"
+            ),
+            student_level=decisions.get("student_level", {}).get(
+                "value", "Second Year (Intermediate)"
+            ),
+            delivery_mode=decisions.get("delivery_mode", {}).get(
+                "value", "Blended/Hybrid"
+            ),
+            pedagogy_approach=pedagogy_map.get(
+                pedagogy_value, PedagogyApproach.TRADITIONAL
+            ),
+            weekly_structure=decisions.get("weekly_structure", {}).get(
+                "value", "Lecture + Tutorial"
+            ),
+            num_learning_outcomes=decisions.get("num_learning_outcomes", {}).get(
+                "value", "5-6 CLOs"
+            ),
+            outcome_focus=decisions.get("outcome_focus", {}).get(
+                "value", "Balanced Mix"
+            ),
+            assessment_strategy=assessment_map.get(
+                assessment_value, AssessmentStrategy.BALANCED
+            ),
+            assessment_count=decisions.get("assessment_count", {}).get(
+                "value", "4-5 assessments"
+            ),
+            include_formative="Yes"
+            in decisions.get("formative_assessment", {}).get("value", "No"),
+        )
+
+        # Get JSON schema for the response
+        json_schema = get_json_schema_for_prompt(UnitStructureResponse)
+
+        # Prepare the prompt
+        prompt = prepare_unit_structure_prompt(
+            context=context.model_dump(),
+            json_schema=json_schema,
+        )
+
+        # Try to generate with LLM
+        try:
+            # Get user from session for API key preferences
+            user = self.db.query(User).filter(User.id == session.user_id).first()
+
+            # Generate structured content
+            result, error = await llm_service.generate_structured_content(
+                prompt=prompt,
+                response_model=UnitStructureResponse,
+                user=user,
+                db=self.db,
+                temperature=0.7,
+                max_retries=3,
+            )
+
+            if result and not error:
+                # Convert Pydantic model to dict for database storage
+                return self._convert_llm_response_to_structure(
+                    result, context.duration_weeks
+                )
+            # Log error and fall back to template
+            print(f"LLM generation failed: {error}")
+            return self._generate_fallback_structure(context)
+
+        except Exception as e:
+            # If LLM fails, use fallback template generation
+            print(f"LLM generation error: {e!s}")
+            return self._generate_fallback_structure(context)
+
+    def _convert_llm_response_to_structure(
+        self, response: UnitStructureResponse, duration_weeks: int
+    ) -> dict[str, Any]:
+        """Convert LLM response to database structure format"""
         return {
-            "learning_outcomes": self._generate_sample_clos(context),
-            "weekly_topics": self._generate_weekly_topics(num_weeks, context),
-            "assessments": self._generate_assessment_plan(context),
-            "teaching_activities": self._generate_teaching_activities(context),
+            "learning_outcomes": [
+                {
+                    "description": lo.description,
+                    "bloom_level": lo.bloom_level.value,
+                }
+                for lo in response.learning_outcomes
+            ],
+            "weekly_topics": [
+                {
+                    "week": topic.week,
+                    "topic": topic.topic,
+                    "description": topic.description,
+                    "activities": topic.activities,
+                }
+                for topic in response.weekly_topics[
+                    :duration_weeks
+                ]  # Ensure we don't exceed duration
+            ],
+            "assessments": [
+                {
+                    "name": assessment.name,
+                    "type": assessment.type,
+                    "weight": f"{assessment.weight}%",
+                    "due_week": assessment.due_week,
+                }
+                for assessment in response.assessments
+            ],
+            "teaching_activities": {
+                "lectures": [],
+                "tutorials": [],
+                "labs": [],
+                "online": [],
+            },
+        }
+
+    def _generate_fallback_structure(
+        self, context: UnitStructureContext
+    ) -> dict[str, Any]:
+        """Generate fallback structure when LLM is unavailable"""
+        # Use the existing template methods as fallback
+        return {
+            "learning_outcomes": self._generate_sample_clos(context.model_dump()),
+            "weekly_topics": self._generate_weekly_topics(
+                context.duration_weeks, context.model_dump()
+            ),
+            "assessments": self._generate_assessment_plan(context.model_dump()),
+            "teaching_activities": self._generate_teaching_activities(
+                context.model_dump()
+            ),
         }
 
     async def _generate_empty_structure(
@@ -533,7 +703,9 @@ class ContentWorkflowService:
         num_weeks = int(session.workflow_data.get("duration_weeks", 12))
 
         # Extract assessment count
-        assessment_count_str = decisions.get("assessment_count", {}).get("value", "4-5 assessments")
+        assessment_count_str = decisions.get("assessment_count", {}).get(
+            "value", "4-5 assessments"
+        )
         if "2-3" in assessment_count_str:
             num_assessments = 3
         elif "4-5" in assessment_count_str:
@@ -543,8 +715,7 @@ class ContentWorkflowService:
 
         return {
             "learning_outcomes": [
-                {"id": i, "description": "", "bloom_level": ""}
-                for i in range(1, 6)
+                {"id": i, "description": "", "bloom_level": ""} for i in range(1, 6)
             ],
             "weekly_topics": [
                 {"week": i, "topic": "", "description": "", "activities": []}
@@ -558,8 +729,8 @@ class ContentWorkflowService:
                 "lectures": [],
                 "tutorials": [],
                 "labs": [],
-                "online": []
-            }
+                "online": [],
+            },
         }
 
     def _generate_sample_clos(self, context: dict) -> list[dict]:
@@ -569,28 +740,28 @@ class ContentWorkflowService:
             {
                 "id": 1,
                 "description": f"Understand fundamental concepts of {context['unit_name']}",
-                "bloom_level": "Understanding"
+                "bloom_level": "Understanding",
             },
             {
                 "id": 2,
                 "description": f"Apply {context['pedagogy_approach'].lower()} techniques to solve problems",
-                "bloom_level": "Applying"
+                "bloom_level": "Applying",
             },
             {
                 "id": 3,
                 "description": "Analyze complex scenarios and propose solutions",
-                "bloom_level": "Analyzing"
+                "bloom_level": "Analyzing",
             },
             {
                 "id": 4,
                 "description": "Evaluate different approaches and methodologies",
-                "bloom_level": "Evaluating"
+                "bloom_level": "Evaluating",
             },
             {
                 "id": 5,
                 "description": "Create original solutions to domain-specific challenges",
-                "bloom_level": "Creating"
-            }
+                "bloom_level": "Creating",
+            },
         ]
 
     def _generate_weekly_topics(self, num_weeks: int, context: dict) -> list[dict]:
@@ -607,12 +778,14 @@ class ContentWorkflowService:
             else:
                 topic = f"Module {week - 1}: Topic to be defined"
 
-            topics.append({
-                "week": week,
-                "topic": topic,
-                "description": f"Week {week} content for {context['delivery_mode']} delivery",
-                "activities": [context['weekly_structure']]
-            })
+            topics.append(
+                {
+                    "week": week,
+                    "topic": topic,
+                    "description": f"Week {week} content for {context['delivery_mode']} delivery",
+                    "activities": [context["weekly_structure"]],
+                }
+            )
         return topics
 
     def _generate_assessment_plan(self, context: dict) -> list[dict]:
@@ -622,53 +795,107 @@ class ContentWorkflowService:
 
         if "2-3" in context["assessment_count"]:
             assessments = [
-                {"id": 1, "name": "Assignment 1", "type": "Individual Assignment", "weight": "30%", "due_week": 5},
-                {"id": 2, "name": "Group Project", "type": "Group Work", "weight": "30%", "due_week": 10},
-                {"id": 3, "name": "Final Exam", "type": "Examination", "weight": "40%", "due_week": 13},
+                {
+                    "id": 1,
+                    "name": "Assignment 1",
+                    "type": "Individual Assignment",
+                    "weight": "30%",
+                    "due_week": 5,
+                },
+                {
+                    "id": 2,
+                    "name": "Group Project",
+                    "type": "Group Work",
+                    "weight": "30%",
+                    "due_week": 10,
+                },
+                {
+                    "id": 3,
+                    "name": "Final Exam",
+                    "type": "Examination",
+                    "weight": "40%",
+                    "due_week": 13,
+                },
             ]
         elif "4-5" in context["assessment_count"]:
             assessments = [
-                {"id": 1, "name": "Quiz 1", "type": "Quiz", "weight": "10%", "due_week": 3},
-                {"id": 2, "name": "Assignment 1", "type": "Individual Assignment", "weight": "25%", "due_week": 6},
-                {"id": 3, "name": "Group Project", "type": "Group Work", "weight": "25%", "due_week": 9},
-                {"id": 4, "name": "Assignment 2", "type": "Individual Assignment", "weight": "20%", "due_week": 11},
-                {"id": 5, "name": "Final Exam", "type": "Examination", "weight": "20%", "due_week": 13},
+                {
+                    "id": 1,
+                    "name": "Quiz 1",
+                    "type": "Quiz",
+                    "weight": "10%",
+                    "due_week": 3,
+                },
+                {
+                    "id": 2,
+                    "name": "Assignment 1",
+                    "type": "Individual Assignment",
+                    "weight": "25%",
+                    "due_week": 6,
+                },
+                {
+                    "id": 3,
+                    "name": "Group Project",
+                    "type": "Group Work",
+                    "weight": "25%",
+                    "due_week": 9,
+                },
+                {
+                    "id": 4,
+                    "name": "Assignment 2",
+                    "type": "Individual Assignment",
+                    "weight": "20%",
+                    "due_week": 11,
+                },
+                {
+                    "id": 5,
+                    "name": "Final Exam",
+                    "type": "Examination",
+                    "weight": "20%",
+                    "due_week": 13,
+                },
             ]
         else:  # 6+
             # Generate more frequent smaller assessments
             for i in range(1, 7):
-                assessments.append({
-                    "id": i,
-                    "name": f"Assessment {i}",
-                    "type": "Continuous Assessment",
-                    "weight": f"{100//6}%",
-                    "due_week": i * 2
-                })
+                assessments.append(
+                    {
+                        "id": i,
+                        "name": f"Assessment {i}",
+                        "type": "Continuous Assessment",
+                        "weight": f"{100 // 6}%",
+                        "due_week": i * 2,
+                    }
+                )
 
         return assessments
 
     def _generate_teaching_activities(self, context: dict) -> dict:
         """Generate teaching activity suggestions (for AI-assisted)"""
         # This is a placeholder - real implementation would use LLM
-        activities = {
-            "lectures": [],
-            "tutorials": [],
-            "labs": [],
-            "online": []
-        }
+        activities = {"lectures": [], "tutorials": [], "labs": [], "online": []}
 
         if "Lecture" in context["weekly_structure"]:
-            activities["lectures"] = ["2-hour weekly lectures covering theoretical concepts"]
+            activities["lectures"] = [
+                "2-hour weekly lectures covering theoretical concepts"
+            ]
         if "Tutorial" in context["weekly_structure"]:
             activities["tutorials"] = ["1-hour weekly tutorials for problem-solving"]
-        if "Lab" in context["weekly_structure"] or "Workshop" in context["weekly_structure"]:
+        if (
+            "Lab" in context["weekly_structure"]
+            or "Workshop" in context["weekly_structure"]
+        ):
             activities["labs"] = ["2-hour weekly practical sessions"]
         if context["delivery_mode"] in ["Online", "Blended/Hybrid"]:
-            activities["online"] = ["Asynchronous online materials and discussion forums"]
+            activities["online"] = [
+                "Asynchronous online materials and discussion forums"
+            ]
 
         return activities
 
-    async def _get_completion_next_steps(self, session: WorkflowChatSession) -> list[str]:
+    async def _get_completion_next_steps(
+        self, session: WorkflowChatSession
+    ) -> list[str]:
         """Get next steps after workflow completion"""
         return [
             "Review generated unit structure",
@@ -687,7 +914,11 @@ class ContentWorkflowService:
 
         for question in stage_questions:
             if question.key in decisions:
-                value = decisions[question.key].get("value") if isinstance(decisions[question.key], dict) else decisions[question.key]
+                value = (
+                    decisions[question.key].get("value")
+                    if isinstance(decisions[question.key], dict)
+                    else decisions[question.key]
+                )
                 summary_parts.append(f"{question.question}: {value}")
 
         return f"Stage '{stage}' completed. Decisions: " + "; ".join(summary_parts)

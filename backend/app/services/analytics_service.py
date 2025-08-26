@@ -111,31 +111,45 @@ class AnalyticsService:
     ) -> dict[str, Any]:
         """Get progress report for a unit"""
         # Count completed vs total items
-        materials = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.unit_id == unit_id
-        ).all()
+        materials = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).all()
+        )
 
-        assessments = db.query(Assessment).filter(
-            Assessment.unit_id == unit_id
-        ).all()
+        assessments = db.query(Assessment).filter(Assessment.unit_id == unit_id).all()
 
         material_progress = {
             "total": len(materials),
-            "published": sum(1 for m in materials if m.status == MaterialStatus.PUBLISHED),
+            "published": sum(
+                1 for m in materials if m.status == MaterialStatus.PUBLISHED
+            ),
             "draft": sum(1 for m in materials if m.status == MaterialStatus.DRAFT),
             "completion_percentage": (
-                (sum(1 for m in materials if m.status == MaterialStatus.PUBLISHED) / len(materials) * 100)
-                if materials else 0
+                (
+                    sum(1 for m in materials if m.status == MaterialStatus.PUBLISHED)
+                    / len(materials)
+                    * 100
+                )
+                if materials
+                else 0
             ),
         }
 
         assessment_progress = {
             "total": len(assessments),
-            "published": sum(1 for a in assessments if a.status == AssessmentStatus.PUBLISHED),
+            "published": sum(
+                1 for a in assessments if a.status == AssessmentStatus.PUBLISHED
+            ),
             "draft": sum(1 for a in assessments if a.status == AssessmentStatus.DRAFT),
             "completion_percentage": (
-                (sum(1 for a in assessments if a.status == AssessmentStatus.PUBLISHED) / len(assessments) * 100)
-                if assessments else 0
+                (
+                    sum(
+                        1 for a in assessments if a.status == AssessmentStatus.PUBLISHED
+                    )
+                    / len(assessments)
+                    * 100
+                )
+                if assessments
+                else 0
             ),
         }
 
@@ -144,7 +158,11 @@ class AnalyticsService:
             "materials": material_progress,
             "assessments": assessment_progress,
             "overall_completion": (
-                (material_progress["completion_percentage"] + assessment_progress["completion_percentage"]) / 2
+                (
+                    material_progress["completion_percentage"]
+                    + assessment_progress["completion_percentage"]
+                )
+                / 2
             ),
         }
 
@@ -226,8 +244,13 @@ class AnalyticsService:
             "weeks_with_materials": sorted([w[0] for w in weeks_with_materials]),
             "weeks_with_assessments": sorted([w[0] for w in weeks_with_assessments]),
             "completion_percentage": (
-                (sum(1 for u in ulo_completion if u["is_complete"]) / len(ulo_completion) * 100)
-                if ulo_completion else 0
+                (
+                    sum(1 for u in ulo_completion if u["is_complete"])
+                    / len(ulo_completion)
+                    * 100
+                )
+                if ulo_completion
+                else 0
             ),
         }
 
@@ -271,10 +294,26 @@ class AnalyticsService:
 
         # Calculate overall alignment metrics
         total_ulos = len(ulos)
-        aligned_ulos = sum(1 for a in alignment_data if int(a["material_count"]) > 0 and int(a["assessment_count"]) > 0)
-        materials_only = sum(1 for a in alignment_data if int(a["material_count"]) > 0 and int(a["assessment_count"]) == 0)
-        assessments_only = sum(1 for a in alignment_data if int(a["material_count"]) == 0 and int(a["assessment_count"]) > 0)
-        unaligned = sum(1 for a in alignment_data if int(a["material_count"]) == 0 and int(a["assessment_count"]) == 0)
+        aligned_ulos = sum(
+            1
+            for a in alignment_data
+            if int(a["material_count"]) > 0 and int(a["assessment_count"]) > 0
+        )
+        materials_only = sum(
+            1
+            for a in alignment_data
+            if int(a["material_count"]) > 0 and int(a["assessment_count"]) == 0
+        )
+        assessments_only = sum(
+            1
+            for a in alignment_data
+            if int(a["material_count"]) == 0 and int(a["assessment_count"]) > 0
+        )
+        unaligned = sum(
+            1
+            for a in alignment_data
+            if int(a["material_count"]) == 0 and int(a["assessment_count"]) == 0
+        )
 
         return {
             "unit_id": str(unit_id),
@@ -285,7 +324,9 @@ class AnalyticsService:
                 "materials_only": materials_only,
                 "assessments_only": assessments_only,
                 "unaligned": unaligned,
-                "alignment_percentage": (aligned_ulos / total_ulos * 100) if total_ulos > 0 else 0,
+                "alignment_percentage": (aligned_ulos / total_ulos * 100)
+                if total_ulos > 0
+                else 0,
             },
             "recommendations": self._generate_alignment_recommendations(alignment_data),
         }
@@ -329,23 +370,29 @@ class AnalyticsService:
                 total_duration = sum(m.duration_minutes or 0 for m in materials)
                 assessment_duration = sum(a.duration or 0 for a in assessments)
 
-                workload.append({
-                    "week_number": week,
-                    "material_count": len(materials),
-                    "material_duration_minutes": total_duration,
-                    "assessment_count": len(assessments),
-                    "assessment_duration_minutes": assessment_duration,
-                    "total_duration_minutes": total_duration + assessment_duration,
-                    "workload_hours": (total_duration + assessment_duration) / 60,
-                    "materials": [
-                        {"id": str(m.id), "title": m.title, "duration": m.duration_minutes}
-                        for m in materials
-                    ],
-                    "assessments": [
-                        {"id": str(a.id), "title": a.title, "weight": a.weight}
-                        for a in assessments
-                    ],
-                })
+                workload.append(
+                    {
+                        "week_number": week,
+                        "material_count": len(materials),
+                        "material_duration_minutes": total_duration,
+                        "assessment_count": len(assessments),
+                        "assessment_duration_minutes": assessment_duration,
+                        "total_duration_minutes": total_duration + assessment_duration,
+                        "workload_hours": (total_duration + assessment_duration) / 60,
+                        "materials": [
+                            {
+                                "id": str(m.id),
+                                "title": m.title,
+                                "duration": m.duration_minutes,
+                            }
+                            for m in materials
+                        ],
+                        "assessments": [
+                            {"id": str(a.id), "title": a.title, "weight": a.weight}
+                            for a in assessments
+                        ],
+                    }
+                )
 
         return workload
 
@@ -364,41 +411,49 @@ class AnalyticsService:
 
         # Check for unaligned ULOs
         if alignment["summary"]["unaligned"] > 0:
-            recommendations.append({
-                "category": "alignment",
-                "priority": "high",
-                "issue": f"{alignment['summary']['unaligned']} ULOs have no materials or assessments",
-                "suggestion": "Create materials and assessments for uncovered learning outcomes",
-            })
+            recommendations.append(
+                {
+                    "category": "alignment",
+                    "priority": "high",
+                    "issue": f"{alignment['summary']['unaligned']} ULOs have no materials or assessments",
+                    "suggestion": "Create materials and assessments for uncovered learning outcomes",
+                }
+            )
 
         # Check for uneven workload distribution
         workload_variance = self._calculate_workload_variance(workload)
         if workload_variance > 0.3:  # High variance threshold
-            recommendations.append({
-                "category": "workload",
-                "priority": "medium",
-                "issue": "Uneven workload distribution across weeks",
-                "suggestion": "Redistribute materials and assessments for more consistent weekly workload",
-            })
+            recommendations.append(
+                {
+                    "category": "workload",
+                    "priority": "medium",
+                    "issue": "Uneven workload distribution across weeks",
+                    "suggestion": "Redistribute materials and assessments for more consistent weekly workload",
+                }
+            )
 
         # Check assessment weight total
         if overview["total_assessment_weight"] != 100.0:
-            recommendations.append({
-                "category": "assessment",
-                "priority": "high",
-                "issue": f"Assessment weights sum to {overview['total_assessment_weight']}%, not 100%",
-                "suggestion": "Adjust assessment weights to total exactly 100%",
-            })
+            recommendations.append(
+                {
+                    "category": "assessment",
+                    "priority": "high",
+                    "issue": f"Assessment weights sum to {overview['total_assessment_weight']}%, not 100%",
+                    "suggestion": "Adjust assessment weights to total exactly 100%",
+                }
+            )
 
         # Check for draft content
         draft_materials = overview["materials"]["by_status"].get("draft", 0)
         if draft_materials > 0:
-            recommendations.append({
-                "category": "content",
-                "priority": "medium",
-                "issue": f"{draft_materials} materials are still in draft status",
-                "suggestion": "Review and publish draft materials",
-            })
+            recommendations.append(
+                {
+                    "category": "content",
+                    "priority": "medium",
+                    "issue": f"{draft_materials} materials are still in draft status",
+                    "suggestion": "Review and publish draft materials",
+                }
+            )
 
         return {
             "unit_id": str(unit_id),
@@ -438,7 +493,9 @@ class AnalyticsService:
         elif export_format == "pdf":
             # Format for PDF export
             export_data["pdf_ready"] = True
-            export_data["notice"] = "PDF generation would be handled by a separate service"
+            export_data["notice"] = (
+                "PDF generation would be handled by a separate service"
+            )
 
         return export_data
 
@@ -460,9 +517,9 @@ class AnalyticsService:
 
         # Calculate overall quality score (weighted average)
         quality_score = (
-            alignment_score * 0.4 +  # 40% weight for alignment
-            completion_score * 0.3 +  # 30% weight for completion
-            weight_score * 0.3  # 30% weight for proper assessment weights
+            alignment_score * 0.4  # 40% weight for alignment
+            + completion_score * 0.3  # 30% weight for completion
+            + weight_score * 0.3  # 30% weight for proper assessment weights
         )
 
         return {
@@ -538,7 +595,9 @@ class AnalyticsService:
         # Check for orphaned outcomes
         alignment = await self.get_alignment_report(db, unit_id)
         if alignment["summary"]["unaligned"] > 0:
-            warnings.append(f"{alignment['summary']['unaligned']} ULOs have no coverage")
+            warnings.append(
+                f"{alignment['summary']['unaligned']} ULOs have no coverage"
+            )
 
         return {
             "unit_id": str(unit_id),
@@ -556,9 +615,9 @@ class AnalyticsService:
     ) -> dict[str, Any]:
         """Get detailed statistics for a unit"""
         # Material statistics
-        materials = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.unit_id == unit_id
-        ).all()
+        materials = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).all()
+        )
 
         # Count by type and week
         by_type: dict[str, int] = {}
@@ -574,17 +633,17 @@ class AnalyticsService:
             "total": len(materials),
             "by_type": by_type,
             "by_week": by_week,
-            "total_duration_hours": sum(m.duration_minutes or 0 for m in materials) / 60,
+            "total_duration_hours": sum(m.duration_minutes or 0 for m in materials)
+            / 60,
             "average_duration_minutes": (
                 sum(m.duration_minutes or 0 for m in materials) / len(materials)
-                if materials else 0
+                if materials
+                else 0
             ),
         }
 
         # Assessment statistics
-        assessments = db.query(Assessment).filter(
-            Assessment.unit_id == unit_id
-        ).all()
+        assessments = db.query(Assessment).filter(Assessment.unit_id == unit_id).all()
 
         # Count assessments by type and category
         assessment_by_type: dict[str, int] = {}
@@ -594,14 +653,18 @@ class AnalyticsService:
             type_key = str(assessment.type)
             assessment_by_type[type_key] = assessment_by_type.get(type_key, 0) + 1
             category_key = str(assessment.category)
-            assessment_by_category[category_key] = assessment_by_category.get(category_key, 0) + 1
+            assessment_by_category[category_key] = (
+                assessment_by_category.get(category_key, 0) + 1
+            )
 
         assessment_stats = {
             "total": len(assessments),
             "by_type": assessment_by_type,
             "by_category": assessment_by_category,
             "total_weight": sum(a.weight for a in assessments),
-            "average_weight": sum(a.weight for a in assessments) / len(assessments) if assessments else 0,
+            "average_weight": sum(a.weight for a in assessments) / len(assessments)
+            if assessments
+            else 0,
         }
 
         # ULO statistics
@@ -619,7 +682,9 @@ class AnalyticsService:
 
         bloom_distribution = {}
         for ulo in ulos:
-            bloom_distribution[ulo.bloom_level] = bloom_distribution.get(ulo.bloom_level, 0) + 1
+            bloom_distribution[ulo.bloom_level] = (
+                bloom_distribution.get(ulo.bloom_level, 0) + 1
+            )
 
         return {
             "unit_id": str(unit_id),
@@ -638,7 +703,9 @@ class AnalyticsService:
         assessment_score = min(len(ulo.assessments) / 2, 1.0) * 50  # Up to 50 points
         return material_score + assessment_score
 
-    def _generate_alignment_recommendations(self, alignment_data: list[dict]) -> list[str]:
+    def _generate_alignment_recommendations(
+        self, alignment_data: list[dict]
+    ) -> list[str]:
         """Generate recommendations based on alignment data"""
         recommendations = []
 
@@ -665,7 +732,7 @@ class AnalyticsService:
 
         mean = sum(durations) / len(durations)
         variance = sum((x - mean) ** 2 for x in durations) / len(durations)
-        return variance / (mean ** 2) if mean > 0 else 0.0
+        return variance / (mean**2) if mean > 0 else 0.0
 
     def _score_to_grade(self, score: float) -> str:
         """Convert numeric score to letter grade"""

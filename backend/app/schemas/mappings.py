@@ -78,10 +78,14 @@ class AlignmentMatrix(BaseModel):
 class BulkMapping(BaseModel):
     """Schema for bulk mapping operations"""
 
-    source_type: str = Field(..., description="Type of source (material/assessment/wlo)")
+    source_type: str = Field(
+        ..., description="Type of source (material/assessment/wlo)"
+    )
     source_ids: list[str] = Field(..., min_length=1, description="List of source IDs")
     ulo_ids: list[str] = Field(..., min_length=1, description="List of ULO IDs to map")
-    operation: str = Field(default="add", description="Operation type (add/remove/replace)")
+    operation: str = Field(
+        default="add", description="Operation type (add/remove/replace)"
+    )
 
 
 class MappingSummary(BaseModel):

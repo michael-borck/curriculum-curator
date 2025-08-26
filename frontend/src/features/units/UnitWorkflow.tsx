@@ -92,7 +92,8 @@ const UnitWorkflow: React.FC = () => {
 
   const handleWorkflowComplete = (_outlineId: string) => {
     setShowWorkflowWizard(false);
-    fetchCourseData(); // Refresh data
+    // Navigate to the unit structure page to see the generated structure
+    navigate(`/units/${unitId}/structure`);
   };
 
   const handleImportComplete = () => {

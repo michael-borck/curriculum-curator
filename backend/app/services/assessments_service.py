@@ -43,10 +43,7 @@ class AssessmentsService:
             if assessment_data.rubric:
                 assessment_dict["rubric"] = assessment_data.rubric.model_dump()
 
-            assessment = Assessment(
-                unit_id=unit_id,
-                **assessment_dict
-            )
+            assessment = Assessment(unit_id=unit_id, **assessment_dict)
 
             db.add(assessment)
             db.commit()
@@ -67,9 +64,7 @@ class AssessmentsService:
         assessment_data: AssessmentUpdate,
     ) -> Assessment | None:
         """Update an existing Assessment"""
-        assessment = db.query(Assessment).filter(
-            Assessment.id == assessment_id
-        ).first()
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
 
         if not assessment:
             return None
@@ -99,9 +94,7 @@ class AssessmentsService:
         assessment_id: UUID,
     ) -> bool:
         """Delete an Assessment"""
-        assessment = db.query(Assessment).filter(
-            Assessment.id == assessment_id
-        ).first()
+        assessment = db.query(Assessment).filter(Assessment.id == assessment_id).first()
 
         if not assessment:
             return False
@@ -118,9 +111,7 @@ class AssessmentsService:
         include_outcomes: bool = False,
     ) -> Assessment | None:
         """Get a single Assessment"""
-        query = db.query(Assessment).filter(
-            Assessment.id == assessment_id
-        )
+        query = db.query(Assessment).filter(Assessment.id == assessment_id)
 
         if include_outcomes:
             query = query.options(
@@ -138,9 +129,7 @@ class AssessmentsService:
         filter_params: AssessmentFilter | None = None,
     ) -> list[Assessment]:
         """Get all assessments for a unit with optional filtering"""
-        query = db.query(Assessment).filter(
-            Assessment.unit_id == unit_id
-        )
+        query = db.query(Assessment).filter(Assessment.unit_id == unit_id)
 
         if filter_params:
             if filter_params.type:
@@ -150,20 +139,19 @@ class AssessmentsService:
             if filter_params.status:
                 query = query.filter(Assessment.status == filter_params.status)
             if filter_params.release_week is not None:
-                query = query.filter(Assessment.release_week == filter_params.release_week)
+                query = query.filter(
+                    Assessment.release_week == filter_params.release_week
+                )
             if filter_params.due_week is not None:
                 query = query.filter(Assessment.due_week == filter_params.due_week)
             if filter_params.search:
                 search_term = f"%{filter_params.search}%"
                 query = query.filter(
-                    (Assessment.title.ilike(search_term)) |
-                    (Assessment.description.ilike(search_term))
+                    (Assessment.title.ilike(search_term))
+                    | (Assessment.description.ilike(search_term))
                 )
 
-        return query.order_by(
-            Assessment.due_week,
-            Assessment.weight.desc()
-        ).all()
+        return query.order_by(Assessment.due_week, Assessment.weight.desc()).all()
 
     async def calculate_grade_distribution(
         self,
@@ -175,12 +163,10 @@ class AssessmentsService:
 
         total_weight = sum(a.weight for a in assessments)
         formative_weight = sum(
-            a.weight for a in assessments
-            if a.type == AssessmentType.FORMATIVE
+            a.weight for a in assessments if a.type == AssessmentType.FORMATIVE
         )
         summative_weight = sum(
-            a.weight for a in assessments
-            if a.type == AssessmentType.SUMMATIVE
+            a.weight for a in assessments if a.type == AssessmentType.SUMMATIVE
         )
 
         # Group by category
@@ -199,7 +185,8 @@ class AssessmentsService:
             total_weight=total_weight,
             formative_weight=formative_weight,
             summative_weight=summative_weight,
-            is_valid=abs(total_weight - 100.0) < 0.01,  # Allow small floating point errors
+            is_valid=abs(total_weight - 100.0)
+            < 0.01,  # Allow small floating point errors
             assessments_by_category=by_category,
             assessments_by_type=by_type,
         )
@@ -216,7 +203,9 @@ class AssessmentsService:
         warnings = []
 
         if distribution.total_weight < 100:
-            errors.append(f"Total weight is {distribution.total_weight}%, should be 100%")
+            errors.append(
+                f"Total weight is {distribution.total_weight}%, should be 100%"
+            )
         elif distribution.total_weight > 100:
             errors.append(f"Total weight is {distribution.total_weight}%, exceeds 100%")
 
@@ -358,14 +347,18 @@ class AssessmentsService:
                         "total_weight": 0,
                     }
 
-                timeline[week]["assessments"].append({
-                    "id": str(assessment.id),
-                    "title": assessment.title,
-                    "type": assessment.type,
-                    "category": assessment.category,
-                    "weight": assessment.weight,
-                    "due_date": assessment.due_date.isoformat() if assessment.due_date else None,
-                })
+                timeline[week]["assessments"].append(
+                    {
+                        "id": str(assessment.id),
+                        "title": assessment.title,
+                        "type": assessment.type,
+                        "category": assessment.category,
+                        "weight": assessment.weight,
+                        "due_date": assessment.due_date.isoformat()
+                        if assessment.due_date
+                        else None,
+                    }
+                )
                 timeline[week]["total_weight"] += assessment.weight
 
         # Convert to sorted list
@@ -391,7 +384,9 @@ class AssessmentsService:
 
         # Calculate statistics
         weights_by_week = [w["total_weight"] for w in timeline]
-        avg_weight = sum(weights_by_week) / len(weights_by_week) if weights_by_week else 0
+        avg_weight = (
+            sum(weights_by_week) / len(weights_by_week) if weights_by_week else 0
+        )
         max_weight = max(weights_by_week) if weights_by_week else 0
 
         return {

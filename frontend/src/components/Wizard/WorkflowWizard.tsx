@@ -127,15 +127,24 @@ const WorkflowWizard: React.FC<WorkflowWizardProps> = ({
         const structureType = useAI ? 'AI-assisted' : 'empty';
         setCompletionMessage(
           `${structureType} unit structure generated successfully! 
-          ${result.components?.learning_outcomes || 0} learning outcomes, 
-          ${result.components?.weekly_topics || 0} weekly topics, and 
+          ${result.components?.learningOutcomes || 0} learning outcomes, 
+          ${result.components?.weeklyTopics || 0} weekly topics, and 
           ${result.components?.assessments || 0} assessments created.`
         );
-        if (onComplete && result.outline_id) {
-          onComplete(result.outline_id);
+        if (onComplete && result.outlineId) {
+          // Give user time to see the success message, then redirect
+          window.setTimeout(() => {
+            onComplete(result.outlineId!);
+          }, 2000);
         }
       } else if (result.status === 'exists') {
-        setError(result.message);
+        setError(result.message || 'Unit already has a structure');
+        if (onComplete && result.outlineId) {
+          // Redirect to existing structure after delay
+          window.setTimeout(() => {
+            onComplete(result.outlineId!);
+          }, 2000);
+        }
       }
     } catch (err: any) {
       setError(

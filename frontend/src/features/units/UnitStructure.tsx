@@ -8,6 +8,8 @@ interface Unit {
   title: string;
   code: string;
   description?: string;
+  durationWeeks?: number;
+  weeks?: number;
 }
 
 const UnitStructure: React.FC = () => {
@@ -17,15 +19,32 @@ const UnitStructure: React.FC = () => {
 
   useEffect(() => {
     if (unitId) {
-      fetchUnit();
+      fetchUnitAndEnsureOutline();
     }
   }, [unitId]);
 
-  const fetchUnit = async () => {
+  const fetchUnitAndEnsureOutline = async () => {
     try {
       setLoading(true);
       const response = await api.get(`/api/units/${unitId}`);
       setUnit(response.data);
+
+      // Check if unit has an outline, create one if it doesn't
+      try {
+        await api.get(`/api/units/${unitId}/structure`);
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          // No outline exists, create an empty one
+          await api.post(`/api/units/${unitId}/outline/create`, {
+            title: `${response.data.code} - ${response.data.title}`,
+            description: response.data.description || '',
+            durationWeeks:
+              response.data.durationWeeks || response.data.weeks || 12,
+            deliveryMode: 'Blended',
+            teachingPattern: 'Lecture + Tutorial',
+          });
+        }
+      }
     } catch (error) {
       console.error('Error fetching unit:', error);
     } finally {
@@ -35,24 +54,25 @@ const UnitStructure: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className='flex items-center justify-center h-64'>
+        <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
       </div>
     );
   }
 
   if (!unit || !unitId) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Unit not found</p>
+      <div className='text-center py-8'>
+        <p className='text-gray-500'>Unit not found</p>
       </div>
     );
   }
 
   return (
-    <UnitStructureDashboard 
-      unitId={unitId} 
+    <UnitStructureDashboard
+      unitId={unitId}
       unitName={`${unit.code} - ${unit.title}`}
+      durationWeeks={unit.durationWeeks || unit.weeks || 12}
     />
   );
 };

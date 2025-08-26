@@ -18,8 +18,18 @@ from app.models.user import GUID
 material_ulo_mappings = Table(
     "material_ulo_mappings",
     Base.metadata,
-    Column("material_id", GUID(), ForeignKey("weekly_materials.id", ondelete="CASCADE"), primary_key=True),
-    Column("ulo_id", GUID(), ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "material_id",
+        GUID(),
+        ForeignKey("weekly_materials.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "ulo_id",
+        GUID(),
+        ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
     Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
 )
 
@@ -27,8 +37,18 @@ material_ulo_mappings = Table(
 assessment_ulo_mappings = Table(
     "assessment_ulo_mappings",
     Base.metadata,
-    Column("assessment_id", GUID(), ForeignKey("assessments.id", ondelete="CASCADE"), primary_key=True),
-    Column("ulo_id", GUID(), ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "assessment_id",
+        GUID(),
+        ForeignKey("assessments.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "ulo_id",
+        GUID(),
+        ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
     Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
 )
 
@@ -36,8 +56,18 @@ assessment_ulo_mappings = Table(
 wlo_ulo_mappings = Table(
     "wlo_ulo_mappings",
     Base.metadata,
-    Column("wlo_id", GUID(), ForeignKey("weekly_learning_outcomes.id", ondelete="CASCADE"), primary_key=True),
-    Column("ulo_id", GUID(), ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "wlo_id",
+        GUID(),
+        ForeignKey("weekly_learning_outcomes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "ulo_id",
+        GUID(),
+        ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
     Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
 )
 
@@ -45,7 +75,17 @@ wlo_ulo_mappings = Table(
 assessment_material_links = Table(
     "assessment_material_links",
     Base.metadata,
-    Column("assessment_id", GUID(), ForeignKey("assessments.id", ondelete="CASCADE"), primary_key=True),
-    Column("material_id", GUID(), ForeignKey("weekly_materials.id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "assessment_id",
+        GUID(),
+        ForeignKey("assessments.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "material_id",
+        GUID(),
+        ForeignKey("weekly_materials.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
     Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
 )

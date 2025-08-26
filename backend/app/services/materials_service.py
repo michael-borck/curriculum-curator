@@ -67,7 +67,9 @@ class MaterialsService:
             db.commit()
             db.refresh(material)
 
-            logger.info(f"Created material '{material.title}' for week {material.week_number}")
+            logger.info(
+                f"Created material '{material.title}' for week {material.week_number}"
+            )
             return material
 
         except IntegrityError as e:
@@ -82,9 +84,9 @@ class MaterialsService:
         material_data: MaterialUpdate,
     ) -> WeeklyMaterial | None:
         """Update an existing Weekly Material"""
-        material = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.id == material_id
-        ).first()
+        material = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        )
 
         if not material:
             return None
@@ -110,9 +112,9 @@ class MaterialsService:
         material_id: UUID,
     ) -> bool:
         """Delete a Weekly Material"""
-        material = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.id == material_id
-        ).first()
+        material = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        )
 
         if not material:
             return False
@@ -129,9 +131,7 @@ class MaterialsService:
         include_outcomes: bool = False,
     ) -> WeeklyMaterial | None:
         """Get a single Weekly Material"""
-        query = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.id == material_id
-        )
+        query = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id)
 
         if include_outcomes:
             query = query.options(
@@ -167,9 +167,7 @@ class MaterialsService:
         filter_params: MaterialFilter | None = None,
     ) -> list[WeeklyMaterial]:
         """Get all materials for a unit with optional filtering"""
-        query = db.query(WeeklyMaterial).filter(
-            WeeklyMaterial.unit_id == unit_id
-        )
+        query = db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id)
 
         if filter_params:
             if filter_params.week_number is not None:
@@ -183,13 +181,12 @@ class MaterialsService:
             if filter_params.search:
                 search_term = f"%{filter_params.search}%"
                 query = query.filter(
-                    (WeeklyMaterial.title.ilike(search_term)) |
-                    (WeeklyMaterial.description.ilike(search_term))
+                    (WeeklyMaterial.title.ilike(search_term))
+                    | (WeeklyMaterial.description.ilike(search_term))
                 )
 
         return query.order_by(
-            WeeklyMaterial.week_number,
-            WeeklyMaterial.order_index
+            WeeklyMaterial.week_number, WeeklyMaterial.order_index
         ).all()
 
     async def duplicate_material(
@@ -199,7 +196,9 @@ class MaterialsService:
         duplicate_data: MaterialDuplicate,
     ) -> WeeklyMaterial:
         """Duplicate a material to another week"""
-        source_material = await self.get_material(db, material_id, include_outcomes=True)
+        source_material = await self.get_material(
+            db, material_id, include_outcomes=True
+        )
 
         if not source_material:
             raise ValueError(f"Material {material_id} not found")
@@ -243,7 +242,9 @@ class MaterialsService:
         db.commit()
         db.refresh(new_material)
 
-        logger.info(f"Duplicated material {material_id} to week {duplicate_data.target_week}")
+        logger.info(
+            f"Duplicated material {material_id} to week {duplicate_data.target_week}"
+        )
         return new_material
 
     async def reorder_materials(
@@ -262,7 +263,9 @@ class MaterialsService:
         # Validate all IDs exist
         for material_id in reorder_data.material_ids:
             if material_id not in material_map:
-                raise ValueError(f"Material {material_id} not found in week {week_number}")
+                raise ValueError(
+                    f"Material {material_id} not found in week {week_number}"
+                )
 
         # Update order
         for index, material_id in enumerate(reorder_data.material_ids):
@@ -270,7 +273,9 @@ class MaterialsService:
             material.order_index = index
 
         db.commit()
-        logger.info(f"Reordered {len(reorder_data.material_ids)} materials in week {week_number}")
+        logger.info(
+            f"Reordered {len(reorder_data.material_ids)} materials in week {week_number}"
+        )
 
         return await self.get_materials_by_week(db, unit_id, week_number)
 

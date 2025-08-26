@@ -32,14 +32,17 @@ def backup_database():
         return backup_path
     return None
 
+
 def reset_database():
     """Reset the database"""
     print("\n🔄 Resetting Database...")
     print("=" * 60)
 
     # Ask for confirmation
-    response = input("\n⚠️  This will DELETE ALL DATA in the database. Continue? (yes/no): ")
-    if response.lower() != 'yes':
+    response = input(
+        "\n⚠️  This will DELETE ALL DATA in the database. Continue? (yes/no): "
+    )
+    if response.lower() != "yes":
         print("❌ Database reset cancelled")
         return
 
@@ -70,7 +73,7 @@ def reset_database():
             key="default_credit_points",
             value=25,  # JSON value - integer
             category="unit_defaults",
-            description="Default credit points for new units"
+            description="Default credit points for new units",
         )
         db.add(default_config)
 
@@ -79,7 +82,7 @@ def reset_database():
             key="default_duration_weeks",
             value=12,  # JSON value - integer
             category="unit_defaults",
-            description="Default duration in weeks for new units"
+            description="Default duration in weeks for new units",
         )
         db.add(default_duration)
 
@@ -112,6 +115,7 @@ def reset_database():
 
     print("\n🚀 You can now start fresh with a clean database!")
     print("   Register your first user to become the system administrator.")
+
 
 if __name__ == "__main__":
     reset_database()

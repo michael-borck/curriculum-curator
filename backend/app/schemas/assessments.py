@@ -7,10 +7,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.base import CamelModel
 from app.schemas.learning_outcomes import ALOResponse, ULOResponse
 
 
-class RubricCriterion(BaseModel):
+class RubricCriterion(CamelModel):
     """Schema for a rubric criterion"""
 
     name: str = Field(..., min_length=1, description="Criterion name")
@@ -19,19 +20,23 @@ class RubricCriterion(BaseModel):
     levels: list[str] = Field(default_factory=list, description="Performance levels")
 
 
-class Rubric(BaseModel):
+class Rubric(CamelModel):
     """Schema for assessment rubric"""
 
     criteria: list[RubricCriterion] = Field(..., min_length=1)
     total_points: float = Field(..., ge=0)
 
 
-class AssessmentBase(BaseModel):
+class AssessmentBase(CamelModel):
     """Base schema for Assessments"""
 
-    title: str = Field(..., min_length=1, max_length=500, description="Assessment title")
+    title: str = Field(
+        ..., min_length=1, max_length=500, description="Assessment title"
+    )
     type: str = Field(..., description="Assessment type (formative/summative)")
-    category: str = Field(..., description="Assessment category (quiz, exam, project, etc.)")
+    category: str = Field(
+        ..., description="Assessment category (quiz, exam, project, etc.)"
+    )
     weight: float = Field(..., ge=0, le=100, description="Percentage of final grade")
     description: str | None = Field(None, description="Brief description")
     specification: str | None = Field(None, description="Detailed requirements")
@@ -41,13 +46,17 @@ class AssessmentBase(BaseModel):
     release_date: date | None = None
     due_week: int | None = Field(None, ge=1, le=52)
     due_date: date | None = None
-    duration: str | None = Field(None, max_length=100, description="Duration (e.g., '2 hours')")
+    duration: str | None = Field(
+        None, max_length=100, description="Duration (e.g., '2 hours')"
+    )
 
     # Details
     questions: int | None = Field(None, ge=0, description="Number of questions")
     word_count: int | None = Field(None, ge=0, description="Word count requirement")
     group_work: bool = Field(default=False, description="Is group work allowed")
-    submission_type: str | None = Field(None, description="Submission type (online/in-person/both)")
+    submission_type: str | None = Field(
+        None, description="Submission type (online/in-person/both)"
+    )
     status: str = Field(default="draft", description="Assessment status")
 
 
@@ -57,7 +66,7 @@ class AssessmentCreate(AssessmentBase):
     rubric: Rubric | None = None
 
 
-class AssessmentUpdate(BaseModel):
+class AssessmentUpdate(CamelModel):
     """Schema for updating an Assessment"""
 
     title: str | None = Field(None, min_length=1, max_length=500)
@@ -95,31 +104,37 @@ class AssessmentResponse(AssessmentBase):
 class AssessmentWithOutcomes(AssessmentResponse):
     """Schema for Assessment with its learning outcomes"""
 
-    assessment_outcomes: list[ALOResponse] = []
-    mapped_ulos: list[ULOResponse] = []
-    linked_materials: list[str] = []  # Material IDs
+    assessment_outcomes: list[ALOResponse] = Field(default_factory=list)
+    mapped_ulos: list[ULOResponse] = Field(default_factory=list)
+    linked_materials: list[str] = Field(default_factory=list)  # Material IDs
 
 
-class AssessmentMapping(BaseModel):
+class AssessmentMapping(CamelModel):
     """Schema for mapping assessments to ULOs"""
 
     ulo_ids: list[str] = Field(..., description="List of ULO IDs to map")
 
 
-class AssessmentMaterialLink(BaseModel):
+class AssessmentMaterialLink(CamelModel):
     """Schema for linking assessments to materials"""
 
     material_ids: list[str] = Field(..., description="List of material IDs to link")
 
 
-class GradeDistribution(BaseModel):
+class GradeDistribution(CamelModel):
     """Schema for grade distribution summary"""
 
     total_weight: float = Field(..., description="Total weight of all assessments")
-    formative_weight: float = Field(..., description="Total weight of formative assessments")
-    summative_weight: float = Field(..., description="Total weight of summative assessments")
+    formative_weight: float = Field(
+        ..., description="Total weight of formative assessments"
+    )
+    summative_weight: float = Field(
+        ..., description="Total weight of summative assessments"
+    )
     is_valid: bool = Field(..., description="Whether weights sum to 100%")
-    assessments_by_category: dict[str, float] = Field(..., description="Weight by category")
+    assessments_by_category: dict[str, float] = Field(
+        ..., description="Weight by category"
+    )
     assessments_by_type: dict[str, int] = Field(..., description="Count by type")
 
 
@@ -131,7 +146,7 @@ class AssessmentTimeline(BaseModel):
     total_weight: float
 
 
-class AssessmentFilter(BaseModel):
+class AssessmentFilter(CamelModel):
     """Schema for filtering assessments"""
 
     type: str | None = None

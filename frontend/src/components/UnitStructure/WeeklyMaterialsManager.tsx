@@ -296,7 +296,8 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this material?')) return;
+    if (!window.confirm('Are you sure you want to delete this material?'))
+      return;
 
     try {
       await materialsApi.deleteMaterial(id);

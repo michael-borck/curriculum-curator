@@ -25,8 +25,10 @@ class LocalLearningOutcome(Base):
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     material_id = Column(
-        GUID(), ForeignKey("weekly_materials.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        GUID(),
+        ForeignKey("weekly_materials.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     description = Column(Text, nullable=False)
     order_index = Column(Integer, nullable=False, default=0)
@@ -51,8 +53,7 @@ class WeeklyLearningOutcome(Base):
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     unit_id = Column(
-        GUID(), ForeignKey("units.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        GUID(), ForeignKey("units.id", ondelete="CASCADE"), nullable=False, index=True
     )
     week_number = Column(Integer, nullable=False, index=True)
     description = Column(Text, nullable=False)
@@ -69,9 +70,7 @@ class WeeklyLearningOutcome(Base):
 
     # Many-to-many with ULOs through mapping table
     unit_outcomes = relationship(
-        "UnitLearningOutcome",
-        secondary="wlo_ulo_mappings",
-        backref="weekly_outcomes"
+        "UnitLearningOutcome", secondary="wlo_ulo_mappings", backref="weekly_outcomes"
     )
 
     def __repr__(self):
@@ -85,8 +84,10 @@ class AssessmentLearningOutcome(Base):
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     assessment_id = Column(
-        GUID(), ForeignKey("assessments.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        GUID(),
+        ForeignKey("assessments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     description = Column(Text, nullable=False)
     order_index = Column(Integer, nullable=False, default=0)

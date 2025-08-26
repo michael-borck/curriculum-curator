@@ -11,7 +11,7 @@ from datetime import datetime
 def generate_manual_code(email: str) -> str:
     """Generate today's manual verification code for an email"""
     secret_salt = "CurriculumCurator2025"
-    today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.utcnow().strftime("%Y-%m-%d")
     token_input = f"{email.lower()}{secret_salt}{today}"
     return hashlib.sha256(token_input.encode()).hexdigest()[:8].upper()
 
@@ -24,9 +24,9 @@ def generate_admin_override(email: str) -> str:
 
 
 def main():
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("VERIFICATION CODE GENERATOR")
-    print("="*60)
+    print("=" * 60)
 
     email = sys.argv[1] if len(sys.argv) > 1 else input("\nEnter user email: ").strip()
 
@@ -35,7 +35,7 @@ def main():
         return
 
     print(f"\n📧 Email: {email}")
-    print("-"*40)
+    print("-" * 40)
 
     # Generate codes
     manual_code = generate_manual_code(email)
@@ -53,7 +53,7 @@ def main():
     print("   4. DEV123 works for any .edu.au email")
 
     print("\n✅ Share the appropriate code with the user")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

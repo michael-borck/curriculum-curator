@@ -7,17 +7,20 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.schemas.base import CamelModel
 from app.schemas.learning_outcomes import LLOResponse, ULOResponse
 
 
-class MaterialBase(BaseModel):
+class MaterialBase(CamelModel):
     """Base schema for Weekly Materials"""
 
     week_number: int = Field(..., ge=1, le=52, description="Week number")
     title: str = Field(..., min_length=1, max_length=500, description="Material title")
     type: str = Field(..., description="Material type (lecture, handout, quiz, etc.)")
     description: str | None = Field(None, description="Material description")
-    duration_minutes: int | None = Field(None, ge=0, description="Estimated duration in minutes")
+    duration_minutes: int | None = Field(
+        None, ge=0, description="Estimated duration in minutes"
+    )
     order_index: int = Field(default=0, ge=0, description="Display order within week")
     status: str = Field(default="draft", description="Material status")
 
@@ -25,11 +28,15 @@ class MaterialBase(BaseModel):
 class MaterialCreate(MaterialBase):
     """Schema for creating a Weekly Material"""
 
-    file_path: str | None = Field(None, max_length=500, description="Path to content file")
-    material_metadata: dict[str, Any] | None = Field(None, description="Additional metadata")
+    file_path: str | None = Field(
+        None, max_length=500, description="Path to content file"
+    )
+    material_metadata: dict[str, Any] | None = Field(
+        None, description="Additional metadata"
+    )
 
 
-class MaterialUpdate(BaseModel):
+class MaterialUpdate(CamelModel):
     """Schema for updating a Weekly Material"""
 
     week_number: int | None = Field(None, ge=1, le=52)
@@ -60,24 +67,28 @@ class MaterialResponse(MaterialBase):
 class MaterialWithOutcomes(MaterialResponse):
     """Schema for Material with its learning outcomes"""
 
-    local_outcomes: list[LLOResponse] = []
-    mapped_ulos: list[ULOResponse] = []
+    local_outcomes: list[LLOResponse] = Field(default_factory=list)
+    mapped_ulos: list[ULOResponse] = Field(default_factory=list)
 
 
-class MaterialDuplicate(BaseModel):
+class MaterialDuplicate(CamelModel):
     """Schema for duplicating a material"""
 
     target_week: int = Field(..., ge=1, le=52, description="Target week number")
-    new_title: str | None = Field(None, min_length=1, max_length=500, description="Optional new title")
+    new_title: str | None = Field(
+        None, min_length=1, max_length=500, description="Optional new title"
+    )
 
 
-class MaterialReorder(BaseModel):
+class MaterialReorder(CamelModel):
     """Schema for reordering materials within a week"""
 
-    material_ids: list[str] = Field(..., min_length=1, description="Ordered list of material IDs")
+    material_ids: list[str] = Field(
+        ..., min_length=1, description="Ordered list of material IDs"
+    )
 
 
-class MaterialMapping(BaseModel):
+class MaterialMapping(CamelModel):
     """Schema for mapping materials to ULOs"""
 
     ulo_ids: list[str] = Field(..., description="List of ULO IDs to map")
@@ -99,7 +110,7 @@ class WeekMaterials(BaseModel):
     materials: list[MaterialResponse]
 
 
-class MaterialFilter(BaseModel):
+class MaterialFilter(CamelModel):
     """Schema for filtering materials"""
 
     week_number: int | None = Field(None, ge=1, le=52)

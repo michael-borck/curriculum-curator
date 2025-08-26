@@ -1,10 +1,11 @@
 """Initial migration with Unit models
 
 Revision ID: 93df335a628a
-Revises: 
+Revises:
 Create Date: 2025-08-18 13:36:10.442170
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '93df335a628a'
+revision: str = "93df335a628a"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

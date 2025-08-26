@@ -77,7 +77,9 @@ class Assessment(Base):
     title = Column(String(500), nullable=False)
     type = Column(String(20), nullable=False, index=True)  # AssessmentType enum
     category = Column(String(50), nullable=False, index=True)  # AssessmentCategory enum
-    weight = Column(Float, nullable=False, default=0.0)  # Percentage of final grade (0-100)
+    weight = Column(
+        Float, nullable=False, default=0.0
+    )  # Percentage of final grade (0-100)
 
     # Descriptions
     description = Column(Text, nullable=True)  # Brief description
@@ -92,15 +94,15 @@ class Assessment(Base):
 
     # Assessment details
     rubric = Column(JSON, nullable=True)  # Rubric structure
-    questions = Column(Integer, nullable=True)  # Number of questions (for quizzes/exams)
+    questions = Column(
+        Integer, nullable=True
+    )  # Number of questions (for quizzes/exams)
     word_count = Column(Integer, nullable=True)  # Required word count (for papers)
     group_work = Column(Boolean, nullable=False, default=False)
     submission_type = Column(String(20), nullable=True)  # SubmissionType enum
 
     # Status
-    status = Column(
-        String(20), nullable=False, default=AssessmentStatus.DRAFT.value
-    )
+    status = Column(String(20), nullable=False, default=AssessmentStatus.DRAFT.value)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -115,21 +117,21 @@ class Assessment(Base):
     assessment_outcomes = relationship(
         "AssessmentLearningOutcome",
         back_populates="assessment",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     # Many-to-many with ULOs through mapping table
     learning_outcomes = relationship(
         "UnitLearningOutcome",
         secondary="assessment_ulo_mappings",
-        backref="assessments"
+        backref="assessments",
     )
 
     # Many-to-many with materials through mapping table
     linked_materials = relationship(
         "WeeklyMaterial",
         secondary="assessment_material_links",
-        back_populates="assessments"
+        back_populates="assessments",
     )
 
     def __repr__(self):

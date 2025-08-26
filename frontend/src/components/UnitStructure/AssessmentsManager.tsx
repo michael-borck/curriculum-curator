@@ -285,7 +285,8 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this assessment?')) return;
+    if (!window.confirm('Are you sure you want to delete this assessment?'))
+      return;
 
     try {
       await assessmentsApi.deleteAssessment(id);
