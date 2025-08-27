@@ -1,78 +1,50 @@
 version: '3.8'
 
 services:
-  curriculum-curator:
+  app:
     build: .
     container_name: curriculum-curator
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8080:80"  # Expose nginx on port 8080 (change as needed for your VPS)
     volumes:
-      # Persistent data volumes
-      - ./data:/app/data              # SQLite database
-      - ./content:/app/content         # Git repository for content
-      - ./exports:/app/exports         # Export output directory
-      
-      # Development volumes (comment out for production)
-      - ./backend/app:/app/app        # Hot reload backend code
-      - ./frontend/dist:/app/frontend/dist  # Frontend build
-    
+      # Persistent data - these directories will survive container restarts
+      - ./data/db:/app/backend/data
+      - ./data/uploads:/app/backend/uploads
+      - ./data/logs:/app/backend/logs
+      - ./data/content_repo:/app/backend/content_repo
     environment:
-      # Security (change these in production!)
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
-      
       # Database
-      - DATABASE_URL=sqlite:////app/data/curriculum_curator.db
+      - DATABASE_URL=sqlite:///./data/curriculum_curator.db
       
-      # Git Configuration
-      - CONTENT_REPO_PATH=/app/content
-      - GIT_PATH=/usr/bin/git
+      # Security (CHANGE THESE IN PRODUCTION!)
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
       
-      # Export Tools
-      - QUARTO_PATH=/usr/local/bin/quarto
-      - PANDOC_PATH=/usr/bin/pandoc
-      
-      # LLM Configuration (optional - users can bring their own keys)
+      # LLM API Keys (optional - users can configure in app)
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - DEFAULT_LLM_MODEL=${DEFAULT_LLM_MODEL:-gpt-4}
       
-      # Email Configuration (optional)
-      - EMAIL_DEV_MODE=${EMAIL_DEV_MODE:-true}
-      - BREVO_API_KEY=${BREVO_API_KEY:-}
-      
-      # Feature Flags
+      # Features
       - ENABLE_AI_FEATURES=${ENABLE_AI_FEATURES:-true}
       - ENABLE_FILE_UPLOAD=${ENABLE_FILE_UPLOAD:-true}
       - DEBUG=${DEBUG:-false}
-    
-    restart: unless-stopped
-    
+      
+      # Email (optional)
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Curriculum Curator}
+      - SMTP_TLS=${SMTP_TLS:-true}
+      
+      # Frontend URL (update for your domain)
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Optional: Nginx reverse proxy for production
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: curriculum-curator-nginx
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./ssl:/etc/nginx/ssl:ro
-  #   depends_on:
-  #     - curriculum-curator
-  #   restart: unless-stopped
-
-# Create named volumes for production
-volumes:
-  data:
-    driver: local
-  content:
-    driver: local
-  exports:
-    driver: local
