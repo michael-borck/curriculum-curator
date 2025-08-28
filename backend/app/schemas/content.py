@@ -108,3 +108,38 @@ class ContentEnhance(CamelModel):
 
     content: str
     enhancement_type: str
+
+
+class ContentVersionCreate(CamelModel):
+    """Schema for creating a new content version"""
+    
+    title: str = Field(..., min_length=1, max_length=500)
+    content_markdown: str | None = None
+    content_html: str | None = None
+    change_description: str | None = None
+
+
+class ContentVersionResponse(CamelModel):
+    """Schema for content version responses"""
+    
+    id: str
+    material_id: str = Field(alias="materialId")
+    version: int
+    parent_version_id: str | None = Field(None, alias="parentVersionId")
+    title: str
+    content: dict[str, Any]
+    raw_content: str | None = Field(None, alias="rawContent")
+    created_at: str = Field(alias="createdAt")
+    created_by: str | None = Field(None, alias="createdBy")
+    change_summary: str | None = Field(None, alias="changeSummary")
+    is_latest: bool = Field(alias="isLatest")
+    word_count: int | None = Field(None, alias="wordCount")
+    quality_score: float | None = Field(None, alias="qualityScore")
+
+
+class ContentVersionCompare(CamelModel):
+    """Schema for comparing two content versions"""
+    
+    old_version_id: str = Field(alias="oldVersionId")
+    new_version_id: str = Field(alias="newVersionId")
+    differences: list[dict[str, Any]]
