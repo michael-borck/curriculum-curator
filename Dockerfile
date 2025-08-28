@@ -23,7 +23,7 @@ WORKDIR /app/backend
 
 # Install uv and use it immediately in the same RUN command
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    export PATH="/root/.cargo/bin:${PATH}" && \
+    export PATH="/root/.local/bin:${PATH}" && \
     uv lock && \
     uv pip install --system --no-cache -r pyproject.toml
 
