@@ -29,6 +29,8 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
 
 # Copy backend code
 COPY backend/ .
+# Ensure alembic.ini is in the right place
+RUN if [ -f alembic.ini ]; then echo "alembic.ini found"; else echo "Warning: alembic.ini not found"; fi
 RUN mkdir -p uploads logs data content_repo
 
 # Frontend setup
