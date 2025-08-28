@@ -14,17 +14,18 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for faster Python package management
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
+# Install uv and Python dependencies in one step to ensure uv is available
 WORKDIR /app
 
 # Backend setup
 COPY backend/pyproject.toml ./backend/
 WORKDIR /app/backend
-# Generate lock file if needed and install dependencies
-# Use full path to uv since PATH might not be updated in same RUN command
-RUN /root/.cargo/bin/uv lock && /root/.cargo/bin/uv pip install --system --no-cache -r pyproject.toml
+
+# Install uv and use it immediately in the same RUN command
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    export PATH="/root/.cargo/bin:${PATH}" && \
+    uv lock && \
+    uv pip install --system --no-cache -r pyproject.toml
 
 # Copy backend code
 COPY backend/ .
