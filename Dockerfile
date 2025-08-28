@@ -16,7 +16,6 @@ RUN apt-get update && apt-get install -y \
 
 # Install uv for faster Python package management
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
@@ -24,7 +23,8 @@ WORKDIR /app
 COPY backend/pyproject.toml ./backend/
 WORKDIR /app/backend
 # Generate lock file if needed and install dependencies
-RUN uv lock && uv pip install --system --no-cache -r pyproject.toml
+# Use full path to uv since PATH might not be updated in same RUN command
+RUN /root/.cargo/bin/uv lock && /root/.cargo/bin/uv pip install --system --no-cache -r pyproject.toml
 
 # Copy backend code
 COPY backend/ .
