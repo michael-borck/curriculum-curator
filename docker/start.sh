@@ -3,8 +3,9 @@ set -e
 
 echo "Starting Curriculum Curator..."
 
-# Create initial directories if they don't exist
+# Create all necessary directories
 mkdir -p /app/backend/uploads /app/backend/logs /app/backend/data /app/backend/content_repo
+mkdir -p /app/logs  # For supervisor logs
 
 # Run database migrations if alembic.ini exists
 if [ -f /app/backend/alembic.ini ]; then
