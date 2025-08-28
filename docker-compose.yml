@@ -4,7 +4,7 @@ services:
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
-      - "8080:80"  # Expose nginx on port 8080 (change as needed for your VPS)
+      - "8081:80"  # Expose nginx on port 8081 (change as needed for your VPS)
     volumes:
       # Persistent data - these directories will survive container restarts
       - ./data/db:/app/backend/data
