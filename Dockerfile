@@ -21,9 +21,10 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /app
 
 # Backend setup
-COPY backend/pyproject.toml backend/uv.lock ./backend/
+COPY backend/pyproject.toml ./backend/
 WORKDIR /app/backend
-RUN uv pip install --system --no-cache -r pyproject.toml
+# Generate lock file if needed and install dependencies
+RUN uv lock && uv pip install --system --no-cache -r pyproject.toml
 
 # Copy backend code
 COPY backend/ .
