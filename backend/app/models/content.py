@@ -119,6 +119,9 @@ class Content(Base):
     child_contents = relationship(
         "Content", back_populates="parent_content", cascade="all, delete-orphan"
     )
+    quarto_settings = relationship(
+        "ContentQuartoSettings", back_populates="content", uselist=False, cascade="all, delete-orphan"
+    )
     versions = relationship(
         "ContentVersion", back_populates="content", cascade="all, delete-orphan"
     )

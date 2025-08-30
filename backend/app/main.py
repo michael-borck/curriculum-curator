@@ -131,6 +131,7 @@ try:
         assessments,
         auth,
         content,
+        content_export,
         content_versions,
         content_workflow,
         courses,
@@ -160,6 +161,7 @@ try:
     )
     app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
     app.include_router(content.router, prefix="/api/content", tags=["content"])
+    app.include_router(content_export.router, prefix="/api", tags=["export"])
     app.include_router(content_versions.router, prefix="/api", tags=["versions"])
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])
     app.include_router(

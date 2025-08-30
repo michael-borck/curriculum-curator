@@ -120,6 +120,7 @@ class User(Base):
     password_resets = relationship(
         "PasswordReset", back_populates="user", cascade="all, delete-orphan"
     )
+    quarto_presets = relationship("QuartoPreset", back_populates="user", cascade="all, delete-orphan")
     owned_units = relationship(
         "Unit", foreign_keys="Unit.owner_id", back_populates="owner"
     )
