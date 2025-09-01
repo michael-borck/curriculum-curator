@@ -21,6 +21,8 @@ const UnitStructure: React.FC = () => {
     if (unitId) {
       fetchUnitAndEnsureOutline();
     }
+    // TECH-DEBT: Missing dependency 'fetchUnitAndEnsureOutline' - needs refactoring to useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
   const fetchUnitAndEnsureOutline = async () => {

@@ -1,14 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  FileText,
-  Settings,
-  Download,
-  Eye,
-  Save,
-  Code,
-  Layout,
-  ChevronDown,
-} from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Download, Eye, Save } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import QuartoControls from './QuartoControls';
 import api from '../../services/api';
@@ -52,7 +43,6 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
       subtitle: '',
     },
     advancedSettings: {
-      activePreset: undefined,
       yaml: '',
     },
     activeMode: 'simple',
@@ -63,20 +53,14 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
   const [previewHtml, setPreviewHtml] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load settings from backend if contentId is provided
-  useEffect(() => {
-    if (contentId) {
-      loadQuartoSettings();
-    }
-  }, [contentId]);
-
-  const loadQuartoSettings = async () => {
+  const loadQuartoSettings = useCallback(async () => {
     if (!contentId) return;
-    
+
     try {
       const response = await api.get(`/content/${contentId}/quarto-settings`);
       setQuartoSettings({
-        simpleSettings: response.data.simple_settings || quartoSettings.simpleSettings,
+        simpleSettings:
+          response.data.simple_settings || quartoSettings.simpleSettings,
         advancedSettings: {
           activePreset: response.data.active_preset,
           yaml: response.data.advanced_yaml || '',
@@ -86,11 +70,18 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
     } catch (error) {
       console.error('Failed to load Quarto settings:', error);
     }
-  };
+  }, [contentId, quartoSettings.simpleSettings]);
+
+  // Load settings from backend if contentId is provided
+  useEffect(() => {
+    if (contentId) {
+      loadQuartoSettings();
+    }
+  }, [contentId, loadQuartoSettings]);
 
   const saveQuartoSettings = async () => {
     if (!contentId) return;
-    
+
     setIsSaving(true);
     try {
       await api.put(`/content/${contentId}/quarto-settings`, {
@@ -108,7 +99,7 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
 
   const handleExport = async () => {
     if (!contentId) {
-      alert('Please save the content first before exporting');
+      window.alert('Please save the content first before exporting');
       return;
     }
 
@@ -140,7 +131,7 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
       }
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please check your settings and try again.');
+      window.alert('Export failed. Please check your settings and try again.');
     } finally {
       setIsExporting(false);
     }
@@ -180,43 +171,44 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className='flex flex-col h-full'>
       {/* Header Bar */}
-      <div className="border-b border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+      <div className='border-b border-gray-200 bg-white px-4 py-3'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center space-x-4'>
+            <h2 className='text-lg font-semibold text-gray-900'>
               Quarto Editor
             </h2>
-            <span className="text-sm text-gray-500">
-              Mode: {quartoSettings.activeMode === 'simple' ? 'Simple' : 'Advanced'}
+            <span className='text-sm text-gray-500'>
+              Mode:{' '}
+              {quartoSettings.activeMode === 'simple' ? 'Simple' : 'Advanced'}
             </span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className='flex items-center space-x-2'>
             <button
               onClick={handlePreview}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center"
+              className='px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center'
             >
-              <Eye className="h-4 w-4 mr-1" />
+              <Eye className='h-4 w-4 mr-1' />
               Preview
             </button>
 
             <button
               onClick={saveQuartoSettings}
               disabled={isSaving}
-              className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center disabled:opacity-50"
+              className='px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 flex items-center disabled:opacity-50'
             >
-              <Save className="h-4 w-4 mr-1" />
+              <Save className='h-4 w-4 mr-1' />
               {isSaving ? 'Saving...' : 'Save Settings'}
             </button>
 
             <button
               onClick={handleExport}
               disabled={isExporting}
-              className="px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50"
+              className='px-4 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center disabled:opacity-50'
             >
-              <Download className="h-4 w-4 mr-1" />
+              <Download className='h-4 w-4 mr-1' />
               {isExporting
                 ? 'Exporting...'
                 : `Export (${getActiveFormats().join(', ')})`}
@@ -226,11 +218,11 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex">
+      <div className='flex-1 flex'>
         {/* Editor Section */}
-        <div className="flex-1 flex flex-col">
+        <div className='flex-1 flex flex-col'>
           {/* Quarto Controls */}
-          <div className="border-b border-gray-200 bg-gray-50">
+          <div className='border-b border-gray-200 bg-gray-50'>
             <QuartoControls
               settings={quartoSettings}
               onSettingsChange={setQuartoSettings}
@@ -238,24 +230,24 @@ const QuartoEditor: React.FC<QuartoEditorProps> = ({
           </div>
 
           {/* Content Editor */}
-          <div className="flex-1 overflow-auto">
+          <div className='flex-1 overflow-auto'>
             <RichTextEditor content={content} onChange={onChange} />
           </div>
         </div>
 
         {/* Preview Panel (if shown) */}
         {showPreview && (
-          <div className="w-1/2 border-l border-gray-200 flex flex-col">
-            <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">Preview</h3>
+          <div className='w-1/2 border-l border-gray-200 flex flex-col'>
+            <div className='border-b border-gray-200 bg-gray-50 px-4 py-2 flex items-center justify-between'>
+              <h3 className='font-medium text-gray-900'>Preview</h3>
               <button
                 onClick={() => setShowPreview(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className='text-gray-500 hover:text-gray-700'
               >
                 ×
               </button>
             </div>
-            <div className="flex-1 overflow-auto p-4 bg-white">
+            <div className='flex-1 overflow-auto p-4 bg-white'>
               <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
             </div>
           </div>

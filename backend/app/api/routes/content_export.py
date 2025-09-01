@@ -2,9 +2,7 @@
 API endpoints for content export using Quarto
 """
 
-import os
-from typing import Any, List
-from uuid import UUID
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -12,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models import Content, Unit, User
+from app.models.content_quarto_settings import ContentQuartoSettings
 from app.schemas.quarto import (
     QuartoExportRequest,
     QuartoExportResponse,
@@ -43,16 +42,16 @@ async def export_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get the content markdown
     content_text = content.content_markdown or ""
-    
+
     # Render using Quarto
     result = await quarto_service.render_content(
         content=content_text,
@@ -60,13 +59,13 @@ async def export_content(
         settings=export_request.settings,
         content_id=content_id,
     )
-    
+
     if not result["success"]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Export failed: {result.get('error', 'Unknown error')}",
         )
-    
+
     return QuartoExportResponse(
         success=result["success"],
         render_id=result["render_id"],
@@ -94,22 +93,22 @@ async def download_exported_file(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Construct file path
     file_path = quarto_service.output_dir / filename
-    
+
     if not file_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="File not found",
         )
-    
+
     # Determine media type based on extension
     media_types = {
         ".html": "text/html",
@@ -117,9 +116,9 @@ async def download_exported_file(
         ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     }
-    
+
     media_type = media_types.get(file_path.suffix, "application/octet-stream")
-    
+
     return FileResponse(
         path=file_path,
         media_type=media_type,
@@ -145,22 +144,22 @@ async def preview_content(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Use provided content or fetch from database
     content_text = preview_request.content or content.content_markdown or ""
-    
+
     # Generate preview
     html_preview = await quarto_service.preview_content(
         content=content_text,
         settings=preview_request.settings,
     )
-    
+
     return {"html": html_preview}
 
 
@@ -181,18 +180,17 @@ async def get_content_quarto_settings(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get or create settings
     settings = content.quarto_settings
     if not settings:
-        from app.models.content_quarto_settings import ContentQuartoSettings
-        
+
         settings = ContentQuartoSettings(
             content_id=content_id,
             simple_settings={
@@ -206,7 +204,7 @@ async def get_content_quarto_settings(
         db.add(settings)
         db.commit()
         db.refresh(settings)
-    
+
     return {
         "simple_settings": settings.simple_settings,
         "advanced_yaml": settings.advanced_yaml,
@@ -233,21 +231,20 @@ async def update_content_quarto_settings(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get or create settings
     settings = content.quarto_settings
     if not settings:
-        from app.models.content_quarto_settings import ContentQuartoSettings
-        
+
         settings = ContentQuartoSettings(content_id=content_id)
         db.add(settings)
-    
+
     # Update settings
     if settings_update.simple_settings is not None:
         settings.simple_settings = settings_update.simple_settings
@@ -257,10 +254,10 @@ async def update_content_quarto_settings(
         settings.active_mode = settings_update.active_mode
     if settings_update.active_preset is not None:
         settings.active_preset = settings_update.active_preset
-    
+
     db.commit()
     db.refresh(settings)
-    
+
     return {
         "simple_settings": settings.simple_settings,
         "advanced_yaml": settings.advanced_yaml,
@@ -269,7 +266,7 @@ async def update_content_quarto_settings(
     }
 
 
-@router.get("/presets", response_model=List[QuartoPresetResponse])
+@router.get("/presets", response_model=list[QuartoPresetResponse])
 async def get_user_presets(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
@@ -277,8 +274,7 @@ async def get_user_presets(
     """
     Get user's saved Quarto presets
     """
-    presets = await quarto_service.get_user_presets(db, current_user.id)
-    return presets
+    return await quarto_service.get_user_presets(db, current_user.id)
 
 
 @router.post("/presets", response_model=QuartoPresetResponse)
@@ -290,14 +286,13 @@ async def save_preset(
     """
     Save a new Quarto preset for the user
     """
-    preset = await quarto_service.save_preset(
+    return await quarto_service.save_preset(
         db=db,
         user_id=current_user.id,
         name=preset_data.name,
         yaml_content=preset_data.yaml_content,
         is_default=preset_data.is_default,
     )
-    return preset
 
 
 @router.delete("/presets/{preset_id}")
@@ -310,13 +305,13 @@ async def delete_preset(
     Delete a user's preset
     """
     success = await quarto_service.delete_preset(db, current_user.id, preset_id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Preset not found or access denied",
         )
-    
+
     return {"success": True}
 
 
@@ -325,5 +320,4 @@ async def get_available_themes() -> Any:
     """
     Get available themes for different output formats
     """
-    themes = await quarto_service.get_available_themes()
-    return themes
+    return await quarto_service.get_available_themes()

@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  FileText,
-  Code,
-  Save,
-  Download,
-  Trash2,
-  Plus,
-  ChevronDown,
-} from 'lucide-react';
+import { FileText, Code, Save } from 'lucide-react';
 import { QuartoSettings } from './QuartoEditor';
 import api from '../../services/api';
 
@@ -88,7 +80,7 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
 
   const generateYamlFromSimple = (simpleSettings: any): string => {
     const lines = [];
-    
+
     if (simpleSettings.title) {
       lines.push(`title: "${simpleSettings.title}"`);
     }
@@ -98,12 +90,15 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
     if (simpleSettings.author) {
       lines.push(`author: "${simpleSettings.author}"`);
     }
-    
+
     if (simpleSettings.formats.length === 1) {
       const format = simpleSettings.formats[0];
       lines.push(`format:`);
       lines.push(`  ${format}:`);
-      if (simpleSettings.theme && (format === 'html' || format === 'revealjs')) {
+      if (
+        simpleSettings.theme &&
+        (format === 'html' || format === 'revealjs')
+      ) {
         lines.push(`    theme: ${simpleSettings.theme}`);
       }
       if (simpleSettings.toc && (format === 'html' || format === 'pdf')) {
@@ -121,7 +116,7 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
         }
       });
     }
-    
+
     return lines.join('\n');
   };
 
@@ -136,11 +131,10 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
         },
       });
     } else if (presetValue === 'clear') {
-      if (confirm('Clear advanced settings?')) {
+      if (window.confirm('Clear advanced settings?')) {
         onSettingsChange({
           ...settings,
           advancedSettings: {
-            activePreset: undefined,
             yaml: '',
           },
         });
@@ -162,7 +156,7 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
 
   const handleSavePreset = async () => {
     if (!newPresetName.trim()) return;
-    
+
     try {
       await api.post('/presets', {
         name: newPresetName,
@@ -200,9 +194,9 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
   };
 
   return (
-    <div className="p-4">
+    <div className='p-4'>
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className='flex border-b border-gray-200 mb-4'>
         <button
           onClick={() => handleTabChange('simple')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -211,7 +205,7 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
               : 'text-gray-500 border-transparent hover:text-gray-700'
           }`}
         >
-          <FileText className="inline h-4 w-4 mr-1" />
+          <FileText className='inline h-4 w-4 mr-1' />
           Simple
         </button>
         <button
@@ -222,53 +216,53 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
               : 'text-gray-500 border-transparent hover:text-gray-700'
           }`}
         >
-          <Code className="inline h-4 w-4 mr-1" />
+          <Code className='inline h-4 w-4 mr-1' />
           Advanced
         </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === 'simple' ? (
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {/* Output Formats */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
               Output Formats
             </label>
-            <div className="flex space-x-4">
-              <label className="flex items-center">
+            <div className='flex space-x-4'>
+              <label className='flex items-center'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={settings.simpleSettings.formats.includes('html')}
                   onChange={() => toggleFormat('html')}
-                  className="mr-2"
+                  className='mr-2'
                 />
                 HTML
               </label>
-              <label className="flex items-center">
+              <label className='flex items-center'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={settings.simpleSettings.formats.includes('pdf')}
                   onChange={() => toggleFormat('pdf')}
-                  className="mr-2"
+                  className='mr-2'
                 />
                 PDF
               </label>
-              <label className="flex items-center">
+              <label className='flex items-center'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={settings.simpleSettings.formats.includes('docx')}
                   onChange={() => toggleFormat('docx')}
-                  className="mr-2"
+                  className='mr-2'
                 />
                 Word
               </label>
-              <label className="flex items-center">
+              <label className='flex items-center'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={settings.simpleSettings.formats.includes('revealjs')}
                   onChange={() => toggleFormat('revealjs')}
-                  className="mr-2"
+                  className='mr-2'
                 />
                 Slides
               </label>
@@ -279,15 +273,15 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
           {(settings.simpleSettings.formats.includes('html') ||
             settings.simpleSettings.formats.includes('revealjs')) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Theme
               </label>
               <select
                 value={settings.simpleSettings.theme}
                 onChange={e => updateSimpleSetting('theme', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
               >
-                <option value="default">Default</option>
+                <option value='default'>Default</option>
                 {themes.html.map(theme => (
                   <option key={theme} value={theme}>
                     {theme.charAt(0).toUpperCase() + theme.slice(1)}
@@ -301,12 +295,12 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
           {(settings.simpleSettings.formats.includes('html') ||
             settings.simpleSettings.formats.includes('pdf')) && (
             <div>
-              <label className="flex items-center">
+              <label className='flex items-center'>
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={settings.simpleSettings.toc}
                   onChange={e => updateSimpleSetting('toc', e.target.checked)}
-                  className="mr-2"
+                  className='mr-2'
                 />
                 Include Table of Contents
               </label>
@@ -315,76 +309,76 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
 
           {/* Author */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
               Author (optional)
             </label>
             <input
-              type="text"
+              type='text'
               value={settings.simpleSettings.author}
               onChange={e => updateSimpleSetting('author', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Your name"
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder='Your name'
             />
           </div>
 
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
               Title (optional - can use # in document)
             </label>
             <input
-              type="text"
+              type='text'
               value={settings.simpleSettings.title || ''}
               onChange={e => updateSimpleSetting('title', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Document title"
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder='Document title'
             />
           </div>
 
           {/* Subtitle */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
               Subtitle (optional)
             </label>
             <input
-              type="text"
+              type='text'
               value={settings.simpleSettings.subtitle || ''}
               onChange={e => updateSimpleSetting('subtitle', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Document subtitle"
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder='Document subtitle'
             />
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {/* Preset Selection */}
-          <div className="flex items-center space-x-2">
+          <div className='flex items-center space-x-2'>
             <select
               value={settings.advancedSettings.activePreset || ''}
               onChange={e => handlePresetSelect(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             >
-              <option value="">Select a preset...</option>
-              <option value="from-simple">From Simple Mode</option>
+              <option value=''>Select a preset...</option>
+              <option value='from-simple'>From Simple Mode</option>
               {presets.map(preset => (
                 <option key={preset.id} value={preset.id}>
                   {preset.name}
                 </option>
               ))}
-              <option value="clear">Clear</option>
+              <option value='clear'>Clear</option>
             </select>
             <button
               onClick={() => setShowSavePresetDialog(true)}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+              className='px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
             >
-              <Save className="h-4 w-4 mr-1" />
+              <Save className='h-4 w-4 mr-1' />
               Save as...
             </button>
           </div>
 
           {/* YAML Editor */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
               YAML Front Matter
             </label>
             <textarea
@@ -398,7 +392,7 @@ const QuartoControls: React.FC<QuartoControlsProps> = ({
                   },
                 })
               }
-              className="w-full h-64 px-3 py-2 font-mono text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className='w-full h-64 px-3 py-2 font-mono text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
               placeholder="---
 title: 'My Document'
 format:
@@ -411,30 +405,29 @@ format:
 
           {/* Save Preset Dialog */}
           {showSavePresetDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-96">
-                <h3 className="text-lg font-semibold mb-4">Save Preset</h3>
+            <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+              <div className='bg-white rounded-lg p-6 w-96'>
+                <h3 className='text-lg font-semibold mb-4'>Save Preset</h3>
                 <input
-                  type="text"
+                  type='text'
                   value={newPresetName}
                   onChange={e => setNewPresetName(e.target.value)}
-                  placeholder="Preset name..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4"
-                  autoFocus
+                  placeholder='Preset name...'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg mb-4'
                 />
-                <div className="flex justify-end space-x-2">
+                <div className='flex justify-end space-x-2'>
                   <button
                     onClick={() => {
                       setShowSavePresetDialog(false);
                       setNewPresetName('');
                     }}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    className='px-4 py-2 text-gray-600 hover:text-gray-800'
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSavePreset}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
                   >
                     Save
                   </button>

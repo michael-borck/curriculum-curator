@@ -112,7 +112,7 @@ class ContentEnhance(CamelModel):
 
 class ContentVersionCreate(CamelModel):
     """Schema for creating a new content version"""
-    
+
     title: str = Field(..., min_length=1, max_length=500)
     content_markdown: str | None = None
     content_html: str | None = None
@@ -121,7 +121,7 @@ class ContentVersionCreate(CamelModel):
 
 class ContentVersionResponse(CamelModel):
     """Schema for content version responses"""
-    
+
     id: str
     material_id: str = Field(alias="materialId")
     version: int
@@ -139,7 +139,7 @@ class ContentVersionResponse(CamelModel):
 
 class ContentVersionCompare(CamelModel):
     """Schema for comparing two content versions"""
-    
+
     old_version_id: str = Field(alias="oldVersionId")
     new_version_id: str = Field(alias="newVersionId")
     differences: list[dict[str, Any]]

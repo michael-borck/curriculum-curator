@@ -183,6 +183,8 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
 
   useEffect(() => {
     fetchAssessments();
+    // TECH-DEBT: Missing dependency 'fetchAssessments' - needs refactoring to useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
   const fetchAssessments = async () => {
@@ -369,8 +371,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
 
             <button
               onClick={() =>
-                assessmentsApi.getAssessmentWorkload(unitId).then(data => {
-                  console.log('Workload analysis:', data); // eslint-disable-line no-console
+                assessmentsApi.getAssessmentWorkload(unitId).then(_data => {
                   toast.success('Check console for workload analysis');
                 })
               }

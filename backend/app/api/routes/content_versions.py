@@ -2,8 +2,7 @@
 API endpoints for content version history
 """
 
-from typing import Any, List
-from uuid import UUID
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, desc
@@ -14,13 +13,12 @@ from app.models import Content, ContentVersion, Unit, User
 from app.schemas.content import (
     ContentVersionCreate,
     ContentVersionResponse,
-    ContentVersionCompare,
 )
 
 router = APIRouter()
 
 
-@router.get("/content/{content_id}/versions", response_model=List[ContentVersionResponse])
+@router.get("/content/{content_id}/versions", response_model=list[ContentVersionResponse])
 async def get_content_versions(
     content_id: str,
     db: Session = Depends(deps.get_db),
@@ -38,13 +36,13 @@ async def get_content_versions(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get all versions for this content
     versions = (
         db.query(ContentVersion)
@@ -52,10 +50,10 @@ async def get_content_versions(
         .order_by(desc(ContentVersion.version_number))
         .all()
     )
-    
+
     # Get current version number
     current_version = content.version_number if hasattr(content, 'version_number') else 1
-    
+
     return [
         ContentVersionResponse(
             id=str(version.id),
@@ -76,7 +74,7 @@ async def get_content_versions(
     ]
 
 
-@router.get("/materials/{material_id}/versions", response_model=List[ContentVersionResponse])
+@router.get("/materials/{material_id}/versions", response_model=list[ContentVersionResponse])
 async def get_material_versions(
     material_id: str,
     db: Session = Depends(deps.get_db),
@@ -108,13 +106,13 @@ async def restore_content_version(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get the version to restore
     version_to_restore = (
         db.query(ContentVersion)
@@ -126,13 +124,13 @@ async def restore_content_version(
         )
         .first()
     )
-    
+
     if not version_to_restore:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Version not found",
         )
-    
+
     # Get the current max version number
     max_version = (
         db.query(ContentVersion.version_number)
@@ -141,7 +139,7 @@ async def restore_content_version(
         .first()
     )
     new_version_number = (max_version[0] + 1) if max_version else 1
-    
+
     # Create a new version with content from the restored version
     new_version = ContentVersion(
         content_id=content_id,
@@ -152,18 +150,18 @@ async def restore_content_version(
         change_description=f"Restored from version {version_to_restore.version_number}",
         created_by_id=current_user.id,
     )
-    
+
     # Update the current content with the restored version
     content.content_markdown = version_to_restore.content_markdown
     content.content_html = version_to_restore.content_html
     content.title = version_to_restore.title
     if hasattr(content, 'version_number'):
         content.version_number = new_version_number
-    
+
     db.add(new_version)
     db.commit()
     db.refresh(content)
-    
+
     return {
         "message": f"Content restored to version {version_to_restore.version_number}",
         "new_version": new_version_number,
@@ -201,13 +199,13 @@ async def create_content_version(
         .filter(Unit.owner_id == current_user.id)
         .first()
     )
-    
+
     if not content:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Content not found or access denied",
         )
-    
+
     # Get the current max version number
     max_version = (
         db.query(ContentVersion.version_number)
@@ -216,7 +214,7 @@ async def create_content_version(
         .first()
     )
     new_version_number = (max_version[0] + 1) if max_version else 1
-    
+
     # Create new version
     new_version = ContentVersion(
         content_id=content_id,
@@ -227,18 +225,18 @@ async def create_content_version(
         change_description=version_data.change_description,
         created_by_id=current_user.id,
     )
-    
+
     # Update the content with new version
     content.content_markdown = version_data.content_markdown
     content.content_html = version_data.content_html
     content.title = version_data.title
     if hasattr(content, 'version_number'):
         content.version_number = new_version_number
-    
+
     db.add(new_version)
     db.commit()
     db.refresh(new_version)
-    
+
     return ContentVersionResponse(
         id=str(new_version.id),
         materialId=str(new_version.content_id),

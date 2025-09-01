@@ -2,10 +2,9 @@
 Content Quarto settings model for storing both simple and advanced settings
 """
 
-import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -18,20 +17,19 @@ class ContentQuartoSettings(Base):
     __tablename__ = "content_quarto_settings"
 
     content_id = Column(GUID(), ForeignKey("contents.id"), primary_key=True, index=True)
-    
+
     # Simple mode settings stored as JSON
     simple_settings = Column(JSON, default={})
-    # Example: {"formats": ["html", "pdf"], "theme": "cosmo", "toc": true, "author": "John Doe"}
-    
+
     # Advanced mode YAML
     advanced_yaml = Column(Text, nullable=True)
-    
+
     # Which mode is currently active
     active_mode = Column(String(20), default="simple")  # 'simple' or 'advanced'
-    
+
     # Currently selected preset name (for advanced mode)
     active_preset = Column(String(255), nullable=True)
-    
+
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

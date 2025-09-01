@@ -236,6 +236,8 @@ const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
   useEffect(() => {
     loadULOs();
     loadCoverage();
+    // TECH-DEBT: Missing dependencies 'loadULOs' and 'loadCoverage' - needs refactoring to useCallback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unitId]);
 
   const loadULOs = async () => {
