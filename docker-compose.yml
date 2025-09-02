@@ -40,9 +40,6 @@ services:
       
       # Frontend URL (update for your domain)
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
-      
-      # Frontend API URL (for production use relative paths)
-      - VITE_API_URL=${VITE_API_URL:-/api}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/api/health"]
       interval: 30s
