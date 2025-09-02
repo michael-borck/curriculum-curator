@@ -39,8 +39,8 @@ RUN npm ci
 
 # Copy frontend code and build
 COPY frontend/ .
-# Set empty API URL for production (uses relative URLs, same domain)
-ENV VITE_API_URL=""
+# Set API URL for production - /api since FastAPI serves everything
+ENV VITE_API_URL="/api"
 RUN npm run build
 
 # Setup supervisor to manage both processes

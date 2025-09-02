@@ -7,11 +7,12 @@ import type {
 } from '../types/index';
 
 // Use environment variable for API URL
-// In production (Docker), VITE_API_URL is set to empty string, so we use /api
-// In development, we use localhost:8000/api
-const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
-  ? (import.meta.env.VITE_API_URL || '/api')  // Empty string in Docker means use /api
-  : 'http://localhost:8000/api';
+// In development: no env var OR empty string -> use localhost:8000/api
+// In production (Docker): VITE_API_URL="/api" -> use /api
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+console.log('API Base URL:', API_BASE_URL);
+console.log('VITE_API_URL env:', import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
