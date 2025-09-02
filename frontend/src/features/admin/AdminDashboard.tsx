@@ -83,7 +83,7 @@ const AdminDashboard = () => {
       setStatsError('');
 
       const [statsResponse] = await Promise.all([
-        api.get('/api/admin/users/stats'),
+        api.get('/admin/users/stats'),
         // Could add more endpoints here for unit stats, etc.
       ]);
 

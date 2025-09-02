@@ -51,7 +51,7 @@ const UnitManager = () => {
   const fetchUnits = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/units');
+      const response = await api.get('/units');
       // The backend returns an array directly, not wrapped in an object
       setUnits(
         Array.isArray(response.data) ? response.data : response.data.units || []
@@ -65,7 +65,7 @@ const UnitManager = () => {
 
   const fetchSystemDefaults = async () => {
     try {
-      const response = await api.get('/api/admin/settings');
+      const response = await api.get('/admin/settings');
       if (response.data) {
         const defaults = {
           creditPoints: response.data.defaultCreditPoints || 25,
@@ -111,7 +111,7 @@ const UnitManager = () => {
         status: 'draft',
       };
 
-      const response = await api.post('/api/units', unitData);
+      const response = await api.post('/units', unitData);
 
       // Add the new unit to the list
       setUnits([...units, response.data]);

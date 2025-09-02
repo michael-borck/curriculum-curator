@@ -17,7 +17,7 @@ class LLMApiService {
    */
   async testConnection(request: LLMTestRequest): Promise<LLMTestResponse> {
     const response = await api.post<LLMTestResponse>(
-      '/api/llm-config/test',
+      '/llm-config/test',
       request
     );
     return response.data;
@@ -48,7 +48,7 @@ class LLMApiService {
    */
   async getUserConfigurations(): Promise<LLMConfig[]> {
     const response = await api.get<LLMConfig[]>(
-      '/api/llm-config/configurations'
+      '/llm-config/configurations'
     );
     return response.data;
   }
@@ -58,7 +58,7 @@ class LLMApiService {
    */
   async getSystemConfigurations(): Promise<LLMConfig[]> {
     const response = await api.get<LLMConfig[]>(
-      '/api/llm-config/configurations/system'
+      '/llm-config/configurations/system'
     );
     return response.data;
   }
@@ -68,7 +68,7 @@ class LLMApiService {
    */
   async createConfiguration(config: Omit<LLMConfig, 'id'>): Promise<LLMConfig> {
     const response = await api.post<LLMConfig>(
-      '/api/llm-config/configurations',
+      '/llm-config/configurations',
       config
     );
     return response.data;
@@ -81,7 +81,7 @@ class LLMApiService {
     config: Omit<LLMConfig, 'id'>
   ): Promise<LLMConfig> {
     const response = await api.post<LLMConfig>(
-      '/api/llm-config/configurations/system',
+      '/llm-config/configurations/system',
       config
     );
     return response.data;
@@ -92,7 +92,7 @@ class LLMApiService {
    */
   async getAllUserConfigurations(): Promise<LLMConfig[]> {
     const response = await api.get<LLMConfig[]>(
-      '/api/llm-config/configurations/users'
+      '/llm-config/configurations/users'
     );
     return response.data;
   }

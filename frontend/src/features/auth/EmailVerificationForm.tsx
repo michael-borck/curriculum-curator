@@ -120,7 +120,7 @@ const EmailVerificationForm = ({
     setError('');
 
     try {
-      const response = await api.post('/api/auth/verify-email', {
+      const response = await api.post('/auth/verify-email', {
         email,
         code: codeToVerify,
       });
@@ -157,7 +157,7 @@ const EmailVerificationForm = ({
     setSuccessMessage('');
 
     try {
-      const response = await api.post('/api/auth/resend-verification', {
+      const response = await api.post('/auth/resend-verification', {
         email,
       });
 

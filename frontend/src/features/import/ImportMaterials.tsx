@@ -95,7 +95,7 @@ const ImportMaterials = () => {
 
   const fetchUnits = async () => {
     try {
-      const response = await api.get('/api/units');
+      const response = await api.get('/units');
       setUnits(response.data);
     } catch (error) {
       console.error('Error fetching units:', error);

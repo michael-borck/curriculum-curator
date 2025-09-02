@@ -170,7 +170,7 @@ const SystemSettings = () => {
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/admin/settings');
+      const response = await api.get('/admin/settings');
       // Merge with defaults to ensure all fields are present
       const mergedSettings = {
         ...settings, // Start with defaults
@@ -199,7 +199,7 @@ const SystemSettings = () => {
     setError('');
 
     try {
-      const response = await api.put('/api/admin/settings', settings);
+      const response = await api.put('/admin/settings', settings);
       setSettings(response.data);
       setOriginalSettings(response.data);
       setSuccess('Settings saved successfully');

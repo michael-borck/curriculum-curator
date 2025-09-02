@@ -31,7 +31,7 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/request-password-reset', {
+      const response = await api.post('/auth/request-password-reset', {
         email,
       });
       if (response.status === 200) {
@@ -56,7 +56,7 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/verify-reset-code', {
+      const response = await api.post('/auth/verify-reset-code', {
         email,
         code,
       });
@@ -103,7 +103,7 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/api/auth/reset-password', {
+      const response = await api.post('/auth/reset-password', {
         email,
         code,
         new_password: newPassword,

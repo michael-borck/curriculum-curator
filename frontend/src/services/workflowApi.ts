@@ -103,7 +103,7 @@ class WorkflowAPI {
    * Get all workflow stages
    */
   async getWorkflowStages(): Promise<{ stages: WorkflowStageInfo[] }> {
-    const response = await api.get('/api/content/workflow/stages');
+    const response = await api.get('/content/workflow/stages');
     return response.data;
   }
 
@@ -132,7 +132,7 @@ class WorkflowAPI {
     total: number;
     sessions: WorkflowSession[];
   }> {
-    const response = await api.get('/api/content/workflow/sessions', {
+    const response = await api.get('/content/workflow/sessions', {
       params: { include_completed: includeCompleted, skip, limit },
     });
     return response.data;
@@ -176,7 +176,7 @@ class WorkflowAPI {
     formData.append('extraction_method', extractionMethod);
 
     const response = await api.post(
-      '/api/content/import/pdf/analyze',
+      '/content/import/pdf/analyze',
       formData,
       {
         headers: {
@@ -207,7 +207,7 @@ class WorkflowAPI {
     formData.append('output_format', outputFormat);
 
     const response = await api.post(
-      '/api/content/import/pdf/extract-text',
+      '/content/import/pdf/extract-text',
       formData,
       {
         headers: {

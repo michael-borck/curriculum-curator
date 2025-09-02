@@ -35,7 +35,7 @@ const EmailWhitelist = () => {
   const fetchWhitelist = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/admin/whitelist');
+      const response = await api.get('/admin/whitelist');
       setEntries(response.data);
       setError('');
     } catch (error: any) {
@@ -72,7 +72,7 @@ const EmailWhitelist = () => {
     setError('');
 
     try {
-      const response = await api.post('/api/admin/whitelist', {
+      const response = await api.post('/admin/whitelist', {
         pattern: newEntry.toLowerCase(),
         description: newDescription || `Email pattern: ${newEntry}`,
         is_active: true,

@@ -7,10 +7,11 @@ import type {
 } from '../types/index';
 
 // Use environment variable for API URL
-// Empty string = relative URLs (production), undefined = localhost (development)
+// In production (Docker), VITE_API_URL is set to empty string, so we use /api
+// In development, we use localhost:8000/api
 const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
-  ? import.meta.env.VITE_API_URL 
-  : 'http://localhost:8000';
+  ? (import.meta.env.VITE_API_URL || '/api')  // Empty string in Docker means use /api
+  : 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -69,7 +70,7 @@ export const login = (email: string, password: string): Promise<ApiResponse> => 
   console.log('Login params:', params.toString());
   
   // Send with explicit headers to ensure they're not overridden
-  return api.post('/api/auth/login', params.toString(), {
+  return api.post('/auth/login', params.toString(), {
     headers: { 
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -81,7 +82,7 @@ export const register = (
   password: string,
   name: string
 ): Promise<ApiResponse> =>
-  api.post('/api/auth/register', { email, password, name });
+  api.post('/auth/register', { email, password, name });
 
 // Content endpoints
 export const generateContent = (
@@ -89,7 +90,7 @@ export const generateContent = (
   pedagogy: PedagogyType,
   context: string
 ): Promise<ApiResponse> =>
-  api.post('/api/llm/generate', {
+  api.post('/llm/generate', {
     content_type: type,
     pedagogy_style: pedagogy,
     context,
@@ -99,11 +100,11 @@ export const enhanceContent = (
   content: string,
   pedagogy: PedagogyType
 ): Promise<ApiResponse> =>
-  api.post('/api/llm/enhance', { content, pedagogy_style: pedagogy });
+  api.post('/llm/enhance', { content, pedagogy_style: pedagogy });
 
 // Unit endpoints
 export const getUnits = (): Promise<ApiResponse<Unit[]>> =>
-  api.get('/api/units');
+  api.get('/units');
 export const getUnit = (id: string): Promise<ApiResponse<Unit>> =>
   api.get(`/api/units/${id}`);
 
@@ -111,7 +112,7 @@ export const getUnit = (id: string): Promise<ApiResponse<Unit>> =>
 export const getCourses = getUnits;
 export const getCourse = getUnit;
 export const createUnit = (data: Partial<Unit>): Promise<ApiResponse<Unit>> =>
-  api.post('/api/units', data);
+  api.post('/units', data);
 export const updateUnit = (
   id: string,
   data: Partial<Unit>
@@ -121,7 +122,7 @@ export const updateUnit = (
 export const uploadFile = (file: File): Promise<ApiResponse> => {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post('/api/content/upload', formData, {
+  return api.post('/content/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
