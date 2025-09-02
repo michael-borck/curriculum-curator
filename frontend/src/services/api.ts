@@ -6,13 +6,14 @@ import type {
   ContentType,
 } from '../types/index';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use environment variable for API URL
+// Empty string = relative URLs (production), undefined = localhost (development)
+const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
+  ? import.meta.env.VITE_API_URL 
+  : 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Add auth token to requests
@@ -21,16 +22,59 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Debug logging for login endpoint
+  if (config.url?.includes('/auth/login')) {
+    console.log('Login request config:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data,
+      dataType: typeof config.data,
+      contentType: config.headers?.['Content-Type'],
+    });
+  }
+  
+  // Don't override Content-Type if it's already set
+  // This is important for form-encoded requests
+  if (config.headers && config.headers['Content-Type']) {
+    // Content-Type is already set, don't change it
+    return config;
+  }
+  
+  // Only set Content-Type to JSON if:
+  // 1. No Content-Type is set AND
+  // 2. We have data to send AND  
+  // 3. The data is not FormData, URLSearchParams, or a URL-encoded string
+  if (config.headers && config.data) {
+    const isFormData = config.data instanceof FormData;
+    const isURLSearchParams = config.data instanceof URLSearchParams;
+    const isURLEncodedString = typeof config.data === 'string' && config.data.includes('=');
+    
+    if (!isFormData && !isURLSearchParams && !isURLEncodedString) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+  }
+  
   return config;
 });
 
 // Auth endpoints - Note: backend expects 'username' for login (not 'email')
-export const login = (email: string, password: string): Promise<ApiResponse> =>
-  api.post(
-    '/api/auth/login',
-    new URLSearchParams({ username: email, password }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-  );
+export const login = (email: string, password: string): Promise<ApiResponse> => {
+  // Create form data
+  const params = new URLSearchParams();
+  params.append('username', email);
+  params.append('password', password);
+  
+  console.log('Login params:', params.toString());
+  
+  // Send with explicit headers to ensure they're not overridden
+  return api.post('/api/auth/login', params.toString(), {
+    headers: { 
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  });
+};
 
 export const register = (
   email: string,

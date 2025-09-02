@@ -4,9 +4,13 @@ Curriculum Curator - Main FastAPI Application
 
 import logging
 from contextlib import asynccontextmanager
+import os
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from slowapi.errors import RateLimitExceeded
@@ -121,69 +125,136 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import and include routers with error handling
+# Import and include routers with individual error handling
+# Critical routes first - auth should always load
 try:
-    from app.api.routes import (
-        admin,
-        admin_config,
-        ai,
-        analytics,
-        assessments,
-        auth,
-        content,
-        content_export,
-        content_versions,
-        content_workflow,
-        courses,
-        import_content,
-        learning_outcomes,
-        llm,
-        llm_config,
-        materials,
-        monitoring,
-        unit_structure,
-        units,
-        user_export,
-    )
-
+    from app.api.routes import auth
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+except ImportError as e:
+    logger.error(f"Failed to load auth routes: {e}")
+
+try:
+    from app.api.routes import admin
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+except ImportError as e:
+    logger.warning(f"Failed to load admin routes: {e}")
+
+try:
+    from app.api.routes import admin_config
     app.include_router(admin_config.router, prefix="/api/admin", tags=["admin-config"])
+except ImportError as e:
+    logger.warning(f"Failed to load admin_config routes: {e}")
+
+try:
+    from app.api.routes import courses
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+except ImportError as e:
+    logger.warning(f"Failed to load courses routes: {e}")
+
+try:
+    from app.api.routes import units
     app.include_router(units.router, prefix="/api/units", tags=["units"])
+except ImportError as e:
+    logger.warning(f"Failed to load units routes: {e}")
+
+try:
+    from app.api.routes import unit_structure
     app.include_router(unit_structure.router, prefix="/api", tags=["unit-structure"])
+except ImportError as e:
+    logger.warning(f"Failed to load unit_structure routes: {e}")
+
+try:
+    from app.api.routes import learning_outcomes
     app.include_router(
         learning_outcomes.router, prefix="/api/outcomes", tags=["learning-outcomes"]
     )
+except ImportError as e:
+    logger.warning(f"Failed to load learning_outcomes routes: {e}")
+
+try:
+    from app.api.routes import materials
     app.include_router(materials.router, prefix="/api/materials", tags=["materials"])
+except ImportError as e:
+    logger.warning(f"Failed to load materials routes: {e}")
+
+try:
+    from app.api.routes import assessments
     app.include_router(
         assessments.router, prefix="/api/assessments", tags=["assessments"]
     )
+except ImportError as e:
+    logger.warning(f"Failed to load assessments routes: {e}")
+
+try:
+    from app.api.routes import analytics
     app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
+except ImportError as e:
+    logger.warning(f"Failed to load analytics routes: {e}")
+
+try:
+    from app.api.routes import content
     app.include_router(content.router, prefix="/api/content", tags=["content"])
+except ImportError as e:
+    logger.warning(f"Failed to load content routes: {e}")
+
+try:
+    from app.api.routes import content_export
     app.include_router(content_export.router, prefix="/api", tags=["export"])
+except ImportError as e:
+    logger.warning(f"Failed to load content_export routes: {e}")
+
+try:
+    from app.api.routes import content_versions
     app.include_router(content_versions.router, prefix="/api", tags=["versions"])
+except ImportError as e:
+    logger.warning(f"Failed to load content_versions routes: {e}")
+
+try:
+    from app.api.routes import import_content
     app.include_router(import_content.router, prefix="/api/content", tags=["import"])
+except ImportError as e:
+    logger.warning(f"Failed to load import_content routes: {e}")
+
+try:
+    from app.api.routes import content_workflow
     app.include_router(
         content_workflow.router, prefix="/api/content", tags=["workflow"]
     )
+except ImportError as e:
+    logger.warning(f"Failed to load content_workflow routes: {e}")
+
+try:
+    from app.api.routes import llm
     app.include_router(llm.router, prefix="/api/llm", tags=["llm"])
+except ImportError as e:
+    logger.warning(f"Failed to load llm routes: {e}")
+
+try:
+    from app.api.routes import llm_config
     app.include_router(llm_config.router, prefix="/api/llm-config", tags=["llm-config"])
+except ImportError as e:
+    logger.warning(f"Failed to load llm_config routes: {e}")
+
+try:
+    from app.api.routes import ai
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+except ImportError as e:
+    logger.warning(f"Failed to load ai routes: {e}")
+
+try:
+    from app.api.routes import user_export
     app.include_router(user_export.router, prefix="/api/user", tags=["user"])
+except ImportError as e:
+    logger.warning(f"Failed to load user_export routes: {e}")
+
+try:
+    from app.api.routes import monitoring
     app.include_router(monitoring.router, prefix="/api/monitoring", tags=["monitoring"])
 except ImportError as e:
-    logger.warning(f"Some routes not loaded: {e}")
+    logger.warning(f"Failed to load monitoring routes: {e}")
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Curriculum Curator API",
-        "version": "0.1.0",
-        "docs": "/docs",
-        "redoc": "/redoc",
-    }
+# Remove the root API endpoint - let static files handle it
 
 
 @app.get("/health")
@@ -237,3 +308,30 @@ async def test_form_endpoint(form_data: OAuth2PasswordRequestForm = Depends()):
         "grant_type": form_data.grant_type,
         "scopes": form_data.scopes,
     }
+
+
+# Serve static files - MUST BE LAST (after all API routes)
+# Check if we're in Docker container (frontend is built)
+frontend_path = Path("/app/frontend/dist")
+if not frontend_path.exists():
+    # Development mode - look for frontend in parent directory
+    frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+
+if frontend_path.exists():
+    # Mount static files at root, but only for non-API routes
+    app.mount("/assets", StaticFiles(directory=str(frontend_path / "assets")), name="assets")
+    
+    # Catch-all route for SPA - serves index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Don't serve index.html for API routes
+        if full_path.startswith("api/"):
+            return {"detail": "Not Found"}
+        
+        # Serve index.html for all other routes (SPA routing)
+        index_path = frontend_path / "index.html"
+        if index_path.exists():
+            return FileResponse(str(index_path))
+        return {"detail": "Frontend not found"}
+else:
+    logger.warning(f"Frontend build not found at {frontend_path}")

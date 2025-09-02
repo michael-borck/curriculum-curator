@@ -9,7 +9,7 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.models.user import GUID
+from app.models.common import GUID
 
 
 class QuartoPreset(Base):

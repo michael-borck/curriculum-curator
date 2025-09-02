@@ -2,6 +2,9 @@
 Database models for Curriculum Curator
 """
 
+# Common types
+from .common import GUID
+
 # Authentication models
 # Import models in dependency order
 # New unit structure models
@@ -40,6 +43,7 @@ from .mappings import (
 )
 from .material import Material, MaterialType
 from .password_reset import PasswordReset
+from .quarto_preset import QuartoPreset
 from .quiz_question import QuestionType, QuizQuestion
 from .security_log import SecurityEventType, SecurityLog
 from .system_config import ConfigCategory, SystemConfig
@@ -58,10 +62,13 @@ from .weekly_topic import WeeklyTopic, WeekType
 
 # ruff: noqa: RUF022
 __all__ = [
+    # Common types
+    "GUID",
     # Authentication
     "EmailVerification",
     "EmailWhitelist",
     "PasswordReset",
+    "QuartoPreset",
     "SystemSettings",
     "User",
     "UserRole",
