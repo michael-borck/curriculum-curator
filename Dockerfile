@@ -7,7 +7,7 @@ FROM rocker/verse:4.3
 # Switch to root for system installations
 USER root
 
-# Install Node.js, nginx, supervisor and Python essentials
+# Install system packages and remove conflicting Node.js packages
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
+    && apt-get remove -y libnode-dev nodejs npm \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -25,6 +26,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Install Python packages for Jupyter + ML (for lecturers who want Python)
+# Note: rocker/verse already has R + tidyverse + Quarto + TinyTeX + Git + Pandoc
 RUN pip install --no-cache-dir \
     jupyter \
     matplotlib \

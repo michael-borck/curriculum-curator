@@ -131,7 +131,7 @@
 - [x] 8.3 Create Course Dashboard with real data [Connect to materials API] ✅ COMPLETED
 - [x] 8.4 Implement Task Management UI [Kanban board for LRD tasks] ✅ COMPLETED
 - [ ] 8.5 Build Version History Browser [Visual diff interface]
-- [ ] 8.6 Create Admin Dashboard [User management, settings]
+- [x] 8.6 Create Admin Dashboard [User management, settings] ✅ COMPLETED
 
 ### 9.0 File Import Processing [Effort: M] [Priority: HIGH] ✅ COMPLETED
 - [x] 9.1 Implement PDF content extraction [PyPDF2 integrated] ✅
