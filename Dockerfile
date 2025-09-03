@@ -28,14 +28,18 @@ RUN uv venv .venv && \
     . .venv/bin/activate && \
     uv pip install -e ".[dev]"
 
-# Create a basic .env file if needed for Docker environment
-RUN echo "# Auto-generated for Docker environment" > .env && \
+# Create a basic .env file ONLY if one doesn't exist
+RUN if [ ! -f .env ]; then \
+    echo "# Auto-generated for Docker environment" > .env && \
     echo "SECRET_KEY=docker-dev-secret-key-$(date +%s | sha256sum | head -c 32)" >> .env && \
     echo "DATABASE_URL=sqlite:///./data/curriculum_curator.db" >> .env && \
     echo "ALGORITHM=HS256" >> .env && \
     echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env && \
     echo "DEBUG=true" >> .env && \
-    echo "# EMAIL_WHITELIST is set as empty list in config.py default" >> .env
+    echo "# EMAIL_WHITELIST is set as empty list in config.py default" >> .env; \
+    else \
+    echo "Using existing .env file with SMTP settings"; \
+    fi
 
 WORKDIR /app
 

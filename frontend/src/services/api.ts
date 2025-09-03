@@ -6,14 +6,10 @@ import type {
   ContentType,
 } from '../types/index';
 
-// Use environment variable for API URL, or determine based on hostname
-// In production: use relative URLs so they go through the same domain
-// In development: use localhost:8000/api
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const API_BASE_URL = isProduction ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api');
+// Always use relative URLs - let the proxy handle routing
+const API_BASE_URL = '/api';
 
 console.log('API Base URL:', API_BASE_URL);
-console.log('VITE_API_URL env:', import.meta.env.VITE_API_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -26,38 +22,11 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // Debug logging for login endpoint
-  if (config.url?.includes('/auth/login')) {
-    console.log('Login request config:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      data: config.data,
-      dataType: typeof config.data,
-      contentType: config.headers?.['Content-Type'],
-    });
-  }
-  
-  // Don't override Content-Type if it's already set
-  // This is important for form-encoded requests
-  if (config.headers && config.headers['Content-Type']) {
-    // Content-Type is already set, don't change it
-    return config;
-  }
-  
-  // Only set Content-Type to JSON if:
-  // 1. No Content-Type is set AND
-  // 2. We have data to send AND  
-  // 3. The data is not FormData, URLSearchParams, or a URL-encoded string
-  if (config.headers && config.data) {
-    const isFormData = config.data instanceof FormData;
-    const isURLSearchParams = config.data instanceof URLSearchParams;
-    const isURLEncodedString = typeof config.data === 'string' && config.data.includes('=');
-    
-    if (!isFormData && !isURLSearchParams && !isURLEncodedString) {
-      config.headers['Content-Type'] = 'application/json';
-    }
-  }
+  // Don't set Content-Type - let axios handle it based on the data type
+  // axios will automatically set:
+  // - application/json for objects
+  // - application/x-www-form-urlencoded for URLSearchParams
+  // - multipart/form-data for FormData
   
   return config;
 });

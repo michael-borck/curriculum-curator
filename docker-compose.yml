@@ -8,6 +8,8 @@ services:
     networks:
       - caddy_default
     volumes:
+      # Mount the backend .env file with SMTP settings
+      - ./backend/.env:/app/backend/.env:ro
       # Persistent data - these directories will survive container restarts
       - ./data/db:/app/backend/data
       - ./data/uploads:/app/backend/uploads
