@@ -6,10 +6,11 @@ import type {
   ContentType,
 } from '../types/index';
 
-// Use environment variable for API URL
-// In development: no env var OR empty string -> use localhost:8000/api
-// In production (Docker): VITE_API_URL="/api" -> use /api
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Use environment variable for API URL, or determine based on hostname
+// In production: use relative URLs so they go through the same domain
+// In development: use localhost:8000/api
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const API_BASE_URL = isProduction ? '/api' : (import.meta.env.VITE_API_URL || 'http://localhost:8000/api');
 
 console.log('API Base URL:', API_BASE_URL);
 console.log('VITE_API_URL env:', import.meta.env.VITE_API_URL);

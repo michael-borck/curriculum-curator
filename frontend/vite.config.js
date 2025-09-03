@@ -17,7 +17,34 @@ export default defineConfig({
       '127.0.0.1',
       'curriculumcurator.serveur.au',
       '.serveur.au'  // Allow any subdomain of serveur.au
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/health': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/docs': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/openapi.json': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   test: {
     globals: true,
