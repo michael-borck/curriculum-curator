@@ -1,4 +1,4 @@
-# Simple Dockerfile that mirrors local development exactly
+# One Dockerfile for everything - build frontend, serve with backend
 FROM python:3.11-slim
 
 # Install Node.js 20, curl, and other dependencies
@@ -43,38 +43,14 @@ RUN if [ ! -f .env ]; then \
 
 WORKDIR /app
 
-# Make scripts executable
-RUN chmod +x backend.sh frontend.sh
+# Build the frontend
+WORKDIR /app/frontend
+RUN npm install && npm run build
 
-# Create a simple start script that runs both
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-# Export environment variables for scripts\n\
-export TERM=xterm  # Set TERM for scripts that need it\n\
-export HOST=0.0.0.0  # Bind to all interfaces so Docker can access\n\
-export VITE_HOST=0.0.0.0  # Frontend needs to be accessible from outside\n\
-export VITE_API_URL=http://localhost:8000  # Frontend talks to backend internally\n\
-\n\
-# Start backend in background\n\
-echo "Starting backend..."\n\
-cd /app && ./backend.sh &\n\
-BACKEND_PID=$!\n\
-\n\
-# Give backend time to start\n\
-echo "Waiting for backend to start..."\n\
-sleep 10\n\
-\n\
-# Start frontend in foreground\n\
-echo "Starting frontend..."\n\
-cd /app && ./frontend.sh\n\
-\n\
-# If frontend exits, kill backend\n\
-kill $BACKEND_PID 2>/dev/null || true' > /app/start-both.sh && chmod +x /app/start-both.sh
+WORKDIR /app/backend
 
-# Expose frontend port (Vite dev server)
-# Backend doesn't need to be exposed since frontend proxies to it
-EXPOSE 5173
+# Expose backend port ONLY (it serves everything)
+EXPOSE 8000
 
-# Run both scripts
-CMD ["/app/start-both.sh"]
+# Run backend which serves both API and built frontend
+CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

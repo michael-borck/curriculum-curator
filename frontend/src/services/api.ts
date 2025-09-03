@@ -6,7 +6,7 @@ import type {
   ContentType,
 } from '../types/index';
 
-// Always use relative URLs - let the proxy handle routing
+// Same origin - backend serves both API and frontend
 const API_BASE_URL = '/api';
 
 console.log('API Base URL:', API_BASE_URL);

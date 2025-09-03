@@ -4,7 +4,7 @@ services:
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
-      - "8081:5173"  # Expose Vite dev server on 8081 for Caddy
+      - "8081:8000"  # Backend serves everything on port 8000
     networks:
       - caddy_default
     volumes:
