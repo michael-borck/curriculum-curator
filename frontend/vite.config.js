@@ -8,7 +8,16 @@ export default defineConfig({
     port: 5173,
     host: true,
     strictPort: false,
-    open: false
+    open: false,
+    hmr: {
+      clientPort: 8081
+    },
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      'curriculumcurator.serveur.au',
+      '.serveur.au'  // Allow any subdomain of serveur.au
+    ]
   },
   test: {
     globals: true,
