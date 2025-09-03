@@ -1,63 +1,76 @@
-# Single container Dockerfile for Curriculum Curator
-# Runs both frontend (nginx) and backend (FastAPI) in one container
-
+# Simple Dockerfile that mirrors local development exactly
 FROM python:3.11-slim
 
-# Install Node.js, nginx, supervisor and build dependencies
+# Install Node.js 20, curl, and other dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     gcc \
     g++ \
-    supervisor \
+    lsof \
+    procps \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv and Python dependencies in one step to ensure uv is available
+# Install uv for faster Python package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Set working directory
 WORKDIR /app
 
-# Backend setup
-COPY backend/pyproject.toml ./backend/
+# Copy everything
+COPY . .
+
+# Pre-install Python dependencies so they're available
 WORKDIR /app/backend
+RUN uv venv .venv && \
+    . .venv/bin/activate && \
+    uv pip install -e ".[dev]"
 
-# Install uv and use it immediately in the same RUN command
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
-    export PATH="/root/.local/bin:${PATH}" && \
-    uv lock && \
-    uv pip install --system --no-cache -r pyproject.toml
-
-# Copy backend code
-COPY backend/ .
-# Ensure alembic.ini is in the right place
-RUN if [ -f alembic.ini ]; then echo "alembic.ini found"; else echo "Warning: alembic.ini not found"; fi
-RUN mkdir -p uploads logs data content_repo
-
-# Frontend setup
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-
-# Copy frontend code and build
-COPY frontend/ .
-# Set API URL for production - /api since FastAPI serves everything
-ENV VITE_API_URL="/api"
-RUN npm run build
-
-# Setup supervisor to manage both processes
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Create startup script
-COPY docker/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+# Create a basic .env file if needed for Docker environment
+RUN echo "# Auto-generated for Docker environment" > .env && \
+    echo "SECRET_KEY=docker-dev-secret-key-$(date +%s | sha256sum | head -c 32)" >> .env && \
+    echo "DATABASE_URL=sqlite:///./data/curriculum_curator.db" >> .env && \
+    echo "ALGORITHM=HS256" >> .env && \
+    echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env && \
+    echo "DEBUG=true" >> .env && \
+    echo "# EMAIL_WHITELIST is set as empty list in config.py default" >> .env
 
 WORKDIR /app
 
-# Expose port 80 for frontend server
-EXPOSE 80
+# Make scripts executable
+RUN chmod +x backend.sh frontend.sh
 
-# Health check - backend now serves on port 80
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+# Create a simple start script that runs both
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Export environment variables for scripts\n\
+export TERM=xterm  # Set TERM for scripts that need it\n\
+export HOST=0.0.0.0  # Bind to all interfaces so Docker can access\n\
+export VITE_HOST=0.0.0.0  # Frontend needs to be accessible from outside\n\
+export VITE_API_URL=http://localhost:8000  # Frontend talks to backend internally\n\
+\n\
+# Start backend in background\n\
+echo "Starting backend..."\n\
+cd /app && ./backend.sh &\n\
+BACKEND_PID=$!\n\
+\n\
+# Give backend time to start\n\
+echo "Waiting for backend to start..."\n\
+sleep 10\n\
+\n\
+# Start frontend in foreground\n\
+echo "Starting frontend..."\n\
+cd /app && ./frontend.sh\n\
+\n\
+# If frontend exits, kill backend\n\
+kill $BACKEND_PID 2>/dev/null || true' > /app/start-both.sh && chmod +x /app/start-both.sh
 
-# Start supervisor which manages nginx and uvicorn
-CMD ["/app/start.sh"]
+# Expose frontend port (Vite dev server)
+# Backend doesn't need to be exposed since frontend proxies to it
+EXPOSE 5173
+
+# Run both scripts
+CMD ["/app/start-both.sh"]

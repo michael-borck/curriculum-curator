@@ -4,7 +4,7 @@ services:
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
-      - "8081:5173"  # Expose Vite dev server on 8081 for Caddy
+      - "8081:80"  # FastAPI serves both API and frontend on port 80
     networks:
       - caddy_default
     volumes:
@@ -39,6 +39,15 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Curriculum Curator}
       - SMTP_TLS=${SMTP_TLS:-true}
+      
+      # Frontend URL (update for your domain)
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 networks:
   caddy_default:
