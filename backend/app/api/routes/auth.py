@@ -37,6 +37,57 @@ from app.services.email_service import email_service
 router = APIRouter()
 
 
+# =========================================================================
+# Public configuration endpoint (no auth required)
+# =========================================================================
+
+
+@router.get("/config")
+async def get_auth_config():
+    """Public endpoint to discover app configuration (e.g. local mode)."""
+    return {"local_mode": settings.LOCAL_MODE}
+
+
+@router.get("/local-session")
+async def get_local_session(
+    db: Annotated[Session, Depends(deps.get_db)],
+):
+    """
+    Get a JWT token and user profile for the local default user.
+    Only works when LOCAL_MODE=true; returns 404 otherwise.
+    """
+    if not settings.LOCAL_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found",
+        )
+
+    local_user = user_repo.get_user_by_id(db, deps.LOCAL_USER_ID)
+    if not local_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Local user not found. Ensure LOCAL_MODE startup completed.",
+        )
+
+    access_token_expires = timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+    )
+    access_token = security.create_access_token(
+        data={"sub": deps.LOCAL_USER_ID, "email": deps.LOCAL_USER_EMAIL},
+        expires_delta=access_token_expires,
+    )
+
+    return LoginResponse(
+        access_token=access_token,
+        user=local_user,
+    )
+
+
+# =========================================================================
+# Standard auth endpoints
+# =========================================================================
+
+
 def _get_client_ip(request: Request) -> str:
     """Get client IP address from request, handling proxies"""
     forwarded_for = request.headers.get("X-Forwarded-For")

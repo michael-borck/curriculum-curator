@@ -23,8 +23,14 @@ from app.schemas.user import UserResponse
 # Set up logger
 logger = logging.getLogger(__name__)
 
+# Well-known local user constants
+LOCAL_USER_ID = "00000000-0000-0000-0000-000000000001"
+LOCAL_USER_EMAIL = "local@curriculum-curator.local"
+
 # Use HTTPBearer for JWT authentication
-security = HTTPBearer()
+# In LOCAL_MODE, make it optional (auto_error=False) so requests without
+# Authorization header don't get rejected before reaching get_current_user
+security = HTTPBearer(auto_error=not settings.LOCAL_MODE)
 
 # User role constants
 ROLE_ADMIN = "admin"
@@ -44,10 +50,28 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserResponse:
-    """Get current user from JWT token."""
+    """Get current user from JWT token, or return local user in LOCAL_MODE."""
+    # LOCAL_MODE: bypass JWT, return the local default user
+    if settings.LOCAL_MODE:
+        local_user = user_repo.get_user_by_id(db, LOCAL_USER_ID)
+        if local_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Local user not found. Ensure LOCAL_MODE startup completed.",
+            )
+        return local_user
+
+    # Normal mode: require valid JWT
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     token = credentials.credentials
 
     credentials_exception = HTTPException(

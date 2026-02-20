@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     TESTING: bool = False
     DISABLE_RATE_LIMIT: bool = False
 
+    # Local Mode - privacy-first local deployment (no login required)
+    LOCAL_MODE: bool = False
+
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     ALGORITHM: str = "HS256"

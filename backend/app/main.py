@@ -17,9 +17,11 @@ from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 # CSRF removed - using JWT + CORS instead
-from app.core.database import init_db
+from app.core.config import settings
+from app.core.database import SessionLocal, init_db
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
+from app.core.security import get_password_hash
 from app.core.security_middleware import (
     RequestValidationMiddleware,
     SecurityHeadersMiddleware,
@@ -29,6 +31,41 @@ from app.services.git_content_service import get_git_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _seed_local_user() -> None:
+    """Create the default local user if it doesn't already exist."""
+    from app.api.deps import LOCAL_USER_EMAIL, LOCAL_USER_ID  # noqa: PLC0415
+    from app.models.user import User  # noqa: PLC0415
+
+    if SessionLocal is None:
+        logger.warning("Cannot seed local user: database not configured")
+        return
+
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.id == LOCAL_USER_ID).first()
+        if existing:
+            logger.info(f"✅ Local user already exists: {LOCAL_USER_EMAIL}")
+            return
+
+        local_user = User(
+            id=LOCAL_USER_ID,
+            email=LOCAL_USER_EMAIL,
+            password_hash=get_password_hash("local-mode-no-password"),
+            name="Local User",
+            role="admin",
+            is_verified=True,
+            is_active=True,
+        )
+        db.add(local_user)
+        db.commit()
+        logger.info(f"✅ Local user created: {LOCAL_USER_EMAIL} (admin)")
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to seed local user")
+    finally:
+        db.close()
 
 
 @asynccontextmanager
@@ -46,6 +83,10 @@ async def lifespan(app: FastAPI):
         # Initialize Git content service (per-unit repos)
         git_service = get_git_service()
         logger.info(f"✅ Git content service initialized at {git_service.repos_base}")
+
+        # LOCAL_MODE: seed the default local user
+        if settings.LOCAL_MODE:
+            _seed_local_user()
 
     except Exception as e:
         logger.warning(f"Initialization warning: {e}")
