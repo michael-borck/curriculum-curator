@@ -45,7 +45,7 @@ router = APIRouter()
 @router.get("/config")
 async def get_auth_config():
     """Public endpoint to discover app configuration (e.g. local mode)."""
-    return {"local_mode": settings.LOCAL_MODE}
+    return {"localMode": settings.LOCAL_MODE}
 
 
 @router.get("/local-session")

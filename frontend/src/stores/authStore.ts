@@ -41,8 +41,8 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
         // Local mode: get a session automatically
         const sessionResponse = await api.get('/auth/local-session');
         if (sessionResponse.status === 200 && sessionResponse.data) {
-          const { accessToken, user } = sessionResponse.data;
-          localStorage.setItem('token', accessToken);
+          const { access_token, user } = sessionResponse.data;
+          localStorage.setItem('token', access_token);
           set({
             user,
             isAuthenticated: true,

@@ -18,7 +18,7 @@ engine = create_engine(
     connect_args={"check_same_thread": False}
     if "sqlite" in settings.DATABASE_URL
     else {},
-    echo=settings.DEBUG,  # Log SQL statements in debug mode
+    echo=False,  # Set True temporarily to debug SQL queries
 )
 
 # Session factory - creates new database sessions
