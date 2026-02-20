@@ -54,7 +54,7 @@ def _seed_local_user() -> None:
             email=LOCAL_USER_EMAIL,
             password_hash=get_password_hash("local-mode-no-password"),
             name="Local User",
-            role="admin",
+            role="lecturer",
             is_verified=True,
             is_active=True,
         )
