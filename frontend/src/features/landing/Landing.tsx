@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react';
 import {
   GraduationCap,
   Target,
   BookOpen,
   Sparkles,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   Upload,
   Brain,
   CheckCircle,
@@ -15,9 +12,6 @@ import {
 import type { LandingProps } from '../../types/index';
 
 const Landing = ({ onSignInClick }: LandingProps) => {
-  // Carousel state
-  const [currentSlide, setCurrentSlide] = useState(0);
-
   const features = [
     {
       icon: Brain,
@@ -57,49 +51,6 @@ const Landing = ({ onSignInClick }: LandingProps) => {
     },
   ];
 
-  const highlights = [
-    {
-      title: 'Start with Your Style',
-      description:
-        'Take a quick quiz to discover your teaching philosophy, or choose manually. The AI adapts to generate content that matches your approach.',
-      image: '🎯',
-    },
-    {
-      title: 'Build Your Unit',
-      description:
-        'Create unit learning outcomes, plan your 12-week structure, add materials week by week, and design assessments - all in one place.',
-      image: '📚',
-    },
-    {
-      title: 'Let AI Help',
-      description:
-        'Generate content, enhance existing materials, or get suggestions. AI assistance is always optional - you stay in control.',
-      image: '✨',
-    },
-    {
-      title: 'Track Alignment',
-      description:
-        'Visual hierarchy maps show how outcomes connect to materials. Graduate Capability and AoL mappings support accreditation.',
-      image: '🗺️',
-    },
-  ];
-
-  // Auto-advance carousel
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % highlights.length);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [highlights.length]);
-
-  const nextSlide = () => {
-    setCurrentSlide(prev => (prev + 1) % highlights.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide(prev => (prev - 1 + highlights.length) % highlights.length);
-  };
-
   return (
     <div className='min-h-screen bg-white'>
       {/* Simple Navigation */}
@@ -137,53 +88,6 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             Get Started
             <ArrowRight className='w-5 h-5' />
           </button>
-        </div>
-      </section>
-
-      {/* How It Works - Carousel */}
-      <section className='px-6 md:px-8 py-16 bg-white'>
-        <div className='max-w-4xl mx-auto'>
-          <div className='relative bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12'>
-            {/* Carousel Content */}
-            <div className='text-center'>
-              <div className='text-6xl mb-6'>
-                {highlights[currentSlide].image}
-              </div>
-              <h3 className='text-xl font-semibold text-gray-900 mb-3'>
-                {highlights[currentSlide].title}
-              </h3>
-              <p className='text-gray-600 max-w-lg mx-auto'>
-                {highlights[currentSlide].description}
-              </p>
-            </div>
-
-            {/* Navigation Arrows */}
-            <button
-              onClick={prevSlide}
-              className='absolute left-2 md:left-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition'
-            >
-              <ChevronLeft className='w-6 h-6' />
-            </button>
-            <button
-              onClick={nextSlide}
-              className='absolute right-2 md:right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition'
-            >
-              <ChevronRight className='w-6 h-6' />
-            </button>
-
-            {/* Dots */}
-            <div className='flex justify-center gap-2 mt-8'>
-              {highlights.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentSlide ? 'bg-purple-600' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
