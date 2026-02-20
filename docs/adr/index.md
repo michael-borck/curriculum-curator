@@ -37,6 +37,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0027](0027-camelcase-api-serialization.md) | CamelCase API Serialization Convention | Accepted |
 | [0028](0028-australian-university-terminology.md) | Australian University Terminology | Accepted |
 | [0029](0029-accreditation-framework-mappings.md) | Accreditation Framework Mappings (AoL, Grad Caps, SDGs) | Accepted |
+| [0030](0030-ims-common-cartridge-export.md) | IMS Common Cartridge Export | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -50,6 +51,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0023: File Import and Processing Architecture](0023-file-import-processing-architecture.md) - Multi-format document processing
 - [ADR-0026: Single-Container Deployment](0026-single-container-deployment.md) - FastAPI serves the React SPA directly
 - [ADR-0027: CamelCase API Serialization](0027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
+- [ADR-0030: IMS Common Cartridge Export](0030-ims-common-cartridge-export.md) - CC v1.2 export for LMS interoperability
 
 ### Domain Model & User Experience
 - [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework

@@ -10,8 +10,10 @@ import {
   ArrowLeft,
   Sparkles,
   GitBranch,
+  Download,
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
+import axios from 'axios';
 import ULOManager from '../components/UnitStructure/ULOManager';
 import { AssessmentsManager } from '../components/UnitStructure/AssessmentsManager';
 import CoursePlanner from '../components/UnitStructure/CoursePlanner';
@@ -116,6 +118,39 @@ const UnitPage = () => {
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportIMSCC = async () => {
+    if (!unitId) return;
+    try {
+      setExporting(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`/api/units/${unitId}/export/imscc`, {
+        responseType: 'blob',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const disposition = response.headers['content-disposition'] as
+        | string
+        | undefined;
+      const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch?.[1] ?? 'export.imscc';
+      const url = URL.createObjectURL(response.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+      toast.success('IMSCC exported successfully');
+    } catch (err) {
+      toast.error('Failed to export IMSCC');
+      console.error('Export error:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const tabs = [
     {
       id: 'structure' as TabType,
@@ -203,6 +238,15 @@ const UnitPage = () => {
               </div>
             </div>
             <div className='flex items-center gap-2'>
+              <Button
+                variant='secondary'
+                size='sm'
+                onClick={handleExportIMSCC}
+                loading={exporting}
+              >
+                <Download className='w-4 h-4 mr-1' />
+                Export IMSCC
+              </Button>
               <Button
                 variant='secondary'
                 size='sm'
