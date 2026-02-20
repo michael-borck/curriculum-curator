@@ -57,6 +57,11 @@ data/
 *.tar.gz
 *.rar
 
+# Node
+node_modules/
+dist/
+out/
+
 # Python
 __pycache__/
 *.py[cod]

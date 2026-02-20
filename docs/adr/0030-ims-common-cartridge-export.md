@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — amended to CC v1.1 (see ADR-0034)
 
 ## Context
 
@@ -14,10 +14,10 @@ We need a way to export a unit's weekly materials, assessments, learning outcome
 
 ### Phase 1: Export (this ADR)
 
-Implement IMS Common Cartridge **v1.2** export for individual units:
+Implement IMS Common Cartridge **v1.1** export for individual units:
 
 - **Format**: `.imscc` file (ZIP archive) containing `imsmanifest.xml` and HTML resource files
-- **Target version**: CC v1.2 — both Blackboard and Canvas handle it reliably
+- **Target version**: CC v1.1 — broadest LMS compatibility (Moodle only supports up to 1.1; Canvas and Blackboard handle 1.1 perfectly). Originally v1.2; downgraded to v1.1 since we only export webcontent resources which are identical across 1.1–1.3.
 - **No new dependencies**: Uses only Python stdlib (`zipfile`, `xml.etree.ElementTree`, `json`, `io`)
 - **API endpoint**: `GET /api/units/{unit_id}/export/imscc` (authenticated, ownership-checked)
 - **Frontend**: "Export IMSCC" button on unit detail page header

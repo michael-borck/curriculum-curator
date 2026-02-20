@@ -28,6 +28,7 @@ import { PROVIDER_DISPLAY_NAMES, DEFAULT_MODELS } from '../../types/llm';
 import ollamaApi from '../../services/ollamaApi';
 import type { OllamaStatus } from '../../types/ollama';
 import LocalAISetup from './LocalAISetup';
+import LocalAIQualityNotice from '../../components/LocalAIQualityNotice';
 
 const LLMSettings: React.FC = () => {
   const [configurations, setConfigurations] = useState<LLMConfig[]>([]);
@@ -477,6 +478,11 @@ const LLMSettings: React.FC = () => {
               Set Up Local AI
             </button>
           </div>
+          {localAIStatus?.available && (
+            <div className='mt-4'>
+              <LocalAIQualityNotice variant='compact' />
+            </div>
+          )}
         </div>
       )}
 

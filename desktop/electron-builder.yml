@@ -1,0 +1,55 @@
+appId: com.curriculum-curator.desktop
+productName: Curriculum Curator
+directories:
+  buildResources: build
+  output: dist
+
+extraResources:
+  - from: backend-dist/
+    to: backend
+    filter:
+      - "**/*"
+  - from: vendor/pandoc/
+    to: pandoc
+    filter:
+      - "**/*"
+  - from: vendor/typst/
+    to: typst
+    filter:
+      - "**/*"
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  entitlementsInherit: build/entitlements.mac.plist
+  entitlements: build/entitlements.mac.plist
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  category: public.app-category.education
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-Setup.${ext}
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Education
+
+publish:
+  provider: github
+  owner: ${env.GH_OWNER}
+  repo: curriculum-curator

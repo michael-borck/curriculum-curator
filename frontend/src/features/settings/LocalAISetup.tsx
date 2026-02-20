@@ -19,6 +19,7 @@ import type {
   PullProgress,
   OllamaTestResult,
 } from '../../types/ollama';
+import LocalAIQualityNotice from '../../components/LocalAIQualityNotice';
 
 interface LocalAISetupProps {
   onComplete: () => void;
@@ -49,7 +50,12 @@ const LocalAISetup: React.FC<LocalAISetupProps> = ({
   const [pullError, setPullError] = useState('');
   const [testResult, setTestResult] = useState<OllamaTestResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [ollamaInfo, setOllamaInfo] = useState<{
+    installed: boolean;
+    binaryPath: string | null;
+  } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const isElectron = !!window.api?.getOllamaInfo;
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -70,6 +76,12 @@ const LocalAISetup: React.FC<LocalAISetupProps> = ({
 
   useEffect(() => {
     checkStatus();
+    if (window.api?.getOllamaInfo) {
+      window.api
+        .getOllamaInfo()
+        .then(setOllamaInfo)
+        .catch(() => {});
+    }
   }, [checkStatus]);
 
   const handlePull = () => {
@@ -161,12 +173,34 @@ const LocalAISetup: React.FC<LocalAISetupProps> = ({
             <AlertTriangle className='w-5 h-5 text-amber-600 mt-0.5' />
             <div>
               <p className='font-medium text-amber-800'>Ollama not detected</p>
-              <p className='text-sm text-amber-700 mt-1'>
-                Make sure Ollama is running. If using Docker, start with:{' '}
-                <code className='bg-amber-100 px-1 rounded text-xs'>
-                  docker compose --profile local-ai up
-                </code>
-              </p>
+              {isElectron && ollamaInfo?.installed ? (
+                <p className='text-sm text-amber-700 mt-1'>
+                  Ollama is installed but couldn&apos;t start automatically. Try
+                  restarting the app.
+                </p>
+              ) : isElectron ? (
+                <div className='text-sm text-amber-700 mt-1'>
+                  <p>Download Ollama to use local AI models.</p>
+                  <button
+                    onClick={() =>
+                      window.open('https://ollama.com/download', '_blank')
+                    }
+                    className='mt-2 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-md text-sm font-medium transition-colors'
+                  >
+                    Download Ollama
+                  </button>
+                  <p className='mt-2 text-xs text-amber-600'>
+                    After installing, restart the app.
+                  </p>
+                </div>
+              ) : (
+                <p className='text-sm text-amber-700 mt-1'>
+                  Make sure Ollama is running. If using Docker, start with:{' '}
+                  <code className='bg-amber-100 px-1 rounded text-xs'>
+                    docker compose --profile local-ai up
+                  </code>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -222,6 +256,8 @@ const LocalAISetup: React.FC<LocalAISetupProps> = ({
           {recommendation.reason}
         </div>
       )}
+
+      <LocalAIQualityNotice variant='detailed' />
 
       <div className='space-y-2'>
         {CURATED_MODELS.map(model => (
@@ -434,6 +470,8 @@ const LocalAISetup: React.FC<LocalAISetupProps> = ({
           </div>
         </div>
       )}
+
+      <LocalAIQualityNotice variant='compact' />
 
       <div className='flex justify-between'>
         <button

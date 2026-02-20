@@ -1,7 +1,7 @@
 # One Dockerfile for everything - build frontend, serve with backend
 FROM python:3.11-slim
 
-# Install Node.js 20, curl, gosu, and other dependencies
+# Install Node.js 20, system deps, and document export tools (Pandoc + Typst)
 RUN apt-get update && apt-get install -y \
     curl \
     gcc \
@@ -10,9 +10,19 @@ RUN apt-get update && apt-get install -y \
     lsof \
     procps \
     gosu \
+    pandoc \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Typst (static binary — no LaTeX needed for PDF export, see ADR-0033)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then TYPST_ARCH="x86_64-unknown-linux-musl"; \
+    elif [ "$ARCH" = "arm64" ]; then TYPST_ARCH="aarch64-unknown-linux-musl"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    TYPST_VERSION="0.12.0" && \
+    curl -fsSL "https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/typst-${TYPST_ARCH}.tar.xz" \
+    | tar -xJ --strip-components=1 -C /usr/local/bin "typst-${TYPST_ARCH}/typst"
 
 # Create non-root user
 RUN groupadd -g 1000 appuser && \

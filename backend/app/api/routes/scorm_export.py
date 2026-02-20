@@ -1,5 +1,5 @@
 """
-API endpoint for IMS Common Cartridge export.
+API endpoint for SCORM 1.2 export.
 """
 
 import logging
@@ -11,20 +11,20 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_user_unit
 from app.schemas.unit import UnitResponse
-from app.services.imscc_service import imscc_export_service
+from app.services.scorm_service import scorm_export_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/units/{unit_id}/export/imscc")
-async def export_unit_imscc(
+@router.get("/units/{unit_id}/export/scorm")
+async def export_unit_scorm(
     unit: Annotated[UnitResponse, Depends(get_user_unit)],
     db: Annotated[Session, Depends(get_db)],
 ) -> StreamingResponse:
-    """Export a unit as an IMS Common Cartridge v1.1 (.imscc) file."""
-    buf, filename = imscc_export_service.export_unit(unit.id, db)
+    """Export a unit as a SCORM 1.2 (.zip) package."""
+    buf, filename = scorm_export_service.export_unit(unit.id, db)
 
     return StreamingResponse(
         buf,

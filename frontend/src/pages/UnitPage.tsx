@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -12,6 +12,7 @@ import {
   GitBranch,
   Download,
   Brain,
+  ChevronDown,
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
 import api from '../services/api';
@@ -239,21 +240,44 @@ const UnitPage = () => {
   };
 
   const [exporting, setExporting] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = React.useRef<HTMLDivElement>(null);
 
-  const handleExportIMSCC = async () => {
+  // Close export menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(e.target as Node)
+      ) {
+        setExportMenuOpen(false);
+      }
+    };
+    if (exportMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [exportMenuOpen]);
+
+  const handleExport = async (format: 'imscc' | 'scorm') => {
     if (!unitId) return;
+    setExportMenuOpen(false);
     try {
       setExporting(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/units/${unitId}/export/imscc`, {
-        responseType: 'blob',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await axios.get(
+        `/api/units/${unitId}/export/${format}`,
+        {
+          responseType: 'blob',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
       const disposition = response.headers['content-disposition'] as
         | string
         | undefined;
       const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-      const filename = filenameMatch?.[1] ?? 'export.imscc';
+      const fallback = format === 'imscc' ? 'export.imscc' : 'export.zip';
+      const filename = filenameMatch?.[1] ?? fallback;
       const url = URL.createObjectURL(response.data as Blob);
       const a = document.createElement('a');
       a.href = url;
@@ -262,9 +286,11 @@ const UnitPage = () => {
       a.click();
       URL.revokeObjectURL(url);
       a.remove();
-      toast.success('IMSCC exported successfully');
+      const label = format === 'imscc' ? 'IMSCC v1.1' : 'SCORM 1.2';
+      toast.success(`${label} exported successfully`);
     } catch (err) {
-      toast.error('Failed to export IMSCC');
+      const label = format === 'imscc' ? 'IMSCC v1.1' : 'SCORM 1.2';
+      toast.error(`Failed to export ${label}`);
       console.error('Export error:', err);
     } finally {
       setExporting(false);
@@ -368,15 +394,34 @@ const UnitPage = () => {
                   {showAI ? 'Close AI' : 'AI Assist'}
                 </Button>
               )}
-              <Button
-                variant='secondary'
-                size='sm'
-                onClick={handleExportIMSCC}
-                loading={exporting}
-              >
-                <Download className='w-4 h-4 mr-1' />
-                Export IMSCC
-              </Button>
+              <div className='relative' ref={exportMenuRef}>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                  loading={exporting}
+                >
+                  <Download className='w-4 h-4 mr-1' />
+                  Export
+                  <ChevronDown className='w-3 h-3 ml-1' />
+                </Button>
+                {exportMenuOpen && (
+                  <div className='absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                    <button
+                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg'
+                      onClick={() => handleExport('imscc')}
+                    >
+                      Export IMSCC v1.1 (.imscc)
+                    </button>
+                    <button
+                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg'
+                      onClick={() => handleExport('scorm')}
+                    >
+                      Export SCORM 1.2 (.zip)
+                    </button>
+                  </div>
+                )}
+              </div>
               <Button
                 variant='secondary'
                 size='sm'

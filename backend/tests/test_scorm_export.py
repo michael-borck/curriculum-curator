@@ -1,8 +1,8 @@
 """
-Unit tests for IMS Common Cartridge export service.
+Unit tests for SCORM 1.2 export service.
 
-Tests mock the DB session and validate: ZIP structure, manifest XML,
-HTML generation, and metadata JSON.
+Tests mock the DB session and validate: ZIP structure, SCORM manifest XML,
+scorm_api.js presence, HTML script injection, and metadata JSON.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from io import BytesIO
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
@@ -32,10 +32,10 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
-from app.services.imscc_service import IMSCCExportService
-from app.services.unit_export_data import escape_html, slugify
+from app.services.scorm_service import SCORM_API_JS, SCORMExportService
 
-NS_CP = "http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
+NS_CP = "http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+NS_ADL = "http://www.adlnet.org/xsd/adlcp_rootv1p2"
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +233,6 @@ def mock_db(
 ) -> Mock:
     db = Mock()
 
-    # Map each model class to its mock query chain
     single_models: dict[type, Mock] = {
         Unit: _make_query_chain(sample_unit, is_single=True),
         UnitOutline: _make_query_chain(sample_outline, is_single=True),
@@ -255,7 +254,7 @@ def mock_db(
 
 @pytest.fixture()
 def export_result(mock_db: Mock) -> tuple[BytesIO, str]:
-    service = IMSCCExportService()
+    service = SCORMExportService()
     return service.export_unit("unit-001", mock_db)
 
 
@@ -269,7 +268,7 @@ class TestExportBasics:
 
     def test_export_returns_valid_zip(self, export_result: tuple[BytesIO, str]) -> None:
         buf, filename = export_result
-        assert filename == "COMP1001_intro_to_web_dev.imscc"
+        assert filename == "COMP1001_intro_to_web_dev_scorm12.zip"
         assert zipfile.is_zipfile(buf)
 
     def test_zip_contains_required_files(self, export_result: tuple[BytesIO, str]) -> None:
@@ -277,6 +276,7 @@ class TestExportBasics:
         with zipfile.ZipFile(buf, "r") as zf:
             names = zf.namelist()
             assert "imsmanifest.xml" in names
+            assert "scorm_api.js" in names
             assert "curriculum_curator_meta.json" in names
             assert "overview/learning_outcomes.html" in names
             assert "overview/accreditation.html" in names
@@ -297,8 +297,28 @@ class TestExportBasics:
             assert "assessments/assessment_2.html" in names
 
 
+class TestScormApiJs:
+    """Test the SCORM API JavaScript file."""
+
+    def test_scorm_api_js_present(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            js_content = zf.read("scorm_api.js").decode("utf-8")
+            assert js_content == SCORM_API_JS
+
+    def test_scorm_api_js_has_lms_calls(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            js_content = zf.read("scorm_api.js").decode("utf-8")
+            assert "LMSInitialize" in js_content
+            assert "LMSSetValue" in js_content
+            assert "cmi.core.lesson_status" in js_content
+            assert "completed" in js_content
+            assert "LMSFinish" in js_content
+
+
 class TestManifestXML:
-    """Test imsmanifest.xml content and structure."""
+    """Test SCORM 1.2 imsmanifest.xml content and structure."""
 
     def test_manifest_is_valid_xml(self, export_result: tuple[BytesIO, str]) -> None:
         buf, _ = export_result
@@ -306,10 +326,17 @@ class TestManifestXML:
             xml_content = zf.read("imsmanifest.xml").decode("utf-8")
             root = ET.fromstring(xml_content)
             assert root.tag == f"{{{NS_CP}}}manifest"
-            # Check schema version
+
+    def test_manifest_schema_is_adl_scorm(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            root = ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
+            schema = root.find(f".//{{{NS_CP}}}schema")
+            assert schema is not None
+            assert schema.text == "ADL SCORM"
             schema_ver = root.find(f".//{{{NS_CP}}}schemaversion")
             assert schema_ver is not None
-            assert schema_ver.text == "1.1.0"
+            assert schema_ver.text == "1.2"
 
     def test_manifest_has_organization_hierarchy(self, export_result: tuple[BytesIO, str]) -> None:
         buf, _ = export_result
@@ -318,27 +345,77 @@ class TestManifestXML:
 
             org = root.find(f".//{{{NS_CP}}}organization")
             assert org is not None
-            assert org.get("structure") == "rooted-hierarchy"
 
-            # Check for expected items by title text
             titles = [t.text for t in root.iter(f"{{{NS_CP}}}title") if t.text]
             assert "Overview" in titles
-            # Week titles should contain "Week 1" and "Week 2"
             assert any("Week 1" in t for t in titles)
             assert any("Week 2" in t for t in titles)
             assert "Assessments" in titles
 
-    def test_manifest_resources_match_files(self, export_result: tuple[BytesIO, str]) -> None:
+    def test_manifest_resources_have_scormtype(self, export_result: tuple[BytesIO, str]) -> None:
+        """Every resource should have adlcp:scormtype='sco'."""
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            root = ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
+
+            resources = root.findall(f".//{{{NS_CP}}}resource")
+            assert len(resources) > 0
+            for res in resources:
+                scormtype = res.get(f"{{{NS_ADL}}}scormtype")
+                assert scormtype == "sco", f"Resource {res.get('identifier')} missing adlcp:scormtype='sco'"
+
+    def test_manifest_resources_reference_scorm_api_js(self, export_result: tuple[BytesIO, str]) -> None:
+        """Every resource should list scorm_api.js as a dependency file."""
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            root = ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
+
+            resources = root.findall(f".//{{{NS_CP}}}resource")
+            for res in resources:
+                files = [f.get("href") for f in res.findall(f"{{{NS_CP}}}file")]
+                assert "scorm_api.js" in files, f"Resource {res.get('identifier')} missing scorm_api.js file ref"
+
+    def test_manifest_resources_match_zip_files(self, export_result: tuple[BytesIO, str]) -> None:
         buf, _ = export_result
         with zipfile.ZipFile(buf, "r") as zf:
             root = ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
             names = set(zf.namelist())
 
             resources = root.findall(f".//{{{NS_CP}}}resource")
-            assert len(resources) > 0
             for res in resources:
                 href = res.get("href")
                 assert href in names, f"Resource href '{href}' not found in ZIP"
+
+    def test_manifest_organizations_has_default(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            root = ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
+            orgs = root.find(f"{{{NS_CP}}}organizations")
+            assert orgs is not None
+            assert orgs.get("default") == "org_1"
+
+
+class TestHTMLScriptInjection:
+    """Test that all HTML files include the SCORM API script tag."""
+
+    def test_overview_html_has_scorm_script(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            for name in ["overview/learning_outcomes.html", "overview/accreditation.html"]:
+                html = zf.read(name).decode("utf-8")
+                assert 'src="../scorm_api.js"' in html, f"{name} missing SCORM script tag"
+
+    def test_material_html_has_scorm_script(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            html = zf.read("week01/lecture_html_lecture.html").decode("utf-8")
+            assert 'src="../scorm_api.js"' in html
+
+    def test_assessment_html_has_scorm_script(self, export_result: tuple[BytesIO, str]) -> None:
+        buf, _ = export_result
+        with zipfile.ZipFile(buf, "r") as zf:
+            html = zf.read("assessments/assessment_1.html").decode("utf-8")
+            assert 'src="../scorm_api.js"' in html
 
 
 class TestMetaJSON:
@@ -353,11 +430,10 @@ class TestMetaJSON:
         meta = self._load_meta(export_result)
         assert meta["version"] == "1.0"
         assert meta["exported_from"] == "curriculum-curator"
+        assert meta["export_format"] == "scorm_1.2"
         assert "exported_at" in meta
         assert "unit" in meta
         assert "learning_outcomes" in meta
-        assert "aol_mappings" in meta
-        assert "sdg_mappings" in meta
 
     def test_meta_json_unit_fields(self, export_result: tuple[BytesIO, str]) -> None:
         meta = self._load_meta(export_result)
@@ -365,82 +441,13 @@ class TestMetaJSON:
         assert unit["code"] == "COMP1001"
         assert unit["title"] == "Intro to Web Dev"
         assert unit["pedagogy_type"] == "project-based"
-        assert unit["year"] == 2026
-        assert unit["semester"] == "semester_1"
-        assert unit["duration_weeks"] == 12
-        assert unit["credit_points"] == 6
-
-    def test_meta_json_outcomes(self, export_result: tuple[BytesIO, str]) -> None:
-        meta = self._load_meta(export_result)
-        outcomes = meta["learning_outcomes"]
-        assert len(outcomes) == 2
-
-        assert outcomes[0]["code"] == "ULO1"
-        assert outcomes[0]["bloom_level"] == "ANALYZE"
-        assert "GC1" in outcomes[0]["graduate_capabilities"]
-
-        assert outcomes[1]["code"] == "ULO2"
-        assert outcomes[1]["bloom_level"] == "CREATE"
-
-
-class TestHTMLContent:
-    """Test generated HTML pages."""
-
-    def test_learning_outcomes_html(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("overview/learning_outcomes.html").decode("utf-8")
-            assert "ULO1" in html
-            assert "ULO2" in html
-            assert "ANALYZE" in html
-            assert "CREATE" in html
-            assert "<table>" in html
-
-    def test_accreditation_html_aol(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("overview/accreditation.html").decode("utf-8")
-            assert "AOL2" in html
-            assert ">R<" in html
-
-    def test_accreditation_html_gc_and_sdg(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("overview/accreditation.html").decode("utf-8")
-            assert "GC1" in html
-            assert "SDG4" in html
-
-    def test_material_html_has_structure(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("week01/lecture_html_lecture.html").decode("utf-8")
-            assert "<!DOCTYPE html>" in html
-            assert "<h1>" in html
-            assert "HTML Lecture" in html
-            assert "<style>" in html
-
-    def test_assessment_html_has_details(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("assessments/assessment_1.html").decode("utf-8")
-            assert "20%" in html
-            assert "FORMATIVE" in html
-            assert "QUIZ" in html
-
-    def test_assessment_with_spec_and_group_work(self, export_result: tuple[BytesIO, str]) -> None:
-        buf, _ = export_result
-        with zipfile.ZipFile(buf, "r") as zf:
-            html = zf.read("assessments/assessment_2.html").decode("utf-8")
-            assert "Group Work" in html
-            assert "Specification" in html
-            assert "responsive site" in html
 
 
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
     def test_export_empty_unit(self, sample_unit: Mock, sample_outline: Mock) -> None:
-        """Unit with no materials/outcomes still produces valid ZIP."""
+        """Unit with no materials/outcomes still produces valid SCORM ZIP."""
         db = Mock()
 
         def query_side_effect(model: type) -> Mock:
@@ -452,18 +459,15 @@ class TestEdgeCases:
 
         db.query.side_effect = query_side_effect
 
-        service = IMSCCExportService()
+        service = SCORMExportService()
         buf, _filename = service.export_unit("unit-001", db)
 
         assert zipfile.is_zipfile(buf)
         with zipfile.ZipFile(buf, "r") as zf:
             names = zf.namelist()
             assert "imsmanifest.xml" in names
+            assert "scorm_api.js" in names
             assert "overview/learning_outcomes.html" in names
-            assert "overview/accreditation.html" in names
-            # Empty unit should still have valid overview pages
-            html = zf.read("overview/learning_outcomes.html").decode("utf-8")
-            assert "No learning outcomes defined" in html
 
     def test_export_nonexistent_unit_raises(self) -> None:
         """ValueError when db returns None for unit."""
@@ -474,25 +478,6 @@ class TestEdgeCases:
         chain.first.return_value = None
         db.query.return_value = chain
 
-        service = IMSCCExportService()
+        service = SCORMExportService()
         with pytest.raises(ValueError, match=r"Unit .* not found"):
             service.export_unit("nonexistent", db)
-
-    def test_html_special_chars_escaped(self) -> None:
-        """<script> in title becomes &lt;script&gt; via _escape_html."""
-        assert escape_html("<script>alert('xss')</script>") == "&lt;script&gt;alert('xss')&lt;/script&gt;"
-        assert escape_html('He said "hello"') == "He said &quot;hello&quot;"
-        assert escape_html("A & B") == "A &amp; B"
-
-    def test_slugify_special_characters(self) -> None:
-        """Slugify produces URL-safe strings."""
-        assert slugify("Hello World!") == "hello_world"
-        assert slugify("Week 1: HTML & CSS") == "week_1_html_css"
-        assert slugify("  spaced  ") == "spaced"
-
-    def test_material_html_escapes_title(self) -> None:
-        """Material titles with HTML chars are escaped in the output."""
-        service = IMSCCExportService()
-        html = service._material_to_html("<script>xss</script>", "safe content")
-        assert "<script>" not in html
-        assert "&lt;script&gt;" in html

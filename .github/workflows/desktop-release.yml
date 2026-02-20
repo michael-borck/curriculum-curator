@@ -1,0 +1,207 @@
+name: Desktop Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            pyinstaller_name: curriculum-curator-api
+          - os: windows-latest
+            platform: win
+            pyinstaller_name: curriculum-curator-api.exe
+          - os: ubuntu-latest
+            platform: linux
+            pyinstaller_name: curriculum-curator-api
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build PyInstaller binary
+        run: |
+          cd backend
+          pyinstaller --onefile --console --name curriculum-curator-api \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols \
+            --hidden-import uvicorn.protocols.http \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.protocols.websockets \
+            --hidden-import uvicorn.protocols.websockets.auto \
+            --hidden-import uvicorn.lifespan \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import uvicorn.lifespan.off \
+            --hidden-import multipart \
+            --hidden-import email_validator \
+            --hidden-import passlib.handlers.bcrypt \
+            --hidden-import jose \
+            --hidden-import litellm \
+            --hidden-import tiktoken \
+            --hidden-import tiktoken_ext \
+            --hidden-import tiktoken_ext.openai_public \
+            --hidden-import sqlalchemy.dialects.sqlite \
+            --collect-data litellm \
+            --collect-data tiktoken_ext \
+            run_server.py
+
+      - name: Test backend executable
+        shell: bash
+        run: |
+          cd backend
+          ./dist/${{ matrix.pyinstaller_name }} --port 8199 &
+          BACKEND_PID=$!
+          sleep 10
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8199/health; then
+              echo "Backend healthy"
+              break
+            fi
+            sleep 1
+          done
+          kill $BACKEND_PID || true
+          wait $BACKEND_PID 2>/dev/null || true
+
+      - name: Copy backend binary to desktop
+        shell: bash
+        run: |
+          mkdir -p desktop/backend-dist
+          cp backend/dist/${{ matrix.pyinstaller_name }} desktop/backend-dist/
+
+      - name: Download Pandoc
+        shell: bash
+        run: |
+          mkdir -p desktop/vendor/pandoc
+          PANDOC_VERSION="3.6.4"
+          case "${{ matrix.platform }}" in
+            mac)
+              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-macOS.zip" -o pandoc.zip
+              unzip -q pandoc.zip -d pandoc-tmp
+              cp pandoc-tmp/pandoc-${PANDOC_VERSION}-*/bin/pandoc desktop/vendor/pandoc/
+              ;;
+            win)
+              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-windows-x86_64.zip" -o pandoc.zip
+              unzip -q pandoc.zip -d pandoc-tmp
+              cp pandoc-tmp/pandoc-${PANDOC_VERSION}/pandoc.exe desktop/vendor/pandoc/
+              ;;
+            linux)
+              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz" -o pandoc.tar.gz
+              tar xzf pandoc.tar.gz
+              cp pandoc-${PANDOC_VERSION}/bin/pandoc desktop/vendor/pandoc/
+              ;;
+          esac
+
+      - name: Download Typst
+        shell: bash
+        run: |
+          mkdir -p desktop/vendor/typst
+          TYPST_VERSION="v0.13.1"
+          case "${{ matrix.platform }}" in
+            mac)
+              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-apple-darwin.tar.xz" -o typst.tar.xz
+              tar xf typst.tar.xz
+              cp typst-x86_64-apple-darwin/typst desktop/vendor/typst/
+              ;;
+            win)
+              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-pc-windows-msvc.zip" -o typst.zip
+              unzip -q typst.zip -d typst-tmp
+              cp typst-tmp/typst-x86_64-pc-windows-msvc/typst.exe desktop/vendor/typst/
+              ;;
+            linux)
+              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" -o typst.tar.xz
+              tar xf typst.tar.xz
+              cp typst-x86_64-unknown-linux-musl/typst desktop/vendor/typst/
+              ;;
+          esac
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install desktop dependencies
+        run: |
+          cd desktop
+          npm ci
+
+      - name: TypeScript check
+        run: |
+          cd desktop
+          npx tsc --noEmit
+
+      - name: Build Electron app
+        run: |
+          cd desktop
+          npx electron-vite build
+
+      - name: Package Electron app
+        run: |
+          cd desktop
+          npx electron-builder --${{ matrix.platform }} --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+            desktop/dist/*.yml
+            desktop/dist/*.yaml
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/desktop-mac/*.dmg
+            artifacts/desktop-win/*.exe
+            artifacts/desktop-linux/*.AppImage
+            artifacts/desktop-mac/*.yml
+            artifacts/desktop-win/*.yml
+            artifacts/desktop-linux/*.yml
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

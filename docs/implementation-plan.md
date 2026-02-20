@@ -13,171 +13,67 @@
 
 ---
 
-## Phase 1: Solid Manual Editing (current — mostly done)
+## Phase 1: Solid Manual Editing — COMPLETE
 
 **Goal:** A user can manually create a unit, add all content, and export it.
-This is the foundation everything else builds on.
 
-### What's done
+**Status:** All ~50 stories done. Verified with end-to-end API smoke tests (24 tests) and service-level unit tests.
+
+### What was delivered
 - Unit CRUD with metadata (1.1–1.3)
 - ULO management — full CRUD, bulk create, reorder, coverage (2.1–2.7)
-- Weekly materials — CRUD, reorder, duplicate, filter, status (3.1–3.7)
+- Weekly materials — CRUD, reorder, duplicate, filter, status (3.1–3.9)
 - Assessments — CRUD, weights, ULO mapping, reorder (4.1–4.6)
 - Rich text editor — TipTap with tables, code blocks (3.2)
 - AI content generation — streaming, multi-provider, pedagogy-aware (5.1–5.5, 5.7)
 - Analytics — overview, progress, workload, quality scores, validation (7.4–7.7, 8.1–8.5)
-- IMSCC export (9.1)
+- IMSCC v1.1 export (9.1)
 - Auth, admin, settings (10.x, 11.x)
 - Citations (12.2–12.3)
 - LRD workflow (14.x)
-
-### What needs verification
-
-These are marked "Done" but should be smoke-tested as an end-to-end flow:
-
-| Task | Stories | What to verify |
-|------|---------|---------------|
-| **Create → Edit → Save roundtrip** | 3.1, 3.2 | Create a material, edit in TipTap, save, reload — does content persist correctly? |
-| **ULO → Material → Assessment alignment** | 2.4, 4.3 | Map a ULO to both a material and assessment. Does the coverage report (2.5) reflect it? |
-| **IMSCC export** | 9.1 | Export a unit with materials and ULOs. Import the .imscc into Canvas/Blackboard sandbox. |
-| **AI generation flow** | 5.1, 5.3 | Generate content with a selected pedagogy. Does the output actually use that style? |
-| **Analytics accuracy** | 8.1–8.5 | Do dashboard numbers match reality after adding/removing content? |
-
-**Exit criteria:** One person can create a complete 12-week unit manually, with ULOs, materials, assessments, and export to IMSCC — without hitting bugs.
+- Flexible workflow — no enforced sequence (17.1)
 
 ---
 
-## Phase 2: AI Integration & Smart Completion
+## Phase 2: AI Integration & Smart Completion — COMPLETE
 
 **Goal:** AI assists at every level — from scaffolding a whole unit to filling a single field.
-This is the killer feature.
 
-### 2A. Context-Aware AI Sidebar (5.8)
+**Status:** All major stories done including several originally planned for P3.
 
-**Problem:** The AI assistant sidebar works but doesn't know what unit you're looking at.
+### What was delivered
 
-**Work:**
-- Pass `unitId` from `UnitPage.tsx` → `AIAssistant.tsx`
-- Backend: load unit context (title, ULOs, topics, materials, assessments) and include in the LLM prompt
-- AI responses become relevant: "Your ULO3 has no assessment mapping — consider adding a quiz in week 8"
-
-**Effort:** Small — wiring change, no new service needed.
-
-### 2B. One-Click Unit Scaffold (1.6, 5.6)
-
-**Problem:** `workflow_structure_creator` can generate a full unit structure, but UX requires going through the multi-stage chat workflow.
-
-**Work:**
-- Add a "Quick Scaffold" button on unit creation: enter title → AI generates topics, ULOs, assessments, weekly plan
-- Reuse existing `workflow_structure_creator` backend
-- Present results for review before saving (don't auto-save)
-- User can accept all, accept with edits, or discard
-
-**Effort:** Medium — new UI component, reuse backend.
-
-### 2C. Fill the Gaps (1.7, 5.10, 2.8, 16.3)
-
-**Problem:** User has a partially complete unit. They want the system to identify what's missing and generate it.
-
-**Work:**
-- Unit dashboard already shows completeness via analytics. Add actionable buttons:
-  - "No ULOs defined" → "Generate ULOs" button
-  - "Week 5 has no materials" → "Generate materials for week 5"
-  - "Assessment weights total 70%" → "Suggest additional assessment"
-- Each button calls existing AI generation with the unit's current state as context
-- Batch mode: "Fill all gaps" generates everything missing in one pass
-- Individual mode: per-field "Generate" buttons
-
-**Effort:** Medium-large — new UI, new backend endpoint to orchestrate gap-filling.
-
-### 2D. Per-Field AI Assist (5.9)
-
-**Problem:** AI help is only via the sidebar or content generation page. User wants AI on any text field.
-
-**Work:**
-- Add a small AI icon/button next to text inputs and textareas throughout the app
-- Click → popover with options: "Generate from scratch", "Improve existing", "Get suggestions"
-- Uses unit context (like 2A) for relevance
-- Start with: material description, ULO text, assessment description
-
-**Effort:** Medium — reusable component, but touches many pages.
-
-### 2E. Simple Version Control (13.1–13.4)
-
-**Problem:** Version history UI components exist but may not work end-to-end.
-
-**Work:**
-- Verify the DB-backed version flow: edit material → save → version record created
-- Verify diff viewer shows meaningful changes
-- Verify restore works (revert to previous version)
-- Add explicit "Save as version" / "Commit" button (vs auto-save)
-- Keep it simple — no branching, no git. Just: save, view history, restore.
-
-**Effort:** Small-medium — mostly verification and wiring, components exist.
-
-### 2F. Editor Modes (15.1–15.2)
-
-**Problem:** No toggle between simple (rich text) and advanced (YAML + markdown) editing.
-
-**Work:**
-- Add a toggle switch on the material editor: "Simple" / "Advanced"
-- Simple = TipTap rich editor (current default)
-- Advanced = raw markdown textarea + YAML front matter editor (QuartoEditor components exist)
-- Persist preference per user
-
-**Effort:** Small — components exist, need a toggle wrapper.
-
-### 2G. Import → Edit Flow (6.1–6.3, 6.7)
-
-**Problem:** Import services work in the backend but the flow from "upload → review → create → edit" isn't connected in the UI.
-
-**Work:**
-- Wire import UI: upload file → show extracted structure (topics, ULOs, materials) → user reviews/edits → confirm → creates unit with content
-- After import, redirect to normal unit editing page
-- Backend already handles PDF/DOCX/PPTX extraction and unit structure creation
-
-**Effort:** Medium — UI integration work, backend ready.
-
-### Phase 2 Priority Order
-
-Do these in order — each builds on the previous:
-
-1. **2E. Version Control** — safety net before changing edit flows
-2. **2A. Context-Aware Sidebar** — low effort, high visibility
-3. **2F. Editor Modes** — quick win for power users
-4. **2G. Import → Edit Flow** — connects existing backend to UI
-5. **2B. One-Click Scaffold** — the "wow" feature
-6. **2C. Fill the Gaps** — the sticky feature (keeps users coming back)
-7. **2D. Per-Field AI Assist** — polish, do last
-
-**Exit criteria:** A user can start with just a title, scaffold a unit, manually adjust parts they care about, have AI fill the rest, and see version history of their changes.
+| Feature | Stories | Implementation |
+|---------|---------|---------------|
+| **Context-Aware AI Sidebar** | 5.8 | AIAssistant receives unitId, unitTitle, unitULOs — responses are contextual |
+| **One-Click Unit Scaffold** | 1.6, 5.6 | "Quick Scaffold" button → AI generates ULOs, topics, assessments → review modal → accept/edit/discard |
+| **Fill the Gaps** | 1.7, 5.10, 2.8 | `POST /api/ai/fill-gap` — generates missing ULOs, materials, or assessments using unit context |
+| **Per-Field AI Assist** | 5.9 | AIAssistField component — inline Sparkles button on text fields (generate, improve, suggest) |
+| **AI Assistance Levels** | ADR-0032 | Three levels (none/refine/create) — lecturer controls AI involvement |
+| **Version Control** | 13.1–13.4 | Git-backed per-unit repositories — save, view history, diff, restore |
+| **Editor Modes** | 15.1–15.2 | EditorModeToggle — simple (TipTap) / advanced (YAML + markdown) |
+| **Import → Edit Flow** | 6.1–6.3, 6.5, 6.7 | Upload → analysis → review structure → assign to weeks → create unit |
+| **Unit Duplication** | 1.5 | `POST /api/units/{id}/duplicate` — deep copy all relationships |
+| **Soft Delete / Archive** | ADR-0031 | Archive with full restore, two-step delete modal in UI |
+| **Web Search** | 12.1 | SearXNG integration with academic domain prioritisation |
+| **SCORM 1.2 Export** | 9.6 | ADR-0034 — universal LMS compatibility alongside IMSCC v1.1 |
+| **Document Export** | 9.4 | ADR-0033 — Pandoc + Typst pipeline for PDF, DOCX, PPTX, HTML |
+| **Progressive Quality** | 17.3 | Scaffold + fill-gap respect existing context |
 
 ---
 
-## Phase 3: Advanced Import/Export & Research
+## Phase 3: Desktop App, Images & Advanced Import/Export — IN PROGRESS
 
-**Goal:** Full round-trip with LMS platforms and external research.
+**Goal:** Downloadable app, image support, and full round-trip with LMS platforms.
 
-| Task | Stories | Description |
-|------|---------|-------------|
-| **Web search for similar courses** | 12.1, 12.4 | Implement `web_search_service` — search for similar units, user selects results, system uses them as context for generation |
-| **IMSCC import** | 9.2 | Parse .imscc files → create unit. Spec exists, needs implementation |
-| **HTML export for LMS** | 9.3, 9.5 | Export material as standalone HTML with inline styles. "Copy to clipboard" for LMS pasting |
-| **Quarto PDF/PPTX export** | 9.4 | Wire `quarto_service` to a UI button. Requires Quarto CLI installed |
-| **Image upload** | 15.4 | Media upload endpoint + file storage + TipTap image insert |
-| **Image URL insert** | 15.3 | Add "Insert image from URL" to TipTap toolbar |
-| **PPTX image extraction** | 6.6 | Extract images from PowerPoint during import, store and reference |
-| **AI-enhanced import** | 6.4 | After import, offer "Enhance with AI" that improves imported content |
-| **Unit duplication** | 1.5 | Deep-copy a unit for a new semester |
-
-### 3B. Desktop App — Electron Wrapper (16.1–16.4)
-
-**Goal:** Downloadable app for testers and non-Docker users.
+### 3A. Desktop App — Electron Wrapper (16.1–16.4)
 
 **What already exists:**
 - `LOCAL_MODE` — auto-login, no JWT, privacy-first (working)
-- PyInstaller compatibility audit — ADR 0024, all dependency blockers identified
-- Ollama sidecar architecture — ADR 0025
+- PyInstaller compatibility audit — ADR-0024, all dependency blockers identified
+- Ollama sidecar architecture — ADR-0025
+- Pandoc + Typst export service — ADR-0033 (working in Docker)
+- Electron scaffolding started in `desktop/` directory
 
 **What needs building:**
 - `electron/main.ts` — spawn PyInstaller-bundled backend, open BrowserWindow
@@ -185,25 +81,39 @@ Do these in order — each builds on the previous:
 - GitHub Actions for cross-platform builds
 - Auto-update via electron-updater
 
-**Open questions (resolve during P3, not before):**
+**Open questions:**
 
-| Question | Options | Notes |
-|----------|---------|-------|
-| **PDF/PPTX export** | (a) Bundle Quarto — large, complex | Quarto bundles Pandoc + Typst/LaTeX. ~500MB+. Probably too heavy. |
-| | (b) Bundle Pandoc only — lighter, but PDF needs LaTeX or Typst engine | Pandoc alone can do DOCX/PPTX/HTML. PDF needs a LaTeX install or Typst. Still complex. |
-| | (c) Require user to install Quarto/Pandoc, app points to executable | Simplest. Settings page: "Path to Quarto: [Browse...]". Config already supports `quarto_path`. |
-| | (d) Use a pure-JS/Python PDF library (WeasyPrint, pdfkit) for basic PDF | Avoids external deps entirely. Less formatting control. Good enough for most users? |
-| **Ollama** | (a) App triggers Ollama install on first run | Best UX but platform-specific installer logic |
-| | (b) User installs Ollama separately, app detects it | Simpler. Ollama has good installers. App checks `localhost:11434` on startup. |
-| | (c) Cloud API keys only in Electron | Breaks the "local-first" promise but sidesteps the problem |
-| **Backend bundling** | (a) PyInstaller single-file executable | ADR 0024 audit done. First real build will surface issues. |
-| | (b) Embedded Python (e.g. python-build-standalone) | More predictable than PyInstaller but less tested for this codebase |
+| Question | Recommendation |
+|----------|---------------|
+| **PDF/PPTX export** | Require user to install Pandoc + Typst. Settings page: "Path to Pandoc: [Browse...]". Docker version bundles both. |
+| **Ollama** | Detect `localhost:11434` on startup. Guide user to install if missing. |
+| **Backend bundling** | PyInstaller single-file executable (ADR-0024 audit done). |
 
-**Recommendation:** Option (c)/(b)/(a) respectively — require external Quarto install, detect Ollama, use PyInstaller. Accept that the desktop app has some "install these tools" friction in exchange for shipping sooner. The Docker version remains the zero-friction option.
+### 3B. LMS Import/Export Roundtrip
 
-**Effort:** 1–2 weeks for basic Electron wrapper, longer for polish (auto-update, cross-platform testing, installer UX).
+| Task | Stories | Description |
+|------|---------|-------------|
+| **IMSCC import** | 9.2 | Parse .imscc files → create unit. Spec exists, needs implementation |
+| **HTML export for LMS** | 9.3, 9.5 | Export material as standalone HTML with inline styles. "Copy to clipboard" for LMS pasting |
 
-**Exit criteria:** Download `.dmg` or `.exe`, launch app, create a unit, generate AI content (with API key or local Ollama), export to IMSCC. PDF export works if user has Quarto installed.
+### 3C. Image Support
+
+| Task | Stories | Description |
+|------|---------|-------------|
+| **Image URL insert** | 15.3 | Add "Insert image from URL" to TipTap toolbar |
+| **Image upload** | 15.4 | Media upload endpoint + file storage + TipTap image insert |
+| **PPTX image extraction** | 6.6 | Extract images from PowerPoint during import, store and reference |
+
+### 3D. Remaining Items
+
+| Task | Stories | Description |
+|------|---------|-------------|
+| **Similar course search** | 12.4 | Search for similar units across the web, use as context for generation |
+| **AI-enhanced import** | 6.4 | After import, offer "Enhance with AI" to improve imported content |
+| **Standalone content creation** | 17.2 | Create materials without a parent unit for quick one-off needs |
+| **Content validators** | 7.1–7.2 | Implement readability scoring and structure validation plugins |
+
+**Exit criteria:** Download `.dmg` or `.exe`, launch app, create a unit, generate AI content (with API key or local Ollama), export to IMSCC/SCORM. Image insertion works via URL.
 
 ---
 
@@ -213,10 +123,9 @@ Do these in order — each builds on the previous:
 
 | Task | Stories | Description |
 |------|---------|-------------|
-| **Content validators** | 7.1–7.3 | Implement readability, structure, and accessibility validators |
+| **Accessibility checking** | 7.3 | WCAG compliance validation |
 | **AI image generation** | 15.5 | Generate diagrams/illustrations via DALL-E or similar |
 | **Stock image search** | 15.6 | Unsplash API integration for free images |
-| **Standalone content creation** | 16.2 | Create materials without a parent unit for quick one-off needs |
 
 ---
 
@@ -237,13 +146,13 @@ These are explicitly out of scope to keep focus:
 
 | Decision | Rationale |
 |----------|-----------|
-| DB-backed versioning over Git | Git content service is 70% done but DB versioning is simpler, works now, and meets the "save/view/restore" requirement. Can add git later if needed. |
-| Video = links only | Hosting video is a different problem (storage, transcoding, bandwidth). Links to YouTube/Vimeo are sufficient for course materials. |
-| No forced workflow | Educators have different preferences. The system should work whether they start with ULOs, with a title, with a PDF import, or with just one material. |
-| Web search as Phase 3 | High complexity (needs SearXNG or similar), moderate value. Core editing + AI assist is more important first. |
-| Per-field AI assist is last in P2 | Touches many UI components. Get the sidebar context-aware first (one place), then spread to individual fields. |
-| Electron after P2, not before | Product needs to be compelling before distributing. Docker works for solo testing. Electron is for recruiting testers who won't use Docker. |
-| Quarto = external install for Electron | Bundling Quarto (~500MB+) is impractical. User installs Quarto separately, app config points to executable. Docker version bundles it. |
-| Ollama = detect, don't bundle | Ollama has good native installers. App checks `localhost:11434` on startup and guides user to install if missing. Simpler than bundling. |
+| Git-backed versioning | Per-unit Git repos provide content history, diffing, and restore without exposing Git complexity to users. |
+| Video = links only | Hosting video is a different problem (storage, transcoding, bandwidth). Links to YouTube/Vimeo are sufficient. |
+| No forced workflow | Educators have different preferences. The system works whether they start with ULOs, a title, a PDF, or one material. |
+| IMSCC v1.1 (not 1.2) | Moodle only supports CC 1.0–1.1. Our webcontent-only exports are identical across versions. v1.1 maximises LMS compatibility. |
+| SCORM 1.2 (not 2004) | SCORM 1.2 is universally supported. 2004 adds sequencing complexity we don't need for content delivery. |
+| Pandoc + Typst (not Quarto) | ADR-0033. Pandoc + Typst = ~60MB vs Quarto's ~500MB+. No LaTeX needed. Easier to bundle in Docker and desktop app. |
+| Electron + external tools for desktop | Accept "install these tools" friction for Pandoc/Typst/Ollama in exchange for shipping sooner. Docker remains the zero-friction option. |
+| AI assistance levels | ADR-0032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
 
 *Last updated: 2026-02-21*

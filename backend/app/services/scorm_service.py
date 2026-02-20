@@ -1,13 +1,11 @@
 """
-IMS Common Cartridge v1.1 export service.
+SCORM 1.2 export service.
 
-Exports a Unit as a valid .imscc ZIP archive containing:
-- imsmanifest.xml (CC v1.1 manifest)
-- HTML resource files for weekly materials and assessments
-- Overview pages (learning outcomes, accreditation)
+Exports a Unit as a valid SCORM 1.2 ZIP package containing:
+- imsmanifest.xml (IMS CP v1.1.2 with ADL SCORM namespace)
+- scorm_api.js (minimal LMS API wrapper)
+- HTML content pages with SCORM script injection
 - curriculum_curator_meta.json (round-trip metadata)
-
-CC v1.1 chosen for maximum LMS compatibility (Moodle, Canvas, Blackboard).
 """
 
 import json
@@ -36,17 +34,53 @@ from app.services.unit_export_data import (
     slugify,
 )
 
-# CC v1.1 namespaces (v1.1 for broadest LMS compatibility — Moodle only supports up to 1.1)
-NS_CP = "http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1"
-NS_LOM = "http://ltsc.ieee.org/xsd/imsccv1p1/LOM/manifest"
-NS_LOMIMSCC = "http://ltsc.ieee.org/xsd/imsccv1p1/LOM/resource"
+# SCORM 1.2 / IMS CP v1.1.2 namespaces
+NS_CP = "http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+NS_ADL = "http://www.adlnet.org/xsd/adlcp_rootv1p2"
+
+# Minimal SCORM 1.2 API wrapper JavaScript
+SCORM_API_JS = """\
+/**
+ * Minimal SCORM 1.2 API wrapper for Curriculum Curator exports.
+ * Finds the LMS API object, initialises the session, marks
+ * the lesson as completed, and finishes on page unload.
+ */
+(function () {
+  "use strict";
+
+  function findAPI(win) {
+    var attempts = 0;
+    while (win && !win.API && attempts < 10) {
+      if (win.parent && win.parent !== win) { win = win.parent; }
+      else if (win.opener) { win = win.opener; }
+      else { break; }
+      attempts++;
+    }
+    return win && win.API ? win.API : null;
+  }
+
+  var api = findAPI(window);
+
+  if (api) {
+    api.LMSInitialize("");
+    api.LMSSetValue("cmi.core.lesson_status", "completed");
+    api.LMSCommit("");
+    window.addEventListener("beforeunload", function () {
+      api.LMSFinish("");
+    });
+  }
+})();
+"""
+
+# Script tag injected into every HTML content page
+SCORM_SCRIPT_TAG = '  <script src="../scorm_api.js"></script>'
 
 
-class IMSCCExportService:
-    """Exports a Unit as an IMS Common Cartridge v1.1 package."""
+class SCORMExportService:
+    """Exports a Unit as a SCORM 1.2 package."""
 
     def export_unit(self, unit_id: str, db: Session) -> tuple[BytesIO, str]:
-        """Export a unit as .imscc ZIP. Returns (BytesIO, filename)."""
+        """Export a unit as SCORM 1.2 ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
 
         # Build all resources: list of (identifier, href, title)
@@ -88,7 +122,7 @@ class IMSCCExportService:
             resources.append((identifier, href, str(assessment.title)))
             file_contents[href] = html
 
-        # Build manifest XML
+        # Build SCORM manifest XML
         manifest_xml = self._build_manifest(
             data.unit, data.outline, data.weekly_topics, resources, data.materials_by_week
         )
@@ -102,13 +136,14 @@ class IMSCCExportService:
         buf = BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("imsmanifest.xml", manifest_xml)
+            zf.writestr("scorm_api.js", SCORM_API_JS)
             zf.writestr("curriculum_curator_meta.json", meta_json)
             for href, content in file_contents.items():
                 zf.writestr(href, content)
 
         buf.seek(0)
         title_slug = slugify(str(data.unit.title))
-        filename = f"{data.unit.code}_{title_slug}.imscc"
+        filename = f"{data.unit.code}_{title_slug}_scorm12.zip"
         return buf, filename
 
     def _build_manifest(
@@ -119,11 +154,9 @@ class IMSCCExportService:
         resources: list[tuple[str, str, str]],
         materials_by_week: dict[int, list[WeeklyMaterial]],
     ) -> str:
-        """Build imsmanifest.xml content."""
-        # Register namespaces to avoid ns0: prefixes
+        """Build SCORM 1.2 imsmanifest.xml content."""
         ET.register_namespace("", NS_CP)
-        ET.register_namespace("lom", NS_LOM)
-        ET.register_namespace("lomimscc", NS_LOMIMSCC)
+        ET.register_namespace("adlcp", NS_ADL)
 
         manifest = ET.Element(
             f"{{{NS_CP}}}manifest",
@@ -133,34 +166,22 @@ class IMSCCExportService:
         # Metadata
         metadata = ET.SubElement(manifest, f"{{{NS_CP}}}metadata")
         schema = ET.SubElement(metadata, f"{{{NS_CP}}}schema")
-        schema.text = "IMS Common Cartridge"
+        schema.text = "ADL SCORM"
         schema_version = ET.SubElement(metadata, f"{{{NS_CP}}}schemaversion")
-        schema_version.text = "1.1.0"
-
-        # LOM metadata
-        lom = ET.SubElement(metadata, f"{{{NS_LOM}}}lom")
-        general = ET.SubElement(lom, f"{{{NS_LOM}}}general")
-        title_elem = ET.SubElement(general, f"{{{NS_LOM}}}title")
-        title_string = ET.SubElement(title_elem, f"{{{NS_LOM}}}string", language="en")
-        title_string.text = f"{unit.title} ({unit.code})"
-
-        if unit.description:
-            desc_elem = ET.SubElement(general, f"{{{NS_LOM}}}description")
-            desc_string = ET.SubElement(desc_elem, f"{{{NS_LOM}}}string", language="en")
-            desc_string.text = str(unit.description)
+        schema_version.text = "1.2"
 
         # Organizations
-        organizations = ET.SubElement(manifest, f"{{{NS_CP}}}organizations")
+        organizations = ET.SubElement(manifest, f"{{{NS_CP}}}organizations", default="org_1")
         org = ET.SubElement(
             organizations,
             f"{{{NS_CP}}}organization",
             identifier="org_1",
-            structure="rooted-hierarchy",
         )
-        root_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="root")
+        org_title = ET.SubElement(org, f"{{{NS_CP}}}title")
+        org_title.text = f"{unit.title} ({unit.code})"
 
         # Overview folder
-        overview_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier="overview")
+        overview_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="overview")
         overview_title = ET.SubElement(overview_item, f"{{{NS_CP}}}title")
         overview_title.text = "Overview"
         for res_id, _href, res_title in resources:
@@ -177,7 +198,7 @@ class IMSCCExportService:
             if topic and topic.topic_title:
                 week_title = f"Week {week_num}: {topic.topic_title}"
 
-            week_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}")
+            week_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}")
             week_title_elem = ET.SubElement(week_item, f"{{{NS_CP}}}title")
             week_title_elem.text = week_title
 
@@ -190,7 +211,7 @@ class IMSCCExportService:
         # Assessments folder
         assessment_resources = [(r_id, r_href, r_title) for r_id, r_href, r_title in resources if r_id.startswith("assessment_")]
         if assessment_resources:
-            assess_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier="assessments")
+            assess_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="assessments")
             assess_title = ET.SubElement(assess_item, f"{{{NS_CP}}}title")
             assess_title.text = "Assessments"
             for res_id, _href, res_title in assessment_resources:
@@ -198,7 +219,7 @@ class IMSCCExportService:
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
-        # Resources section
+        # Resources section — each resource marked as SCO
         resources_elem = ET.SubElement(manifest, f"{{{NS_CP}}}resources")
         for res_id, href, _title in resources:
             res = ET.SubElement(
@@ -208,7 +229,9 @@ class IMSCCExportService:
                 type="webcontent",
                 href=href,
             )
+            res.set(f"{{{NS_ADL}}}scormtype", "sco")
             ET.SubElement(res, f"{{{NS_CP}}}file", href=href)
+            ET.SubElement(res, f"{{{NS_CP}}}file", href="scorm_api.js")
 
         # Serialize
         tree = ET.ElementTree(manifest)
@@ -217,11 +240,15 @@ class IMSCCExportService:
         return xml_buf.getvalue()
 
     def _material_to_html(self, title: str, content: str) -> str:
-        """Convert material content to standalone HTML page."""
-        return HTML_TEMPLATE.format(title=escape_html(title), content=content or "<p>No content available.</p>", extra_head="")
+        """Convert material content to standalone HTML page with SCORM script."""
+        return HTML_TEMPLATE.format(
+            title=escape_html(title),
+            content=content or "<p>No content available.</p>",
+            extra_head=SCORM_SCRIPT_TAG,
+        )
 
     def _assessment_to_html(self, assessment: Assessment) -> str:
-        """Convert an assessment to a standalone HTML page."""
+        """Convert an assessment to a standalone HTML page with SCORM script."""
         parts: list[str] = []
 
         if assessment.description:
@@ -248,14 +275,22 @@ class IMSCCExportService:
             parts.append(f"<h2>Specification</h2>\n{assessment.specification}")
 
         content = "\n".join(parts)
-        return HTML_TEMPLATE.format(title=escape_html(str(assessment.title)), content=content, extra_head="")
+        return HTML_TEMPLATE.format(
+            title=escape_html(str(assessment.title)),
+            content=content,
+            extra_head=SCORM_SCRIPT_TAG,
+        )
 
     def _build_learning_outcomes_html(
         self, outcomes: list[UnitLearningOutcome]
     ) -> str:
-        """Generate learning outcomes HTML page."""
+        """Generate learning outcomes HTML page with SCORM script."""
         if not outcomes:
-            return HTML_TEMPLATE.format(title="Learning Outcomes", content="<p>No learning outcomes defined.</p>", extra_head="")
+            return HTML_TEMPLATE.format(
+                title="Learning Outcomes",
+                content="<p>No learning outcomes defined.</p>",
+                extra_head=SCORM_SCRIPT_TAG,
+            )
 
         rows: list[str] = []
         rows.append("<table>")
@@ -268,7 +303,11 @@ class IMSCCExportService:
                 f"<td>{escape_html(str(lo.bloom_level))}</td></tr>"
             )
         rows.append("</table>")
-        return HTML_TEMPLATE.format(title="Learning Outcomes", content="\n".join(rows), extra_head="")
+        return HTML_TEMPLATE.format(
+            title="Learning Outcomes",
+            content="\n".join(rows),
+            extra_head=SCORM_SCRIPT_TAG,
+        )
 
     def _build_accreditation_html(
         self,
@@ -277,10 +316,9 @@ class IMSCCExportService:
         gc_mappings: list[ULOGraduateCapabilityMapping],
         outcomes: list[UnitLearningOutcome],
     ) -> str:
-        """Generate accreditation mapping HTML page."""
+        """Generate accreditation mapping HTML page with SCORM script."""
         parts: list[str] = []
 
-        # AoL mappings
         if aol_mappings:
             parts.append("<h2>Assurance of Learning (AoL) Mappings</h2>")
             parts.append("<table>")
@@ -293,7 +331,6 @@ class IMSCCExportService:
             )
             parts.append("</table>")
 
-        # Graduate Capability mappings
         if gc_mappings:
             outcome_map = {str(o.id): o for o in outcomes}
             parts.append("<h2>Graduate Capability Mappings</h2>")
@@ -308,7 +345,6 @@ class IMSCCExportService:
                 )
             parts.append("</table>")
 
-        # SDG mappings
         if sdg_mappings:
             parts.append("<h2>UN Sustainable Development Goals</h2>")
             parts.append("<table>")
@@ -323,7 +359,11 @@ class IMSCCExportService:
         if not parts:
             parts.append("<p>No accreditation mappings defined.</p>")
 
-        return HTML_TEMPLATE.format(title="Accreditation Mapping", content="\n".join(parts), extra_head="")
+        return HTML_TEMPLATE.format(
+            title="Accreditation Mapping",
+            content="\n".join(parts),
+            extra_head=SCORM_SCRIPT_TAG,
+        )
 
     def _build_meta_json(
         self,
@@ -334,7 +374,6 @@ class IMSCCExportService:
         gc_mappings: list[ULOGraduateCapabilityMapping],
     ) -> str:
         """Build the curriculum_curator_meta.json for round-trip."""
-        # Build GC lookup: ulo_id -> list of capability codes
         gc_by_ulo: dict[str, list[str]] = {}
         for gc in gc_mappings:
             gc_by_ulo.setdefault(str(gc.ulo_id), []).append(str(gc.capability_code))
@@ -342,6 +381,7 @@ class IMSCCExportService:
         meta = {
             "version": "1.0",
             "exported_from": "curriculum-curator",
+            "export_format": "scorm_1.2",
             "exported_at": datetime.now(UTC).isoformat(),
             "unit": {
                 "id": str(unit.id),
@@ -379,4 +419,4 @@ class IMSCCExportService:
 
 
 # Module-level singleton
-imscc_export_service = IMSCCExportService()
+scorm_export_service = SCORMExportService()

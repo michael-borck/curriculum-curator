@@ -432,6 +432,13 @@ except ImportError as e:
     logger.warning(f"Failed to load imscc_export routes: {e}")
 
 try:
+    from app.api.routes import scorm_export
+
+    app.include_router(scorm_export.router, prefix="/api", tags=["scorm-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load scorm_export routes: {e}")
+
+try:
     from app.api.routes import document_export
 
     app.include_router(
