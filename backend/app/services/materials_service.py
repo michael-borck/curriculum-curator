@@ -48,7 +48,7 @@ class MaterialsService:
                 )
                 .scalar()
             )
-            next_order = (max_order or -1) + 1
+            next_order = (max_order + 1) if max_order is not None else 0
 
             material = WeeklyMaterial(
                 unit_id=unit_id,
@@ -330,7 +330,7 @@ class MaterialsService:
             .filter(LocalLearningOutcome.material_id == material_id)
             .scalar()
         )
-        next_order = (max_order or -1) + 1
+        next_order = (max_order + 1) if max_order is not None else 0
 
         llo = LocalLearningOutcome(
             material_id=material_id,

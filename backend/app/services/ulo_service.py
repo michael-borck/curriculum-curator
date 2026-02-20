@@ -45,7 +45,7 @@ class ULOService:
                 )
                 .scalar()
             )
-            next_order = (max_order or -1) + 1
+            next_order = (max_order + 1) if max_order is not None else 0
 
             ulo = UnitLearningOutcome(
                 unit_id=unit_id,
@@ -249,7 +249,7 @@ class ULOService:
             )
             .scalar()
         )
-        next_order = (max_order or -1) + 1
+        next_order = (max_order + 1) if max_order is not None else 0
 
         for index, ulo_data in enumerate(bulk_data.outcomes):
             ulo = UnitLearningOutcome(

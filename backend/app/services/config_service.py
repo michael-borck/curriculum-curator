@@ -22,7 +22,7 @@ class ConfigService:
         """Initialize configuration cache from database"""
         configs = db.query(SystemConfig).all()
         for config in configs:
-            cls._cache[config.key] = cls._parse_value(config.value, config.value_type)
+            cls._cache[config.key] = config.value
         cls._initialized = True
 
     @classmethod
