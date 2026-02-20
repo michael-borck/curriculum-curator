@@ -75,3 +75,6 @@ htmlcov/
 # Documentation build
 docs/_build/
 site/
+
+# Session files
+session-*.md

@@ -13,6 +13,11 @@ from app.core.config import settings
 from app.services.llm_service import LLMService
 
 
+class WebSearchError(Exception):
+    """Custom exception for web search errors."""
+
+
+
 class SearchResult:
     """Represents a single search result"""
 
@@ -165,11 +170,14 @@ class WebSearchService:
         search_url = f"{self.searxng_url}/search?{urlencode(params)}"
 
         try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=timeout)
-            ) as session, session.get(search_url) as response:
+            async with (
+                aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout)
+                ) as session,
+                session.get(search_url) as response,
+            ):
                 if response.status != 200:
-                    raise Exception(f"SearXNG returned status {response.status}")
+                    raise WebSearchError(f"SearXNG returned status {response.status}")
 
                 data = await response.json()
 
@@ -182,9 +190,7 @@ class WebSearchService:
                     description = item.get("description", "")
 
                     # Calculate academic score
-                    academic_score = self._calculate_academic_score(
-                        url, title, content
-                    )
+                    academic_score = self._calculate_academic_score(url, title, content)
 
                     # Filter if academic_only is True
                     if academic_only and academic_score < 0.3:
@@ -195,7 +201,7 @@ class WebSearchService:
                     if url:
                         try:
                             source = url.split("//")[-1].split("/")[0]
-                        except:
+                        except (IndexError, AttributeError):
                             source = url
 
                     # Extract published date if available
@@ -214,10 +220,10 @@ class WebSearchService:
 
                 return results
 
-        except TimeoutError:
-            raise Exception("Search request timed out")
+        except TimeoutError as e:
+            raise WebSearchError("Search request timed out") from e
         except Exception as e:
-            raise Exception(f"Search failed: {e!s}")
+            raise WebSearchError(f"Search failed: {e!s}") from e
 
     async def fetch_page_content(self, url: str, timeout: int = 30) -> str:
         """
@@ -235,38 +241,40 @@ class WebSearchService:
         }
 
         try:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=timeout)
-            ) as session:
-                async with session.get(url, headers=headers) as response:
-                    if response.status != 200:
-                        raise Exception(f"Failed to fetch page: HTTP {response.status}")
+            async with (
+                aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=timeout)
+                ) as session,
+                session.get(url, headers=headers) as response,
+            ):
+                if response.status != 200:
+                    raise WebSearchError(
+                        f"Failed to fetch page: HTTP {response.status}"
+                    )
 
-                    html = await response.text()
+                html = await response.text()
 
-                    # Simple content extraction (in production, use something like trafilatura or readability)
-                    # This is a basic implementation
-                    content = self._extract_content(html)
+                # Simple content extraction (in production, use something like trafilatura or readability)
+                # This is a basic implementation
+                content = self._extract_content(html)
 
-                    if not content or len(content.strip()) < 100:
-                        # Fallback: return first 5000 characters of HTML text
-                        import re
+                if not content or len(content.strip()) < 100:
+                    # Fallback: return first 5000 characters of HTML text
+                    text = re.sub(r"<[^>]+>", " ", html)
+                    text = re.sub(r"\s+", " ", text)
+                    content = text[:5000]
 
-                        text = re.sub(r"<[^>]+>", " ", html)
-                        text = re.sub(r"\s+", " ", text)
-                        content = text[:5000]
+                return content.strip()
 
-                    return content.strip()
-
-        except TimeoutError:
-            raise Exception("Page fetch timed out")
+        except TimeoutError as e:
+            raise WebSearchError("Page fetch timed out") from e
+        except WebSearchError:
+            raise
         except Exception as e:
-            raise Exception(f"Failed to fetch page: {e!s}")
+            raise WebSearchError(f"Failed to fetch page: {e!s}") from e
 
     def _extract_content(self, html: str) -> str:
-        """Basic HTML content extraction"""
-        import re
-
+        """Basic HTML content extraction."""
         # Remove scripts and styles
         html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL)
         html = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL)
@@ -325,7 +333,7 @@ class WebSearchService:
         content = await self.fetch_page_content(url)
 
         if not content:
-            raise Exception("No content extracted from page")
+            raise WebSearchError("No content extracted from page")
 
         # Create prompt based on purpose
         purpose_prompts = {
@@ -363,10 +371,7 @@ Please provide:
             summary = summary_result
         else:
             # If it's a generator, collect all chunks
-            chunks = []
-            async for chunk in summary_result:
-                chunks.append(chunk)
-            summary = "".join(chunks)
+            summary = "".join([chunk async for chunk in summary_result])
 
         # Extract key points if requested
         key_points: list[str] = []
@@ -388,10 +393,7 @@ Format as bullet points starting with action verbs."""
             if isinstance(key_points_result, str):
                 key_points_text = key_points_result
             else:
-                chunks = []
-                async for chunk in key_points_result:
-                    chunks.append(chunk)
-                key_points_text = "".join(chunks)
+                key_points_text = "".join([chunk async for chunk in key_points_result])
 
             # Parse bullet points
             points = re.findall(
@@ -441,7 +443,7 @@ Format as bullet points starting with action verbs."""
 
         # Summarize top N results
         summaries = []
-        for i, result in enumerate(search_results[:summarize_top_n]):
+        for result in search_results[:summarize_top_n]:
             try:
                 summary = await self.summarize_url(
                     url=result.url,

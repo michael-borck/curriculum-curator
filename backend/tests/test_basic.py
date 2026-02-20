@@ -60,7 +60,7 @@ def test_login_with_test_account():
     """Test login with known test account"""
     response = requests.post(
         f"{API_URL}/auth/login",
-        data={"username": "michael.borck@curtin.edu.au", "password": "password123"},
+        json={"email": "michael.borck@curtin.edu.au", "password": "password123"},
     )
 
     if response.status_code == 200:

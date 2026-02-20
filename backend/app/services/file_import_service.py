@@ -5,7 +5,9 @@ Supports PDF, DOCX, PPTX, and other document formats
 
 import io
 import mimetypes
+import os
 import re
+import tempfile
 import zipfile
 from collections import Counter
 from pathlib import Path
@@ -811,6 +813,29 @@ class FileImportService:
         min_duration = min_durations.get(content_type, 10)
         return max(duration, min_duration)
 
+    def assess_difficulty(self, content: str) -> str:
+        """Public method to assess difficulty level of content.
+
+        Args:
+            content: The text content to analyze
+
+        Returns:
+            Difficulty level: "beginner", "intermediate", or "advanced"
+        """
+        return self._assess_difficulty(content)
+
+    def estimate_duration(self, content: str, content_type: str) -> int:
+        """Public method to estimate duration in minutes.
+
+        Args:
+            content: The text content to analyze
+            content_type: Type of content (lecture, quiz, worksheet, etc.)
+
+        Returns:
+            Estimated duration in minutes
+        """
+        return self._estimate_duration(content, content_type)
+
     def _extract_tags(self, content: str) -> list[str]:
         """Extract relevant tags/keywords from content"""
         # Simple keyword extraction - in production, use NLP
@@ -997,7 +1022,7 @@ class FileImportService:
         # Check other content types
         type_scores = {}
         for content_type, patterns in folder_patterns.items():
-            if content_type == "week" or content_type == "module":
+            if content_type in {"week", "module"}:
                 continue  # Skip week/module patterns
 
             score = 0
@@ -1027,10 +1052,7 @@ class FileImportService:
         ]
 
         filename_lower = filename.lower()
-        for pattern in outline_patterns:
-            if re.search(pattern, filename_lower):
-                return True
-        return False
+        return any(re.search(pattern, filename_lower) for pattern in outline_patterns)
 
     async def process_zip_file(
         self, zip_content: bytes, unit_id: str, db: Any, current_user: Any
@@ -1041,10 +1063,7 @@ class FileImportService:
         Returns:
             Dict with analysis of ZIP contents and suggested structure
         """
-        import os
-        import tempfile
-
-        results = {
+        results: dict[str, Any] = {
             "unit_outline_found": False,
             "unit_outline_file": None,
             "files_by_week": {},
@@ -1054,23 +1073,25 @@ class FileImportService:
         }
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            zip_path = os.path.join(temp_dir, "uploaded.zip")
-            with open(zip_path, "wb") as f:
-                f.write(zip_content)
+            temp_path = Path(temp_dir)
+            zip_path = temp_path / "uploaded.zip"
+            zip_path.write_bytes(zip_content)
 
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 # Extract all files
                 zip_ref.extractall(temp_dir)
 
                 # Analyze file structure
-                for root, dirs, files in os.walk(temp_dir):
+                for root, _, files in os.walk(temp_dir):
                     for file in files:
-                        if file.startswith(".") or file.startswith("__"):
+                        if file.startswith((".", "__")):
                             continue  # Skip hidden files
 
-                        file_path = os.path.join(root, file)
-                        rel_path = os.path.relpath(file_path, temp_dir)
-                        folder_path = os.path.dirname(rel_path)
+                        file_path = Path(root) / file
+                        rel_path = str(file_path.relative_to(temp_path))
+                        folder_path = str(file_path.parent.relative_to(temp_path))
+                        if folder_path == ".":
+                            folder_path = ""
 
                         # Check if unit outline
                         if self.is_unit_outline(file):
@@ -1091,8 +1112,7 @@ class FileImportService:
 
                         # Read file content for further analysis
                         try:
-                            with open(file_path, "rb") as f:
-                                file_content = f.read()
+                            file_content = file_path.read_bytes()
 
                             # Process file to get more details
                             file_result = await self.process_file(
@@ -1129,53 +1149,46 @@ class FileImportService:
                             continue
 
         # Generate suggested structure
-        for week_num, files in sorted(results["files_by_week"].items()):
-            week_info = {
-                "week": week_num,
-                "total_files": len(files),
-                "file_types": {},
-                "suggested_content": [],
-            }
+        results["suggested_structure"] = self._generate_suggested_structure(
+            results["files_by_week"]
+        )
 
+        return results
+
+    def _generate_suggested_structure(
+        self, files_by_week: dict[int, list[dict[str, Any]]]
+    ) -> list[dict[str, Any]]:
+        """Generate suggested content structure from files grouped by week."""
+        suggested_structure = []
+        content_types = ["lecture", "worksheet", "reading"]
+
+        for week_num, files in sorted(files_by_week.items()):
             # Count file types
-            type_counts = {}
+            type_counts: dict[str, int] = {}
             for file_info in files:
                 file_type = file_info["detected_type"]
                 type_counts[file_type] = type_counts.get(file_type, 0) + 1
 
-            week_info["file_types"] = type_counts
+            # Build suggested content list
+            suggested_content = [
+                {
+                    "type": content_type,
+                    "count": type_counts[content_type],
+                    "description": f"{type_counts[content_type]} {content_type}(s) for Week {week_num}",
+                }
+                for content_type in content_types
+                if content_type in type_counts
+            ]
 
-            # Suggest content structure
-            if "lecture" in type_counts:
-                week_info["suggested_content"].append(
-                    {
-                        "type": "lecture",
-                        "count": type_counts["lecture"],
-                        "description": f"{type_counts['lecture']} lecture(s) for Week {week_num}",
-                    }
-                )
+            week_info = {
+                "week": week_num,
+                "total_files": len(files),
+                "file_types": type_counts,
+                "suggested_content": suggested_content,
+            }
+            suggested_structure.append(week_info)
 
-            if "worksheet" in type_counts:
-                week_info["suggested_content"].append(
-                    {
-                        "type": "worksheet",
-                        "count": type_counts["worksheet"],
-                        "description": f"{type_counts['worksheet']} worksheet(s) for Week {week_num}",
-                    }
-                )
-
-            if "reading" in type_counts:
-                week_info["suggested_content"].append(
-                    {
-                        "type": "reading",
-                        "count": type_counts["reading"],
-                        "description": f"{type_counts['reading']} reading(s) for Week {week_num}",
-                    }
-                )
-
-            results["suggested_structure"].append(week_info)
-
-        return results
+        return suggested_structure
 
 
 # Create singleton instance

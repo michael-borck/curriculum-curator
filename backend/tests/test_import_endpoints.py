@@ -21,9 +21,9 @@ class TestImportEndpoints:
         self.test_user = User(
             id="test-user-id",
             email="test@example.com",
-            username="testuser",
-            full_name="Test User",
-            role="instructor",
+            password_hash="hashed_password",
+            name="Test User",
+            role="lecturer",
             is_active=True,
         )
         self.access_token = create_access_token(data={"sub": self.test_user.email})

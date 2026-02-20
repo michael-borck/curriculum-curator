@@ -105,7 +105,7 @@ class CitationService:
             return ""
 
         # Sort sources appropriately for the style
-        if style == CitationStyle.IEEE or style == CitationStyle.VANCOUVER:
+        if style in {CitationStyle.IEEE, CitationStyle.VANCOUVER}:
             # Numbered styles - keep order as provided (order of appearance)
             sorted_sources = sources
         else:
@@ -202,8 +202,7 @@ class CitationService:
 
         if len(authors) == 3:
             formatted = [f"{authors[0].last_name}, {authors[0].first_name}"]
-            for a in authors[1:-1]:
-                formatted.append(f"{a.first_name} {a.last_name}")
+            formatted.extend(f"{a.first_name} {a.last_name}" for a in authors[1:-1])
             formatted.append(f"and {authors[-1].first_name} {authors[-1].last_name}")
             return ", ".join(formatted)
 
@@ -275,8 +274,7 @@ class CitationService:
 
         if source.source_type == SourceType.WEBSITE.value:
             access_date = source.access_date or datetime.now().strftime("%B %d, %Y")
-            citation = f"{authors} ({year}). {title}. Retrieved {access_date}, from {source.url}"
-            return citation
+            return f"{authors} ({year}). {title}. Retrieved {access_date}, from {source.url}"
 
         # Default format for other types
         return f"{authors} ({year}). {title}."
@@ -329,13 +327,11 @@ class CitationService:
 
         if source.source_type == SourceType.BOOK.value:
             publisher = source.publisher or ""
-            citation = f"{authors} ({year}) {self._italicize(title)}, {publisher}."
-            return citation
+            return f"{authors} ({year}) {self._italicize(title)}, {publisher}."
 
         if source.source_type == SourceType.WEBSITE.value:
             access_date = source.access_date or datetime.now().strftime("%d %B %Y")
-            citation = f"{authors} ({year}) {self._italicize(title)}, viewed {access_date}, <{source.url}>."
-            return citation
+            return f"{authors} ({year}) {self._italicize(title)}, viewed {access_date}, <{source.url}>."
 
         return f"{authors} ({year}) '{title}'."
 
@@ -386,13 +382,11 @@ class CitationService:
         if source.source_type == SourceType.BOOK.value:
             publisher = source.publisher or ""
             year = self._get_year(source)
-            citation = f"{authors}. {self._italicize(title)}. {publisher}, {year}."
-            return citation
+            return f"{authors}. {self._italicize(title)}. {publisher}, {year}."
 
         if source.source_type == SourceType.WEBSITE.value:
             access_date = source.access_date or datetime.now().strftime("%d %b. %Y")
-            citation = f'{authors}. "{title}." {self._italicize(source.url)}, Accessed {access_date}.'
-            return citation
+            return f'{authors}. "{title}." {self._italicize(source.url)}, Accessed {access_date}.'
 
         year = self._get_year(source)
         return f'{authors}. "{title}." {year}.'
@@ -442,8 +436,7 @@ class CitationService:
 
         if source.source_type == SourceType.BOOK.value:
             publisher = source.publisher or ""
-            citation = f"{authors}. {self._italicize(title)}. {publisher}, {year}."
-            return citation
+            return f"{authors}. {self._italicize(title)}. {publisher}, {year}."
 
         return f'{authors}. "{title}." {year}.'
 
@@ -478,13 +471,11 @@ class CitationService:
 
         if source.source_type == SourceType.BOOK.value:
             publisher = source.publisher or ""
-            citation = f"{authors}, {self._italicize(title)}. {publisher}, {year}."
-            return citation
+            return f"{authors}, {self._italicize(title)}. {publisher}, {year}."
 
         if source.source_type == SourceType.WEBSITE.value:
             access_date = source.access_date or datetime.now().strftime("%b. %d, %Y")
-            citation = f'{authors}, "{title}." [Online]. Available: {source.url}. [Accessed: {access_date}].'
-            return citation
+            return f'{authors}, "{title}." [Online]. Available: {source.url}. [Accessed: {access_date}].'
 
         return f'{authors}, "{title}," {year}.'
 
@@ -519,13 +510,11 @@ class CitationService:
 
         if source.source_type == SourceType.BOOK.value:
             publisher = source.publisher or ""
-            citation = f"{authors}. {title}. {publisher}; {year}."
-            return citation
+            return f"{authors}. {title}. {publisher}; {year}."
 
         if source.source_type == SourceType.WEBSITE.value:
             access_date = source.access_date or datetime.now().strftime("%Y %b %d")
-            citation = f"{authors}. {title} [Internet]. Available from: {source.url}. Cited {access_date}."
-            return citation
+            return f"{authors}. {title} [Internet]. Available from: {source.url}. Cited {access_date}."
 
         return f"{authors}. {title}. {year}."
 

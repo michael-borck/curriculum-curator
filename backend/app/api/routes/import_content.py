@@ -576,25 +576,25 @@ async def get_import_suggestions(
             }
         )
 
-        return {
-            "unit": {"id": unit_id, "name": unit.name},
-            "current_state": {
-                "has_outline": has_outline,
-                "outcomes_count": outcomes_count,
-                "weekly_topics_count": weekly_topics_count,
-                "assessments_count": assessments_count,
-                "content_count": content_count,
-                "content_types": existing_types,
-            },
-            "suggestions": suggestions,
-            "next_steps": [
-                "1. Import unit outline PDF to establish structure",
-                "2. Review and refine extracted learning outcomes",
-                "3. Import or create weekly content",
-                "4. Add assessment briefs and rubrics",
-                "5. Generate student-facing materials",
-            ],
-        }
+    return {
+        "unit": {"id": unit_id, "name": unit.name},
+        "current_state": {
+            "has_outline": has_outline,
+            "outcomes_count": outcomes_count,
+            "weekly_topics_count": weekly_topics_count,
+            "assessments_count": assessments_count,
+            "content_count": content_count,
+            "content_types": existing_types,
+        },
+        "suggestions": suggestions,
+        "next_steps": [
+            "1. Import unit outline PDF to establish structure",
+            "2. Review and refine extracted learning outcomes",
+            "3. Import or create weekly content",
+            "4. Add assessment briefs and rubrics",
+            "5. Generate student-facing materials",
+        ],
+    }
 
 
 @router.post("/import/zip/{unit_id}")

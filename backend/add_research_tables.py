@@ -4,15 +4,11 @@ Run this after dropping the database to create the new tables.
 """
 
 import sys
-import os
+from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from app.core.database import Base, engine
-from app.models.research_source import ResearchSource, ContentCitation
-from app.models.user import User
-from app.models.unit import Unit
-from app.models.content import Content
 
 
 def create_research_tables():
@@ -22,7 +18,7 @@ def create_research_tables():
     # Create all tables
     Base.metadata.create_all(bind=engine)
 
-    print("✅ Research source and citation tables created successfully!")
+    print("Research source and citation tables created successfully!")
     print("")
     print("Tables created:")
     print("  - research_sources")

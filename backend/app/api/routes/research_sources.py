@@ -23,7 +23,9 @@ from app.models.research_source import (
     ResearchSource,
     SourceType,
 )
+from app.repositories import content_repo, unit_repo
 from app.schemas.research_source import (
+    AuthorSchema,
     BulkCitationRequest,
     CitationRequest,
     CitationResponse,
@@ -40,6 +42,7 @@ from app.schemas.research_source import (
 )
 from app.schemas.user import UserResponse
 from app.services.citation_service import citation_service
+from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +56,16 @@ router = APIRouter()
 
 def source_to_response(source: ResearchSource) -> ResearchSourceResponse:
     """Convert SQLAlchemy model to Pydantic response."""
+    # Convert author dicts to AuthorSchema instances
+    authors = [
+        AuthorSchema(
+            first_name=author.get("first_name", ""),
+            last_name=author.get("last_name", ""),
+            suffix=author.get("suffix"),
+        )
+        for author in source.authors
+    ]
+
     return ResearchSourceResponse(
         id=str(source.id),
         user_id=str(source.user_id),
@@ -60,7 +73,7 @@ def source_to_response(source: ResearchSource) -> ResearchSourceResponse:
         url=source.url,
         title=source.title,
         source_type=SourceType(source.source_type),
-        authors=source.authors,
+        authors=authors,
         publication_date=source.publication_date,
         publisher=source.publisher,
         journal_name=source.journal_name,
@@ -432,18 +445,17 @@ async def format_reference_list(
 
     reference_list = citation_service.format_reference_list(sources, data.style)
 
-    citations = []
-    for source in sources:
-        citations.append(
-            CitationResponse(
-                source_id=str(source.id),
-                style=data.style,
-                full_citation=citation_service.format_citation(source, data.style),
-                in_text_citation=citation_service.format_in_text_citation(
-                    source, data.style
-                ),
-            )
+    citations = [
+        CitationResponse(
+            source_id=str(source.id),
+            style=data.style,
+            full_citation=citation_service.format_citation(source, data.style),
+            in_text_citation=citation_service.format_in_text_citation(
+                source, data.style
+            ),
         )
+        for source in sources
+    ]
 
     return ReferenceListResponse(
         style=data.style,
@@ -469,8 +481,6 @@ async def add_citation_to_content(
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ):
     """Add a citation from a research source to content."""
-    from app.repositories import content_repo, unit_repo
-
     # Verify content ownership
     content = content_repo.get_content_by_id(db, content_id)
     if not content:
@@ -550,8 +560,6 @@ async def list_content_citations(
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ):
     """List all citations for a piece of content."""
-    from app.repositories import content_repo, unit_repo
-
     # Verify content ownership
     content = content_repo.get_content_by_id(db, content_id)
     if not content:
@@ -606,8 +614,6 @@ async def remove_citation_from_content(
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ):
     """Remove a citation from content."""
-    from app.repositories import content_repo, unit_repo
-
     # Verify content ownership
     content = content_repo.get_content_by_id(db, content_id)
     if not content:
@@ -658,8 +664,6 @@ async def synthesize_from_sources(
 
     Uses LLM to create cohesive content with proper citations.
     """
-    from app.services.llm_service import llm_service
-
     # Get all sources
     sources = (
         db.query(ResearchSource)
@@ -713,12 +717,12 @@ Write the synthesized content:"""
         )
         # Result should be a string when stream=False
         synthesized_content = str(result) if not isinstance(result, str) else result
-    except Exception as e:
-        logger.error(f"LLM synthesis failed: {e}")
+    except Exception:
+        logger.exception("LLM synthesis failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to synthesize content",
-        ) from e
+        )
 
     # Format reference list
     reference_list = citation_service.format_reference_list(

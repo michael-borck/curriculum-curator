@@ -67,7 +67,7 @@ class TestAuthEndpoints:
         try:
             response = requests.post(
                 f"{API_URL}/auth/login",
-                data={"username": "admin@example.com", "password": "admin123"},
+                json={"email": "admin@example.com", "password": "admin123"},
             )
             if response.status_code == 200:
                 return response.json()["access_token"]
@@ -142,7 +142,7 @@ class TestAuthEndpoints:
         """Test login with valid credentials"""
         response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": test_user["email"], "password": test_user["password"]},
+            json={"email": test_user["email"], "password": test_user["password"]},
         )
 
         if response.status_code == 200:
@@ -166,8 +166,8 @@ class TestAuthEndpoints:
         """Test login with invalid credentials"""
         response = requests.post(
             f"{API_URL}/auth/login",
-            data={
-                "username": "nonexistent@example.com",
+            json={
+                "email": "nonexistent@example.com",
                 "password": "WrongPassword123!",
             },
         )
@@ -183,7 +183,7 @@ class TestAuthEndpoints:
         for i in range(10):
             response = requests.post(
                 f"{API_URL}/auth/login",
-                data={"username": f"attacker{i}@example.com", "password": "wrong"},
+                json={"email": f"attacker{i}@example.com", "password": "wrong"},
             )
             responses.append(response.status_code)
 
@@ -196,7 +196,7 @@ class TestAuthEndpoints:
         # First login
         login_response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": test_user["email"], "password": test_user["password"]},
+            json={"email": test_user["email"], "password": test_user["password"]},
         )
 
         if login_response.status_code == 200:
@@ -248,7 +248,7 @@ class TestAuthEndpoints:
         # First login
         login_response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": test_user["email"], "password": test_user["password"]},
+            json={"email": test_user["email"], "password": test_user["password"]},
         )
 
         if login_response.status_code == 200:
@@ -264,7 +264,7 @@ class TestAuthEndpoints:
         # Login first
         login_response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": test_user["email"], "password": test_user["password"]},
+            json={"email": test_user["email"], "password": test_user["password"]},
         )
 
         if login_response.status_code == 200:
@@ -292,7 +292,7 @@ class TestAuthEndpoints:
         # Login first
         login_response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": test_user["email"], "password": test_user["password"]},
+            json={"email": test_user["email"], "password": test_user["password"]},
         )
 
         if login_response.status_code == 200:
@@ -314,7 +314,7 @@ class TestAuthEndpoints:
                 # Try login with new password
                 new_login = requests.post(
                     f"{API_URL}/auth/login",
-                    data={"username": test_user["email"], "password": new_password},
+                    json={"email": test_user["email"], "password": new_password},
                 )
                 assert new_login.status_code in [200, 403]
 
@@ -334,7 +334,7 @@ class TestAuthSecurity:
         for payload in malicious_inputs:
             response = requests.post(
                 f"{API_URL}/auth/login",
-                data={"username": payload, "password": "password"},
+                json={"email": f"{payload}@example.com", "password": "password"},
             )
             # Should safely reject, not error
             assert response.status_code in [401, 403, 422]
@@ -369,7 +369,7 @@ class TestAuthSecurity:
             start = time.time()
             requests.post(
                 f"{API_URL}/auth/login",
-                data={"username": "michael.borck@curtin.edu.au", "password": "wrong"},
+                json={"email": "michael.borck@curtin.edu.au", "password": "wrong"},
             )
             times_valid.append(time.time() - start)
 
@@ -377,7 +377,7 @@ class TestAuthSecurity:
             start = time.time()
             requests.post(
                 f"{API_URL}/auth/login",
-                data={"username": "nonexistent@example.com", "password": "wrong"},
+                json={"email": "nonexistent@example.com", "password": "wrong"},
             )
             times_invalid.append(time.time() - start)
 
@@ -392,7 +392,7 @@ class TestAuthSecurity:
         """Test security headers in responses"""
         response = requests.post(
             f"{API_URL}/auth/login",
-            data={"username": "test@example.com", "password": "password"},
+            json={"email": "test@example.com", "password": "password"},
         )
 
         headers = response.headers

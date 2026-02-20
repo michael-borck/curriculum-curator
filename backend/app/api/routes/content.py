@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.models.content import Content as ContentModel
 from app.repositories import content_repo, unit_repo
 from app.schemas.content import (
     ContentCreate,
@@ -122,9 +123,6 @@ async def upload_content(
             user_email=current_user.email,
         )
 
-        # Update content category in database
-        from app.models.content import Content as ContentModel
-
         db_content = (
             db.query(ContentModel).filter(ContentModel.id == content.id).first()
         )
@@ -133,25 +131,23 @@ async def upload_content(
             db.commit()
 
         # Add categorization data to response
-        response_data = {
+        return {
             "content_id": str(content.id),
             "content_type": result["content_type"],
             "content_type_confidence": result["content_type_confidence"],
             "wordCount": result["word_count"],
             "sections_found": len(result["sections"]),
             "categorization": {
-                "difficultyLevel": file_import_service._assess_difficulty(
+                "difficultyLevel": file_import_service.assess_difficulty(
                     result["content"]
                 ),
-                "estimatedDuration": file_import_service._estimate_duration(
+                "estimatedDuration": file_import_service.estimate_duration(
                     result["content"], result["content_type"]
                 ),
             },
             "suggestions": result["suggestions"],
             "gaps": result["gaps"],
         }
-
-        return response_data
 
     except Exception as e:
         raise HTTPException(
@@ -228,9 +224,6 @@ async def upload_content_batch(
                 user_email=current_user.email,
             )
 
-            # Update content category in database
-            from app.models.content import Content as ContentModel
-
             db_content = (
                 db.query(ContentModel).filter(ContentModel.id == content.id).first()
             )
@@ -248,10 +241,10 @@ async def upload_content_batch(
                     "wordCount": result["word_count"],
                     "sections_found": len(result["sections"]),
                     "categorization": {
-                        "difficultyLevel": file_import_service._assess_difficulty(
+                        "difficultyLevel": file_import_service.assess_difficulty(
                             result["content"]
                         ),
-                        "estimatedDuration": file_import_service._estimate_duration(
+                        "estimatedDuration": file_import_service.estimate_duration(
                             result["content"], result["content_type"]
                         ),
                     },
@@ -282,8 +275,6 @@ async def update_content_type(
     """
     Update content type for an existing content item.
     """
-    from app.models.content import Content as ContentModel
-
     # Get content
     content = db.query(ContentModel).filter(ContentModel.id == content_id).first()
     if not content:
@@ -336,8 +327,6 @@ async def update_content_week(
     Set week_number to None to mark as unassigned.
     Week numbers should be between 1 and 52.
     """
-    from app.models.content import Content as ContentModel
-
     # Get content
     content = db.query(ContentModel).filter(ContentModel.id == content_id).first()
     if not content:
@@ -362,12 +351,11 @@ async def update_content_week(
         )
 
     # Validate week number
-    if week_number is not None:
-        if week_number < 1 or week_number > 52:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Week number must be between 1 and 52, or null for unassigned",
-            )
+    if week_number is not None and (week_number < 1 or week_number > 52):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Week number must be between 1 and 52, or null for unassigned",
+        )
 
     # Update week number
     old_week = content.week_number
@@ -404,30 +392,27 @@ async def get_unassigned_content(
         )
 
     # Get unassigned content
-    from app.models.content import Content as ContentModel
-
     unassigned = (
         db.query(ContentModel)
         .filter(ContentModel.unit_id == unit_id, ContentModel.week_number.is_(None))
         .all()
     )
 
-    # Convert to response format
-    contents = []
-    for content in unassigned:
-        contents.append(
-            {
-                "id": str(content.id),
-                "title": content.title,
-                "content_type": content.type,
-                "created_at": content.created_at.isoformat()
-                if content.created_at
-                else None,
-                "updated_at": content.updated_at.isoformat()
-                if content.updated_at
-                else None,
-            }
-        )
+    # Convert to response format using list comprehension
+    contents = [
+        {
+            "id": str(content.id),
+            "title": content.title,
+            "content_type": content.type,
+            "created_at": content.created_at.isoformat()
+            if content.created_at
+            else None,
+            "updated_at": content.updated_at.isoformat()
+            if content.updated_at
+            else None,
+        }
+        for content in unassigned
+    ]
 
     return {
         "unit_id": unit_id,
@@ -458,8 +443,6 @@ async def bulk_update_content_weeks(
             detail="Unit not found or access denied",
         )
 
-    from app.models.content import Content as ContentModel
-
     results = []
     errors = []
 
@@ -472,16 +455,15 @@ async def bulk_update_content_weeks(
             continue
 
         # Validate week number
-        if week_number is not None:
-            if week_number < 1 or week_number > 52:
-                errors.append(
-                    {
-                        "content_id": content_id,
-                        "error": f"Week number {week_number} must be between 1 and 52",
-                        "update": update,
-                    }
-                )
-                continue
+        if week_number is not None and (week_number < 1 or week_number > 52):
+            errors.append(
+                {
+                    "content_id": content_id,
+                    "error": f"Week number {week_number} must be between 1 and 52",
+                    "update": update,
+                }
+            )
+            continue
 
         # Get content
         content = db.query(ContentModel).filter(ContentModel.id == content_id).first()
@@ -523,7 +505,7 @@ async def bulk_update_content_weeks(
         db.commit()
 
     return {
-        "success": True if results else False,
+        "success": bool(results),
         "updated_count": len(results),
         "error_count": len(errors),
         "results": results,

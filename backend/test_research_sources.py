@@ -46,7 +46,7 @@ def test_citation_service():
     apa_citation = citation_service.format_citation(source, CitationStyle.APA7)
     apa_in_text = citation_service.format_in_text_citation(source, CitationStyle.APA7)
 
-    print(f"\nAPA7 Citation:")
+    print("\nAPA7 Citation:")
     print(f"Full: {apa_citation}")
     print(f"In-text: {apa_in_text}")
 
@@ -56,7 +56,7 @@ def test_citation_service():
         source, CitationStyle.HARVARD
     )
 
-    print(f"\nHarvard Citation:")
+    print("\nHarvard Citation:")
     print(f"Full: {harvard_citation}")
     print(f"In-text: {harvard_in_text}")
 
@@ -64,7 +64,7 @@ def test_citation_service():
     mla_citation = citation_service.format_citation(source, CitationStyle.MLA)
     mla_in_text = citation_service.format_in_text_citation(source, CitationStyle.MLA)
 
-    print(f"\nMLA Citation:")
+    print("\nMLA Citation:")
     print(f"Full: {mla_citation}")
     print(f"In-text: {mla_in_text}")
 
@@ -72,7 +72,7 @@ def test_citation_service():
     sources = [source]
     reference_list = citation_service.format_reference_list(sources, CitationStyle.APA7)
 
-    print(f"\nReference List:")
+    print("\nReference List:")
     print(reference_list)
 
     print("\n✅ Citation service tests passed!")

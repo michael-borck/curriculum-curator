@@ -31,7 +31,7 @@ def test_login_with_test_account(api_url):
     """Test login with existing account"""
     response = requests.post(
         f"{api_url}/auth/login",
-        data={"username": "michael.borck@curtin.edu.au", "password": "password123"},
+        json={"email": "michael.borck@curtin.edu.au", "password": "password123"},
     )
     # Should work or fail gracefully
     assert response.status_code in [200, 401, 403]
@@ -46,7 +46,7 @@ def test_login_with_wrong_password(api_url):
     """Test login with wrong password"""
     response = requests.post(
         f"{api_url}/auth/login",
-        data={"username": "michael.borck@curtin.edu.au", "password": "wrongpassword"},
+        json={"email": "michael.borck@curtin.edu.au", "password": "wrongpassword"},
     )
     assert response.status_code == 401
     assert "Incorrect email or password" in response.json()["detail"]
@@ -57,7 +57,7 @@ def test_cors_headers(api_url):
     # Try a real request instead of OPTIONS
     response = requests.post(
         f"{api_url}/auth/login",
-        data={"username": "test", "password": "test"},
+        json={"email": "test@example.com", "password": "test"},
         headers={"Origin": "http://localhost:5173"},
     )
     # We don't care about the auth result, just CORS headers

@@ -14,6 +14,8 @@ import {
   Info,
   CheckSquare,
   Square,
+  Plus,
+  FolderOpen,
 } from 'lucide-react';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -26,8 +28,41 @@ interface UploadedFile {
   status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error';
   progress: number;
   error?: string;
-  result?: any;
+  result?: FileResult;
   file?: File;
+}
+
+interface FileResult {
+  content_id?: string;
+  content_type?: string;
+  content_type_confidence?: number;
+  wordCount?: number;
+  sections_found?: number;
+  week_number?: number | null;
+  isZipAnalysis?: boolean;
+  analysis?: ZipAnalysis;
+  categorization?: {
+    difficultyLevel?: string;
+    estimatedDuration?: number;
+    alternative_types?: string[];
+  };
+  suggestions?: string[];
+  gaps?: Array<{ element: string; severity: string; suggestion: string }>;
+}
+
+interface ZipAnalysis {
+  total_files: number;
+  files_by_week: Record<string, unknown[]>;
+  unit_outline_found: boolean;
+  unit_outline_file?: {
+    filename: string;
+    path: string;
+  };
+  suggested_structure?: Array<{
+    week: number;
+    total_files: number;
+    file_types: Record<string, number>;
+  }>;
 }
 
 interface WeekAssignment {
@@ -35,92 +70,61 @@ interface WeekAssignment {
   week_number: number | null;
 }
 
-// Content type descriptions (currently unused but may be useful for UI)
-// const contentTypeInfo = {
-//   general: {
-//     name: 'General Content',
-//     description: 'Unspecified educational material',
-//     icon: '📄',
-//   },
-//   lecture: {
-//     name: 'Lecture',
-//     description: 'Teaching material for direct instruction',
-//     icon: '📚',
-//   },
-//   quiz: {
-//     name: 'Quiz/Assessment',
-//     description: 'Tests, quizzes, or evaluations',
-//     icon: '📝',
-//   },
-//   worksheet: {
-//     name: 'Worksheet',
-//     description: 'Practice problems and exercises',
-//     icon: '✏️',
-//   },
-//   lab: {
-//     name: 'Lab/Practical',
-//     description: 'Hands-on experiments or activities',
-//     icon: '🔬',
-//   },
-//   case_study: {
-//     name: 'Case Study',
-//     description: 'Real-world scenarios for analysis',
-//     icon: '💼',
-//   },
-//   interactive: {
-//     name: 'Interactive Content',
-//     description: 'Games, simulations, or interactive HTML',
-//     icon: '🎮',
-//   },
-//   presentation: {
-//     name: 'Presentation',
-//     description: 'Slides or presentation materials',
-//     icon: '🎯',
-//   },
-//   reading: {
-//     name: 'Reading Material',
-//     description: 'Articles, papers, or textbook content',
-//     icon: '📖',
-//   },
-//   video_script: {
-//     name: 'Video/Media',
-//     description: 'Video transcripts or multimedia content',
-//     icon: '🎥',
-//   },
-// };
+interface Unit {
+  id: string;
+  title: string;
+  code: string;
+  description?: string;
+}
+
+interface NewUnitForm {
+  title: string;
+  code: string;
+  description: string;
+}
 
 const ImportMaterials = () => {
   const navigate = useNavigate();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState('');
-  const [units, setUnits] = useState<any[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [unitsLoading, setUnitsLoading] = useState(true);
+  const [unitsError, setUnitsError] = useState<string | null>(null);
   const [weekAssignments, setWeekAssignments] = useState<WeekAssignment[]>([]);
   const [bulkWeek, setBulkWeek] = useState<number | ''>('');
   const [showUnassigned, setShowUnassigned] = useState(false);
-  const [unassignedContent, setUnassignedContent] = useState<any[]>([]);
+  const [unassignedContent, setUnassignedContent] = useState<
+    Array<{
+      id: string;
+      title: string;
+      content_type: string;
+    }>
+  >([]);
   const [loadingUnassigned, setLoadingUnassigned] = useState(false);
+
+  // New unit creation state
+  const [showCreateUnit, setShowCreateUnit] = useState(false);
+  const [creatingUnit, setCreatingUnit] = useState(false);
+  const [createUnitError, setCreateUnitError] = useState<string | null>(null);
+  const [newUnitForm, setNewUnitForm] = useState<NewUnitForm>({
+    title: '',
+    code: '',
+    description: '',
+  });
+
+  // Suggested unit details from ZIP analysis
+  const [suggestedUnitDetails, setSuggestedUnitDetails] = useState<{
+    title?: string | undefined;
+    code?: string | undefined;
+    fromZip: boolean;
+  } | null>(null);
 
   useEffect(() => {
     fetchUnits();
   }, []);
 
-  useEffect(() => {
-    if (selectedUnit) {
-      fetchUnassignedContent();
-    }
-  }, [selectedUnit]);
-
-  const fetchUnits = async () => {
-    try {
-      const response = await api.get('/units');
-      setUnits(response.data);
-    } catch (error) {
-      console.error('Error fetching units:', error);
-    }
-  };
-
-  const fetchUnassignedContent = async () => {
+  const fetchUnassignedContent = useCallback(async () => {
     if (!selectedUnit) return;
 
     setLoadingUnassigned(true);
@@ -134,6 +138,66 @@ const ImportMaterials = () => {
       setUnassignedContent([]);
     } finally {
       setLoadingUnassigned(false);
+    }
+  }, [selectedUnit]);
+
+  useEffect(() => {
+    if (selectedUnit) {
+      fetchUnassignedContent();
+    }
+  }, [selectedUnit, fetchUnassignedContent]);
+
+  const fetchUnits = async () => {
+    setUnitsLoading(true);
+    setUnitsError(null);
+    try {
+      const response = await api.get('/units');
+      // Handle both { units: [...] } and direct array response formats
+      const unitsData = response.data.units || response.data || [];
+      setUnits(Array.isArray(unitsData) ? unitsData : []);
+    } catch (error) {
+      console.error('Error fetching units:', error);
+      setUnitsError('Failed to load units. Please try again.');
+      setUnits([]);
+    } finally {
+      setUnitsLoading(false);
+    }
+  };
+
+  const createUnit = async () => {
+    if (!newUnitForm.title.trim() || !newUnitForm.code.trim()) {
+      setCreateUnitError('Title and code are required');
+      return;
+    }
+
+    setCreatingUnit(true);
+    setCreateUnitError(null);
+
+    try {
+      const response = await api.post('/units/create', {
+        title: newUnitForm.title.trim(),
+        code: newUnitForm.code.trim(),
+        description: newUnitForm.description.trim() || undefined,
+      });
+
+      const newUnit = response.data;
+
+      // Add to units list and select it
+      setUnits(prev => [newUnit, ...prev]);
+      setSelectedUnit(newUnit.id);
+
+      // Reset form
+      setNewUnitForm({ title: '', code: '', description: '' });
+      setShowCreateUnit(false);
+      setSuggestedUnitDetails(null);
+    } catch (error: unknown) {
+      console.error('Error creating unit:', error);
+      const err = error as { response?: { data?: { detail?: string } } };
+      setCreateUnitError(
+        err.response?.data?.detail || 'Failed to create unit. Please try again.'
+      );
+    } finally {
+      setCreatingUnit(false);
     }
   };
 
@@ -176,8 +240,6 @@ const ImportMaterials = () => {
               id: contentId,
               title: file.name,
               content_type: file.result?.content_type || 'general',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
             },
           ]);
         }
@@ -255,21 +317,78 @@ const ImportMaterials = () => {
     });
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: UploadedFile[] = acceptedFiles.map(
-      file =>
-        ({
-          id: Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          status: 'pending' as const,
-          progress: 0,
-          file: file, // Store the actual File object
-        }) as any
-    );
-    setFiles(prev => [...prev, ...newFiles]);
-  }, []);
+  // Extract unit details from filename (for ZIP files)
+  const extractUnitDetailsFromFilename = (filename: string) => {
+    // Common patterns: "COMP101_Unit_Materials.zip", "Web Development 2024.zip"
+    const codePattern = /([A-Z]{2,4}\d{3,4})/i;
+    const codeMatch = filename.match(codePattern);
+
+    // Remove extension and common suffixes
+    let title = filename
+      .replace(/\.(zip|pdf|docx?)$/i, '')
+      .replace(/_materials?|_content|_unit/gi, ' ')
+      .replace(/_/g, ' ')
+      .trim();
+
+    // If we found a code, remove it from title
+    if (codeMatch) {
+      title = title.replace(codeMatch[0], '').trim();
+    }
+
+    // Clean up title
+    title = title.replace(/\s+/g, ' ').trim();
+
+    return {
+      title: title || undefined,
+      code: codeMatch?.[0]?.toUpperCase() || undefined,
+    };
+  };
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        status: 'pending' as const,
+        progress: 0,
+        file: file,
+      }));
+      setFiles(prev => [...prev, ...newFiles]);
+
+      // If no units exist and a ZIP file is dropped, suggest unit creation
+      if (units.length === 0 && !showCreateUnit) {
+        const zipFile = acceptedFiles.find(
+          f =>
+            f.type === 'application/zip' ||
+            f.type === 'application/x-zip-compressed' ||
+            f.name.endsWith('.zip')
+        );
+
+        if (zipFile) {
+          const details = extractUnitDetailsFromFilename(zipFile.name);
+          if (details.title || details.code) {
+            setSuggestedUnitDetails({
+              title: details.title,
+              code: details.code,
+              fromZip: true,
+            });
+            setNewUnitForm(prev => ({
+              ...prev,
+              title: details.title ?? prev.title,
+              code: details.code ?? prev.code,
+            }));
+          }
+          setShowCreateUnit(true);
+        } else if (acceptedFiles.length > 0) {
+          // For non-ZIP files, just show create unit form
+          setShowCreateUnit(true);
+        }
+      }
+    },
+    [units.length, showCreateUnit]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -353,11 +472,17 @@ const ImportMaterials = () => {
       );
 
       // Show ZIP analysis results
+      const analysis = response.data.analysis as ZipAnalysis;
+      const weekCount = Object.keys(analysis.files_by_week || {}).length;
       window.alert(
-        `ZIP analysis complete!\n\nFound ${response.data.analysis.total_files} files across ${Object.keys(response.data.analysis.files_by_week).length} weeks.\n\n${response.data.analysis.unit_outline_found ? '✓ Unit outline detected' : 'No unit outline found'}\n\nCheck the suggestions below for organizing your content.`
+        `ZIP analysis complete!\n\nFound ${analysis.total_files} files across ${weekCount} weeks.\n\n${analysis.unit_outline_found ? 'Unit outline detected' : 'No unit outline found'}\n\nCheck the suggestions below for organizing your content.`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('ZIP upload error:', error);
+      const err = error as {
+        response?: { data?: { detail?: string } };
+        message?: string;
+      };
       setFiles(prev =>
         prev.map(f =>
           f.id === file.id
@@ -366,7 +491,7 @@ const ImportMaterials = () => {
                 status: 'error',
                 error:
                   'ZIP upload failed: ' +
-                  (error.response?.data?.detail || error.message),
+                  (err.response?.data?.detail || err.message),
               }
             : f
         )
@@ -375,13 +500,19 @@ const ImportMaterials = () => {
   };
 
   const handleSingleUpload = async (fileInfo: UploadedFile) => {
-    const actualFile = (fileInfo as any).file;
+    const actualFile = fileInfo.file;
     if (!actualFile) return;
 
     const formData = new FormData();
     formData.append('file', actualFile);
 
     try {
+      setFiles(prev =>
+        prev.map(f =>
+          f.id === fileInfo.id ? { ...f, status: 'uploading', progress: 0 } : f
+        )
+      );
+
       const response = await api.post(
         `/content/upload?unitId=${selectedUnit}`,
         formData,
@@ -396,13 +527,6 @@ const ImportMaterials = () => {
             );
           },
         }
-      );
-
-      // Mark as processing
-      setFiles(prev =>
-        prev.map(f =>
-          f.id === fileInfo.id ? { ...f, status: 'processing' } : f
-        )
       );
 
       // Mark as completed with results
@@ -427,13 +551,15 @@ const ImportMaterials = () => {
             id: response.data.content_id,
             title: fileInfo.name,
             content_type: response.data.content_type || 'general',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           },
         ]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
+      const err = error as {
+        response?: { data?: { detail?: string } };
+        message?: string;
+      };
       setFiles(prev =>
         prev.map(f =>
           f.id === fileInfo.id
@@ -442,7 +568,7 @@ const ImportMaterials = () => {
                 status: 'error',
                 error:
                   'Upload failed: ' +
-                  (error.response?.data?.detail || error.message),
+                  (err.response?.data?.detail || err.message),
               }
             : f
         )
@@ -452,15 +578,25 @@ const ImportMaterials = () => {
 
   const handleBatchUpload = async (filesToUpload: UploadedFile[]) => {
     const formData = new FormData();
-    const fileMap = new Map();
+    const fileMap = new Map<string, string>();
 
     for (const fileInfo of filesToUpload) {
-      const actualFile = (fileInfo as any).file;
+      const actualFile = fileInfo.file;
       if (actualFile) {
         formData.append('files', actualFile);
         fileMap.set(actualFile.name, fileInfo.id);
       }
     }
+
+    // Mark all as uploading
+    setFiles(prev =>
+      prev.map(f => {
+        if (filesToUpload.some(u => u.id === f.id)) {
+          return { ...f, status: 'uploading', progress: 0 };
+        }
+        return f;
+      })
+    );
 
     try {
       const response = await api.post(
@@ -472,21 +608,33 @@ const ImportMaterials = () => {
       );
 
       // Update file statuses based on response
-      response.data.results.forEach((result: any) => {
+      interface BatchResult {
+        filename: string;
+        success: boolean;
+        error?: string;
+        content_id?: string;
+        content_type?: string;
+      }
+
+      response.data.results.forEach((result: BatchResult) => {
         const fileId = fileMap.get(result.filename);
         if (fileId) {
           setFiles(prev =>
-            prev.map(f =>
-              f.id === fileId
-                ? {
-                    ...f,
-                    status: result.success ? 'completed' : 'error',
-                    progress: 100,
-                    error: result.error,
-                    result: result,
-                  }
-                : f
-            )
+            prev.map(f => {
+              if (f.id !== fileId) return f;
+              const updated: UploadedFile = {
+                ...f,
+                status: result.success
+                  ? ('completed' as const)
+                  : ('error' as const),
+                progress: 100,
+                result: result,
+              };
+              if (result.error) {
+                updated.error = result.error;
+              }
+              return updated;
+            })
           );
 
           // Add to unassigned list since batch upload doesn't specify week number
@@ -496,11 +644,9 @@ const ImportMaterials = () => {
               setUnassignedContent(prev => [
                 ...prev,
                 {
-                  id: result.content_id,
+                  id: result.content_id as string,
                   title: fileInfo.name,
                   content_type: result.content_type || 'general',
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
                 },
               ]);
             }
@@ -528,7 +674,11 @@ const ImportMaterials = () => {
 
   const uploadFiles = async () => {
     if (!selectedUnit) {
-      window.alert('Please select a course first');
+      if (units.length === 0) {
+        setShowCreateUnit(true);
+      } else {
+        window.alert('Please select a unit first');
+      }
       return;
     }
 
@@ -592,6 +742,10 @@ const ImportMaterials = () => {
     setFiles(prev => prev.filter(f => f.id !== id));
   };
 
+  // Check if we have files ready to import
+  const hasPendingFiles = files.some(f => f.status === 'pending');
+  const canImport = selectedUnit && hasPendingFiles && !uploading;
+
   return (
     <div className='p-6 max-w-6xl mx-auto'>
       <div className='mb-8'>
@@ -613,32 +767,207 @@ const ImportMaterials = () => {
             </p>
             <p className='text-blue-800'>
               Files are automatically categorized based on their content (e.g.,
-              &quot;Quiz 1&quot; → Quiz, &quot;Lab Exercise&quot; → Lab). You
+              &quot;Quiz 1&quot; to Quiz, &quot;Lab Exercise&quot; to Lab). You
               can change the type using the dropdown if the detection is
-              incorrect. Creative formats like interactive HTML will be detected
-              and properly categorized.
+              incorrect. ZIP archives will be analyzed to detect unit structure
+              and week organization.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Course Selection */}
+      {/* Unit Selection Section */}
       <div className='bg-white rounded-lg shadow-md p-6 mb-6'>
         <label className='block text-sm font-medium text-gray-700 mb-2'>
-          Select Target Unit *
+          Target Unit {!showCreateUnit && '*'}
         </label>
-        <select
-          value={selectedUnit}
-          onChange={e => setSelectedUnit(e.target.value)}
-          className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-        >
-          <option value=''>Select a unit...</option>
-          {units.map(unit => (
-            <option key={unit.id} value={unit.id}>
-              {unit.title} ({unit.code})
-            </option>
-          ))}
-        </select>
+
+        {unitsLoading ? (
+          <div className='flex items-center text-gray-500'>
+            <Loader2 className='h-5 w-5 animate-spin mr-2' />
+            Loading units...
+          </div>
+        ) : unitsError ? (
+          <div className='text-red-600 flex items-center'>
+            <AlertCircle className='h-5 w-5 mr-2' />
+            {unitsError}
+            <button
+              onClick={fetchUnits}
+              className='ml-2 text-blue-600 hover:underline'
+            >
+              Retry
+            </button>
+          </div>
+        ) : units.length === 0 && !showCreateUnit ? (
+          /* No Units Empty State */
+          <div className='border-2 border-dashed border-gray-300 rounded-lg p-8 text-center'>
+            <FolderOpen className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+            <h3 className='text-lg font-medium text-gray-900 mb-2'>
+              No Units Found
+            </h3>
+            <p className='text-gray-600 mb-4'>
+              You need to create a unit before importing materials.
+              {files.length > 0 && (
+                <span className='block mt-1 text-blue-600'>
+                  We detected {files.length} file(s) ready to import.
+                </span>
+              )}
+            </p>
+            <button
+              onClick={() => setShowCreateUnit(true)}
+              className='inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700'
+            >
+              <Plus className='h-4 w-4 mr-2' />
+              Create New Unit
+            </button>
+          </div>
+        ) : showCreateUnit ? (
+          /* Inline Unit Creation Form */
+          <div className='border border-blue-200 bg-blue-50 rounded-lg p-4'>
+            <div className='flex items-center justify-between mb-4'>
+              <h3 className='font-medium text-blue-900'>Create New Unit</h3>
+              {units.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowCreateUnit(false);
+                    setSuggestedUnitDetails(null);
+                    setCreateUnitError(null);
+                  }}
+                  className='text-gray-500 hover:text-gray-700'
+                >
+                  <X className='h-5 w-5' />
+                </button>
+              )}
+            </div>
+
+            {suggestedUnitDetails?.fromZip && (
+              <div className='bg-green-50 border border-green-200 rounded p-3 mb-4 text-sm text-green-800'>
+                <CheckCircle className='h-4 w-4 inline mr-2' />
+                We detected unit details from your ZIP file. Review and adjust
+                if needed.
+              </div>
+            )}
+
+            <div className='space-y-4'>
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Unit Title *
+                </label>
+                <input
+                  type='text'
+                  value={newUnitForm.title}
+                  onChange={e =>
+                    setNewUnitForm(prev => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder='e.g., Introduction to Web Development'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Unit Code *
+                </label>
+                <input
+                  type='text'
+                  value={newUnitForm.code}
+                  onChange={e =>
+                    setNewUnitForm(prev => ({
+                      ...prev,
+                      code: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder='e.g., COMP101'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newUnitForm.description}
+                  onChange={e =>
+                    setNewUnitForm(prev => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder='Brief description of the unit...'
+                  rows={2}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                />
+              </div>
+
+              {createUnitError && (
+                <div className='text-red-600 text-sm flex items-center'>
+                  <AlertCircle className='h-4 w-4 mr-1' />
+                  {createUnitError}
+                </div>
+              )}
+
+              <div className='flex justify-end space-x-3'>
+                {units.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowCreateUnit(false);
+                      setSuggestedUnitDetails(null);
+                      setCreateUnitError(null);
+                    }}
+                    className='px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50'
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={createUnit}
+                  disabled={
+                    creatingUnit ||
+                    !newUnitForm.title.trim() ||
+                    !newUnitForm.code.trim()
+                  }
+                  className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'
+                >
+                  {creatingUnit ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className='h-4 w-4 mr-2' />
+                      Create Unit
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Unit Selector Dropdown */
+          <div className='space-y-2'>
+            <select
+              value={selectedUnit}
+              onChange={e => setSelectedUnit(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+            >
+              <option value=''>Select a unit...</option>
+              {units.map(unit => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.title} ({unit.code})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowCreateUnit(true)}
+              className='text-sm text-blue-600 hover:text-blue-800 flex items-center'
+            >
+              <Plus className='h-4 w-4 mr-1' />
+              Create new unit
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Upload Area */}
@@ -661,8 +990,13 @@ const ImportMaterials = () => {
                 Drag & drop files here, or click to select
               </p>
               <p className='text-sm text-gray-500'>
-                Supported formats: PDF, PPT, PPTX, DOC, DOCX, MD, TXT, HTML
+                Supported formats: PDF, PPTX, DOCX, MD, TXT, HTML, ZIP
               </p>
+              {units.length === 0 && (
+                <p className='text-sm text-blue-600 mt-2'>
+                  Drop a ZIP file to auto-detect unit details
+                </p>
+              )}
             </>
           )}
         </div>
@@ -695,10 +1029,10 @@ const ImportMaterials = () => {
                     <p className='font-medium text-gray-900'>{file.name}</p>
                     <p className='text-sm text-gray-500'>
                       {formatFileSize(file.size)}
-                      {file.status === 'uploading' && ` • ${file.progress}%`}
-                      {file.status === 'processing' && ' • Processing...'}
-                      {file.status === 'completed' && ' • Ready'}
-                      {file.error && ` • ${file.error}`}
+                      {file.status === 'uploading' && ` - ${file.progress}%`}
+                      {file.status === 'processing' && ' - Processing...'}
+                      {file.status === 'completed' && ' - Ready'}
+                      {file.error && ` - ${file.error}`}
                     </p>
                   </div>
                 </div>
@@ -739,17 +1073,17 @@ const ImportMaterials = () => {
               Clear All
             </button>
 
-            <div className='space-x-3'>
+            <div className='flex items-center space-x-3'>
               <button
-                onClick={() => navigate('/courses')}
+                onClick={() => navigate('/units')}
                 className='px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200'
               >
                 Cancel
               </button>
               <button
                 onClick={uploadFiles}
-                disabled={uploading || files.length === 0 || !selectedUnit}
-                className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
+                disabled={!canImport}
+                className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'
               >
                 {uploading ? (
                   <>
@@ -765,6 +1099,13 @@ const ImportMaterials = () => {
               </button>
             </div>
           </div>
+
+          {!selectedUnit && hasPendingFiles && !showCreateUnit && (
+            <p className='mt-3 text-sm text-amber-600 flex items-center'>
+              <AlertCircle className='h-4 w-4 mr-1' />
+              Please select or create a unit before importing
+            </p>
+          )}
         </div>
       )}
 
@@ -797,7 +1138,7 @@ const ImportMaterials = () => {
                                 const newType = e.target.value;
                                 try {
                                   await api.patch(
-                                    `/content/${file.result.content_id}/type?new_type=${newType}`
+                                    `/content/${file.result?.content_id}/type?new_type=${newType}`
                                   );
                                   // Update local state
                                   setFiles(prev =>
@@ -866,25 +1207,27 @@ const ImportMaterials = () => {
                                   e.target.value === ''
                                     ? null
                                     : parseInt(e.target.value);
-                                const success = await updateWeekAssignment(
-                                  file.result.content_id,
-                                  newWeek
-                                );
-                                if (success) {
-                                  // Update local state
-                                  setFiles(prev =>
-                                    prev.map(f =>
-                                      f.id === file.id
-                                        ? {
-                                            ...f,
-                                            result: {
-                                              ...f.result,
-                                              week_number: newWeek,
-                                            },
-                                          }
-                                        : f
-                                    )
+                                if (file.result?.content_id) {
+                                  const success = await updateWeekAssignment(
+                                    file.result.content_id,
+                                    newWeek
                                   );
+                                  if (success) {
+                                    // Update local state
+                                    setFiles(prev =>
+                                      prev.map(f =>
+                                        f.id === file.id
+                                          ? {
+                                              ...f,
+                                              result: {
+                                                ...f.result,
+                                                week_number: newWeek,
+                                              },
+                                            }
+                                          : f
+                                      )
+                                    );
+                                  }
                                 }
                               }}
                             >
@@ -897,23 +1240,25 @@ const ImportMaterials = () => {
                                 )
                               )}
                             </select>
-                            <button
-                              onClick={() =>
-                                toggleWeekAssignment(
-                                  file.result.content_id,
-                                  file.result.week_number
-                                )
-                              }
-                              className='ml-2 text-blue-600 hover:text-blue-800'
-                            >
-                              {weekAssignments.some(
-                                a => a.content_id === file.result.content_id
-                              ) ? (
-                                <CheckSquare className='h-4 w-4' />
-                              ) : (
-                                <Square className='h-4 w-4' />
-                              )}
-                            </button>
+                            {file.result.content_id && (
+                              <button
+                                onClick={() =>
+                                  toggleWeekAssignment(
+                                    file.result!.content_id!,
+                                    file.result!.week_number ?? null
+                                  )
+                                }
+                                className='ml-2 text-blue-600 hover:text-blue-800'
+                              >
+                                {weekAssignments.some(
+                                  a => a.content_id === file.result?.content_id
+                                ) ? (
+                                  <CheckSquare className='h-4 w-4' />
+                                ) : (
+                                  <Square className='h-4 w-4' />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div>
@@ -931,8 +1276,10 @@ const ImportMaterials = () => {
                       </div>
 
                       {/* Show alternative types if confidence is low */}
-                      {file.result.content_type_confidence < 0.7 &&
-                        file.result.categorization?.alternative_types?.length >
+                      {file.result.content_type_confidence !== undefined &&
+                        file.result.content_type_confidence < 0.7 &&
+                        file.result.categorization?.alternative_types &&
+                        file.result.categorization.alternative_types.length >
                           0 && (
                           <div className='bg-gray-50 p-2 rounded text-sm'>
                             <span className='text-gray-600'>
@@ -946,7 +1293,7 @@ const ImportMaterials = () => {
                                   onClick={async () => {
                                     try {
                                       await api.patch(
-                                        `/content/${file.result.content_id}/type?new_type=${type}`
+                                        `/content/${file.result?.content_id}/type?new_type=${type}`
                                       );
                                       setFiles(prev =>
                                         prev.map(f =>
@@ -971,8 +1318,8 @@ const ImportMaterials = () => {
                                 >
                                   {type}
                                   {idx <
-                                  file.result.categorization.alternative_types
-                                    .length -
+                                  (file.result?.categorization
+                                    ?.alternative_types?.length ?? 0) -
                                     1
                                     ? ','
                                     : ''}
@@ -994,7 +1341,7 @@ const ImportMaterials = () => {
                             Difficulty:{' '}
                             {file.result.categorization.difficultyLevel}
                           </span>
-                          <span className='mx-2'>•</span>
+                          <span className='mx-2'>-</span>
                           <span>
                             Duration:{' '}
                             {file.result.categorization.estimatedDuration} min
@@ -1015,7 +1362,7 @@ const ImportMaterials = () => {
                               .slice(0, 3)
                               .map((suggestion: string, idx: number) => (
                                 <li key={idx} className='flex items-start'>
-                                  <span className='mr-2'>•</span>
+                                  <span className='mr-2'>-</span>
                                   <span>{suggestion}</span>
                                 </li>
                               ))}
@@ -1031,9 +1378,9 @@ const ImportMaterials = () => {
                         </p>
                         <ul className='text-sm text-red-800 space-y-1'>
                           {file.result.gaps
-                            .filter((g: any) => g.severity === 'high')
+                            .filter(g => g.severity === 'high')
                             .slice(0, 3)
-                            .map((gap: any, idx: number) => (
+                            .map((gap, idx: number) => (
                               <li key={idx} className='flex items-start'>
                                 <AlertCircle className='h-4 w-4 mr-2 mt-0.5 flex-shrink-0' />
                                 <span>
@@ -1046,28 +1393,30 @@ const ImportMaterials = () => {
                     )}
 
                     {/* Action Buttons */}
-                    <div className='flex space-x-2 mt-3'>
-                      <button
-                        className='px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
-                        onClick={() => {
-                          // Navigate to enhance content
-                          navigate(
-                            `/content/${file.result.content_id}/enhance`
-                          );
-                        }}
-                      >
-                        Enhance with AI
-                      </button>
-                      <button
-                        className='px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700'
-                        onClick={() => {
-                          // Navigate to edit content
-                          navigate(`/content/${file.result.content_id}/edit`);
-                        }}
-                      >
-                        Edit Content
-                      </button>
-                    </div>
+                    {file.result.content_id && (
+                      <div className='flex space-x-2 mt-3'>
+                        <button
+                          className='px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
+                          onClick={() => {
+                            navigate(
+                              `/content/${file.result?.content_id}/enhance`
+                            );
+                          }}
+                        >
+                          Enhance with AI
+                        </button>
+                        <button
+                          className='px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700'
+                          onClick={() => {
+                            navigate(
+                              `/content/${file.result?.content_id}/edit`
+                            );
+                          }}
+                        >
+                          Edit Content
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1178,7 +1527,7 @@ const ImportMaterials = () => {
                                 item.id,
                                 weekNumber
                               );
-                              if (success) {
+                              if (success && weekNumber !== null) {
                                 // Remove from unassigned list
                                 setUnassignedContent(prev =>
                                   prev.filter(i => i.id !== item.id)

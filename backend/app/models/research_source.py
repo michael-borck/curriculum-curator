@@ -77,8 +77,7 @@ class ResearchSource(Base):
         String(50), default=SourceType.WEBSITE.value
     )
 
-    # Authors (JSON array of author objects)
-    # Format: [{"first_name": "John", "last_name": "Doe", "suffix": "PhD"}]
+    # Authors stored as JSON array of author objects with first_name, last_name, suffix
     authors_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Publication details
@@ -212,7 +211,7 @@ class ContentCitation(Base):
         String(200), nullable=True
     )  # e.g., "(Smith, 2024)"
 
-    # Position in content (optional)
+    # Position in content (optional, for tracking citation location)
     position_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     position_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
