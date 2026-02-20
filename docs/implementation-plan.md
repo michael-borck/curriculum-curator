@@ -75,19 +75,25 @@
 - Pandoc + Typst export service — ADR-0033 (working in Docker)
 - Electron scaffolding started in `desktop/` directory
 
-**What needs building:**
-- `electron/main.ts` — spawn PyInstaller-bundled backend, open BrowserWindow
+**What was delivered:**
+- `desktop/src/main/` — backend lifecycle, Ollama auto-start, IPC bridge
 - Electron-builder config for macOS/Windows/Linux
-- GitHub Actions for cross-platform builds
+- GitHub Actions workflow for cross-platform builds
 - Auto-update via electron-updater
+- Ollama detection, auto-start, graceful shutdown
+- Platform-aware install guidance + local AI quality notices
 
-**Open questions:**
+**What remains:**
+- PyInstaller bundling of the backend for production builds
+- Bundle Pandoc + Typst binaries as `extraResources` (~60MB total — this is why we chose them over Quarto's ~500MB+)
 
-| Question | Recommendation |
-|----------|---------------|
-| **PDF/PPTX export** | Require user to install Pandoc + Typst. Settings page: "Path to Pandoc: [Browse...]". Docker version bundles both. |
-| **Ollama** | Detect `localhost:11434` on startup. Guide user to install if missing. |
-| **Backend bundling** | PyInstaller single-file executable (ADR-0024 audit done). |
+**Resolved decisions:**
+
+| Decision | Outcome |
+|----------|---------|
+| **PDF/PPTX export** | Pandoc + Typst bundled as `extraResources` in Electron. Docker also bundles both. Path detection already wired in `backend.ts`. |
+| **Ollama** | Detect on startup, auto-start if installed, guide user to download if missing. Done. |
+| **Backend bundling** | PyInstaller single-file executable (ADR-0024 audit done). Not yet implemented. |
 
 ### 3B. LMS Import/Export Roundtrip
 

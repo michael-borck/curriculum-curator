@@ -4,6 +4,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { createLowlight } from 'lowlight';
 import js from 'highlight.js/lib/languages/javascript';
@@ -32,6 +33,7 @@ import {
   Heading1,
   Heading2,
   Table as TableIcon,
+  ImagePlus,
   Undo,
   Redo,
   Info,
@@ -115,6 +117,19 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       >
         <TableIcon size={18} />
       </button>
+      <button
+        onClick={() => {
+          const url = window.prompt('Enter image URL:');
+          if (url) {
+            const alt = window.prompt('Alt text (optional):') || '';
+            editor.chain().focus().setImage({ src: url, alt }).run();
+          }
+        }}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Insert image from URL'
+      >
+        <ImagePlus size={18} />
+      </button>
 
       <div className='w-px bg-gray-300 mx-1' />
 
@@ -145,6 +160,7 @@ const RichTextEditor = ({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Image.configure({ inline: false, allowBase64: false }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
