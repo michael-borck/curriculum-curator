@@ -31,6 +31,12 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0023](0023-file-import-processing-architecture.md) | File Import and Processing Architecture | **Accepted** |
 | [0015](0015-content-format-and-export-strategy.md) | Content Format and Export Strategy | Proposed |
 | [0014](0014-litellm-unified-llm-abstraction.md) | LiteLLM for Unified LLM Abstraction | Accepted |
+| [0024](0024-local-mode-pyinstaller-compatibility.md) | LOCAL_MODE and PyInstaller Compatibility | Accepted |
+| [0025](0025-ollama-docker-sidecar-local-ai.md) | Ollama Docker Sidecar for Local AI | Accepted |
+| [0026](0026-single-container-deployment.md) | Single-Container Deployment (FastAPI Serves SPA) | Accepted |
+| [0027](0027-camelcase-api-serialization.md) | CamelCase API Serialization Convention | Accepted |
+| [0028](0028-australian-university-terminology.md) | Australian University Terminology | Accepted |
+| [0029](0029-accreditation-framework-mappings.md) | Accreditation Framework Mappings (AoL, Grad Caps, SDGs) | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -42,12 +48,16 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0019: Database Abstraction](0019-database-abstraction-sqlalchemy.md) - SQLAlchemy ORM for portability
 - [ADR-0021: Web Search and Citation Integration](0021-web-search-citation-integration.md) - Academic research integration
 - [ADR-0023: File Import and Processing Architecture](0023-file-import-processing-architecture.md) - Multi-format document processing
+- [ADR-0026: Single-Container Deployment](0026-single-container-deployment.md) - FastAPI serves the React SPA directly
+- [ADR-0027: CamelCase API Serialization](0027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
 
-### User Experience
+### Domain Model & User Experience
 - [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework
 - [ADR-0018: Workflow Flexibility](0018-workflow-flexibility-philosophy.md) - Assist, don't enforce
 - [ADR-0020: AI-Optional User Empowerment](0020-ai-optional-user-empowerment.md) - AI assists, never gates
 - [ADR-0022: Content Type System Evolution](0022-content-type-system-evolution.md) - Comprehensive content categorization
+- [ADR-0028: Australian University Terminology](0028-australian-university-terminology.md) - Unit (not Course) as core entity
+- [ADR-0029: Accreditation Framework Mappings](0029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
 
 ### Authentication & Security
 - [ADR-0007: Simple Authentication for Internal Network](0007-simple-authentication-internal-network.md) - Basic auth approach

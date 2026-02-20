@@ -30,6 +30,9 @@ services:
       # Local Mode (privacy-first, no login required)
       - LOCAL_MODE=${LOCAL_MODE:-false}
 
+      # Ollama (set to http://ollama:11434 when using --profile local-ai)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+
       # Features
       - ENABLE_AI_FEATURES=${ENABLE_AI_FEATURES:-true}
       - ENABLE_FILE_UPLOAD=${ENABLE_FILE_UPLOAD:-true}
@@ -43,6 +46,22 @@ services:
       - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-}
       - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Curriculum Curator}
       - SMTP_TLS=${SMTP_TLS:-true}
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: curriculum-curator-ollama
+    profiles:
+      - local-ai
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - caddy_default
+
+volumes:
+  ollama_data:
 
 networks:
   caddy_default:

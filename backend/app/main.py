@@ -33,6 +33,47 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def _seed_ollama_config() -> None:
+    """Create a default (inactive) Ollama LLM configuration for LOCAL_MODE."""
+    from app.api.deps import LOCAL_USER_ID  # noqa: PLC0415
+    from app.models.llm_config import LLMConfiguration  # noqa: PLC0415
+
+    if SessionLocal is None:
+        return
+
+    db = SessionLocal()
+    try:
+        existing = (
+            db.query(LLMConfiguration)
+            .filter(
+                LLMConfiguration.user_id == LOCAL_USER_ID,
+                LLMConfiguration.provider == "ollama",
+            )
+            .first()
+        )
+        if existing:
+            logger.info("Ollama LLM config already exists")
+            return
+
+        config = LLMConfiguration(
+            user_id=LOCAL_USER_ID,
+            provider="ollama",
+            api_url=settings.OLLAMA_BASE_URL,
+            model_name="ollama/llama3.2",
+            temperature=0.7,
+            is_default=False,
+            is_active=False,
+        )
+        db.add(config)
+        db.commit()
+        logger.info("Seeded default Ollama LLM config (inactive)")
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to seed Ollama config")
+    finally:
+        db.close()
+
+
 def _seed_local_user() -> None:
     """Create the default local user if it doesn't already exist."""
     from app.api.deps import LOCAL_USER_EMAIL, LOCAL_USER_ID  # noqa: PLC0415
@@ -84,9 +125,10 @@ async def lifespan(app: FastAPI):
         git_service = get_git_service()
         logger.info(f"✅ Git content service initialized at {git_service.repos_base}")
 
-        # LOCAL_MODE: seed the default local user
+        # LOCAL_MODE: seed the default local user and Ollama config
         if settings.LOCAL_MODE:
             _seed_local_user()
+            _seed_ollama_config()
 
     except Exception as e:
         logger.warning(f"Initialization warning: {e}")
@@ -374,6 +416,13 @@ try:
     )
 except ImportError as e:
     logger.warning(f"Failed to load research_sources routes: {e}")
+
+try:
+    from app.api.routes import ollama
+
+    app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"])
+except ImportError as e:
+    logger.warning(f"Failed to load ollama routes: {e}")
 
 
 # Remove the root API endpoint - let static files handle it

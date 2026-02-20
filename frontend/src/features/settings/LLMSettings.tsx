@@ -14,9 +14,10 @@ import {
   BarChart3,
   Settings,
   RefreshCw,
+  Cpu,
 } from 'lucide-react';
 import llmApi from '../../services/llmApi';
-// import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 import { LLMProvider } from '../../types/llm';
 import type {
   LLMConfig,
@@ -24,6 +25,9 @@ import type {
   TokenUsageStats,
 } from '../../types/llm';
 import { PROVIDER_DISPLAY_NAMES, DEFAULT_MODELS } from '../../types/llm';
+import ollamaApi from '../../services/ollamaApi';
+import type { OllamaStatus } from '../../types/ollama';
+import LocalAISetup from './LocalAISetup';
 
 const LLMSettings: React.FC = () => {
   const [configurations, setConfigurations] = useState<LLMConfig[]>([]);
@@ -40,9 +44,6 @@ const LLMSettings: React.FC = () => {
     'configurations'
   );
 
-  // const user = useAuthStore(state => state.user);
-  // const isAdmin = user?.role === 'admin'; // Reserved for future admin features
-
   // Form state for new/edit configuration
   const [formData, setFormData] = useState<Partial<LLMConfig>>({
     provider: LLMProvider.OPENAI,
@@ -57,9 +58,30 @@ const LLMSettings: React.FC = () => {
 
   const [isEditing, setIsEditing] = useState(false);
 
+  // Local AI state
+  const isLocalMode = useAuthStore(state => state.isLocalMode);
+  const [showLocalAIWizard, setShowLocalAIWizard] = useState(false);
+  const [localAIStatus, setLocalAIStatus] = useState<OllamaStatus | null>(null);
+  const [isLoadingLocalAI, setIsLoadingLocalAI] = useState(false);
+
+  const loadLocalAIStatus = async () => {
+    setIsLoadingLocalAI(true);
+    try {
+      const status = await ollamaApi.getStatus();
+      setLocalAIStatus(status);
+    } catch {
+      setLocalAIStatus(null);
+    } finally {
+      setIsLoadingLocalAI(false);
+    }
+  };
+
   useEffect(() => {
     loadConfigurations();
     loadTokenStats();
+    if (isLocalMode) {
+      loadLocalAIStatus();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -407,6 +429,71 @@ const LLMSettings: React.FC = () => {
         <div className='mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2'>
           <CheckCircle className='w-5 h-5 text-green-600 mt-0.5' />
           <div className='text-sm text-green-800'>{success}</div>
+        </div>
+      )}
+
+      {/* Local AI Section - only visible in LOCAL_MODE */}
+      {isLocalMode && activeTab === 'configurations' && !showLocalAIWizard && (
+        <div className='mb-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
+          <div className='flex items-start justify-between'>
+            <div className='flex items-start gap-3'>
+              <Cpu className='w-6 h-6 text-purple-600 mt-0.5' />
+              <div>
+                <h3 className='text-lg font-semibold text-gray-900'>
+                  Local AI
+                </h3>
+                <p className='text-sm text-gray-600 mt-1'>
+                  Run AI models locally on your machine with Ollama. No API keys
+                  needed.
+                </p>
+                {isLoadingLocalAI ? (
+                  <div className='flex items-center gap-2 mt-2'>
+                    <Loader2 className='w-4 h-4 animate-spin text-gray-400' />
+                    <span className='text-sm text-gray-500'>Checking...</span>
+                  </div>
+                ) : localAIStatus?.available ? (
+                  <div className='mt-2'>
+                    <span className='inline-flex items-center gap-1.5 text-sm text-green-700'>
+                      <CheckCircle className='w-4 h-4' />
+                      Connected
+                      {localAIStatus.models.length > 0 &&
+                        ` \u2014 ${localAIStatus.models.length} model(s) installed`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className='mt-2'>
+                    <span className='inline-flex items-center gap-1.5 text-sm text-amber-700'>
+                      <AlertCircle className='w-4 h-4' />
+                      Ollama not detected
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowLocalAIWizard(true)}
+              className='px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm font-medium'
+            >
+              Set Up Local AI
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Local AI Setup Wizard */}
+      {showLocalAIWizard && (
+        <div className='mb-6'>
+          <LocalAISetup
+            onComplete={() => {
+              setShowLocalAIWizard(false);
+              setSuccess(
+                'Local AI activated successfully! You can now generate content with your local model.'
+              );
+              loadLocalAIStatus();
+              loadConfigurations();
+            }}
+            onCancel={() => setShowLocalAIWizard(false)}
+          />
         </div>
       )}
 
