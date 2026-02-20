@@ -13,6 +13,15 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import User
 from app.models.system_settings import SystemSettings
+from app.schemas.ai import (
+    FillGapRequest,
+    FillGapResponse,
+    ScaffoldAssessment,
+    ScaffoldULO,
+    ScaffoldUnitRequest,
+    ScaffoldUnitResponse,
+    ScaffoldWeek,
+)
 from app.schemas.content import ContentGenerationRequest
 from app.schemas.llm import (
     ChatCompletionRequest,
@@ -756,3 +765,150 @@ Return ONLY the improved content."""
                 yield f"data: {json.dumps({'content': chunk})}\n\n"
 
     return StreamingResponse(stream_response(), media_type="text/event-stream")
+
+
+# =============================================================================
+# Scaffold Unit (2B)
+# =============================================================================
+
+
+@router.post("/scaffold-unit", response_model=ScaffoldUnitResponse)
+async def scaffold_unit(
+    request: ScaffoldUnitRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Generate a complete unit structure from a title + description.
+
+    Returns ULOs, weekly topics, and assessments for human review before saving.
+    """
+    prompt = f"""Generate a complete university unit structure for:
+
+Title: {request.title}
+Description: {request.description or 'Not provided'}
+Duration: {request.duration_weeks} weeks
+Pedagogy: {request.pedagogy_style}
+
+Return a JSON object with this exact structure (no markdown, no backticks):
+{{
+  "title": "{request.title}",
+  "description": "...",
+  "ulos": [
+    {{"code": "ULO1", "description": "...", "bloom_level": "remember|understand|apply|analyze|evaluate|create"}}
+  ],
+  "weeks": [
+    {{"week_number": 1, "topic": "...", "activities": ["lecture", "tutorial"]}}
+  ],
+  "assessments": [
+    {{"title": "...", "category": "quiz|exam|assignment|project|presentation|report", "weight": 20.0, "due_week": 4}}
+  ]
+}}
+
+Requirements:
+- Generate 4-6 ULOs covering different Bloom's levels
+- Generate content for all {request.duration_weeks} weeks
+- Assessment weights must sum to 100
+- Include a mix of formative and summative assessments
+- Return ONLY valid JSON, no extra text"""
+
+    result = await llm_service.generate_text(
+        prompt=prompt,
+        system_prompt="You are an expert university curriculum designer. Return ONLY valid JSON.",
+        user=current_user,
+        db=db,
+    )
+
+    # Parse the LLM response as JSON
+    try:
+        text = result.strip() if isinstance(result, str) else result
+        # Strip markdown code fences if present
+        if isinstance(text, str):
+            text = text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+            if text.startswith("json"):
+                text = text[4:].strip()
+            parsed = json.loads(text)
+        else:
+            raise TypeError("Expected string from LLM")
+    except (json.JSONDecodeError, TypeError) as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse AI response as structured JSON: {e}",
+        )
+
+    # Validate and return typed response
+    return ScaffoldUnitResponse(
+        title=parsed.get("title", request.title),
+        description=parsed.get("description", request.description),
+        ulos=[
+            ScaffoldULO(
+                code=u.get("code", f"ULO{i + 1}"),
+                description=u.get("description", ""),
+                bloom_level=u.get("bloom_level", "understand"),
+            )
+            for i, u in enumerate(parsed.get("ulos", []))
+        ],
+        weeks=[
+            ScaffoldWeek(
+                week_number=w.get("week_number", i + 1),
+                topic=w.get("topic", ""),
+                activities=w.get("activities", []),
+            )
+            for i, w in enumerate(parsed.get("weeks", []))
+        ],
+        assessments=[
+            ScaffoldAssessment(
+                title=a.get("title", ""),
+                category=a.get("category", "assignment"),
+                weight=a.get("weight", 0),
+                due_week=a.get("due_week"),
+            )
+            for a in parsed.get("assessments", [])
+        ],
+    )
+
+
+# =============================================================================
+# Fill the Gap (2C)
+# =============================================================================
+
+
+@router.post("/fill-gap", response_model=FillGapResponse)
+async def fill_gap(
+    request: FillGapRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Generate content to fill a specific gap in a unit.
+
+    gap_type can be: ulo, material, assessment
+    """
+    gap_prompts = {
+        "ulo": "Generate a well-written Unit Learning Outcome (ULO) description. Use Bloom's taxonomy verbs. Be specific and measurable.",
+        "material": "Generate a brief content outline for a teaching material. Include key topics, activities, and learning objectives.",
+        "assessment": "Suggest an assessment item including: title, description, type (quiz/assignment/project/exam), and recommended weight.",
+    }
+
+    base_prompt = gap_prompts.get(request.gap_type, gap_prompts["material"])
+    context = f"\n\nAdditional context: {request.context}" if request.context else ""
+
+    result = await llm_service.generate_text(
+        prompt=f"{base_prompt}{context}",
+        system_prompt="You are an expert university curriculum designer helping fill gaps in a unit structure.",
+        user=current_user,
+        db=db,
+    )
+
+    content = result if isinstance(result, str) else str(result)
+
+    return FillGapResponse(
+        gap_type=request.gap_type,
+        generated_content=content,
+        suggestions=[],
+    )

@@ -4,152 +4,105 @@ import {
   FileText,
   Edit,
   Download,
-  Share2,
   Clock,
-  User,
   Calendar,
-  CheckCircle,
-  AlertCircle,
   Loader2,
   ArrowLeft,
   Save,
   X,
+  AlertCircle,
 } from 'lucide-react';
-import api from '../../services/api';
+import { contentApi } from '../../services/contentApi';
 import VersionHistory from './VersionHistory';
-import RichTextEditor from '../../components/Editor/RichTextEditor';
-
-interface Material {
-  id: string;
-  unitId: string;
-  module_id?: string;
-  type: string;
-  title: string;
-  description?: string;
-  content: any;
-  raw_content?: string;
-  version: number;
-  parentVersionId?: string;
-  isLatest: boolean;
-  validationResults?: any;
-  qualityScore?: number;
-  generationContext?: any;
-  teachingPhilosophy?: string;
-  createdAt: string;
-  updatedAt: string;
-  wordCount?: number;
-}
+import UnifiedEditor from '../../components/Editor/UnifiedEditor';
+import type { Content } from '../../types';
 
 const MaterialDetail: React.FC = () => {
-  const { materialId } = useParams<{ materialId: string }>();
+  const { unitId, contentId } = useParams<{
+    unitId: string;
+    contentId: string;
+  }>();
   const navigate = useNavigate();
-  const [material, setMaterial] = useState<Material | null>(null);
+
+  const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
     'content' | 'history' | 'metadata'
   >('content');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
+  const [editedBody, setEditedBody] = useState('');
   const [editedTitle, setEditedTitle] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const fetchMaterial = useCallback(async () => {
+  const fetchContent = useCallback(async () => {
+    if (!unitId || !contentId) return;
     try {
       setLoading(true);
-      const response = await api.get(`/materials/${materialId}`);
-      setMaterial(response.data);
-      setEditedContent(response.data.raw_content || '');
-      setEditedTitle(response.data.title || '');
-    } catch (error) {
-      console.error('Failed to fetch material:', error);
+      const { data } = await contentApi.get(unitId, contentId);
+      setContent(data);
+      setEditedBody(data.body || '');
+      setEditedTitle(data.title || '');
+    } catch (err) {
+      console.error('Failed to fetch content:', err);
     } finally {
       setLoading(false);
     }
-  }, [materialId]);
+  }, [unitId, contentId]);
 
   useEffect(() => {
-    if (materialId) {
-      fetchMaterial();
-    }
-  }, [materialId, fetchMaterial]);
+    fetchContent();
+  }, [fetchContent]);
 
   const handleSave = async () => {
-    if (!material) return;
-
+    if (!content || !unitId || !contentId) return;
     try {
       setSaving(true);
-      await api.put(`/materials/${materialId}`, {
+      await contentApi.update(unitId, contentId, {
         title: editedTitle,
-        raw_content: editedContent,
-        content: { html: editedContent }, // Store as structured content
+        body: editedBody,
       });
-
-      // Refresh material data
-      await fetchMaterial();
+      await fetchContent();
       setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to save material:', error);
+    } catch (err) {
+      console.error('Failed to save content:', err);
     } finally {
       setSaving(false);
     }
   };
 
   const handleExport = () => {
-    if (!material) return;
-
-    // Create a blob with the content
-    const blob = new Blob([material.raw_content || ''], {
-      type: 'text/markdown',
-    });
+    if (!content) return;
+    const blob = new Blob([content.body || ''], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${material.title.replace(/\s+/g, '_')}_v${material.version}.md`;
+    a.download = `${content.title.replace(/\s+/g, '_')}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const handleVersionRestore = async (_versionId: string) => {
-    // Refresh the material after version restore
-    await fetchMaterial();
+  const handleVersionRestore = async () => {
+    await fetchContent();
     setActiveTab('content');
   };
 
   const getContentTypeIcon = (type: string) => {
-    const icons: { [key: string]: string } = {
-      syllabus: '📋',
-      schedule: '📅',
+    const icons: Record<string, string> = {
       lecture: '📚',
-      module: '📦',
       worksheet: '✏️',
-      faq: '❓',
       quiz: '📝',
-      short_answer: '✍️',
-      matching: '🔗',
       case_study: '💼',
-      interactive: '🎮',
-      resource: '🔗', // Updated from reading
+      reading: '📖',
       assignment: '📄',
       project: '🚀',
       assessment: '📊',
+      notes: '🗒️',
       video: '🎥',
-      podcast: '🎧',
-      tutorial: '📖',
-      // Legacy support
-      lab: '🔬',
-      reading: '📖',
-      interactive_html: '🎮',
+      activity: '🎯',
     };
     return icons[type] || '📄';
-  };
-
-  const getStatusColor = (score?: number) => {
-    if (!score) return 'text-gray-600 bg-gray-100';
-    if (score >= 80) return 'text-green-600 bg-green-100';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100';
-    return 'text-red-600 bg-red-100';
   };
 
   if (loading) {
@@ -160,12 +113,12 @@ const MaterialDetail: React.FC = () => {
     );
   }
 
-  if (!material) {
+  if (!content) {
     return (
       <div className='text-center py-12'>
         <AlertCircle className='h-12 w-12 text-red-500 mx-auto mb-4' />
         <h2 className='text-xl font-semibold text-gray-900'>
-          Material not found
+          Content not found
         </h2>
         <button
           onClick={() => navigate(-1)}
@@ -193,7 +146,7 @@ const MaterialDetail: React.FC = () => {
           <div className='flex-1'>
             <div className='flex items-center space-x-3'>
               <span className='text-4xl'>
-                {getContentTypeIcon(material.type)}
+                {getContentTypeIcon(content.contentType)}
               </span>
               {isEditing ? (
                 <input
@@ -204,37 +157,35 @@ const MaterialDetail: React.FC = () => {
                 />
               ) : (
                 <h1 className='text-3xl font-bold text-gray-900'>
-                  {material.title}
+                  {content.title}
                 </h1>
               )}
             </div>
 
-            {material.description && (
-              <p className='text-gray-600 mt-2'>{material.description}</p>
+            {content.summary && (
+              <p className='text-gray-600 mt-2'>{content.summary}</p>
             )}
 
             <div className='flex items-center space-x-4 mt-4 text-sm text-gray-500'>
               <span className='flex items-center'>
                 <FileText className='h-4 w-4 mr-1' />
-                Version {material.version}
+                {content.contentType.replace(/_/g, ' ')}
               </span>
               <span className='flex items-center'>
                 <Calendar className='h-4 w-4 mr-1' />
-                {new Date(material.updatedAt).toLocaleDateString()}
+                {new Date(
+                  content.updatedAt || content.createdAt
+                ).toLocaleDateString()}
               </span>
-              <span className='flex items-center'>
-                <User className='h-4 w-4 mr-1' />
-                {material.wordCount || 0} words
-              </span>
-              {material.qualityScore !== null &&
-                material.qualityScore !== undefined && (
-                  <span
-                    className={`flex items-center px-2 py-1 rounded-full ${getStatusColor(material.qualityScore)}`}
-                  >
-                    <CheckCircle className='h-4 w-4 mr-1' />
-                    Quality: {material.qualityScore}%
-                  </span>
-                )}
+              {content.weekNumber && <span>Week {content.weekNumber}</span>}
+              {content.estimatedDurationMinutes && (
+                <span>{content.estimatedDurationMinutes} min</span>
+              )}
+              {content.currentCommit && (
+                <code className='bg-gray-100 px-1.5 py-0.5 rounded text-xs'>
+                  {content.currentCommit.slice(0, 7)}
+                </code>
+              )}
             </div>
           </div>
 
@@ -256,8 +207,8 @@ const MaterialDetail: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsEditing(false);
-                    setEditedContent(material.raw_content || '');
-                    setEditedTitle(material.title);
+                    setEditedBody(content.body || '');
+                    setEditedTitle(content.title);
                   }}
                   className='px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center'
                 >
@@ -281,10 +232,6 @@ const MaterialDetail: React.FC = () => {
                   <Download className='h-4 w-4 mr-2' />
                   Export
                 </button>
-                <button className='px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center'>
-                  <Share2 className='h-4 w-4 mr-2' />
-                  Share
-                </button>
               </>
             )}
           </div>
@@ -294,10 +241,10 @@ const MaterialDetail: React.FC = () => {
       {/* Tabs */}
       <div className='border-b border-gray-200 mb-6'>
         <nav className='flex space-x-8'>
-          {['content', 'history', 'metadata'].map(tab => (
+          {(['content', 'history', 'metadata'] as const).map(tab => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              onClick={() => setActiveTab(tab)}
               className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
                 activeTab === tab
                   ? 'border-blue-500 text-blue-600'
@@ -315,16 +262,15 @@ const MaterialDetail: React.FC = () => {
       {activeTab === 'content' && (
         <div className='bg-white rounded-lg shadow-md p-6'>
           {isEditing ? (
-            <RichTextEditor
-              content={editedContent}
-              onChange={setEditedContent}
+            <UnifiedEditor
+              content={editedBody}
+              onChange={setEditedBody}
+              contentId={contentId}
             />
           ) : (
             <div className='prose prose-lg max-w-none'>
-              {material.raw_content ? (
-                <div
-                  dangerouslySetInnerHTML={{ __html: material.raw_content }}
-                />
+              {content.body ? (
+                <div dangerouslySetInnerHTML={{ __html: content.body }} />
               ) : (
                 <p className='text-gray-500'>No content available</p>
               )}
@@ -333,18 +279,17 @@ const MaterialDetail: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'history' && (
+      {activeTab === 'history' && unitId && contentId && (
         <VersionHistory
-          materialId={materialId!}
-          currentVersion={material.version}
+          unitId={unitId}
+          contentId={contentId}
           onVersionRestore={handleVersionRestore}
         />
       )}
 
       {activeTab === 'metadata' && (
         <div className='bg-white rounded-lg shadow-md p-6'>
-          <h3 className='text-lg font-semibold mb-4'>Material Metadata</h3>
-
+          <h3 className='text-lg font-semibold mb-4'>Content Metadata</h3>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div>
               <h4 className='font-medium text-gray-700 mb-3'>
@@ -352,32 +297,22 @@ const MaterialDetail: React.FC = () => {
               </h4>
               <dl className='space-y-2'>
                 <div>
-                  <dt className='text-sm text-gray-500'>Material ID</dt>
-                  <dd className='text-sm font-mono'>{material.id}</dd>
+                  <dt className='text-sm text-gray-500'>Content ID</dt>
+                  <dd className='text-sm font-mono'>{content.id}</dd>
                 </div>
                 <div>
                   <dt className='text-sm text-gray-500'>Unit ID</dt>
-                  <dd className='text-sm font-mono'>{material.unitId}</dd>
+                  <dd className='text-sm font-mono'>{content.unitId}</dd>
                 </div>
-                {material.module_id && (
-                  <div>
-                    <dt className='text-sm text-gray-500'>Module ID</dt>
-                    <dd className='text-sm font-mono'>{material.module_id}</dd>
-                  </div>
-                )}
                 <div>
                   <dt className='text-sm text-gray-500'>Type</dt>
                   <dd className='text-sm capitalize'>
-                    {material.type.replace('_', ' ')}
+                    {content.contentType.replace(/_/g, ' ')}
                   </dd>
                 </div>
                 <div>
-                  <dt className='text-sm text-gray-500'>Teaching Philosophy</dt>
-                  <dd className='text-sm capitalize'>
-                    {material.teachingPhilosophy
-                      ?.replace(/_/g, ' ')
-                      .toLowerCase() || 'Not specified'}
-                  </dd>
+                  <dt className='text-sm text-gray-500'>Status</dt>
+                  <dd className='text-sm capitalize'>{content.status}</dd>
                 </div>
               </dl>
             </div>
@@ -387,61 +322,45 @@ const MaterialDetail: React.FC = () => {
                 Version Information
               </h4>
               <dl className='space-y-2'>
-                <div>
-                  <dt className='text-sm text-gray-500'>Current Version</dt>
-                  <dd className='text-sm'>{material.version}</dd>
-                </div>
-                <div>
-                  <dt className='text-sm text-gray-500'>Is Latest</dt>
-                  <dd className='text-sm'>
-                    {material.isLatest ? 'Yes' : 'No'}
-                  </dd>
-                </div>
-                {material.parentVersionId && (
+                {content.currentCommit && (
                   <div>
-                    <dt className='text-sm text-gray-500'>Parent Version</dt>
+                    <dt className='text-sm text-gray-500'>Current Commit</dt>
                     <dd className='text-sm font-mono'>
-                      {material.parentVersionId}
+                      {content.currentCommit}
                     </dd>
                   </div>
                 )}
                 <div>
                   <dt className='text-sm text-gray-500'>Created</dt>
                   <dd className='text-sm'>
-                    {new Date(material.createdAt).toLocaleString()}
+                    {new Date(content.createdAt).toLocaleString()}
                   </dd>
                 </div>
-                <div>
-                  <dt className='text-sm text-gray-500'>Last Updated</dt>
-                  <dd className='text-sm'>
-                    {new Date(material.updatedAt).toLocaleString()}
-                  </dd>
-                </div>
+                {content.updatedAt && (
+                  <div>
+                    <dt className='text-sm text-gray-500'>Last Updated</dt>
+                    <dd className='text-sm'>
+                      {new Date(content.updatedAt).toLocaleString()}
+                    </dd>
+                  </div>
+                )}
+                {content.weekNumber && (
+                  <div>
+                    <dt className='text-sm text-gray-500'>Week</dt>
+                    <dd className='text-sm'>Week {content.weekNumber}</dd>
+                  </div>
+                )}
+                {content.estimatedDurationMinutes && (
+                  <div>
+                    <dt className='text-sm text-gray-500'>Est. Duration</dt>
+                    <dd className='text-sm'>
+                      {content.estimatedDurationMinutes} minutes
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
           </div>
-
-          {material.validationResults && (
-            <div className='mt-6'>
-              <h4 className='font-medium text-gray-700 mb-3'>
-                Validation Results
-              </h4>
-              <pre className='bg-gray-50 rounded-lg p-4 text-xs overflow-x-auto'>
-                {JSON.stringify(material.validationResults, null, 2)}
-              </pre>
-            </div>
-          )}
-
-          {material.generationContext && (
-            <div className='mt-6'>
-              <h4 className='font-medium text-gray-700 mb-3'>
-                Generation Context
-              </h4>
-              <pre className='bg-gray-50 rounded-lg p-4 text-xs overflow-x-auto'>
-                {JSON.stringify(material.generationContext, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
       )}
     </div>

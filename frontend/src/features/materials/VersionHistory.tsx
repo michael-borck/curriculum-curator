@@ -5,423 +5,120 @@ import {
   ChevronRight,
   ChevronDown,
   RefreshCw,
-  FileText,
   User,
   Calendar,
-  CheckCircle,
-  AlertCircle,
   Loader2,
   Eye,
-  Diff,
   RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
-import api from '../../services/api';
-import { diffLines } from 'diff';
-
-interface MaterialVersion {
-  id: string;
-  materialId: string;
-  version: number;
-  parentVersionId?: string;
-  title: string;
-  content: any;
-  raw_content?: string;
-  createdAt: string;
-  createdBy?: string;
-  changeSummary?: string;
-  isLatest: boolean;
-  wordCount?: number;
-  qualityScore?: number;
-}
+import { contentApi, type ContentVersion } from '../../services/contentApi';
 
 interface VersionHistoryProps {
-  materialId: string;
-  currentVersion?: number;
-  onVersionRestore?: (versionId: string) => void;
+  unitId: string;
+  contentId: string;
+  onVersionRestore?: () => void;
 }
-
-interface DiffViewProps {
-  oldContent: string;
-  newContent: string;
-  viewMode: 'unified' | 'split';
-}
-
-const DiffView: React.FC<DiffViewProps> = ({
-  oldContent,
-  newContent,
-  viewMode,
-}) => {
-  const changes = diffLines(oldContent || '', newContent || '');
-
-  if (viewMode === 'unified') {
-    return (
-      <div className='font-mono text-sm bg-gray-50 rounded-lg p-4 overflow-x-auto'>
-        {changes.map((part, index) => {
-          const color = part.added
-            ? 'bg-green-100 text-green-800'
-            : part.removed
-              ? 'bg-red-100 text-red-800'
-              : '';
-          const prefix = part.added ? '+' : part.removed ? '-' : ' ';
-
-          return (
-            <div key={index} className={`${color} px-2 py-1`}>
-              <span className='select-none mr-3 text-gray-500'>{prefix}</span>
-              <span style={{ whiteSpace: 'pre-wrap' }}>{part.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  // Split view
-  const oldLines = oldContent.split('\n');
-  const newLines = newContent.split('\n');
-
-  return (
-    <div className='grid grid-cols-2 gap-4 font-mono text-sm'>
-      <div className='bg-red-50 rounded-lg p-4 overflow-x-auto'>
-        <h4 className='font-sans font-semibold text-red-700 mb-2'>
-          Previous Version
-        </h4>
-        {oldLines.map((line, index) => (
-          <div key={index} className='px-2 py-1'>
-            <span className='select-none mr-3 text-gray-500'>{index + 1}</span>
-            <span style={{ whiteSpace: 'pre-wrap' }}>{line}</span>
-          </div>
-        ))}
-      </div>
-      <div className='bg-green-50 rounded-lg p-4 overflow-x-auto'>
-        <h4 className='font-sans font-semibold text-green-700 mb-2'>
-          Current Version
-        </h4>
-        {newLines.map((line, index) => (
-          <div key={index} className='px-2 py-1'>
-            <span className='select-none mr-3 text-gray-500'>{index + 1}</span>
-            <span style={{ whiteSpace: 'pre-wrap' }}>{line}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({
-  materialId,
-  currentVersion,
+  unitId,
+  contentId,
   onVersionRestore,
 }) => {
-  const [versions, setVersions] = useState<MaterialVersion[]>([]);
-  const [selectedVersions, setSelectedVersions] = useState<
+  const [versions, setVersions] = useState<ContentVersion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
+  const [expandedBody, setExpandedBody] = useState<string | null>(null);
+  const [restoringCommit, setRestoringCommit] = useState<string | null>(null);
+
+  // Compare mode
+  const [selectedCommits, setSelectedCommits] = useState<
     [string | undefined, string | undefined]
   >([undefined, undefined]);
-  const [loading, setLoading] = useState(true);
-  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(
-    new Set()
-  );
   const [viewMode, setViewMode] = useState<'timeline' | 'compare'>('timeline');
-  const [diffViewMode, setDiffViewMode] = useState<'unified' | 'split'>(
-    'unified'
-  );
-  const [restoringVersion, setRestoringVersion] = useState<string | null>(null);
+  const [diffText, setDiffText] = useState<string | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
 
-  const fetchVersionHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/materials/${materialId}/versions`);
-      setVersions(response.data);
-
-      // Auto-select latest two versions for comparison
-      if (response.data.length >= 2) {
-        setSelectedVersions([response.data[1].id, response.data[0].id]);
+      const { data } = await contentApi.history(unitId, contentId);
+      setVersions(data.versions);
+      if (data.versions.length >= 2) {
+        setSelectedCommits([data.versions[1].commit, data.versions[0].commit]);
       }
-    } catch (error) {
-      console.error('Failed to fetch version history:', error);
+    } catch (err) {
+      console.error('Failed to fetch version history:', err);
     } finally {
       setLoading(false);
     }
-  }, [materialId]);
+  }, [unitId, contentId]);
 
   useEffect(() => {
-    fetchVersionHistory();
-  }, [fetchVersionHistory]);
+    fetchHistory();
+  }, [fetchHistory]);
 
-  const handleVersionRestore = async (versionId: string) => {
+  const handleRestore = async (commit: string) => {
     try {
-      setRestoringVersion(versionId);
-      await api.post(`/materials/${materialId}/restore/${versionId}`);
-
-      if (onVersionRestore) {
-        onVersionRestore(versionId);
-      }
-
-      // Refresh version history
-      await fetchVersionHistory();
-    } catch (error) {
-      console.error('Failed to restore version:', error);
+      setRestoringCommit(commit);
+      await contentApi.revert(unitId, contentId, commit);
+      onVersionRestore?.();
+      await fetchHistory();
+    } catch (err) {
+      console.error('Failed to restore version:', err);
     } finally {
-      setRestoringVersion(null);
+      setRestoringCommit(null);
     }
   };
 
-  const toggleVersionExpand = (versionId: string) => {
-    const newExpanded = new Set(expandedVersions);
-    if (newExpanded.has(versionId)) {
-      newExpanded.delete(versionId);
-    } else {
-      newExpanded.add(versionId);
+  const handleExpand = async (commit: string) => {
+    if (expandedCommit === commit) {
+      setExpandedCommit(null);
+      setExpandedBody(null);
+      return;
     }
-    setExpandedVersions(newExpanded);
+    setExpandedCommit(commit);
+    try {
+      const { data } = await contentApi.versionBody(unitId, contentId, commit);
+      setExpandedBody(data.body);
+    } catch {
+      setExpandedBody('(failed to load)');
+    }
   };
 
-  const selectVersionForComparison = (versionId: string) => {
-    setSelectedVersions(prev => {
-      if (prev[0] === versionId || prev[1] === versionId) {
-        // Deselect if already selected
-        if (prev[0] === versionId) {
-          return [undefined, prev[1]];
-        } else {
-          return [prev[0], undefined];
-        }
-      }
-      // Add to selection (max 2)
-      if (!prev[0]) return [versionId, prev[1]];
-      if (!prev[1]) return [prev[0], versionId];
-      return [prev[1], versionId]; // Replace oldest selection
+  const toggleCompareSelect = (commit: string) => {
+    setSelectedCommits(prev => {
+      if (prev[0] === commit) return [undefined, prev[1]];
+      if (prev[1] === commit) return [prev[0], undefined];
+      if (!prev[0]) return [commit, prev[1]];
+      if (!prev[1]) return [prev[0], commit];
+      return [prev[1], commit];
     });
   };
 
-  const getVersionById = (id: string) => versions.find(v => v.id === id);
-
-  const renderVersionTimeline = () => (
-    <div className='space-y-4'>
-      {versions.map((version, index) => {
-        const isExpanded = expandedVersions.has(version.id);
-        const isLatest = version.isLatest;
-        const isCurrent = version.version === currentVersion;
-
-        return (
-          <div
-            key={version.id}
-            className={`border rounded-lg p-4 ${
-              isLatest
-                ? 'border-green-500 bg-green-50'
-                : isCurrent
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white'
-            }`}
-          >
-            <div className='flex items-start justify-between'>
-              <div className='flex-1'>
-                <div className='flex items-center space-x-3'>
-                  <button
-                    onClick={() => toggleVersionExpand(version.id)}
-                    className='text-gray-500 hover:text-gray-700'
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className='h-5 w-5' />
-                    ) : (
-                      <ChevronRight className='h-5 w-5' />
-                    )}
-                  </button>
-
-                  <div className='flex items-center space-x-2'>
-                    <span className='font-semibold text-lg'>
-                      Version {version.version}
-                    </span>
-                    {isLatest && (
-                      <span className='px-2 py-1 bg-green-600 text-white text-xs rounded-full'>
-                        Latest
-                      </span>
-                    )}
-                    {isCurrent && !isLatest && (
-                      <span className='px-2 py-1 bg-blue-600 text-white text-xs rounded-full'>
-                        Current
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className='ml-8 mt-2'>
-                  <p className='text-gray-900 font-medium'>{version.title}</p>
-                  {version.changeSummary && (
-                    <p className='text-gray-600 text-sm mt-1'>
-                      {version.changeSummary}
-                    </p>
-                  )}
-
-                  <div className='flex items-center space-x-4 mt-3 text-sm text-gray-500'>
-                    <span className='flex items-center'>
-                      <Calendar className='h-4 w-4 mr-1' />
-                      {new Date(version.createdAt).toLocaleDateString()}
-                    </span>
-                    {version.createdBy && (
-                      <span className='flex items-center'>
-                        <User className='h-4 w-4 mr-1' />
-                        {version.createdBy}
-                      </span>
-                    )}
-                    {version.wordCount && (
-                      <span className='flex items-center'>
-                        <FileText className='h-4 w-4 mr-1' />
-                        {version.wordCount} words
-                      </span>
-                    )}
-                    {version.qualityScore !== null &&
-                      version.qualityScore !== undefined && (
-                        <span className='flex items-center'>
-                          <CheckCircle className='h-4 w-4 mr-1' />
-                          Quality: {version.qualityScore}%
-                        </span>
-                      )}
-                  </div>
-                </div>
-              </div>
-
-              <div className='flex items-center space-x-2 ml-4'>
-                <button
-                  onClick={() => selectVersionForComparison(version.id)}
-                  className={`px-3 py-1 rounded-lg text-sm ${
-                    selectedVersions.includes(version.id)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <Diff className='h-4 w-4 inline mr-1' />
-                  Compare
-                </button>
-
-                {!isLatest && (
-                  <button
-                    onClick={() => handleVersionRestore(version.id)}
-                    disabled={restoringVersion === version.id}
-                    className='px-3 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm disabled:opacity-50'
-                  >
-                    {restoringVersion === version.id ? (
-                      <Loader2 className='h-4 w-4 animate-spin inline' />
-                    ) : (
-                      <>
-                        <RotateCcw className='h-4 w-4 inline mr-1' />
-                        Restore
-                      </>
-                    )}
-                  </button>
-                )}
-
-                <button className='px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm'>
-                  <Eye className='h-4 w-4 inline mr-1' />
-                  View
-                </button>
-              </div>
-            </div>
-
-            {isExpanded && version.raw_content && (
-              <div className='mt-4 ml-8'>
-                <div className='bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto'>
-                  <pre className='whitespace-pre-wrap text-sm text-gray-700'>
-                    {version.raw_content}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {/* Version tree line */}
-            {index < versions.length - 1 && (
-              <div className='ml-6 mt-4 border-l-2 border-gray-300 h-8' />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  const renderVersionComparison = () => {
-    const [oldVersionId, newVersionId] = selectedVersions;
-    const oldVersion = oldVersionId ? getVersionById(oldVersionId) : null;
-    const newVersion = newVersionId ? getVersionById(newVersionId) : null;
-
-    if (!oldVersion || !newVersion) {
-      return (
-        <div className='text-center py-12'>
-          <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-          <p className='text-gray-500'>
-            Select two versions from the timeline to compare
-          </p>
-        </div>
-      );
+  const loadDiff = useCallback(async () => {
+    const [oldC, newC] = selectedCommits;
+    if (!oldC || !newC) return;
+    try {
+      setDiffLoading(true);
+      const { data } = await contentApi.diff(unitId, contentId, oldC, newC);
+      setDiffText(data.diff);
+    } catch {
+      setDiffText('(failed to load diff)');
+    } finally {
+      setDiffLoading(false);
     }
+  }, [unitId, contentId, selectedCommits]);
 
-    return (
-      <div className='space-y-4'>
-        <div className='bg-white border border-gray-200 rounded-lg p-4'>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-lg font-semibold'>
-              Comparing Version {oldVersion.version} → Version{' '}
-              {newVersion.version}
-            </h3>
-            <div className='flex items-center space-x-2'>
-              <button
-                onClick={() => setDiffViewMode('unified')}
-                className={`px-3 py-1 rounded text-sm ${
-                  diffViewMode === 'unified'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Unified
-              </button>
-              <button
-                onClick={() => setDiffViewMode('split')}
-                className={`px-3 py-1 rounded text-sm ${
-                  diffViewMode === 'split'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Split
-              </button>
-            </div>
-          </div>
+  useEffect(() => {
+    if (viewMode === 'compare' && selectedCommits[0] && selectedCommits[1]) {
+      loadDiff();
+    }
+  }, [viewMode, loadDiff, selectedCommits]);
 
-          <div className='grid grid-cols-2 gap-4 mb-4 text-sm'>
-            <div className='bg-red-50 rounded-lg p-3'>
-              <div className='font-semibold text-red-700'>
-                Version {oldVersion.version}
-              </div>
-              <div className='text-gray-600 mt-1'>
-                {new Date(oldVersion.createdAt).toLocaleString()}
-              </div>
-              {oldVersion.changeSummary && (
-                <div className='text-gray-700 mt-2'>
-                  {oldVersion.changeSummary}
-                </div>
-              )}
-            </div>
-            <div className='bg-green-50 rounded-lg p-3'>
-              <div className='font-semibold text-green-700'>
-                Version {newVersion.version}
-              </div>
-              <div className='text-gray-600 mt-1'>
-                {new Date(newVersion.createdAt).toLocaleString()}
-              </div>
-              {newVersion.changeSummary && (
-                <div className='text-gray-700 mt-2'>
-                  {newVersion.changeSummary}
-                </div>
-              )}
-            </div>
-          </div>
+  const shortHash = (commit: string) => commit.slice(0, 7);
 
-          <DiffView
-            oldContent={oldVersion.raw_content || ''}
-            newContent={newVersion.raw_content || ''}
-            viewMode={diffViewMode}
-          />
-        </div>
-      </div>
-    );
-  };
+  // ─── Render ──────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -433,6 +130,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
   return (
     <div className='bg-white rounded-lg shadow-md p-6'>
+      {/* Header */}
       <div className='flex items-center justify-between mb-6'>
         <h2 className='text-2xl font-bold text-gray-900 flex items-center'>
           <Clock className='h-6 w-6 mr-2' />
@@ -458,13 +156,12 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
-            disabled={selectedVersions.filter(Boolean).length < 2}
+            disabled={selectedCommits.filter(Boolean).length < 2}
           >
-            <Diff className='h-4 w-4 inline mr-2' />
             Compare
           </button>
           <button
-            onClick={fetchVersionHistory}
+            onClick={fetchHistory}
             className='p-2 text-gray-600 hover:bg-gray-100 rounded-lg'
           >
             <RefreshCw className='h-5 w-5' />
@@ -478,9 +175,164 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
           <p className='text-gray-500'>No version history available</p>
         </div>
       ) : viewMode === 'timeline' ? (
-        renderVersionTimeline()
+        <div className='space-y-3'>
+          {versions.map((v, idx) => {
+            const isExpanded = expandedCommit === v.commit;
+            const isLatest = idx === 0;
+
+            return (
+              <div
+                key={v.commit}
+                className={`border rounded-lg p-4 ${
+                  isLatest
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 bg-white'
+                }`}
+              >
+                <div className='flex items-start justify-between'>
+                  <div className='flex-1'>
+                    <div className='flex items-center space-x-3'>
+                      <button
+                        onClick={() => handleExpand(v.commit)}
+                        className='text-gray-500 hover:text-gray-700'
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className='h-5 w-5' />
+                        ) : (
+                          <ChevronRight className='h-5 w-5' />
+                        )}
+                      </button>
+
+                      <code className='text-sm font-mono bg-gray-100 px-2 py-0.5 rounded'>
+                        {shortHash(v.commit)}
+                      </code>
+
+                      {isLatest && (
+                        <span className='px-2 py-1 bg-green-600 text-white text-xs rounded-full'>
+                          Latest
+                        </span>
+                      )}
+                    </div>
+
+                    <div className='ml-8 mt-2'>
+                      <p className='text-gray-900 font-medium'>{v.message}</p>
+                      <div className='flex items-center space-x-4 mt-2 text-sm text-gray-500'>
+                        <span className='flex items-center'>
+                          <Calendar className='h-4 w-4 mr-1' />
+                          {new Date(v.date).toLocaleString()}
+                        </span>
+                        {v.authorEmail && (
+                          <span className='flex items-center'>
+                            <User className='h-4 w-4 mr-1' />
+                            {v.authorEmail}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='flex items-center space-x-2 ml-4'>
+                    <button
+                      onClick={() => toggleCompareSelect(v.commit)}
+                      className={`px-3 py-1 rounded-lg text-sm ${
+                        selectedCommits.includes(v.commit)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Compare
+                    </button>
+
+                    {!isLatest && (
+                      <button
+                        onClick={() => handleRestore(v.commit)}
+                        disabled={restoringCommit === v.commit}
+                        className='px-3 py-1 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm disabled:opacity-50'
+                      >
+                        {restoringCommit === v.commit ? (
+                          <Loader2 className='h-4 w-4 animate-spin inline' />
+                        ) : (
+                          <>
+                            <RotateCcw className='h-4 w-4 inline mr-1' />
+                            Restore
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleExpand(v.commit)}
+                      className='px-3 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm'
+                    >
+                      <Eye className='h-4 w-4 inline mr-1' />
+                      View
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && expandedBody !== null && (
+                  <div className='mt-4 ml-8'>
+                    <div className='bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto'>
+                      <pre className='whitespace-pre-wrap text-sm text-gray-700'>
+                        {expandedBody}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {idx < versions.length - 1 && (
+                  <div className='ml-6 mt-4 border-l-2 border-gray-300 h-8' />
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : (
-        renderVersionComparison()
+        /* ── Compare View ──────────────────────────────────────── */
+        <div className='space-y-4'>
+          {!selectedCommits[0] || !selectedCommits[1] ? (
+            <div className='text-center py-12'>
+              <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+              <p className='text-gray-500'>
+                Select two versions from the timeline to compare
+              </p>
+            </div>
+          ) : diffLoading ? (
+            <div className='flex justify-center py-12'>
+              <Loader2 className='h-8 w-8 animate-spin text-blue-600' />
+            </div>
+          ) : (
+            <div className='bg-white border border-gray-200 rounded-lg p-4'>
+              <h3 className='text-lg font-semibold mb-4'>
+                Comparing{' '}
+                <code className='text-sm bg-gray-100 px-1 rounded'>
+                  {shortHash(selectedCommits[0])}
+                </code>{' '}
+                &rarr;{' '}
+                <code className='text-sm bg-gray-100 px-1 rounded'>
+                  {shortHash(selectedCommits[1])}
+                </code>
+              </h3>
+
+              <div className='font-mono text-sm bg-gray-50 rounded-lg p-4 overflow-x-auto max-h-[600px] overflow-y-auto'>
+                {diffText?.split('\n').map((line, i) => {
+                  let cls = '';
+                  if (line.startsWith('+')) cls = 'bg-green-100 text-green-800';
+                  else if (line.startsWith('-'))
+                    cls = 'bg-red-100 text-red-800';
+                  else if (line.startsWith('@@'))
+                    cls = 'bg-blue-50 text-blue-700';
+
+                  return (
+                    <div key={i} className={`${cls} px-2 py-0.5`}>
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{line}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

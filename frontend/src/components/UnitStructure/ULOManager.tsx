@@ -27,6 +27,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { learningOutcomesApi } from '../../services/unitStructureApi';
+import AIAssistField from './AIAssistField';
 import {
   ULOWithMappings,
   ULOCreate,
@@ -101,14 +102,24 @@ const SortableULOItem: React.FC<SortableULOItemProps> = ({
             />
           </div>
           <div className='col-span-6'>
-            <input
-              type='text'
-              value={formData.description || ulo.description}
-              onChange={e =>
-                onFormChange({ ...formData, description: e.target.value })
-              }
-              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
-            />
+            <div className='flex items-center gap-1'>
+              <input
+                type='text'
+                value={formData.description || ulo.description}
+                onChange={e =>
+                  onFormChange({ ...formData, description: e.target.value })
+                }
+                className='flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+              />
+              <AIAssistField
+                fieldLabel='ULO description'
+                currentValue={formData.description || ulo.description}
+                context={`Bloom's level: ${formData.bloomLevel || ulo.bloomLevel}, Code: ${formData.code || ulo.code}`}
+                onAccept={text =>
+                  onFormChange({ ...formData, description: text })
+                }
+              />
+            </div>
           </div>
           <div className='col-span-2'>
             <select
@@ -458,15 +469,25 @@ const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
               />
             </div>
             <div className='col-span-6'>
-              <input
-                type='text'
-                placeholder='Description'
-                value={formData.description}
-                onChange={e =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              />
+              <div className='flex items-center gap-1'>
+                <input
+                  type='text'
+                  placeholder='Description'
+                  value={formData.description}
+                  onChange={e =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className='flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
+                />
+                <AIAssistField
+                  fieldLabel='ULO description'
+                  currentValue={formData.description}
+                  context={`Bloom's level: ${formData.bloomLevel}, Code: ${formData.code}`}
+                  onAccept={text =>
+                    setFormData({ ...formData, description: text })
+                  }
+                />
+              </div>
             </div>
             <div className='col-span-2'>
               <select

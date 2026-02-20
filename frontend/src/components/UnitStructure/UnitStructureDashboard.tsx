@@ -9,7 +9,12 @@ import {
   CheckCircle,
   TrendingUp,
   Clock,
+  Sparkles,
+  Loader2,
+  X,
+  Copy,
 } from 'lucide-react';
+import { aiApi } from '../../services/aiApi';
 import ULOManager from './ULOManager';
 import { WeeklyMaterialsManager } from './WeeklyMaterialsManager';
 import { AssessmentsManager } from './AssessmentsManager';
@@ -67,6 +72,26 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
     useState<AlignmentReport | null>(null);
   const [qualityScore, setQualityScore] = useState<QualityScore | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingGap, setGeneratingGap] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<{
+    gapType: string;
+    content: string;
+  } | null>(null);
+
+  const handleFillGap = async (gapType: string, context: string) => {
+    try {
+      setGeneratingGap(context);
+      const { data } = await aiApi.fillGap({ unitId, gapType, context });
+      setGeneratedContent({
+        gapType: data.gapType,
+        content: data.generatedContent,
+      });
+    } catch {
+      toast.error('Failed to generate content');
+    } finally {
+      setGeneratingGap(null);
+    }
+  };
 
   useEffect(() => {
     fetchOverviewData();
@@ -320,9 +345,35 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                         <p className='text-sm font-medium text-yellow-800'>
                           Recommendations
                         </p>
-                        <ul className='mt-1 text-sm text-yellow-700 list-disc list-inside'>
+                        <ul className='mt-1 text-sm text-yellow-700 space-y-1'>
                           {alignmentReport.recommendations.map((rec, idx) => (
-                            <li key={idx}>{rec}</li>
+                            <li
+                              key={idx}
+                              className='flex items-center justify-between'
+                            >
+                              <span>{rec}</span>
+                              <button
+                                onClick={() => {
+                                  const gapType = rec
+                                    .toLowerCase()
+                                    .includes('assessment')
+                                    ? 'assessment'
+                                    : rec.toLowerCase().includes('outcome')
+                                      ? 'ulo'
+                                      : 'material';
+                                  handleFillGap(gapType, rec);
+                                }}
+                                disabled={generatingGap === rec}
+                                className='ml-2 shrink-0 px-2 py-0.5 text-xs bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 disabled:opacity-50 flex items-center gap-1'
+                              >
+                                {generatingGap === rec ? (
+                                  <Loader2 className='w-3 h-3 animate-spin' />
+                                ) : (
+                                  <Sparkles className='w-3 h-3' />
+                                )}
+                                Generate
+                              </button>
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -478,6 +529,56 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Generated Content Review Modal */}
+      {generatedContent && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+          <div className='bg-white rounded-lg shadow-xl w-full max-w-lg mx-4'>
+            <div className='p-4 border-b border-gray-200 flex items-center justify-between'>
+              <div className='flex items-center gap-2'>
+                <Sparkles className='h-5 w-5 text-yellow-500' />
+                <h3 className='text-lg font-semibold text-gray-900'>
+                  Generated{' '}
+                  {generatedContent.gapType === 'ulo'
+                    ? 'Learning Outcome'
+                    : generatedContent.gapType === 'assessment'
+                      ? 'Assessment'
+                      : 'Material'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setGeneratedContent(null)}
+                className='text-gray-400 hover:text-gray-600'
+              >
+                <X className='h-5 w-5' />
+              </button>
+            </div>
+            <div className='p-4'>
+              <div className='bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap max-h-[50vh] overflow-y-auto'>
+                {generatedContent.content}
+              </div>
+            </div>
+            <div className='p-4 border-t border-gray-200 flex justify-end gap-3'>
+              <button
+                onClick={() => setGeneratedContent(null)}
+                className='px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200'
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedContent.content);
+                  toast.success('Copied to clipboard');
+                }}
+                className='px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2'
+              >
+                <Copy className='h-4 w-4' />
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

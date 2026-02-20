@@ -126,7 +126,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   };
 
   const handleMaterialClick = (materialId: string) => {
-    navigate(`/materials/${materialId}`);
+    navigate(`/units/${unitId}/materials/${materialId}`);
   };
 
   if (!allMaterialsLoaded) {

@@ -164,8 +164,11 @@ function App() {
             {/* Import */}
             <Route path='/import' element={<ImportMaterials />} />
 
-            {/* Materials */}
-            <Route path='/materials/:materialId' element={<MaterialDetail />} />
+            {/* Materials — legacy route kept for backward compat */}
+            <Route
+              path='/units/:unitId/materials/:contentId'
+              element={<MaterialDetail />}
+            />
 
             {/* Teaching Style - redirect to settings */}
             <Route

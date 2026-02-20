@@ -178,7 +178,7 @@ export interface PedagogySelectorProps {
 export interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
-  pedagogyHints?: string[];
+  pedagogyHints?: string[] | undefined;
 }
 
 // API related types

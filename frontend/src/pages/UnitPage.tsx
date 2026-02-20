@@ -11,20 +11,27 @@ import {
   Sparkles,
   GitBranch,
   Download,
+  Brain,
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
+import api from '../services/api';
 import axios from 'axios';
 import ULOManager from '../components/UnitStructure/ULOManager';
 import { AssessmentsManager } from '../components/UnitStructure/AssessmentsManager';
+import { UnitStructureDashboard } from '../components/UnitStructure/UnitStructureDashboard';
 import CoursePlanner from '../components/UnitStructure/CoursePlanner';
 import WeekAccordion from '../components/UnitStructure/WeekAccordion';
 import LearningOutcomeMap from '../components/UnitStructure/LearningOutcomeMap';
 import GraduateCapabilitiesPanel from '../components/UnitStructure/GraduateCapabilitiesPanel';
 import AoLMappingPanel from '../components/UnitStructure/AoLMappingPanel';
 import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
+import AIAssistant from '../features/ai/AIAssistant';
+import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
+import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
 import { LoadingState, Button, Modal, Alert } from '../components/ui';
 import toast from 'react-hot-toast';
+import { Wand2 } from 'lucide-react';
 
 type TabType = 'structure' | 'outcomes' | 'assessments' | 'analytics';
 
@@ -41,6 +48,15 @@ const UnitPage = () => {
   const [showPlanner, setShowPlanner] = useState(false);
   const [showOutcomeMap, setShowOutcomeMap] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
+  const [showAI, setShowAI] = useState(false);
+  const [scaffoldData, setScaffoldData] = useState<ScaffoldUnitResponse | null>(
+    null
+  );
+  const [scaffolding, setScaffolding] = useState(false);
+  const [acceptingScaffold, setAcceptingScaffold] = useState(false);
+  const [unitULOs, setUnitULOs] = useState<
+    Array<{ code: string; description: string }>
+  >([]);
 
   // Get active tab and week from URL
   const activeTab = (searchParams.get('tab') as TabType) || 'structure';
@@ -102,6 +118,25 @@ const UnitPage = () => {
     fetchUnit();
   }, [fetchUnit]);
 
+  // Fetch ULOs for AI context
+  useEffect(() => {
+    if (!unitId) return;
+    api
+      .get(`/outcomes/units/${unitId}/ulos`)
+      .then(res => {
+        const ulos = (
+          res.data as Array<{ code: string; description: string }>
+        ).map(u => ({
+          code: u.code,
+          description: u.description,
+        }));
+        setUnitULOs(ulos);
+      })
+      .catch(() => {
+        /* non-critical */
+      });
+  }, [unitId]);
+
   const handleDelete = async () => {
     if (!unitId) return;
     try {
@@ -115,6 +150,62 @@ const UnitPage = () => {
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
+    }
+  };
+
+  const handleScaffold = async () => {
+    if (!unit) return;
+    try {
+      setScaffolding(true);
+      const { data } = await aiApi.scaffoldUnit({
+        title: unit.title,
+        description: unit.description,
+        durationWeeks: unit.durationWeeks || 12,
+        pedagogyStyle: unit.pedagogyType || 'mixed_approach',
+      });
+      setScaffoldData(data);
+    } catch {
+      toast.error('Failed to generate scaffold');
+    } finally {
+      setScaffolding(false);
+    }
+  };
+
+  const handleAcceptScaffold = async (scaffold: ScaffoldUnitResponse) => {
+    if (!unitId) return;
+    try {
+      setAcceptingScaffold(true);
+
+      // Bulk-create ULOs
+      if (scaffold.ulos.length > 0) {
+        await api.post(`/outcomes/units/${unitId}/ulos/bulk`, {
+          ulos: scaffold.ulos.map((u, i) => ({
+            code: u.code,
+            description: u.description,
+            bloomLevel: u.bloomLevel,
+            orderIndex: i,
+          })),
+        });
+      }
+
+      // Create assessments
+      for (const asmt of scaffold.assessments) {
+        await api.post(`/assessments/units/${unitId}/assessments`, {
+          title: asmt.title,
+          type: 'summative',
+          category: asmt.category,
+          weight: asmt.weight,
+          dueWeek: asmt.dueWeek,
+        });
+      }
+
+      toast.success('Unit scaffold applied successfully!');
+      setScaffoldData(null);
+      fetchUnit();
+    } catch {
+      toast.error('Failed to apply scaffold');
+    } finally {
+      setAcceptingScaffold(false);
     }
   };
 
@@ -239,6 +330,14 @@ const UnitPage = () => {
             </div>
             <div className='flex items-center gap-2'>
               <Button
+                variant={showAI ? 'primary' : 'secondary'}
+                size='sm'
+                onClick={() => setShowAI(!showAI)}
+              >
+                <Brain className='w-4 h-4 mr-1' />
+                {showAI ? 'Close AI' : 'AI Assist'}
+              </Button>
+              <Button
                 variant='secondary'
                 size='sm'
                 onClick={handleExportIMSCC}
@@ -291,87 +390,131 @@ const UnitPage = () => {
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className='p-6'>
-        {activeTab === 'structure' && (
-          <div>
-            {/* Action Bar */}
-            <div className='flex items-center justify-between mb-6'>
-              <div>
-                <h2 className='text-lg font-semibold text-gray-900'>
-                  Weekly Content
-                </h2>
-                <p className='text-sm text-gray-500'>
-                  Click on a week to view and manage materials
-                </p>
+      {/* Tab Content + AI Sidebar */}
+      <div className={`flex ${showAI ? 'gap-6' : ''}`}>
+        <div className={`p-6 ${showAI ? 'flex-1 min-w-0' : 'w-full'}`}>
+          {activeTab === 'structure' && (
+            <div>
+              {/* Action Bar */}
+              <div className='flex items-center justify-between mb-6'>
+                <div>
+                  <h2 className='text-lg font-semibold text-gray-900'>
+                    Weekly Content
+                  </h2>
+                  <p className='text-sm text-gray-500'>
+                    Click on a week to view and manage materials
+                  </p>
+                </div>
+                <div className='flex items-center gap-2'>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    onClick={handleScaffold}
+                    loading={scaffolding}
+                  >
+                    <Wand2 className='w-4 h-4 mr-1' />
+                    Quick Scaffold
+                  </Button>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    onClick={() => setShowOutcomeMap(true)}
+                  >
+                    <GitBranch className='w-4 h-4 mr-1' />
+                    View Map
+                  </Button>
+                  <Button
+                    variant={showPlanner ? 'primary' : 'secondary'}
+                    size='sm'
+                    onClick={() => setShowPlanner(!showPlanner)}
+                  >
+                    <Sparkles className='w-4 h-4 mr-1' />
+                    {showPlanner ? 'Close Planner' : 'Course Planner'}
+                  </Button>
+                </div>
               </div>
-              <div className='flex items-center gap-2'>
-                <Button
-                  variant='secondary'
-                  size='sm'
-                  onClick={() => setShowOutcomeMap(true)}
-                >
-                  <GitBranch className='w-4 h-4 mr-1' />
-                  View Map
-                </Button>
-                <Button
-                  variant={showPlanner ? 'primary' : 'secondary'}
-                  size='sm'
-                  onClick={() => setShowPlanner(!showPlanner)}
-                >
-                  <Sparkles className='w-4 h-4 mr-1' />
-                  {showPlanner ? 'Close Planner' : 'Course Planner'}
-                </Button>
-              </div>
-            </div>
 
-            {/* Course Planner */}
-            {showPlanner && unit && (
-              <div className='mb-6'>
-                <CoursePlanner
-                  unit={unit}
-                  onApplySchedule={() => {
-                    setShowPlanner(false);
-                  }}
-                  onClose={() => setShowPlanner(false)}
+              {/* Course Planner */}
+              {showPlanner && unit && (
+                <div className='mb-6'>
+                  <CoursePlanner
+                    unit={unit}
+                    onApplySchedule={() => {
+                      setShowPlanner(false);
+                    }}
+                    onClose={() => setShowPlanner(false)}
+                  />
+                </div>
+              )}
+
+              {/* Scaffold Review */}
+              {scaffoldData && (
+                <div className='mb-6'>
+                  <UnitScaffoldReview
+                    scaffold={scaffoldData}
+                    onAccept={handleAcceptScaffold}
+                    onCancel={() => setScaffoldData(null)}
+                    accepting={acceptingScaffold}
+                  />
+                </div>
+              )}
+
+              {/* Accreditation Mapping Panels */}
+              <div className='mb-6 space-y-4'>
+                <GraduateCapabilitiesPanel
+                  unitId={unitId!}
+                  onViewMap={() => setShowOutcomeMap(true)}
                 />
+                <AoLMappingPanel unitId={unitId!} />
+                <SDGMappingPanel unitId={unitId!} />
               </div>
-            )}
 
-            {/* Accreditation Mapping Panels */}
-            <div className='mb-6 space-y-4'>
-              <GraduateCapabilitiesPanel
+              {/* Week Accordion */}
+              <WeekAccordion
                 unitId={unitId!}
-                onViewMap={() => setShowOutcomeMap(true)}
+                durationWeeks={durationWeeks}
+                expandedWeek={expandedWeek}
+                onWeekToggle={handleWeekToggle}
+                onAddMaterial={handleAddMaterial}
               />
-              <AoLMappingPanel unitId={unitId!} />
-              <SDGMappingPanel unitId={unitId!} />
+
+              {/* Learning Outcome Map Modal */}
+              <LearningOutcomeMap
+                unitId={unitId!}
+                isOpen={showOutcomeMap}
+                onClose={() => setShowOutcomeMap(false)}
+              />
             </div>
+          )}
 
-            {/* Week Accordion */}
-            <WeekAccordion
+          {activeTab === 'outcomes' && <ULOManager unitId={unitId!} />}
+
+          {activeTab === 'assessments' && (
+            <AssessmentsManager unitId={unitId!} />
+          )}
+
+          {activeTab === 'analytics' && (
+            <UnitStructureDashboard
               unitId={unitId!}
+              unitName={unit.title}
               durationWeeks={durationWeeks}
-              expandedWeek={expandedWeek}
-              onWeekToggle={handleWeekToggle}
-              onAddMaterial={handleAddMaterial}
             />
+          )}
+        </div>
 
-            {/* Learning Outcome Map Modal */}
-            <LearningOutcomeMap
-              unitId={unitId!}
-              isOpen={showOutcomeMap}
-              onClose={() => setShowOutcomeMap(false)}
-            />
+        {/* AI Sidebar */}
+        {showAI && (
+          <div className='w-96 shrink-0 p-6 pl-0'>
+            <div className='sticky top-6 h-[calc(100vh-12rem)]'>
+              <AIAssistant
+                embedded
+                unitId={unitId!}
+                unitTitle={unit.title}
+                unitULOs={unitULOs}
+                onClose={() => setShowAI(false)}
+              />
+            </div>
           </div>
-        )}
-
-        {activeTab === 'outcomes' && <ULOManager unitId={unitId!} />}
-
-        {activeTab === 'assessments' && <AssessmentsManager unitId={unitId!} />}
-
-        {activeTab === 'analytics' && (
-          <AnalyticsTab unitId={unitId!} unitName={unit.title} />
         )}
       </div>
 
@@ -420,39 +563,6 @@ const UnitPage = () => {
           </div>
         </div>
       </Modal>
-    </div>
-  );
-};
-
-// Analytics Tab Component (placeholder)
-interface AnalyticsTabProps {
-  unitId: string;
-  unitName: string;
-}
-
-const AnalyticsTab = ({ unitName }: AnalyticsTabProps) => {
-  return (
-    <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-      <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-        {unitName} Analytics
-      </h3>
-      <p className='text-gray-500'>
-        Analytics and reports for this unit will be displayed here.
-      </p>
-      <div className='mt-6 grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <div className='p-4 bg-gray-50 rounded-lg'>
-          <p className='text-2xl font-bold text-gray-900'>0</p>
-          <p className='text-sm text-gray-600'>Total Materials</p>
-        </div>
-        <div className='p-4 bg-gray-50 rounded-lg'>
-          <p className='text-2xl font-bold text-gray-900'>0</p>
-          <p className='text-sm text-gray-600'>Learning Outcomes</p>
-        </div>
-        <div className='p-4 bg-gray-50 rounded-lg'>
-          <p className='text-2xl font-bold text-gray-900'>0%</p>
-          <p className='text-sm text-gray-600'>Completion</p>
-        </div>
-      </div>
     </div>
   );
 };

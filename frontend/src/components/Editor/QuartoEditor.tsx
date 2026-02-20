@@ -5,10 +5,10 @@ import QuartoControls from './QuartoControls';
 import api from '../../services/api';
 
 interface QuartoEditorProps {
-  contentId?: string;
+  contentId?: string | undefined;
   content: string;
   onChange: (content: string) => void;
-  onExport?: (formats: string[]) => void;
+  onExport?: ((formats: string[]) => void) | undefined;
 }
 
 export interface QuartoSettings {

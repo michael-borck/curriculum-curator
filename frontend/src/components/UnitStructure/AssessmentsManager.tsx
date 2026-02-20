@@ -12,6 +12,7 @@ import {
   BarChart,
 } from 'lucide-react';
 import { assessmentsApi } from '../../services/unitStructureApi';
+import AIAssistField from './AIAssistField';
 import {
   AssessmentResponse,
   AssessmentCreate,
@@ -411,15 +412,23 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
               <label className='block text-sm font-medium text-gray-700'>
                 Title *
               </label>
-              <input
-                type='text'
-                value={formData.title}
-                onChange={e =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
-                required
-              />
+              <div className='flex items-center gap-1 mt-1'>
+                <input
+                  type='text'
+                  value={formData.title}
+                  onChange={e =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className='flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+                  required
+                />
+                <AIAssistField
+                  fieldLabel='assessment title'
+                  currentValue={formData.title}
+                  context={`Type: ${formData.type}, Category: ${formData.category}, Weight: ${formData.weight}%`}
+                  onAccept={text => setFormData({ ...formData, title: text })}
+                />
+              </div>
             </div>
 
             <div className='grid grid-cols-3 gap-4'>
@@ -491,9 +500,19 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
             </div>
 
             <div>
-              <label className='block text-sm font-medium text-gray-700'>
-                Description
-              </label>
+              <div className='flex items-center justify-between'>
+                <label className='block text-sm font-medium text-gray-700'>
+                  Description
+                </label>
+                <AIAssistField
+                  fieldLabel='assessment description'
+                  currentValue={formData.description}
+                  context={`Title: ${formData.title}, Type: ${formData.type}, Category: ${formData.category}`}
+                  onAccept={text =>
+                    setFormData({ ...formData, description: text })
+                  }
+                />
+              </div>
               <textarea
                 value={formData.description}
                 onChange={e =>

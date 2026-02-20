@@ -736,6 +736,13 @@ const ImportMaterials = () => {
     }
 
     setUploading(false);
+
+    // Redirect to unit page after upload completes
+    if (selectedUnit) {
+      window.setTimeout(() => {
+        navigate(`/units/${selectedUnit}`);
+      }, 1000);
+    }
   };
 
   const removeFile = (id: string) => {

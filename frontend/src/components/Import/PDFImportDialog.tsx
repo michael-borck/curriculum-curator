@@ -10,15 +10,24 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 import workflowApi from '../../services/workflowApi';
 import { PDFAnalysisResult } from '../../types/workflow';
+
+/** Editable structure extracted from the PDF before committing. */
+interface ReviewStructure {
+  topics: string[];
+  assessments: string[];
+  uloDescriptions: string[];
+}
 
 interface PDFImportDialogProps {
   unitId: string;
   unitName: string;
   onClose: () => void;
-  onImportComplete?: () => void;
+  onImportComplete?: (unitId: string) => void;
 }
 
 const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
@@ -36,6 +45,11 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [reviewStructure, setReviewStructure] =
+    useState<ReviewStructure | null>(null);
+  const [step, setStep] = useState<'upload' | 'analyze' | 'review' | 'done'>(
+    'upload'
+  );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -83,8 +97,26 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
     try {
       const result = await workflowApi.analyzePDF(file);
       setAnalysisResult(result);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to analyze PDF');
+
+      // Build an editable review structure from the analysis
+      const sections = result.sections || [];
+      setReviewStructure({
+        topics: sections.map(
+          (s: { title: string }) => s.title || 'Untitled section'
+        ),
+        uloDescriptions: Array.from(
+          { length: result.extracted_content?.learning_outcomes_count || 0 },
+          (_, i) => `Learning Outcome ${i + 1}`
+        ),
+        assessments: Array.from(
+          { length: result.extracted_content?.assessments_count || 0 },
+          (_, i) => `Assessment ${i + 1}`
+        ),
+      });
+      setStep('review');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to analyze PDF';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -99,8 +131,9 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
       const result = await workflowApi.extractPDFText(file, 'markdown');
       setExtractedText(result.text);
       setShowPreview(true);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to extract text');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to extract text';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -119,17 +152,48 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
       );
       if (result.status === 'success') {
         setImportSuccess(true);
+        setStep('done');
         if (onImportComplete) {
           window.setTimeout(() => {
-            onImportComplete();
-          }, 2000);
+            onImportComplete(unitId);
+          }, 1500);
         }
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to import PDF');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to import PDF';
+      setError(msg);
     } finally {
       setLoading(false);
     }
+  };
+
+  // ─── Review structure helpers ────────────────────────────────────────────
+  const updateReviewField = (
+    field: keyof ReviewStructure,
+    index: number,
+    value: string
+  ) => {
+    if (!reviewStructure) return;
+    setReviewStructure({
+      ...reviewStructure,
+      [field]: reviewStructure[field].map((v, i) => (i === index ? value : v)),
+    });
+  };
+
+  const removeReviewItem = (field: keyof ReviewStructure, index: number) => {
+    if (!reviewStructure) return;
+    setReviewStructure({
+      ...reviewStructure,
+      [field]: reviewStructure[field].filter((_, i) => i !== index),
+    });
+  };
+
+  const addReviewItem = (field: keyof ReviewStructure) => {
+    if (!reviewStructure) return;
+    setReviewStructure({
+      ...reviewStructure,
+      [field]: [...reviewStructure[field], ''],
+    });
   };
 
   const formatFileSize = (bytes: number) => {
@@ -375,6 +439,131 @@ const PDFImportDialog: React.FC<PDFImportDialogProps> = ({
                           ))}
                         </div>
                       )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Review Step — editable extracted structure */}
+              {step === 'review' && reviewStructure && (
+                <div className='mt-4 space-y-4'>
+                  <h3 className='text-lg font-semibold text-gray-900'>
+                    Review Extracted Structure
+                  </h3>
+                  <p className='text-sm text-gray-500'>
+                    Edit, add, or remove items before importing.
+                  </p>
+
+                  {/* Topics / Sections */}
+                  <div className='border rounded-lg p-4'>
+                    <div className='flex items-center justify-between mb-2'>
+                      <h4 className='font-medium text-gray-800'>
+                        Topics / Sections
+                      </h4>
+                      <button
+                        onClick={() => addReviewItem('topics')}
+                        className='text-blue-600 hover:text-blue-800 flex items-center text-sm'
+                      >
+                        <Plus className='w-4 h-4 mr-1' />
+                        Add
+                      </button>
+                    </div>
+                    {reviewStructure.topics.map((topic, i) => (
+                      <div key={i} className='flex items-center gap-2 mb-2'>
+                        <input
+                          value={topic}
+                          onChange={e =>
+                            updateReviewField('topics', i, e.target.value)
+                          }
+                          className='flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg'
+                        />
+                        <button
+                          onClick={() => removeReviewItem('topics', i)}
+                          className='text-red-400 hover:text-red-600'
+                        >
+                          <Trash2 className='w-4 h-4' />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ULOs */}
+                  {reviewStructure.uloDescriptions.length > 0 && (
+                    <div className='border rounded-lg p-4'>
+                      <div className='flex items-center justify-between mb-2'>
+                        <h4 className='font-medium text-gray-800'>
+                          Learning Outcomes
+                        </h4>
+                        <button
+                          onClick={() => addReviewItem('uloDescriptions')}
+                          className='text-blue-600 hover:text-blue-800 flex items-center text-sm'
+                        >
+                          <Plus className='w-4 h-4 mr-1' />
+                          Add
+                        </button>
+                      </div>
+                      {reviewStructure.uloDescriptions.map((desc, i) => (
+                        <div key={i} className='flex items-center gap-2 mb-2'>
+                          <input
+                            value={desc}
+                            onChange={e =>
+                              updateReviewField(
+                                'uloDescriptions',
+                                i,
+                                e.target.value
+                              )
+                            }
+                            className='flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg'
+                          />
+                          <button
+                            onClick={() =>
+                              removeReviewItem('uloDescriptions', i)
+                            }
+                            className='text-red-400 hover:text-red-600'
+                          >
+                            <Trash2 className='w-4 h-4' />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Assessments */}
+                  {reviewStructure.assessments.length > 0 && (
+                    <div className='border rounded-lg p-4'>
+                      <div className='flex items-center justify-between mb-2'>
+                        <h4 className='font-medium text-gray-800'>
+                          Assessments
+                        </h4>
+                        <button
+                          onClick={() => addReviewItem('assessments')}
+                          className='text-blue-600 hover:text-blue-800 flex items-center text-sm'
+                        >
+                          <Plus className='w-4 h-4 mr-1' />
+                          Add
+                        </button>
+                      </div>
+                      {reviewStructure.assessments.map((asmt, i) => (
+                        <div key={i} className='flex items-center gap-2 mb-2'>
+                          <input
+                            value={asmt}
+                            onChange={e =>
+                              updateReviewField(
+                                'assessments',
+                                i,
+                                e.target.value
+                              )
+                            }
+                            className='flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg'
+                          />
+                          <button
+                            onClick={() => removeReviewItem('assessments', i)}
+                            className='text-red-400 hover:text-red-600'
+                          >
+                            <Trash2 className='w-4 h-4' />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
