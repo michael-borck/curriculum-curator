@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     gcc \
     g++ \
+    git \
     lsof \
     procps \
     gosu \

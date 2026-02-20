@@ -93,8 +93,17 @@ export const updateUnit = (
   data: Partial<Unit>
 ): Promise<ApiResponse<Unit>> => api.put(`/units/${id}`, data);
 
-export const deleteUnit = (id: string): Promise<ApiResponse> =>
-  api.delete(`/units/${id}`);
+export const deleteUnit = (
+  id: string,
+  permanent = false
+): Promise<ApiResponse> =>
+  api.delete(`/units/${id}`, { params: { permanent } });
+
+export const restoreUnit = (id: string): Promise<ApiResponse<Unit>> =>
+  api.post(`/units/${id}/restore`);
+
+export const getArchivedUnits = (): Promise<ApiResponse<UnitListResponse>> =>
+  api.get('/units/archived');
 
 // Content management - routes are nested under /units/{unitId}/content
 export const getUnitContents = (unitId: string): Promise<ApiResponse> =>

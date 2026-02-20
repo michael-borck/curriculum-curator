@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.config import settings
 from app.repositories import unit_repo
 from app.schemas.unit import (
     UnitCreate,
@@ -61,6 +62,18 @@ async def get_units(
         limit=limit,
     )
 
+    return UnitList(units=units, total=len(units))
+
+
+@router.get("/archived", response_model=UnitList)
+async def get_archived_units(
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+):
+    """
+    Get all archived (soft-deleted) units for the current user.
+    """
+    units = unit_repo.get_archived_units(db, owner_id=current_user.id)
     return UnitList(units=units, total=len(units))
 
 
@@ -169,10 +182,16 @@ async def delete_unit(
     unit_id: str,
     db: Annotated[Session, Depends(deps.get_db)],
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+    permanent: bool = Query(False, description="Permanently delete the unit and its git repo"),
 ):
     """
-    Delete a unit and all its content, including the Git repository.
-    This is a permanent deletion - there is no recovery.
+    Delete a unit.
+
+    By default (permanent=false), the unit is soft-deleted: marked as archived
+    with all data and git history preserved. It can be restored later.
+
+    With permanent=true, the unit and its git repository are irreversibly deleted.
+    Permanent deletion is only allowed in LOCAL_MODE or for admin users.
     """
     # Check if unit exists and user owns it
     existing_unit = unit_repo.get_unit_by_id(db, unit_id)
@@ -187,17 +206,71 @@ async def delete_unit(
             status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
 
-    # Delete from database (cascades to all related content)
-    if not unit_repo.delete_unit(db, unit_id):
+    if permanent:
+        # Hard delete: only allowed in LOCAL_MODE or for admins
+        if not settings.LOCAL_MODE and current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permanent deletion requires admin privileges",
+            )
+
+        # Delete from database (cascades to all related content)
+        if not unit_repo.delete_unit(db, unit_id):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete unit",
+            )
+
+        # Delete the Git repository for this unit (if it exists)
+        git_service = get_git_service()
+        git_service.delete_unit_repo(unit_id)
+        logger.info(f"[DELETE_UNIT] Permanently deleted unit {unit_id} and its Git repository")
+    else:
+        # Soft delete: mark as archived
+        if not unit_repo.soft_delete_unit(db, unit_id):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to archive unit",
+            )
+        logger.info(f"[DELETE_UNIT] Soft-deleted (archived) unit {unit_id}")
+
+
+@router.post("/{unit_id}/restore", response_model=UnitResponse)
+async def restore_unit(
+    unit_id: str,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+):
+    """
+    Restore a soft-deleted (archived) unit back to draft status.
+    """
+    existing_unit = unit_repo.get_unit_by_id(db, unit_id)
+
+    if not existing_unit:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete unit",
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
         )
 
-    # Delete the Git repository for this unit (if it exists)
-    git_service = get_git_service()
-    git_service.delete_unit_repo(unit_id)
-    logger.info(f"[DELETE_UNIT] Deleted unit {unit_id} and its Git repository")
+    if existing_unit.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
+        )
+
+    if existing_unit.status != "archived":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unit is not archived",
+        )
+
+    restored = unit_repo.restore_unit(db, unit_id)
+    if not restored:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to restore unit",
+        )
+
+    logger.info(f"[RESTORE_UNIT] Restored unit {unit_id}")
+    return restored
 
 
 @router.post("/{unit_id}/duplicate", response_model=UnitResponse)

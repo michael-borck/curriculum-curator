@@ -73,11 +73,17 @@ def get_unit_by_id(db: Session, unit_id: str) -> UnitResponse | None:
 def get_units_by_owner(
     db: Session, owner_id: str, status: str | None = None
 ) -> list[UnitResponse]:
-    """Get all units for an owner, optionally filtered by status"""
+    """Get all units for an owner, optionally filtered by status.
+
+    By default, archived units are excluded. Pass status="archived" to
+    retrieve only archived units.
+    """
     query = db.query(Unit).filter(Unit.owner_id == owner_id)
 
     if status:
         query = query.filter(Unit.status == status)
+    else:
+        query = query.filter(Unit.status != "archived")
 
     units = query.order_by(Unit.created_at.desc()).all()
     return [_unit_to_response(unit) for unit in units]
@@ -148,6 +154,43 @@ def unit_exists_by_code(
     return query.first() is not None
 
 
+def soft_delete_unit(db: Session, unit_id: str) -> bool:
+    """Soft-delete a unit by setting status to archived."""
+    unit = db.query(Unit).filter(Unit.id == unit_id).first()
+    if not unit:
+        return False
+
+    unit.status = "archived"
+    unit.archived_at = datetime.utcnow()
+    db.commit()
+    return True
+
+
+def restore_unit(db: Session, unit_id: str) -> UnitResponse | None:
+    """Restore a soft-deleted (archived) unit back to draft status."""
+    unit = db.query(Unit).filter(Unit.id == unit_id).first()
+    if not unit or unit.status != "archived":
+        return None
+
+    unit.status = "draft"
+    unit.archived_at = None
+    unit.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(unit)
+    return _unit_to_response(unit)
+
+
+def get_archived_units(db: Session, owner_id: str) -> list[UnitResponse]:
+    """Get all archived units for an owner."""
+    units = (
+        db.query(Unit)
+        .filter(Unit.owner_id == owner_id, Unit.status == "archived")
+        .order_by(Unit.archived_at.desc())
+        .all()
+    )
+    return [_unit_to_response(unit) for unit in units]
+
+
 def search_units(
     db: Session,
     owner_id: str,
@@ -156,11 +199,17 @@ def search_units(
     skip: int = 0,
     limit: int = 100,
 ) -> list[UnitResponse]:
-    """Search units with optional filters"""
+    """Search units with optional filters.
+
+    By default, archived units are excluded. Pass status="archived" to
+    retrieve only archived units.
+    """
     query = db.query(Unit).filter(Unit.owner_id == owner_id)
 
     if status:
         query = query.filter(Unit.status == status)
+    else:
+        query = query.filter(Unit.status != "archived")
 
     if search:
         search_term = f"%{search}%"

@@ -145,11 +145,41 @@ class TestUnitCRUD:
         assert "LIST1001" in codes
         assert "LIST1002" in codes
 
-    def test_delete_unit(self, client: TestClient) -> None:
+    def test_soft_delete_unit(self, client: TestClient) -> None:
         created = _create_unit(client)
         unit_id = created["id"]
 
+        # Default delete is soft-delete (archive)
         resp = client.delete(f"/api/units/{unit_id}")
+        assert resp.status_code == 204
+
+        # Unit still accessible by direct ID (archived, not destroyed)
+        resp = client.get(f"/api/units/{unit_id}")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "archived"
+
+        # But excluded from the main listing
+        resp = client.get("/api/units")
+        unit_ids = [u["id"] for u in resp.json()["units"]]
+        assert unit_id not in unit_ids
+
+        # Appears in archived listing
+        resp = client.get("/api/units/archived")
+        assert resp.status_code == 200
+        archived_ids = [u["id"] for u in resp.json()["units"]]
+        assert unit_id in archived_ids
+
+        # Restore
+        resp = client.post(f"/api/units/{unit_id}/restore")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "draft"
+
+    def test_hard_delete_unit(self, client: TestClient) -> None:
+        created = _create_unit(client)
+        unit_id = created["id"]
+
+        # Permanent delete
+        resp = client.delete(f"/api/units/{unit_id}", params={"permanent": True})
         assert resp.status_code == 204
 
         resp = client.get(f"/api/units/{unit_id}")
@@ -637,9 +667,7 @@ class TestContentVersioning:
         content = _create_content(client, uid, body="# Original body")
         cid = content["id"]
 
-        client.put(
-            f"/api/units/{uid}/content/{cid}", json={"body": "# Changed body"}
-        )
+        client.put(f"/api/units/{uid}/content/{cid}", json={"body": "# Changed body"})
 
         # Get history — oldest commit should be the original
         hist = client.get(f"/api/units/{uid}/content/{cid}/history").json()

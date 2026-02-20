@@ -9,10 +9,16 @@ import {
   CheckCircle,
   Clock,
   TrendingUp,
+  Archive,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import {
   createUnit as createUnitApi,
   deleteUnit as deleteUnitApi,
+  getArchivedUnits as getArchivedUnitsApi,
+  restoreUnit as restoreUnitApi,
 } from '../services/api';
 import { useUnitsStore } from '../stores/unitsStore';
 import {
@@ -87,11 +93,65 @@ const DashboardPage = () => {
   const createModal = useModal();
 
   // Use shared units store
-  const { units, loading, fetchUnits, addUnit, removeUnit } = useUnitsStore();
+  const { units, loading, fetchUnits, addUnit, removeUnit, invalidate } =
+    useUnitsStore();
 
   const [newUnit, setNewUnit] = useState<UnitFormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Archived units
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedUnits, setArchivedUnits] = useState<
+    Array<{
+      id: string;
+      title: string;
+      code: string;
+      status: string;
+      semester: string;
+      creditPoints?: number;
+      durationWeeks?: number;
+      pedagogyType?: string;
+    }>
+  >([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const fetchArchivedUnits = async () => {
+    try {
+      setArchivedLoading(true);
+      const response = await getArchivedUnitsApi();
+      setArchivedUnits(response.data?.units ?? []);
+    } catch {
+      toast.error('Failed to load archived units');
+    } finally {
+      setArchivedLoading(false);
+    }
+  };
+
+  const handleRestoreUnit = async (unitId: string) => {
+    try {
+      setRestoringId(unitId);
+      await restoreUnitApi(unitId);
+      toast.success('Unit restored');
+      // Refresh both lists
+      setArchivedUnits(prev => prev.filter(u => u.id !== unitId));
+      invalidate();
+      fetchUnits();
+    } catch {
+      toast.error('Failed to restore unit');
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const toggleArchived = () => {
+    const next = !showArchived;
+    setShowArchived(next);
+    if (next) {
+      fetchArchivedUnits();
+    }
+  };
 
   useEffect(() => {
     fetchUnits();
@@ -200,22 +260,18 @@ const DashboardPage = () => {
       : 'this unit';
 
     const confirmed = window.confirm(
-      `Are you sure you want to permanently delete ${unitName}?\n\n` +
-        'This will delete:\n' +
-        '- All content and materials\n' +
-        '- All learning outcomes\n' +
-        '- All assessments\n' +
-        '- The entire version history\n\n' +
-        'This action cannot be undone.'
+      `Remove ${unitName} from the dashboard?\n\n` +
+        'All data and version history will be preserved. ' +
+        'You can restore it later from the archived units section.'
     );
 
     if (confirmed) {
       try {
-        await deleteUnitApi(unitId);
+        await deleteUnitApi(unitId, false);
         removeUnit(unitId);
-        toast.success('Unit deleted successfully');
+        toast.success('Unit removed from dashboard');
       } catch {
-        toast.error('Failed to delete unit');
+        toast.error('Failed to remove unit');
       }
     }
   };
@@ -380,7 +436,7 @@ const DashboardPage = () => {
                   <button
                     onClick={e => deleteUnit(unit.id, e)}
                     className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'
-                    title='Delete Unit'
+                    title='Remove from Dashboard'
                   >
                     <Trash2 className='h-4 w-4' />
                   </button>
@@ -391,6 +447,73 @@ const DashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* Archived Units Toggle */}
+      <div className='mt-6'>
+        <button
+          onClick={toggleArchived}
+          className='flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition'
+        >
+          <Archive className='w-4 h-4' />
+          <span>
+            Archived units
+            {archivedUnits.length > 0 && showArchived
+              ? ` (${archivedUnits.length})`
+              : ''}
+          </span>
+          {showArchived ? (
+            <ChevronUp className='w-4 h-4' />
+          ) : (
+            <ChevronDown className='w-4 h-4' />
+          )}
+        </button>
+
+        {showArchived && (
+          <div className='mt-3'>
+            {archivedLoading ? (
+              <p className='text-sm text-gray-400 py-4'>
+                Loading archived units...
+              </p>
+            ) : archivedUnits.length === 0 ? (
+              <p className='text-sm text-gray-400 py-4'>No archived units.</p>
+            ) : (
+              <div className='bg-gray-50 rounded-lg border border-gray-200'>
+                <div className='divide-y divide-gray-200'>
+                  {archivedUnits.map(archivedUnit => (
+                    <div
+                      key={archivedUnit.id}
+                      className='px-6 py-3 flex items-center justify-between opacity-70'
+                    >
+                      <div className='min-w-0'>
+                        <div className='flex items-center gap-2'>
+                          <h3 className='text-sm font-medium text-gray-600'>
+                            {archivedUnit.code}
+                          </h3>
+                          <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500'>
+                            Archived
+                          </span>
+                        </div>
+                        <p className='text-sm text-gray-500 truncate'>
+                          {archivedUnit.title}
+                        </p>
+                      </div>
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        onClick={() => handleRestoreUnit(archivedUnit.id)}
+                        loading={restoringId === archivedUnit.id}
+                      >
+                        <RotateCcw className='w-3.5 h-3.5 mr-1' />
+                        Restore
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Create Unit Modal */}
       <Modal

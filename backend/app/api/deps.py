@@ -159,6 +159,13 @@ def get_user_unit(
             detail="Unit not found or access denied",
         )
 
+    # Prevent operating on archived (soft-deleted) units via content/outcomes routes
+    if unit.status == "archived":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found or access denied",
+        )
+
     return unit
 
 
