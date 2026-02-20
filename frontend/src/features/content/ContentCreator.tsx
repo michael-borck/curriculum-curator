@@ -23,6 +23,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAILevel } from '../../hooks/useAILevel';
 import type { ContentType, PedagogyType, Unit } from '../../types/index';
 
 interface ValidationResult {
@@ -63,6 +64,7 @@ const ContentCreator = () => {
   const [validationResults, setValidationResults] =
     useState<ValidationResponse | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
+  const { canGenerate, canRefine } = useAILevel();
 
   // Determine if we're in edit mode
   const isEditMode = Boolean(unitId && contentId);
@@ -385,48 +387,54 @@ const ContentCreator = () => {
                 </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor='topic'
-                  className='block text-sm font-medium text-gray-700 mb-1'
-                >
-                  Topic for AI Generation
-                </label>
-                <input
-                  id='topic'
-                  type='text'
-                  value={topic}
-                  onChange={e => setTopic(e.target.value)}
-                  placeholder='e.g., Introduction to Machine Learning, Photosynthesis in Plants...'
-                  className='w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
-                />
-                <p className='text-xs text-gray-500 mt-1'>
-                  Describe what you want the AI to generate content about
-                </p>
-              </div>
+              {canGenerate && (
+                <div>
+                  <label
+                    htmlFor='topic'
+                    className='block text-sm font-medium text-gray-700 mb-1'
+                  >
+                    Topic for AI Generation
+                  </label>
+                  <input
+                    id='topic'
+                    type='text'
+                    value={topic}
+                    onChange={e => setTopic(e.target.value)}
+                    placeholder='e.g., Introduction to Machine Learning, Photosynthesis in Plants...'
+                    className='w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500'
+                  />
+                  <p className='text-xs text-gray-500 mt-1'>
+                    Describe what you want the AI to generate content about
+                  </p>
+                </div>
+              )}
 
               <div className='flex justify-between items-center'>
                 <h2 className='text-xl font-semibold'>Content Editor</h2>
                 <div className='flex gap-2'>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !topic.trim()}
-                    className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2'
-                  >
-                    {isGenerating ? (
-                      <Loader2 className='animate-spin' size={18} />
-                    ) : (
-                      <Sparkles size={18} />
-                    )}
-                    {isGenerating ? 'Generating...' : 'Generate'}
-                  </button>
-                  <button
-                    onClick={handleEnhance}
-                    disabled={isGenerating || !content}
-                    className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50'
-                  >
-                    Enhance
-                  </button>
+                  {canGenerate && (
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating || !topic.trim()}
+                      className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2'
+                    >
+                      {isGenerating ? (
+                        <Loader2 className='animate-spin' size={18} />
+                      ) : (
+                        <Sparkles size={18} />
+                      )}
+                      {isGenerating ? 'Generating...' : 'Generate'}
+                    </button>
+                  )}
+                  {canRefine && (
+                    <button
+                      onClick={handleEnhance}
+                      disabled={isGenerating || !content}
+                      className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50'
+                    >
+                      Enhance
+                    </button>
+                  )}
                   <button
                     onClick={handleSave}
                     disabled={isSaving || !title || !selectedUnitId || !content}

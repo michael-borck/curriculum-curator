@@ -49,7 +49,9 @@ import {
   useTeachingStyleStore,
   pedagogyOptions,
   getPedagogyHint,
+  getPedagogyStaticGuidance,
 } from '../../stores/teachingStyleStore';
+import { useAILevel } from '../../hooks/useAILevel';
 import type { PedagogyType } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -211,6 +213,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   weekNumber,
 }) => {
   const { globalStyle } = useTeachingStyleStore();
+  const { canGenerate } = useAILevel();
   const [weekMaterials, setWeekMaterials] = useState<WeekMaterials | null>(
     null
   );
@@ -540,104 +543,125 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
               />
             </div>
 
-            {/* AI Generation Section */}
-            <div className='border border-purple-200 rounded-lg p-4 bg-purple-50'>
-              <div className='flex items-center justify-between mb-3'>
-                <div className='flex items-center gap-2'>
-                  <Sparkles className='w-5 h-5 text-purple-600' />
-                  <span className='font-medium text-purple-900'>
-                    AI Content Generation
+            {/* AI Generation Section — only shown when canGenerate */}
+            {canGenerate ? (
+              <div className='border border-purple-200 rounded-lg p-4 bg-purple-50'>
+                <div className='flex items-center justify-between mb-3'>
+                  <div className='flex items-center gap-2'>
+                    <Sparkles className='w-5 h-5 text-purple-600' />
+                    <span className='font-medium text-purple-900'>
+                      AI Content Generation
+                    </span>
+                  </div>
+                  <label className='flex items-center gap-2 cursor-pointer'>
+                    <input
+                      type='checkbox'
+                      checked={formData.useAI}
+                      onChange={e =>
+                        setFormData({ ...formData, useAI: e.target.checked })
+                      }
+                      className='rounded border-gray-300 text-purple-600 focus:ring-purple-500'
+                    />
+                    <span className='text-sm text-gray-700'>Enable AI</span>
+                  </label>
+                </div>
+
+                {formData.useAI && (
+                  <div className='space-y-3'>
+                    <div>
+                      <label className='block text-sm font-medium text-gray-700'>
+                        Topic for AI Generation
+                      </label>
+                      <input
+                        type='text'
+                        value={formData.topic}
+                        onChange={e =>
+                          setFormData({ ...formData, topic: e.target.value })
+                        }
+                        className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500'
+                        placeholder='e.g., Supervised vs unsupervised learning algorithms'
+                      />
+                      <p className='text-xs text-gray-500 mt-1'>
+                        Describe what you want the AI to generate content about
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className='block text-sm font-medium text-gray-700'>
+                        Teaching Style
+                      </label>
+                      <div className='flex items-center gap-2 mt-1'>
+                        <select
+                          value={formData.overrideStyle || ''}
+                          onChange={e =>
+                            setFormData({
+                              ...formData,
+                              overrideStyle: e.target.value
+                                ? (e.target.value as PedagogyType)
+                                : null,
+                            })
+                          }
+                          className='block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500'
+                        >
+                          <option value=''>
+                            Use Global (
+                            {pedagogyOptions.find(p => p.id === globalStyle)
+                              ?.name || globalStyle}
+                            )
+                          </option>
+                          {pedagogyOptions.map(option => (
+                            <option key={option.id} value={option.id}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <p className='text-xs text-purple-600 mt-1'>
+                        {getPedagogyHint(formData.overrideStyle || globalStyle)}
+                      </p>
+                    </div>
+
+                    <button
+                      type='button'
+                      onClick={handleGenerateAI}
+                      disabled={isGenerating || !formData.topic.trim()}
+                      className='w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className='w-4 h-4 animate-spin' />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className='w-4 h-4' />
+                          Generate Content
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className='border border-blue-200 rounded-lg p-4 bg-blue-50'>
+                <div className='flex items-center gap-2 mb-3'>
+                  <Lightbulb className='w-5 h-5 text-blue-600' />
+                  <span className='font-medium text-blue-900'>
+                    Pedagogy Guidance
                   </span>
                 </div>
-                <label className='flex items-center gap-2 cursor-pointer'>
-                  <input
-                    type='checkbox'
-                    checked={formData.useAI}
-                    onChange={e =>
-                      setFormData({ ...formData, useAI: e.target.checked })
-                    }
-                    className='rounded border-gray-300 text-purple-600 focus:ring-purple-500'
-                  />
-                  <span className='text-sm text-gray-700'>Enable AI</span>
-                </label>
+                <ul className='space-y-2 text-sm text-gray-700'>
+                  {getPedagogyStaticGuidance(globalStyle).map((tip, i) => (
+                    <li key={i} className='flex items-start gap-2'>
+                      <span className='text-blue-600 font-medium shrink-0'>
+                        {i + 1}.
+                      </span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {formData.useAI && (
-                <div className='space-y-3'>
-                  <div>
-                    <label className='block text-sm font-medium text-gray-700'>
-                      Topic for AI Generation
-                    </label>
-                    <input
-                      type='text'
-                      value={formData.topic}
-                      onChange={e =>
-                        setFormData({ ...formData, topic: e.target.value })
-                      }
-                      className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500'
-                      placeholder='e.g., Supervised vs unsupervised learning algorithms'
-                    />
-                    <p className='text-xs text-gray-500 mt-1'>
-                      Describe what you want the AI to generate content about
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className='block text-sm font-medium text-gray-700'>
-                      Teaching Style
-                    </label>
-                    <div className='flex items-center gap-2 mt-1'>
-                      <select
-                        value={formData.overrideStyle || ''}
-                        onChange={e =>
-                          setFormData({
-                            ...formData,
-                            overrideStyle: e.target.value
-                              ? (e.target.value as PedagogyType)
-                              : null,
-                          })
-                        }
-                        className='block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500'
-                      >
-                        <option value=''>
-                          Use Global (
-                          {pedagogyOptions.find(p => p.id === globalStyle)
-                            ?.name || globalStyle}
-                          )
-                        </option>
-                        {pedagogyOptions.map(option => (
-                          <option key={option.id} value={option.id}>
-                            {option.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <p className='text-xs text-purple-600 mt-1'>
-                      {getPedagogyHint(formData.overrideStyle || globalStyle)}
-                    </p>
-                  </div>
-
-                  <button
-                    type='button'
-                    onClick={handleGenerateAI}
-                    disabled={isGenerating || !formData.topic.trim()}
-                    className='w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className='w-4 h-4 animate-spin' />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className='w-4 h-4' />
-                        Generate Content
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
 
             <div>
               <label className='block text-sm font-medium text-gray-700'>

@@ -11,6 +11,11 @@ import python from 'highlight.js/lib/languages/python';
 import html from 'highlight.js/lib/languages/xml';
 import css from 'highlight.js/lib/languages/css';
 import type { RichTextEditorProps } from '../../types/index';
+import { useAILevel } from '../../hooks/useAILevel';
+import {
+  useTeachingStyleStore,
+  getPedagogyStaticGuidance,
+} from '../../stores/teachingStyleStore';
 
 // Create lowlight instance and register languages
 const lowlight = createLowlight();
@@ -29,6 +34,7 @@ import {
   Table as TableIcon,
   Undo,
   Redo,
+  Info,
 } from 'lucide-react';
 
 const MenuBar = ({ editor }: { editor: Editor | null }) => {
@@ -133,6 +139,9 @@ const RichTextEditor = ({
   onChange,
   pedagogyHints = [],
 }: RichTextEditorProps) => {
+  const { isAIDisabled } = useAILevel();
+  const globalStyle = useTeachingStyleStore(state => state.globalStyle);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -148,6 +157,10 @@ const RichTextEditor = ({
     },
   });
 
+  const staticGuidance = isAIDisabled
+    ? getPedagogyStaticGuidance(globalStyle)
+    : [];
+
   return (
     <div className='border border-gray-300 rounded-lg overflow-hidden'>
       <MenuBar editor={editor} />
@@ -155,12 +168,33 @@ const RichTextEditor = ({
         editor={editor}
         className='prose max-w-none p-4 min-h-[400px] focus:outline-none'
       />
-      {pedagogyHints && (
+      {isAIDisabled && staticGuidance.length > 0 ? (
         <div className='bg-blue-50 border-t border-blue-200 p-3'>
-          <p className='text-sm text-blue-700'>
-            💡 <strong>Pedagogy Tip:</strong> {pedagogyHints}
-          </p>
+          <div className='flex items-start gap-2'>
+            <Info className='w-4 h-4 text-blue-600 mt-0.5 shrink-0' />
+            <div>
+              <p className='text-sm font-medium text-blue-800 mb-1'>
+                Pedagogy Guidance
+              </p>
+              <ul className='space-y-1'>
+                {staticGuidance.map((tip, i) => (
+                  <li key={i} className='text-sm text-blue-700'>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
+      ) : (
+        pedagogyHints &&
+        pedagogyHints.length > 0 && (
+          <div className='bg-blue-50 border-t border-blue-200 p-3'>
+            <p className='text-sm text-blue-700'>
+              <strong>Pedagogy Tip:</strong> {pedagogyHints}
+            </p>
+          </div>
+        )
       )}
     </div>
   );

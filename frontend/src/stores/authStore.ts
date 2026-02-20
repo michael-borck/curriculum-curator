@@ -54,7 +54,10 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
           if (user.teachingPhilosophy) {
             useTeachingStyleStore
               .getState()
-              .initFromUser(user.teachingPhilosophy);
+              .initFromUser(
+                user.teachingPhilosophy,
+                user.teachingPreferences?.aiAssistLevel
+              );
           }
           return;
         }
@@ -85,7 +88,10 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
         if (response.data.teachingPhilosophy) {
           useTeachingStyleStore
             .getState()
-            .initFromUser(response.data.teachingPhilosophy);
+            .initFromUser(
+              response.data.teachingPhilosophy,
+              response.data.teachingPreferences?.aiAssistLevel
+            );
         }
       }
     } catch {

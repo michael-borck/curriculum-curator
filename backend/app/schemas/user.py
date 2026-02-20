@@ -3,6 +3,7 @@ User-related Pydantic schemas for authentication and profile management
 """
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import EmailStr, field_validator
 
@@ -38,6 +39,17 @@ class UserUpdate(CamelModel):
     department: str | None = None
 
 
+class ProfileUpdateRequest(CamelModel):
+    """Schema for updating user profile via PATCH /auth/profile"""
+
+    name: str | None = None
+    institution: str | None = None
+    department: str | None = None
+    teaching_philosophy: str | None = None
+    language_preference: str | None = None
+    teaching_preferences: dict[str, Any] | None = None
+
+
 class UserResponse(UserBase):
     """Schema for user response (public fields)"""
 
@@ -47,6 +59,8 @@ class UserResponse(UserBase):
     is_active: bool
     institution: str | None = None
     department: str | None = None
+    teaching_philosophy: str | None = None
+    teaching_preferences: dict[str, Any] | None = None
     created_at: datetime | str
 
 

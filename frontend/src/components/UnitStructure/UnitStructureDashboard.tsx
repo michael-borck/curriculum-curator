@@ -15,6 +15,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { aiApi } from '../../services/aiApi';
+import { useAILevel } from '../../hooks/useAILevel';
 import ULOManager from './ULOManager';
 import { WeeklyMaterialsManager } from './WeeklyMaterialsManager';
 import { AssessmentsManager } from './AssessmentsManager';
@@ -65,6 +66,7 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
   unitName = 'Unit',
   durationWeeks = 12,
 }) => {
+  const { canGenerate } = useAILevel();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [overview, setOverview] = useState<UnitOverview | null>(null);
@@ -352,27 +354,29 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                               className='flex items-center justify-between'
                             >
                               <span>{rec}</span>
-                              <button
-                                onClick={() => {
-                                  const gapType = rec
-                                    .toLowerCase()
-                                    .includes('assessment')
-                                    ? 'assessment'
-                                    : rec.toLowerCase().includes('outcome')
-                                      ? 'ulo'
-                                      : 'material';
-                                  handleFillGap(gapType, rec);
-                                }}
-                                disabled={generatingGap === rec}
-                                className='ml-2 shrink-0 px-2 py-0.5 text-xs bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 disabled:opacity-50 flex items-center gap-1'
-                              >
-                                {generatingGap === rec ? (
-                                  <Loader2 className='w-3 h-3 animate-spin' />
-                                ) : (
-                                  <Sparkles className='w-3 h-3' />
-                                )}
-                                Generate
-                              </button>
+                              {canGenerate && (
+                                <button
+                                  onClick={() => {
+                                    const gapType = rec
+                                      .toLowerCase()
+                                      .includes('assessment')
+                                      ? 'assessment'
+                                      : rec.toLowerCase().includes('outcome')
+                                        ? 'ulo'
+                                        : 'material';
+                                    handleFillGap(gapType, rec);
+                                  }}
+                                  disabled={generatingGap === rec}
+                                  className='ml-2 shrink-0 px-2 py-0.5 text-xs bg-yellow-200 text-yellow-800 rounded hover:bg-yellow-300 disabled:opacity-50 flex items-center gap-1'
+                                >
+                                  {generatingGap === rec ? (
+                                    <Loader2 className='w-3 h-3 animate-spin' />
+                                  ) : (
+                                    <Sparkles className='w-3 h-3' />
+                                  )}
+                                  Generate
+                                </button>
+                              )}
                             </li>
                           ))}
                         </ul>
@@ -485,25 +489,29 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                   </div>
                 </button>
 
-                <button
-                  onClick={async () => {
-                    // TECH-DEBT: API response not used - could show recommendations list
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    await analyticsApi.getRecommendations(unitId);
-                    toast.success('Recommendations generated - check console');
-                  }}
-                  className='p-4 border rounded-lg hover:bg-gray-50 text-left'
-                >
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <h4 className='font-medium'>AI Recommendations</h4>
-                      <p className='text-sm text-gray-600'>
-                        Get improvement suggestions
-                      </p>
+                {canGenerate && (
+                  <button
+                    onClick={async () => {
+                      // TECH-DEBT: API response not used - could show recommendations list
+                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                      await analyticsApi.getRecommendations(unitId);
+                      toast.success(
+                        'Recommendations generated - check console'
+                      );
+                    }}
+                    className='p-4 border rounded-lg hover:bg-gray-50 text-left'
+                  >
+                    <div className='flex items-center justify-between'>
+                      <div>
+                        <h4 className='font-medium'>AI Recommendations</h4>
+                        <p className='text-sm text-gray-600'>
+                          Get improvement suggestions
+                        </p>
+                      </div>
+                      <AlertCircle className='w-5 h-5 text-gray-400' />
                     </div>
-                    <AlertCircle className='w-5 h-5 text-gray-400' />
-                  </div>
-                </button>
+                  </button>
+                )}
 
                 <button
                   onClick={async () => {

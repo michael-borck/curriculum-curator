@@ -30,6 +30,7 @@ import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
 import { LoadingState, Button, Modal, Alert } from '../components/ui';
+import { useAILevel } from '../hooks/useAILevel';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ const UnitPage = () => {
   const [unitULOs, setUnitULOs] = useState<
     Array<{ code: string; description: string }>
   >([]);
+  const { isAIDisabled, canScaffold } = useAILevel();
 
   // Get active tab and week from URL
   const activeTab = (searchParams.get('tab') as TabType) || 'structure';
@@ -137,12 +139,38 @@ const UnitPage = () => {
       });
   }, [unitId]);
 
-  const handleDelete = async () => {
+  // Reset AI sidebar when AI is disabled
+  useEffect(() => {
+    if (isAIDisabled) {
+      setShowAI(false);
+    }
+  }, [isAIDisabled]);
+
+  const isLocalMode = import.meta.env.VITE_LOCAL_MODE === 'true';
+  const [showPermanentDelete, setShowPermanentDelete] = useState(false);
+
+  const handleSoftDelete = async () => {
     if (!unitId) return;
     try {
       setDeleting(true);
-      await deleteUnitApi(unitId);
-      toast.success('Unit deleted successfully');
+      await deleteUnitApi(unitId, false);
+      toast.success('Unit removed from dashboard');
+      navigate('/');
+    } catch (err) {
+      toast.error('Failed to remove unit');
+      console.error('Error removing unit:', err);
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!unitId) return;
+    try {
+      setDeleting(true);
+      await deleteUnitApi(unitId, true);
+      toast.success('Unit permanently deleted');
       navigate('/');
     } catch (err) {
       toast.error('Failed to delete unit');
@@ -150,6 +178,7 @@ const UnitPage = () => {
     } finally {
       setDeleting(false);
       setShowDeleteModal(false);
+      setShowPermanentDelete(false);
     }
   };
 
@@ -329,14 +358,16 @@ const UnitPage = () => {
               </div>
             </div>
             <div className='flex items-center gap-2'>
-              <Button
-                variant={showAI ? 'primary' : 'secondary'}
-                size='sm'
-                onClick={() => setShowAI(!showAI)}
-              >
-                <Brain className='w-4 h-4 mr-1' />
-                {showAI ? 'Close AI' : 'AI Assist'}
-              </Button>
+              {!isAIDisabled && (
+                <Button
+                  variant={showAI ? 'primary' : 'secondary'}
+                  size='sm'
+                  onClick={() => setShowAI(!showAI)}
+                >
+                  <Brain className='w-4 h-4 mr-1' />
+                  {showAI ? 'Close AI' : 'AI Assist'}
+                </Button>
+              )}
               <Button
                 variant='secondary'
                 size='sm'
@@ -406,15 +437,17 @@ const UnitPage = () => {
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>
-                  <Button
-                    variant='secondary'
-                    size='sm'
-                    onClick={handleScaffold}
-                    loading={scaffolding}
-                  >
-                    <Wand2 className='w-4 h-4 mr-1' />
-                    Quick Scaffold
-                  </Button>
+                  {canScaffold && (
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      onClick={handleScaffold}
+                      loading={scaffolding}
+                    >
+                      <Wand2 className='w-4 h-4 mr-1' />
+                      Quick Scaffold
+                    </Button>
+                  )}
                   <Button
                     variant='secondary'
                     size='sm'
@@ -423,14 +456,16 @@ const UnitPage = () => {
                     <GitBranch className='w-4 h-4 mr-1' />
                     View Map
                   </Button>
-                  <Button
-                    variant={showPlanner ? 'primary' : 'secondary'}
-                    size='sm'
-                    onClick={() => setShowPlanner(!showPlanner)}
-                  >
-                    <Sparkles className='w-4 h-4 mr-1' />
-                    {showPlanner ? 'Close Planner' : 'Course Planner'}
-                  </Button>
+                  {canScaffold && (
+                    <Button
+                      variant={showPlanner ? 'primary' : 'secondary'}
+                      size='sm'
+                      onClick={() => setShowPlanner(!showPlanner)}
+                    >
+                      <Sparkles className='w-4 h-4 mr-1' />
+                      {showPlanner ? 'Close Planner' : 'Course Planner'}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -521,44 +556,93 @@ const UnitPage = () => {
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title='Delete Unit'
+        onClose={() => {
+          setShowDeleteModal(false);
+          setShowPermanentDelete(false);
+        }}
+        title='Remove Unit'
       >
         <div className='space-y-4'>
           <p className='text-gray-600'>
-            Are you sure you want to delete{' '}
+            What would you like to do with{' '}
             <strong>
               {unit.code} - {unit.title}
             </strong>
             ?
           </p>
-          <div className='bg-red-50 border border-red-200 rounded-lg p-4'>
-            <p className='text-sm text-red-800'>
-              This will permanently delete:
+
+          {/* Option A: Soft Delete (primary, safe) */}
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
+            <p className='text-sm font-medium text-blue-900'>
+              Remove from Dashboard
             </p>
-            <ul className='mt-2 text-sm text-red-700 list-disc list-inside'>
-              <li>All content and materials</li>
-              <li>All learning outcomes</li>
-              <li>All assessments</li>
-              <li>The entire version history</li>
-            </ul>
-            <p className='mt-2 text-sm font-medium text-red-800'>
-              This action cannot be undone.
+            <p className='text-sm text-blue-700 mt-1'>
+              Hides this unit from the dashboard. All data and version history
+              is preserved. You can restore it later from the archived units
+              section.
             </p>
+            <div className='mt-3'>
+              <Button
+                onClick={handleSoftDelete}
+                loading={deleting && !showPermanentDelete}
+                className='bg-blue-600 hover:bg-blue-700'
+              >
+                Remove from Dashboard
+              </Button>
+            </div>
           </div>
-          <div className='flex justify-end gap-3'>
+
+          {/* Option B: Hard Delete (destructive, conditional) */}
+          {isLocalMode && (
+            <div>
+              {!showPermanentDelete ? (
+                <button
+                  onClick={() => setShowPermanentDelete(true)}
+                  className='text-sm text-gray-500 hover:text-red-600 underline'
+                >
+                  Or delete permanently...
+                </button>
+              ) : (
+                <div className='bg-red-50 border border-red-200 rounded-lg p-4'>
+                  <p className='text-sm font-medium text-red-900'>
+                    Delete Permanently
+                  </p>
+                  <p className='text-sm text-red-700 mt-1'>
+                    This will permanently delete all content, learning outcomes,
+                    assessments, and the entire version history.
+                  </p>
+                  <p className='mt-1 text-sm font-medium text-red-800'>
+                    This action cannot be undone.
+                  </p>
+                  <div className='mt-3 flex gap-2'>
+                    <Button
+                      onClick={handlePermanentDelete}
+                      loading={deleting && showPermanentDelete}
+                      className='bg-red-600 hover:bg-red-700'
+                    >
+                      Delete Permanently
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      onClick={() => setShowPermanentDelete(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className='flex justify-end'>
             <Button
               variant='secondary'
-              onClick={() => setShowDeleteModal(false)}
+              onClick={() => {
+                setShowDeleteModal(false);
+                setShowPermanentDelete(false);
+              }}
             >
               Cancel
-            </Button>
-            <Button
-              onClick={handleDelete}
-              loading={deleting}
-              className='bg-red-600 hover:bg-red-700'
-            >
-              Delete Unit
             </Button>
           </div>
         </div>

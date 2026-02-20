@@ -24,6 +24,7 @@ import {
   pedagogyOptions,
 } from '../../stores/teachingStyleStore';
 import { useUnitsStore } from '../../stores/unitsStore';
+import { useAILevel } from '../../hooks/useAILevel';
 import type { PedagogyType } from '../../types';
 
 interface AppLayoutProps {
@@ -48,6 +49,7 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
   const location = useLocation();
   const { user, logout: authStoreLogout } = useAuthStore();
   const { globalStyle, setGlobalStyle } = useTeachingStyleStore();
+  const { isAIDisabled } = useAILevel();
   const logout = onLogout || authStoreLogout;
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -316,20 +318,22 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
               <Upload className='w-5 h-5 flex-shrink-0' />
               <span>Import Materials</span>
             </button>
-            <button
-              onClick={() => {
-                navigate('/ai-assistant');
-                setMobileSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-2 text-left transition ${
-                isActive('/ai-assistant')
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <Brain className='w-5 h-5 flex-shrink-0' />
-              <span>AI Assistant</span>
-            </button>
+            {!isAIDisabled && (
+              <button
+                onClick={() => {
+                  navigate('/ai-assistant');
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2 text-left transition ${
+                  isActive('/ai-assistant')
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                <Brain className='w-5 h-5 flex-shrink-0' />
+                <span>AI Assistant</span>
+              </button>
+            )}
           </div>
         </nav>
       </div>
@@ -376,7 +380,9 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                             Global Teaching Style
                           </p>
                           <p className='text-xs text-gray-400 mt-0.5'>
-                            Used for AI content generation
+                            {isAIDisabled
+                              ? 'Guides pedagogy tips'
+                              : 'Used for AI content generation'}
                           </p>
                         </div>
                         <div className='max-h-80 overflow-y-auto'>

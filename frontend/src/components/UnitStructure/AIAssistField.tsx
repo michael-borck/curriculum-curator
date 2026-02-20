@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, Loader2, X } from 'lucide-react';
 import api from '../../services/api';
+import { useAILevel } from '../../hooks/useAILevel';
 
 interface AIAssistFieldProps {
   /** Current field value to provide context for improve/suggest */
@@ -21,10 +22,14 @@ const AIAssistField: React.FC<AIAssistFieldProps> = ({
   context,
   onAccept,
 }) => {
+  const { isAIDisabled, canGenerate } = useAILevel();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Hide entirely in "none" mode
+  if (isAIDisabled) return null;
 
   const handleAction = async (action: ActionType) => {
     setLoading(true);
@@ -87,12 +92,14 @@ const AIAssistField: React.FC<AIAssistFieldProps> = ({
         <div className='p-3'>
           {!result && !loading && !error && (
             <div className='space-y-2'>
-              <button
-                onClick={() => handleAction('generate')}
-                className='w-full text-left px-3 py-2 text-sm rounded-md hover:bg-purple-50 text-gray-700'
-              >
-                Generate new {fieldLabel}
-              </button>
+              {canGenerate && (
+                <button
+                  onClick={() => handleAction('generate')}
+                  className='w-full text-left px-3 py-2 text-sm rounded-md hover:bg-purple-50 text-gray-700'
+                >
+                  Generate new {fieldLabel}
+                </button>
+              )}
               {currentValue && (
                 <>
                   <button

@@ -3,6 +3,9 @@ import { ReactNode, FormEvent, ChangeEvent, MouseEvent } from 'react';
 // Add Course as an alias for Unit for backwards compatibility
 export type Course = Unit;
 
+// AI Assistance Levels
+export type AIAssistLevel = 'none' | 'refine' | 'create';
+
 // User related types
 export interface User {
   id?: string;
@@ -11,6 +14,9 @@ export interface User {
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
   teachingPhilosophy?: string;
   languagePreference?: string;
+  teachingPreferences?: {
+    aiAssistLevel?: AIAssistLevel;
+  };
   llmConfig?: {
     provider?: string;
     model?: string;

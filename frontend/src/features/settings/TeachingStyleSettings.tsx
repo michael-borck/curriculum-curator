@@ -11,12 +11,15 @@ import {
   CheckCircle,
   ArrowRight,
   Sparkles,
+  Ban,
+  Pencil,
+  Wand2,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTeachingStyleStore } from '../../stores/teachingStyleStore';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
-import type { PedagogyType } from '../../types';
+import type { PedagogyType, AIAssistLevel } from '../../types';
 
 const teachingStyles = [
   {
@@ -240,9 +243,36 @@ const questions = [
 
 type Mode = 'VIEW' | 'QUIZ' | 'SELECT';
 
+const aiLevelOptions: Array<{
+  level: AIAssistLevel;
+  label: string;
+  icon: typeof Ban;
+  description: string;
+}> = [
+  {
+    level: 'none',
+    label: 'No AI',
+    icon: Ban,
+    description: 'Manual curriculum builder. Pedagogy tips guide your work.',
+  },
+  {
+    level: 'refine',
+    label: 'Correct & Refine',
+    icon: Pencil,
+    description: 'AI improves and refines your existing text.',
+  },
+  {
+    level: 'create',
+    label: 'Create & Generate',
+    icon: Wand2,
+    description: 'AI creates content guided by your pedagogy.',
+  },
+];
+
 const TeachingStyleSettings = () => {
   const { user } = useAuthStore();
-  const { globalStyle, setGlobalStyle } = useTeachingStyleStore();
+  const { globalStyle, setGlobalStyle, aiAssistLevel, setAIAssistLevel } =
+    useTeachingStyleStore();
   const [mode, setMode] = useState<Mode>('VIEW');
   const [selectedStyle, setSelectedStyle] = useState<PedagogyType>(
     (user?.teachingPhilosophy as PedagogyType) || globalStyle || 'inquiry-based'
@@ -308,6 +338,39 @@ const TeachingStyleSettings = () => {
     } catch (error) {
       console.error('Error saving teaching style:', error);
       toast.error('Failed to save teaching style');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAILevelChange = async (level: AIAssistLevel) => {
+    try {
+      setSaving(true);
+      await api.patch('/auth/profile', {
+        teachingPreferences: { aiAssistLevel: level },
+      });
+      setAIAssistLevel(level);
+      if (user) {
+        useAuthStore.setState({
+          user: {
+            ...user,
+            teachingPreferences: {
+              ...user.teachingPreferences,
+              aiAssistLevel: level,
+            },
+          },
+        });
+      }
+      toast.success(
+        level === 'none'
+          ? 'AI features disabled'
+          : level === 'refine'
+            ? 'AI set to refine mode'
+            : 'Full AI features enabled'
+      );
+    } catch (error) {
+      console.error('Error saving AI level:', error);
+      toast.error('Failed to save AI level');
     } finally {
       setSaving(false);
     }
@@ -534,29 +597,92 @@ const TeachingStyleSettings = () => {
         </button>
       </div>
 
-      {/* Info Box */}
+      {/* AI Assistance Level */}
+      <div className='mt-6'>
+        <h3 className='text-lg font-semibold mb-3'>AI Assistance Level</h3>
+        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+          {aiLevelOptions.map(opt => {
+            const Icon = opt.icon;
+            const isActive = aiAssistLevel === opt.level;
+            return (
+              <button
+                key={opt.level}
+                onClick={() => handleAILevelChange(opt.level)}
+                disabled={saving}
+                className={`text-left p-4 border rounded-lg transition-all ${
+                  isActive
+                    ? 'ring-2 ring-purple-500 border-purple-500 bg-purple-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                }`}
+              >
+                <div className='flex items-center gap-2 mb-2'>
+                  <Icon
+                    className={`h-5 w-5 ${isActive ? 'text-purple-600' : 'text-gray-500'}`}
+                  />
+                  <span
+                    className={`font-medium ${isActive ? 'text-purple-900' : 'text-gray-900'}`}
+                  >
+                    {opt.label}
+                  </span>
+                </div>
+                <p className='text-xs text-gray-600'>{opt.description}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Info Box — conditional on AI level */}
       <div className='mt-6 bg-blue-50 rounded-lg p-4'>
-        <h4 className='font-medium text-blue-900 mb-2'>
-          How Teaching Style Affects AI Content
-        </h4>
-        <ul className='space-y-1 text-sm text-blue-800'>
-          <li className='flex items-center gap-2'>
-            <CheckCircle className='h-4 w-4 text-blue-600' />
-            Content structure and presentation format
-          </li>
-          <li className='flex items-center gap-2'>
-            <CheckCircle className='h-4 w-4 text-blue-600' />
-            Types of activities and exercises generated
-          </li>
-          <li className='flex items-center gap-2'>
-            <CheckCircle className='h-4 w-4 text-blue-600' />
-            Assessment methods and question styles
-          </li>
-          <li className='flex items-center gap-2'>
-            <CheckCircle className='h-4 w-4 text-blue-600' />
-            Recommended resources and materials
-          </li>
-        </ul>
+        {aiAssistLevel === 'none' ? (
+          <>
+            <h4 className='font-medium text-blue-900 mb-2'>
+              How Teaching Style Guides Your Work
+            </h4>
+            <ul className='space-y-1 text-sm text-blue-800'>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Pedagogy tips appear in the editor as you write
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Expanded guidance for each teaching style in materials
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Structure suggestions based on your philosophy
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                All AI buttons and features are hidden for a clean workspace
+              </li>
+            </ul>
+          </>
+        ) : (
+          <>
+            <h4 className='font-medium text-blue-900 mb-2'>
+              How Teaching Style Affects AI Content
+            </h4>
+            <ul className='space-y-1 text-sm text-blue-800'>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Content structure and presentation format
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Types of activities and exercises generated
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Assessment methods and question styles
+              </li>
+              <li className='flex items-center gap-2'>
+                <CheckCircle className='h-4 w-4 text-blue-600' />
+                Recommended resources and materials
+              </li>
+            </ul>
+          </>
+        )}
       </div>
     </div>
   );

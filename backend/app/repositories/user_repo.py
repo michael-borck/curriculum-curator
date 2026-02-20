@@ -35,6 +35,8 @@ def _user_to_response(user: User) -> UserResponse:
         is_active=user.is_active,
         institution=user.institution,
         department=user.department,
+        teaching_philosophy=user.teaching_philosophy,
+        teaching_preferences=user.teaching_preferences,
         created_at=user.created_at,
     )
 
@@ -50,6 +52,8 @@ def _user_to_db(user: User) -> UserInDB:
         is_active=user.is_active,
         institution=user.institution,
         department=user.department,
+        teaching_philosophy=user.teaching_philosophy,
+        teaching_preferences=user.teaching_preferences,
         created_at=user.created_at,
         password_hash=user.password_hash,
     )

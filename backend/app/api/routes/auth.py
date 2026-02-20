@@ -31,7 +31,7 @@ from app.schemas import (
     UserRegistrationResponse,
     UserResponse,
 )
-from app.schemas.user import UserCreate
+from app.schemas.user import ProfileUpdateRequest, UserCreate
 from app.services.email_service import email_service
 
 router = APIRouter()
@@ -521,6 +521,37 @@ async def reset_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password. Please try again.",
         ) from None
+
+
+@router.patch("/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: ProfileUpdateRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Update current user profile fields"""
+    update_fields: dict[str, object] = {}
+    for field_name in ("name", "institution", "department", "teaching_philosophy", "language_preference"):
+        value = getattr(profile_data, field_name)
+        if value is not None:
+            update_fields[field_name] = value
+
+    # Merge teaching_preferences with existing JSON rather than replace
+    if profile_data.teaching_preferences is not None:
+        existing = current_user.teaching_preferences or {}
+        merged = {**existing, **profile_data.teaching_preferences}
+        update_fields["teaching_preferences"] = merged
+
+    if not update_fields:
+        return current_user
+
+    updated_user = user_repo.update_user(db, current_user.id, **update_fields)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update profile",
+        )
+    return updated_user
 
 
 @router.get("/me", response_model=UserResponse)
