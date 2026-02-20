@@ -431,6 +431,15 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load imscc_export routes: {e}")
 
+try:
+    from app.api.routes import document_export
+
+    app.include_router(
+        document_export.router, prefix="/api", tags=["document-export"]
+    )
+except ImportError as e:
+    logger.warning(f"Failed to load document_export routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 

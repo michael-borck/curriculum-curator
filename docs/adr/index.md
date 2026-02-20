@@ -38,6 +38,9 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0028](0028-australian-university-terminology.md) | Australian University Terminology | Accepted |
 | [0029](0029-accreditation-framework-mappings.md) | Accreditation Framework Mappings (AoL, Grad Caps, SDGs) | Accepted |
 | [0030](0030-ims-common-cartridge-export.md) | IMS Common Cartridge Export | Accepted |
+| [0031](0031-soft-delete-units.md) | Soft-Delete Units | Accepted |
+| [0032](0032-ai-assistance-levels.md) | AI Assistance Levels | Accepted |
+| [0033](0033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
