@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 # Well-known local user constants
 LOCAL_USER_ID = "00000000-0000-0000-0000-000000000001"
-LOCAL_USER_EMAIL = "local@curriculum-curator.local"
+LOCAL_USER_EMAIL = "local@curriculum-curator.app"
 
 # Use HTTPBearer for JWT authentication
 # In LOCAL_MODE, make it optional (auto_error=False) so requests without

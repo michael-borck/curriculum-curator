@@ -24,7 +24,7 @@ A single environment variable `LOCAL_MODE=true` controls both backend and fronte
 - **Frontend**: Discovers local mode via `/api/auth/config` (runtime, not build-time), auto-obtains a JWT session via `/api/auth/local-session`
 - **Docker**: `LOCAL_MODE` passed through `docker-compose.yml`
 
-The local user uses a well-known UUID (`00000000-0000-0000-0000-000000000001`) and email (`local@curriculum-curator.local`) for deterministic seeding.
+The local user uses a well-known UUID (`00000000-0000-0000-0000-000000000001`) and email (`local@curriculum-curator.app`) for deterministic seeding.
 
 ### PyInstaller Compatibility Audit
 
