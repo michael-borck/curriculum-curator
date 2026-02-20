@@ -59,12 +59,20 @@ cd backend
 .venv/bin/pytest --cov=app         # With coverage report
 .venv/bin/pytest -m "not slow"     # Skip slow tests
 
+# Run a single service test file
+.venv/bin/pytest tests/test_ulo_service.py -v
+
 # Frontend tests (Vitest + React Testing Library)
 cd frontend
 npm test                 # Run tests in watch mode
 npm run test:coverage    # Run tests with coverage report  
 npm run test:ui          # Run tests with UI interface
 ```
+
+#### Backend Testing Philosophy
+- **Real DB, not mocks**: Service tests use in-memory SQLite via `conftest.py` fixtures (`test_db`, `test_user`, `test_unit`, `test_unit_outline`). This catches real query bugs that mocks would miss.
+- **Only mock external boundaries**: LLM API calls, SMTP, HTTP requests to third parties. Everything else (SQLAlchemy queries, model relationships, transactions) runs against the real database.
+- **Test files**: One file per service (`tests/test_<service_name>.py`). All service methods are async, tests use `@pytest.mark.asyncio`.
 
 ## Terminology - Australian University Context
 
