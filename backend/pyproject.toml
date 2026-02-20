@@ -198,8 +198,8 @@ known-first-party = ["app"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**/*" = ["S101", "PLR2004", "ARG"]
-"test_*.py" = ["S101", "PLR2004", "ARG", "PTH", "W293", "F401", "RET505", "W292", "W291", "I001"]
+"tests/**/*" = ["S101", "PLR2004", "ARG", "PLC0415", "N806"]
+"test_*.py" = ["S101", "PLR2004", "ARG", "PTH", "W293", "F401", "RET505", "W292", "W291", "I001", "PLC0415", "N806"]
 "app/core/database.py" = ["F401", "PLC0415"]  # SQLAlchemy model imports must be inside function
 "migrations/**/*" = ["F401", "ERA001", "W291", "UP035", "I001"]  # Migration files have specific patterns
 

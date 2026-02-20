@@ -15,16 +15,14 @@ import pytest
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Set environment variables before importing app modules
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing")
 os.environ.setdefault("DATABASE_URL", "sqlite:///")
 
-from app.core.database import Base  # noqa: E402
-from app.models import (  # noqa: E402
-    Assessment,
-    AssessmentCategory,
-    AssessmentStatus,
+from app.core.database import Base
+from app.models import (
     Unit,
     UnitOutline,
     UnitStructureStatus,
@@ -88,6 +86,7 @@ def test_db():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     # Import all models to register them, then create tables
     import app.models  # noqa: F401
@@ -144,7 +143,50 @@ def test_unit(test_db: Session, test_user: User) -> Unit:
 
 
 @pytest.fixture
-def test_unit_outline(test_db: Session, test_unit: Unit, test_user: User) -> UnitOutline:
+def client(test_db: Session, test_user: User):
+    """FastAPI TestClient with dependency overrides for DB and auth.
+
+    Uses in-memory SQLite and bypasses JWT authentication so tests exercise
+    the full HTTP → route → service → DB → response chain.
+    """
+    from fastapi.testclient import TestClient
+
+    from app.api import deps
+    from app.main import app
+    from app.schemas.user import UserResponse
+
+    # GUID TypeDecorator returns uuid.UUID objects; UserResponse expects str
+    user_dict = {
+        "id": str(test_user.id),
+        "email": test_user.email,
+        "name": test_user.name,
+        "role": test_user.role,
+        "is_verified": test_user.is_verified,
+        "is_active": test_user.is_active,
+        "created_at": str(test_user.created_at)
+        if test_user.created_at
+        else "2026-01-01T00:00:00",
+    }
+    user_resp = UserResponse.model_validate(user_dict)
+
+    # get_db is a generator, so the override must be too
+    def _override_get_db():
+        yield test_db
+
+    app.dependency_overrides[deps.get_db] = _override_get_db
+    app.dependency_overrides[deps.get_current_user] = lambda: user_resp
+    app.dependency_overrides[deps.get_current_active_user] = lambda: user_resp
+
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def test_unit_outline(
+    test_db: Session, test_unit: Unit, test_user: User
+) -> UnitOutline:
     """Insert a real UnitOutline row into the test database."""
     outline = UnitOutline(
         id=str(uuid.uuid4()),
