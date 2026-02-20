@@ -29,16 +29,13 @@ cd frontend && npm run preview
 **IMPORTANT: Run linters and type checkers after every code change. All checks must pass with 0 errors before committing.**
 
 ```bash
-# Backend linting and formatting (modern tools)
+# Backend linting and formatting (tools live in the uv-managed venv)
 cd backend
-ruff check .              # Fast linting - MUST have 0 errors
-ruff format .             # Fast formatting
-basedpyright             # Type checking - MUST have 0 errors
+.venv/bin/ruff check .       # Fast linting - MUST have 0 errors
+.venv/bin/ruff format .      # Fast formatting
+.venv/bin/basedpyright       # Type checking - MUST have 0 errors
 
-# Legacy alternatives (if modern tools not available)
-# black app/ && flake8 app/ && mypy app/
-
-# Frontend linting and formatting  
+# Frontend linting and formatting
 cd frontend
 npm run lint              # ESLint checking - MUST have 0 errors
 npm run lint:fix          # Auto-fix ESLint issues
@@ -55,12 +52,12 @@ npm run type-check        # TypeScript checking - MUST have 0 errors
 
 ### Testing Commands
 ```bash
-# Backend tests with coverage
+# Backend tests with coverage (run from backend/)
 cd backend
-pytest                   # Run all tests
-pytest -v                # Verbose output
-pytest --cov=app         # With coverage report
-pytest -m "not slow"     # Skip slow tests
+.venv/bin/pytest                   # Run all tests
+.venv/bin/pytest -v                # Verbose output
+.venv/bin/pytest --cov=app         # With coverage report
+.venv/bin/pytest -m "not slow"     # Skip slow tests
 
 # Frontend tests (Vitest + React Testing Library)
 cd frontend
@@ -274,12 +271,19 @@ This project uses modern Python tools for better performance and developer exper
 - **pytest**: Testing framework with extensive configuration
 - **pyproject.toml**: Modern project configuration (replaces requirements.txt, setup.py, tox.ini, etc.)
 
-### Installation Commands
+### Environment Setup
 ```bash
-# Install modern tools globally
-curl -LsSf https://astral.sh/uv/install.sh | sh  # uv
-uv tool install ruff                              # ruff
-uv tool install basedpyright                     # basedpyright
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Backend: uv manages a .venv with all tools included
+cd backend
+uv sync                    # Creates .venv and installs all deps (including ruff, basedpyright, pytest)
+
+# All backend tools run from the venv:
+.venv/bin/ruff check .     # Linting
+.venv/bin/basedpyright     # Type checking
+.venv/bin/pytest           # Tests
 ```
 
 ## Database Notes
