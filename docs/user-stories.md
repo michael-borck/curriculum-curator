@@ -188,13 +188,22 @@
 | 15.5 | As a **Creator**, I want AI to generate images for my materials (diagrams, illustrations) when the LLM provider supports it. | P4 | **Planned** |
 | 15.6 | As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them into my materials. | P4 | **Planned** |
 
-## 16. Flexibility & Workflow Freedom
+## 16. Desktop App & Distribution
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 16.1 | As a **Creator**, I want to work on my unit in any order — I shouldn't be forced to define ULOs before creating materials, or complete all weeks before exporting. | P1 | **Done** — no enforced sequence |
-| 16.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P2 | **Planned** — currently materials require a unit_id |
-| 16.3 | As a **Creator**, I want quality to improve progressively — the system should work with minimal input but produce better results as I add more detail (ULOs, descriptions, pedagogy). | P2 | **Planned** — ties to "fill the gaps" (1.7) |
+| 16.1 | As a **user**, I want to download and run Curriculum Curator as a desktop app (macOS, Windows, Linux) without needing Docker or command-line tools. | P3 | **Planned** — LOCAL_MODE + PyInstaller audit done (ADR 0024), no Electron code yet |
+| 16.2 | As a **user**, I want the desktop app to work with a locally installed Ollama for AI, so I don't need cloud API keys. | P3 | **Planned** — Ollama integration works in Docker, needs Electron approach |
+| 16.3 | As a **user**, I want PDF/PPTX export in the desktop app, even if I need to install Quarto or Pandoc separately and point the app to it. | P3 | **Planned** — open question: bundle vs external install |
+| 16.4 | As a **user**, I want the desktop app to auto-update so I don't have to re-download each release. | P3 | **Planned** |
+
+## 17. Flexibility & Workflow Freedom
+
+| # | Story | Phase | Status |
+|---|-------|-------|--------|
+| 17.1 | As a **Creator**, I want to work on my unit in any order — I shouldn't be forced to define ULOs before creating materials, or complete all weeks before exporting. | P1 | **Done** — no enforced sequence |
+| 17.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P2 | **Planned** — currently materials require a unit_id |
+| 17.3 | As a **Creator**, I want quality to improve progressively — the system should work with minimal input but produce better results as I add more detail (ULOs, descriptions, pedagogy). | P2 | **Planned** — ties to "fill the gaps" (1.7) |
 
 ---
 
@@ -204,13 +213,13 @@
 |--------|-------|
 | **Done** | ~55 |
 | **Partial** | ~18 |
-| **Planned** | ~18 |
+| **Planned** | ~22 |
 
 | Phase | Description | Stories |
 |-------|-------------|---------|
 | **P1** | Manual editing, core CRUD, auth, analytics | ~50 (mostly Done) |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX | ~20 (mostly Partial/Planned) |
-| **P3** | Advanced import/export, web search, image upload, IMSCC import | ~8 (mostly Planned) |
+| **P3** | Advanced import/export, web search, image upload, IMSCC import, desktop app | ~12 (mostly Planned) |
 | **P4** | AI image generation, stock photos, accessibility validation | ~3 (all Planned) |
 
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-21*

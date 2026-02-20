@@ -170,7 +170,40 @@ Do these in order — each builds on the previous:
 | **AI-enhanced import** | 6.4 | After import, offer "Enhance with AI" that improves imported content |
 | **Unit duplication** | 1.5 | Deep-copy a unit for a new semester |
 
-**Exit criteria:** Full round-trip — export unit to Canvas, make changes in Canvas, re-import .imscc, continue editing in Curriculum Curator.
+### 3B. Desktop App — Electron Wrapper (16.1–16.4)
+
+**Goal:** Downloadable app for testers and non-Docker users.
+
+**What already exists:**
+- `LOCAL_MODE` — auto-login, no JWT, privacy-first (working)
+- PyInstaller compatibility audit — ADR 0024, all dependency blockers identified
+- Ollama sidecar architecture — ADR 0025
+
+**What needs building:**
+- `electron/main.ts` — spawn PyInstaller-bundled backend, open BrowserWindow
+- Electron-builder config for macOS/Windows/Linux
+- GitHub Actions for cross-platform builds
+- Auto-update via electron-updater
+
+**Open questions (resolve during P3, not before):**
+
+| Question | Options | Notes |
+|----------|---------|-------|
+| **PDF/PPTX export** | (a) Bundle Quarto — large, complex | Quarto bundles Pandoc + Typst/LaTeX. ~500MB+. Probably too heavy. |
+| | (b) Bundle Pandoc only — lighter, but PDF needs LaTeX or Typst engine | Pandoc alone can do DOCX/PPTX/HTML. PDF needs a LaTeX install or Typst. Still complex. |
+| | (c) Require user to install Quarto/Pandoc, app points to executable | Simplest. Settings page: "Path to Quarto: [Browse...]". Config already supports `quarto_path`. |
+| | (d) Use a pure-JS/Python PDF library (WeasyPrint, pdfkit) for basic PDF | Avoids external deps entirely. Less formatting control. Good enough for most users? |
+| **Ollama** | (a) App triggers Ollama install on first run | Best UX but platform-specific installer logic |
+| | (b) User installs Ollama separately, app detects it | Simpler. Ollama has good installers. App checks `localhost:11434` on startup. |
+| | (c) Cloud API keys only in Electron | Breaks the "local-first" promise but sidesteps the problem |
+| **Backend bundling** | (a) PyInstaller single-file executable | ADR 0024 audit done. First real build will surface issues. |
+| | (b) Embedded Python (e.g. python-build-standalone) | More predictable than PyInstaller but less tested for this codebase |
+
+**Recommendation:** Option (c)/(b)/(a) respectively — require external Quarto install, detect Ollama, use PyInstaller. Accept that the desktop app has some "install these tools" friction in exchange for shipping sooner. The Docker version remains the zero-friction option.
+
+**Effort:** 1–2 weeks for basic Electron wrapper, longer for polish (auto-update, cross-platform testing, installer UX).
+
+**Exit criteria:** Download `.dmg` or `.exe`, launch app, create a unit, generate AI content (with API key or local Ollama), export to IMSCC. PDF export works if user has Quarto installed.
 
 ---
 
@@ -209,5 +242,8 @@ These are explicitly out of scope to keep focus:
 | No forced workflow | Educators have different preferences. The system should work whether they start with ULOs, with a title, with a PDF import, or with just one material. |
 | Web search as Phase 3 | High complexity (needs SearXNG or similar), moderate value. Core editing + AI assist is more important first. |
 | Per-field AI assist is last in P2 | Touches many UI components. Get the sidebar context-aware first (one place), then spread to individual fields. |
+| Electron after P2, not before | Product needs to be compelling before distributing. Docker works for solo testing. Electron is for recruiting testers who won't use Docker. |
+| Quarto = external install for Electron | Bundling Quarto (~500MB+) is impractical. User installs Quarto separately, app config points to executable. Docker version bundles it. |
+| Ollama = detect, don't bundle | Ollama has good native installers. App checks `localhost:11434` on startup and guides user to install if missing. Simpler than bundling. |
 
-*Last updated: 2026-02-20*
+*Last updated: 2026-02-21*
