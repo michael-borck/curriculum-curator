@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     strategy:
@@ -69,7 +73,6 @@ jobs:
             run_server.py
 
       - name: Test backend executable
-        shell: bash
         run: |
           cd backend
           ./dist/${{ matrix.pyinstaller_name }} --port 8199 &
@@ -86,13 +89,11 @@ jobs:
           wait $BACKEND_PID 2>/dev/null || true
 
       - name: Copy backend binary to desktop
-        shell: bash
         run: |
           mkdir -p desktop/backend-dist
           cp backend/dist/${{ matrix.pyinstaller_name }} desktop/backend-dist/
 
       - name: Download Pandoc
-        shell: bash
         run: |
           mkdir -p desktop/vendor/pandoc
           PANDOC_VERSION="3.6.4"
@@ -115,7 +116,6 @@ jobs:
           esac
 
       - name: Download Typst
-        shell: bash
         run: |
           mkdir -p desktop/vendor/typst
           TYPST_VERSION="v0.13.1"
