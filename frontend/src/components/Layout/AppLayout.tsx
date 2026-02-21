@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   GraduationCap,
@@ -17,6 +17,7 @@ import {
   Home,
   Sparkles,
   Upload,
+  Star,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -25,6 +26,9 @@ import {
 } from '../../stores/teachingStyleStore';
 import { useUnitsStore } from '../../stores/unitsStore';
 import { useAILevel } from '../../hooks/useAILevel';
+import { analyticsApi } from '../../services/unitStructureApi';
+import StarRating from '../shared/StarRating';
+import type { WeekQualityScore } from '../../types/unitStructure';
 import type { PedagogyType } from '../../types';
 
 interface AppLayoutProps {
@@ -60,12 +64,48 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
   // Use shared units store
   const { units, loading, fetchUnits } = useUnitsStore();
 
+  // Quality ratings state
+  const [unitStars, setUnitStars] = useState<Record<string, number>>({});
+  const [weeklyStars, setWeeklyStars] = useState<
+    Record<string, WeekQualityScore[]>
+  >({});
+
   // Get current unit ID from URL
   const currentUnitId = location.pathname.match(/\/units\/([^/]+)/)?.[1];
 
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  // Fetch batch quality scores when units load
+  const fetchBatchScores = useCallback(async () => {
+    if (units.length === 0) return;
+    try {
+      const ids = units.map(u => u.id);
+      const data = await analyticsApi.getBatchQualityScores(ids);
+      setUnitStars(data.scores);
+    } catch {
+      // Non-critical, silently fail
+    }
+  }, [units]);
+
+  useEffect(() => {
+    fetchBatchScores();
+  }, [fetchBatchScores]);
+
+  // Lazy-load weekly quality when a unit is expanded
+  const loadWeeklyQuality = useCallback(
+    async (unitId: string, weeks: number) => {
+      if (weeklyStars[unitId]) return;
+      try {
+        const data = await analyticsApi.getWeeklyQuality(unitId, weeks);
+        setWeeklyStars(prev => ({ ...prev, [unitId]: data }));
+      } catch {
+        // Non-critical
+      }
+    },
+    [weeklyStars]
+  );
 
   // Auto-expand current unit
   useEffect(() => {
@@ -81,6 +121,11 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
         next.delete(unitId);
       } else {
         next.add(unitId);
+        // Lazy-load weekly quality
+        const unit = units.find(u => u.id === unitId);
+        if (unit) {
+          loadWeeklyQuality(unitId, unit.durationWeeks || 12);
+        }
       }
       return next;
     });
@@ -215,6 +260,16 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                     >
                       {unit.code}
                     </span>
+                    {unitStars[unit.id] != null && unitStars[unit.id] > 0 && (
+                      <StarRating
+                        rating={unitStars[unit.id]}
+                        size='sm'
+                        onClick={() => {
+                          navigate(`/units/${unit.id}?tab=quality`);
+                          setMobileSidebarOpen(false);
+                        }}
+                      />
+                    )}
                   </div>
 
                   {/* Unit Children (Weeks) */}
@@ -269,26 +324,44 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
 
                       {/* Weeks */}
                       <div className='mt-1 pt-1 border-t border-gray-800'>
-                        {generateWeeks(unit.durationWeeks || 12).map(week => (
-                          <button
-                            key={week.weekNumber}
-                            onClick={() => {
-                              navigate(
-                                `/units/${unit.id}?tab=structure&week=${week.weekNumber}`
-                              );
-                              setMobileSidebarOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-2 pl-6 pr-4 py-1 text-xs transition ${
-                              location.search.includes(
-                                `week=${week.weekNumber}`
-                              )
-                                ? 'text-purple-400'
-                                : 'text-gray-500 hover:text-gray-300'
-                            }`}
-                          >
-                            <span>{week.label}</span>
-                          </button>
-                        ))}
+                        {generateWeeks(unit.durationWeeks || 12).map(week => {
+                          const weekQuality = weeklyStars[unit.id]?.find(
+                            w => w.weekNumber === week.weekNumber
+                          );
+                          return (
+                            <button
+                              key={week.weekNumber}
+                              onClick={() => {
+                                navigate(
+                                  `/units/${unit.id}?tab=structure&week=${week.weekNumber}`
+                                );
+                                setMobileSidebarOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-2 pl-6 pr-4 py-1 text-xs transition ${
+                                location.search.includes(
+                                  `week=${week.weekNumber}`
+                                )
+                                  ? 'text-purple-400'
+                                  : 'text-gray-500 hover:text-gray-300'
+                              }`}
+                            >
+                              <span className='flex-1'>{week.label}</span>
+                              {weekQuality &&
+                                weekQuality.hasContent &&
+                                weekQuality.starRating > 0 && (
+                                  <Star
+                                    className={`w-3 h-3 ${
+                                      weekQuality.starRating >= 3
+                                        ? 'text-amber-400 fill-amber-400'
+                                        : weekQuality.starRating >= 1.5
+                                          ? 'text-amber-400'
+                                          : 'text-gray-500'
+                                    }`}
+                                  />
+                                )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

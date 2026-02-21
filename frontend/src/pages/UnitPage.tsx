@@ -13,6 +13,7 @@ import {
   Download,
   Brain,
   ChevronDown,
+  Star,
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
 import api from '../services/api';
@@ -28,6 +29,7 @@ import AoLMappingPanel from '../components/UnitStructure/AoLMappingPanel';
 import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
+import { QualityDashboard } from '../components/UnitStructure/QualityDashboard';
 import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
@@ -37,7 +39,12 @@ import { useUnitDesign } from '../hooks/useUnitDesign';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
 
-type TabType = 'structure' | 'outcomes' | 'assessments' | 'analytics';
+type TabType =
+  | 'structure'
+  | 'outcomes'
+  | 'assessments'
+  | 'analytics'
+  | 'quality';
 
 const UnitPage = () => {
   const { unitId } = useParams<{ unitId: string }>();
@@ -378,6 +385,11 @@ const UnitPage = () => {
       label: 'Analytics',
       icon: <BarChart3 className='w-4 h-4' />,
     },
+    {
+      id: 'quality' as TabType,
+      label: 'Quality',
+      icon: <Star className='w-4 h-4' />,
+    },
   ];
 
   if (loading) {
@@ -681,6 +693,10 @@ const UnitPage = () => {
               unitName={unit.title}
               durationWeeks={durationWeeks}
             />
+          )}
+
+          {activeTab === 'quality' && (
+            <QualityDashboard unitId={unitId!} durationWeeks={durationWeeks} />
           )}
         </div>
 

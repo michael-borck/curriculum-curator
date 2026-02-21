@@ -34,6 +34,8 @@ import {
   AlignmentReport,
   WeeklyWorkload,
   QualityScore,
+  WeekQualityScore,
+  BatchQualityScores,
 
   // Accreditation
   GraduateCapabilityMapping,
@@ -401,8 +403,33 @@ export const analyticsApi = {
     return response.data;
   },
 
-  getQualityScore: async (unitId: string): Promise<QualityScore> => {
-    const response = await api.get(`/analytics/units/${unitId}/quality-score`);
+  getQualityScore: async (
+    unitId: string,
+    totalWeeks = 12
+  ): Promise<QualityScore> => {
+    const response = await api.get(`/analytics/units/${unitId}/quality-score`, {
+      params: { total_weeks: totalWeeks },
+    });
+    return response.data;
+  },
+
+  getWeeklyQuality: async (
+    unitId: string,
+    totalWeeks = 12
+  ): Promise<WeekQualityScore[]> => {
+    const response = await api.get(
+      `/analytics/units/${unitId}/weekly-quality`,
+      { params: { total_weeks: totalWeeks } }
+    );
+    return response.data;
+  },
+
+  getBatchQualityScores: async (
+    unitIds: string[]
+  ): Promise<BatchQualityScores> => {
+    const response = await api.post(`/analytics/units/batch-quality-scores`, {
+      unit_ids: unitIds,
+    });
     return response.data;
   },
 

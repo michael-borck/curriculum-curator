@@ -300,13 +300,32 @@ export interface WeeklyWorkload {
 export interface QualityScore {
   unitId: string;
   overallScore: number;
+  starRating: number;
+  ratingMethod: string;
   subScores: {
-    alignment: number;
-    completion: number;
-    assessmentWeights: number;
+    completeness: number;
+    contentQuality: number;
+    uloAlignment: number;
+    workloadBalance: number;
+    materialDiversity: number;
+    assessmentDistribution: number;
   };
   grade: string;
   calculatedAt: string;
+}
+
+export interface WeekQualityScore {
+  weekNumber: number;
+  starRating: number;
+  hasContent: boolean;
+  materialCount: number;
+  typeDiversityScore: number;
+  avgQualityScore: number;
+  totalDurationMinutes: number;
+}
+
+export interface BatchQualityScores {
+  scores: Record<string, number>;
 }
 
 // ============= Filters =============

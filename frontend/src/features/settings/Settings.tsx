@@ -11,6 +11,7 @@ import {
   Sparkles,
   Plug,
   Loader2,
+  Star,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -19,6 +20,7 @@ import { getPlugins, updatePluginConfig } from '../../services/api';
 import type { PluginInfo } from '../../services/api';
 import LLMSettings from './LLMSettings';
 import TeachingStyleSettings from './TeachingStyleSettings';
+import QualityRatingSettings from './QualityRatingSettings';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -152,6 +154,7 @@ const Settings = () => {
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
+    { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
@@ -951,6 +954,8 @@ const Settings = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'quality-rating' && <QualityRatingSettings />}
 
           {activeTab === 'plugins' && (
             <PluginsTab

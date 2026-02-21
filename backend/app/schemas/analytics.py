@@ -72,9 +72,35 @@ class QualityScore(CamelModel):
 
     unit_id: str
     overall_score: float = Field(ge=0, le=100)
+    star_rating: float = Field(ge=0, le=5)
+    rating_method: str = "weighted_average"
     sub_scores: dict[str, float]
     grade: str
     calculated_at: datetime
+
+
+class WeekQualityScore(CamelModel):
+    """Per-week quality score"""
+
+    week_number: int
+    star_rating: float = Field(ge=0, le=5)
+    has_content: bool
+    material_count: int
+    type_diversity_score: float
+    avg_quality_score: float
+    total_duration_minutes: int
+
+
+class BatchQualityRequest(CamelModel):
+    """Request for batch quality scores"""
+
+    unit_ids: list[str]
+
+
+class BatchQualityResponse(CamelModel):
+    """Response for batch quality scores"""
+
+    scores: dict[str, float]
 
 
 class ValidationResult(CamelModel):

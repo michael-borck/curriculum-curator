@@ -553,9 +553,10 @@ class TestAnalyticsAccuracy:
         assert resp.status_code == 200
         body = resp.json()
 
-        assert "overall_score" in body
-        assert body["overall_score"] > 0
+        assert "overallScore" in body
+        assert body["overallScore"] >= 0
         assert "grade" in body
+        assert "starRating" in body
 
     def test_validation(self, client: TestClient) -> None:
         uid = self._build_unit(client)

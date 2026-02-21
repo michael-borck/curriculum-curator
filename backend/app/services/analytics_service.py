@@ -3,6 +3,8 @@ Service for analytics and reporting
 """
 
 import logging
+import math
+from collections import Counter
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -18,6 +20,16 @@ from app.models.learning_outcome import (
 from app.models.weekly_material import MaterialStatus, WeeklyMaterial
 
 logger = logging.getLogger(__name__)
+
+# Default weights for quality dimensions
+DEFAULT_QUALITY_WEIGHTS: dict[str, float] = {
+    "completeness": 0.20,
+    "contentQuality": 0.15,
+    "uloAlignment": 0.25,
+    "workloadBalance": 0.10,
+    "materialDiversity": 0.10,
+    "assessmentDistribution": 0.20,
+}
 
 
 class AnalyticsService:
@@ -409,8 +421,9 @@ class AnalyticsService:
         self,
         db: Session,
         unit_id: UUID,
+        source: str = "rules",
     ) -> dict[str, Any]:
-        """Get AI-generated recommendations for unit improvement"""
+        """Get recommendations for unit improvement"""
         # Gather data for analysis
         overview = await self.get_unit_overview(db, unit_id)
         alignment = await self.get_alignment_report(db, unit_id)
@@ -464,11 +477,54 @@ class AnalyticsService:
                 }
             )
 
-        return {
+        result: dict[str, Any] = {
             "unit_id": str(unit_id),
             "recommendations": recommendations,
+            "source": source,
             "generated_at": datetime.utcnow(),
         }
+
+        if source == "llm":
+            try:
+                from app.services.llm_service import llm_service  # noqa: PLC0415
+
+                metrics_summary = (
+                    f"Unit has {overview['materials']['total']} materials, "
+                    f"{overview['assessments']['total']} assessments, "
+                    f"{alignment['summary']['total_ulos']} ULOs. "
+                    f"Alignment: {alignment['summary']['alignment_percentage']:.0f}%. "
+                    f"Unaligned ULOs: {alignment['summary']['unaligned']}. "
+                    f"Assessment weight total: {overview['total_assessment_weight']}%. "
+                    f"Weeks with content: {overview['weeks_with_content']}."
+                )
+
+                prompt = (
+                    "You are an expert in university curriculum design. "
+                    "Based on the following unit metrics, provide 3-5 specific, "
+                    "actionable recommendations for improving quality.\n\n"
+                    f"Metrics: {metrics_summary}\n\n"
+                    "Return each recommendation as a single sentence. "
+                    "Focus on pedagogical quality and constructive alignment."
+                )
+
+                llm_response = await llm_service.generate_text(
+                    prompt, stream=False
+                )
+                assert isinstance(llm_response, str)
+                llm_recs = [
+                    line.strip().lstrip("0123456789.-) ")
+                    for line in llm_response.split("\n")
+                    if line.strip() and len(line.strip()) > 10
+                ][:5]
+
+                result["llm_recommendations"] = llm_recs
+                result["model_name"] = "AI-generated"
+            except Exception as e:
+                logger.warning("LLM recommendations failed: %s", e)
+                result["llm_recommendations"] = []
+                result["llm_error"] = str(e)
+
+        return result
 
     async def export_unit_data(
         self,
@@ -512,36 +568,191 @@ class AnalyticsService:
         self,
         db: Session,
         unit_id: UUID,
+        rating_method: str = "weighted_average",
+        rating_config: dict[str, Any] | None = None,
+        total_weeks: int = 12,
     ) -> dict[str, Any]:
-        """Calculate quality score for a unit"""
-        # Get various metrics
-        overview = await self.get_unit_overview(db, unit_id)
-        alignment = await self.get_alignment_report(db, unit_id)
-        completion = await self.get_completion_report(db, unit_id)
-
-        # Calculate sub-scores
-        alignment_score = alignment["summary"]["alignment_percentage"]
-        completion_score = completion["completion_percentage"]
-        weight_score = 100.0 if overview["total_assessment_weight"] == 100.0 else 0.0
-
-        # Calculate overall quality score (weighted average)
-        quality_score = (
-            alignment_score * 0.4  # 40% weight for alignment
-            + completion_score * 0.3  # 30% weight for completion
-            + weight_score * 0.3  # 30% weight for proper assessment weights
+        """Calculate quality score for a unit with 6 dimensions"""
+        materials = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).all()
         )
+        alignment = await self.get_alignment_report(db, unit_id)
+        assessments = (
+            db.query(Assessment)
+            .filter(
+                and_(
+                    Assessment.unit_id == unit_id,
+                    Assessment.status != AssessmentStatus.ARCHIVED,
+                )
+            )
+            .all()
+        )
+
+        # 1. Completeness: weeks with content + materials with descriptions
+        weeks_with_content = len({m.week_number for m in materials})
+        week_pct = (weeks_with_content / total_weeks * 100) if total_weeks > 0 else 0
+        materials_with_desc = sum(1 for m in materials if m.description)
+        desc_pct = (
+            (materials_with_desc / len(materials) * 100) if materials else 0
+        )
+        completeness = week_pct * 0.5 + desc_pct * 0.5
+
+        # 2. Content Quality: avg plugin quality_score across materials
+        scored: list[int] = [
+            int(qs)
+            for m in materials
+            if (qs := getattr(m, "quality_score", None)) is not None
+        ]
+        content_quality = sum(scored) / len(scored) if scored else 50.0
+
+        # 3. ULO Alignment: from alignment report
+        ulo_alignment = alignment["summary"]["alignment_percentage"]
+
+        # 4. Workload Balance: 100 - CV*100
+        weekly_durations: list[float] = []
+        for week in range(1, total_weeks + 1):
+            dur = sum(
+                m.duration_minutes or 0
+                for m in materials
+                if m.week_number == week
+            )
+            weekly_durations.append(float(dur))
+        workload_balance = self._calculate_balance_score(weekly_durations)
+
+        # 5. Material Diversity: Shannon index on type distribution
+        material_diversity = self._calculate_shannon_diversity(
+            [str(m.type) for m in materials]
+        )
+
+        # 6. Assessment Distribution: spread of due_week across semester
+        due_weeks = [a.due_week for a in assessments if a.due_week is not None]
+        assessment_distribution = self._calculate_spread_score(
+            due_weeks, total_weeks
+        )
+
+        sub_scores = {
+            "completeness": round(completeness, 2),
+            "contentQuality": round(content_quality, 2),
+            "uloAlignment": round(ulo_alignment, 2),
+            "workloadBalance": round(workload_balance, 2),
+            "materialDiversity": round(material_diversity, 2),
+            "assessmentDistribution": round(assessment_distribution, 2),
+        }
+
+        # Calculate overall score based on rating method
+        weights = DEFAULT_QUALITY_WEIGHTS
+        overall_score = sum(
+            sub_scores[dim] * weights[dim] for dim in weights
+        )
+        star_rating = self._score_to_stars(overall_score)
+
+        if rating_method == "lowest_dimension":
+            min_score = min(sub_scores.values()) if sub_scores else 0
+            star_rating = self._score_to_stars(min_score)
+            overall_score = min_score
+        elif rating_method == "threshold_based" and rating_config:
+            thresholds = rating_config.get("thresholds", [20, 40, 60, 80, 90])
+            star_rating = 0.0
+            for threshold in sorted(thresholds):
+                if all(v >= threshold for v in sub_scores.values()):
+                    star_rating += 1.0
+                else:
+                    break
 
         return {
             "unit_id": str(unit_id),
-            "overall_score": round(quality_score, 2),
-            "sub_scores": {
-                "alignment": round(alignment_score, 2),
-                "completion": round(completion_score, 2),
-                "assessment_weights": round(weight_score, 2),
-            },
-            "grade": self._score_to_grade(quality_score),
+            "overall_score": round(overall_score, 2),
+            "star_rating": star_rating,
+            "rating_method": rating_method,
+            "sub_scores": sub_scores,
+            "grade": self._score_to_grade(overall_score),
             "calculated_at": datetime.utcnow(),
         }
+
+    async def calculate_weekly_quality(
+        self,
+        db: Session,
+        unit_id: UUID,
+        total_weeks: int = 12,
+    ) -> list[dict[str, Any]]:
+        """Calculate per-week quality scores"""
+        materials = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).all()
+        )
+
+        # Group materials by week
+        by_week: dict[int, list[Any]] = {}
+        for m in materials:
+            by_week.setdefault(m.week_number, []).append(m)
+
+        results = []
+        for week in range(1, total_weeks + 1):
+            week_materials = by_week.get(week, [])
+            has_content = len(week_materials) > 0
+
+            if not has_content:
+                results.append(
+                    {
+                        "week_number": week,
+                        "star_rating": 0.0,
+                        "has_content": False,
+                        "material_count": 0,
+                        "type_diversity_score": 0.0,
+                        "avg_quality_score": 0.0,
+                        "total_duration_minutes": 0,
+                    }
+                )
+                continue
+
+            material_count = len(week_materials)
+            type_diversity = self._calculate_shannon_diversity(
+                [str(m.type) for m in week_materials]
+            )
+            scored: list[int] = [
+                int(qs)
+                for m in week_materials
+                if (qs := getattr(m, "quality_score", None)) is not None
+            ]
+            avg_quality = sum(scored) / len(scored) if scored else 50.0
+            total_duration = sum(m.duration_minutes or 0 for m in week_materials)
+
+            # Simple week score: content exists + count + diversity + quality
+            week_score = min(
+                (min(material_count, 5) / 5 * 30)
+                + (type_diversity * 0.3)
+                + (avg_quality * 0.4),
+                100.0,
+            )
+
+            results.append(
+                {
+                    "week_number": week,
+                    "star_rating": self._score_to_stars(week_score),
+                    "has_content": True,
+                    "material_count": material_count,
+                    "type_diversity_score": round(type_diversity, 2),
+                    "avg_quality_score": round(avg_quality, 2),
+                    "total_duration_minutes": total_duration,
+                }
+            )
+
+        return results
+
+    async def calculate_batch_quality_scores(
+        self,
+        db: Session,
+        unit_ids: list[UUID],
+    ) -> dict[str, float]:
+        """Calculate star ratings for multiple units (lightweight)"""
+        result: dict[str, float] = {}
+        for uid in unit_ids:
+            try:
+                quality = await self.calculate_quality_score(db, uid)
+                result[str(uid)] = quality["star_rating"]
+            except Exception:
+                logger.warning("Failed to calculate quality for unit %s", uid)
+                result[str(uid)] = 0.0
+        return result
 
     async def validate_unit(
         self,
@@ -754,6 +965,81 @@ class AnalyticsService:
         if score >= 60:
             return "D"
         return "F"
+
+    @staticmethod
+    def _score_to_stars(score: float) -> float:
+        """Convert 0-100 score to 0-5 star rating"""
+        thresholds = [
+            (95, 5.0),
+            (90, 4.5),
+            (85, 4.0),
+            (80, 3.5),
+            (70, 3.0),
+            (55, 2.5),
+            (40, 2.0),
+            (20, 1.0),
+        ]
+        for threshold, stars in thresholds:
+            if score >= threshold:
+                return stars
+        return 0.0
+
+    @staticmethod
+    def _calculate_balance_score(values: list[float]) -> float:
+        """Calculate balance score (100 = perfectly even, 0 = maximally uneven)"""
+        non_zero = [v for v in values if v > 0]
+        if len(non_zero) < 2:
+            return 50.0  # Not enough data
+        mean = sum(non_zero) / len(non_zero)
+        if mean == 0:
+            return 50.0
+        std_dev = math.sqrt(sum((x - mean) ** 2 for x in non_zero) / len(non_zero))
+        cv = std_dev / mean
+        return max(0.0, min(100.0, 100.0 - cv * 100.0))
+
+    @staticmethod
+    def _calculate_shannon_diversity(items: list[str]) -> float:
+        """Shannon diversity index normalized to 0-100"""
+        if not items:
+            return 0.0
+        counts = Counter(items)
+        total = len(items)
+        num_types = len(counts)
+        if num_types <= 1:
+            return 0.0 if total <= 1 else 20.0  # Single type gets baseline
+
+        entropy = -sum(
+            (c / total) * math.log(c / total) for c in counts.values() if c > 0
+        )
+        max_entropy = math.log(num_types)
+        evenness = entropy / max_entropy if max_entropy > 0 else 0
+        return round(evenness * 100.0, 2)
+
+    @staticmethod
+    def _calculate_spread_score(
+        values: list[int], total_slots: int
+    ) -> float:
+        """Score how evenly values are spread across slots (0-100)"""
+        if not values:
+            return 0.0
+        if len(values) == 1:
+            return 50.0  # Single item can't be "spread"
+
+        unique = sorted(set(values))
+        if len(unique) == 1:
+            return 0.0  # All in same slot
+
+        # Calculate gaps between consecutive items
+        gaps = [unique[i + 1] - unique[i] for i in range(len(unique) - 1)]
+        ideal_gap = total_slots / (len(unique) + 1)
+        if ideal_gap == 0:
+            return 50.0
+
+        mean_gap = sum(gaps) / len(gaps)
+        deviation = abs(mean_gap - ideal_gap) / ideal_gap
+        # Also reward using more of the semester range
+        range_coverage = (unique[-1] - unique[0]) / total_slots
+        return max(0.0, min(100.0, (1.0 - deviation * 0.5) * 50 + range_coverage * 50))
 
 
 # Create singleton instance

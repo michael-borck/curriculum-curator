@@ -5,17 +5,20 @@ API endpoints for analytics and reporting
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.user import User
 from app.schemas.analytics import (
     AlignmentReport,
+    BatchQualityResponse,
     CompletionReport,
     ProgressReport,
+    QualityScore,
     UnitOverview,
     WeeklyWorkload,
+    WeekQualityScore,
 )
 from app.services.analytics_service import analytics_service
 
@@ -96,13 +99,15 @@ async def get_weekly_workload(
 @router.get("/units/{unit_id}/recommendations")
 async def get_recommendations(
     unit_id: UUID,
+    source: str = Query("rules", pattern="^(rules|llm)$"),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Get AI-generated recommendations for unit improvement"""
+    """Get recommendations for unit improvement"""
     return await analytics_service.get_recommendations(
         db=db,
         unit_id=unit_id,
+        source=source,
     )
 
 
@@ -121,17 +126,57 @@ async def export_unit_data(
     )
 
 
-@router.get("/units/{unit_id}/quality-score")
+@router.get("/units/{unit_id}/quality-score", response_model=QualityScore)
 async def get_quality_score(
     unit_id: UUID,
+    total_weeks: int = Query(12, ge=1, le=52),
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Calculate quality score for a unit"""
+    """Calculate quality score for a unit with 6 dimensions"""
+    prefs = (current_user.teaching_preferences or {}) if current_user.teaching_preferences else {}
+    quality_config = prefs.get("qualityRating", {})
+    rating_method = quality_config.get("method", "weighted_average")
     return await analytics_service.calculate_quality_score(
         db=db,
         unit_id=unit_id,
+        rating_method=rating_method,
+        rating_config=quality_config,
+        total_weeks=total_weeks,
     )
+
+
+@router.get(
+    "/units/{unit_id}/weekly-quality",
+    response_model=list[WeekQualityScore],
+)
+async def get_weekly_quality(
+    unit_id: UUID,
+    total_weeks: int = Query(12, ge=1, le=52),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get per-week quality scores"""
+    return await analytics_service.calculate_weekly_quality(
+        db=db,
+        unit_id=unit_id,
+        total_weeks=total_weeks,
+    )
+
+
+@router.post("/units/batch-quality-scores", response_model=BatchQualityResponse)
+async def get_batch_quality_scores(
+    unit_ids: list[str] = Body(..., embed=True),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get star ratings for multiple units"""
+    uuids = [UUID(uid) for uid in unit_ids]
+    scores = await analytics_service.calculate_batch_quality_scores(
+        db=db,
+        unit_ids=uuids,
+    )
+    return {"scores": scores}
 
 
 @router.get("/units/{unit_id}/validation")

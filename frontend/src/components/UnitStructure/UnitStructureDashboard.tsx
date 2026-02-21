@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BookOpen,
   Target,
@@ -20,12 +20,302 @@ import ULOManager from './ULOManager';
 import { WeeklyMaterialsManager } from './WeeklyMaterialsManager';
 import { AssessmentsManager } from './AssessmentsManager';
 import { analyticsApi } from '../../services/unitStructureApi';
-import {
+import type {
   UnitOverview,
   AlignmentReport,
   QualityScore,
+  WeeklyWorkload,
 } from '../../types/unitStructure';
 import toast from 'react-hot-toast';
+
+// ============= Analytics Reports Sub-component =============
+
+interface ProgressData {
+  materials: {
+    total: number;
+    published: number;
+    draft: number;
+    completionPercentage: number;
+  };
+  assessments: {
+    total: number;
+    published: number;
+    draft: number;
+    completionPercentage: number;
+  };
+  overallCompletion: number;
+}
+
+interface ValidationData {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+interface RecommendationItem {
+  category: string;
+  priority: string;
+  issue: string;
+  suggestion: string;
+}
+
+const AnalyticsReports: React.FC<{ unitId: string }> = ({ unitId }) => {
+  const { canGenerate } = useAILevel();
+  const [progress, setProgress] = useState<ProgressData | null>(null);
+  const [workload, setWorkload] = useState<WeeklyWorkload[]>([]);
+  const [validation, setValidation] = useState<ValidationData | null>(null);
+  const [recommendations, setRecommendations] = useState<RecommendationItem[]>(
+    []
+  );
+  const [loadingSection, setLoadingSection] = useState<string | null>(null);
+
+  const loadProgress = useCallback(async () => {
+    setLoadingSection('progress');
+    try {
+      const data = await analyticsApi.getProgressReport(unitId, true);
+      setProgress(data);
+    } catch {
+      toast.error('Failed to load progress report');
+    } finally {
+      setLoadingSection(null);
+    }
+  }, [unitId]);
+
+  const loadWorkload = useCallback(async () => {
+    setLoadingSection('workload');
+    try {
+      const data = await analyticsApi.getWeeklyWorkload(unitId);
+      setWorkload(data);
+    } catch {
+      toast.error('Failed to load workload analysis');
+    } finally {
+      setLoadingSection(null);
+    }
+  }, [unitId]);
+
+  const loadValidation = useCallback(async () => {
+    setLoadingSection('validation');
+    try {
+      const data = await analyticsApi.validateUnit(unitId, true);
+      setValidation(data);
+    } catch {
+      toast.error('Failed to validate unit');
+    } finally {
+      setLoadingSection(null);
+    }
+  }, [unitId]);
+
+  const loadRecommendations = useCallback(async () => {
+    setLoadingSection('recommendations');
+    try {
+      const data = await analyticsApi.getRecommendations(unitId);
+      setRecommendations(data.recommendations);
+    } catch {
+      toast.error('Failed to load recommendations');
+    } finally {
+      setLoadingSection(null);
+    }
+  }, [unitId]);
+
+  return (
+    <div className='space-y-6'>
+      <div className='bg-white rounded-lg shadow p-6'>
+        <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+          Analytics & Reports
+        </h3>
+
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          {/* Progress Report */}
+          <div className='p-4 border rounded-lg'>
+            <div className='flex items-center justify-between mb-3'>
+              <div>
+                <h4 className='font-medium'>Progress Report</h4>
+                <p className='text-sm text-gray-600'>
+                  Detailed progress metrics
+                </p>
+              </div>
+              <button
+                onClick={loadProgress}
+                disabled={loadingSection === 'progress'}
+                className='px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50'
+              >
+                {loadingSection === 'progress' ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <TrendingUp className='w-4 h-4' />
+                )}
+              </button>
+            </div>
+            {progress && (
+              <div className='space-y-2 text-sm'>
+                <div className='flex justify-between'>
+                  <span className='text-gray-600'>Overall</span>
+                  <span className='font-medium'>
+                    {progress.overallCompletion.toFixed(0)}%
+                  </span>
+                </div>
+                <div className='w-full bg-gray-100 rounded-full h-2'>
+                  <div
+                    className='bg-blue-500 h-2 rounded-full'
+                    style={{
+                      width: `${Math.min(progress.overallCompletion, 100)}%`,
+                    }}
+                  />
+                </div>
+                <div className='flex justify-between text-xs text-gray-500'>
+                  <span>
+                    Materials: {progress.materials.published}/
+                    {progress.materials.total} published
+                  </span>
+                  <span>
+                    Assessments: {progress.assessments.published}/
+                    {progress.assessments.total}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Workload Analysis */}
+          <div className='p-4 border rounded-lg'>
+            <div className='flex items-center justify-between mb-3'>
+              <div>
+                <h4 className='font-medium'>Workload Analysis</h4>
+                <p className='text-sm text-gray-600'>Weekly student workload</p>
+              </div>
+              <button
+                onClick={loadWorkload}
+                disabled={loadingSection === 'workload'}
+                className='px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50'
+              >
+                {loadingSection === 'workload' ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <Clock className='w-4 h-4' />
+                )}
+              </button>
+            </div>
+            {workload.length > 0 && (
+              <div className='space-y-1'>
+                {workload.map(w => (
+                  <div
+                    key={w.weekNumber}
+                    className='flex items-center gap-2 text-xs'
+                  >
+                    <span className='w-12 text-gray-500'>
+                      Wk {w.weekNumber}
+                    </span>
+                    <div className='flex-1 bg-gray-100 rounded-full h-2'>
+                      <div
+                        className='bg-green-500 h-2 rounded-full'
+                        style={{
+                          width: `${Math.min((w.workloadHours / 10) * 100, 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className='w-12 text-right text-gray-600'>
+                      {w.workloadHours.toFixed(1)}h
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recommendations */}
+          {canGenerate && (
+            <div className='p-4 border rounded-lg'>
+              <div className='flex items-center justify-between mb-3'>
+                <div>
+                  <h4 className='font-medium'>Recommendations</h4>
+                  <p className='text-sm text-gray-600'>
+                    Improvement suggestions
+                  </p>
+                </div>
+                <button
+                  onClick={loadRecommendations}
+                  disabled={loadingSection === 'recommendations'}
+                  className='px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50'
+                >
+                  {loadingSection === 'recommendations' ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <AlertCircle className='w-4 h-4' />
+                  )}
+                </button>
+              </div>
+              {recommendations.length > 0 && (
+                <ul className='space-y-2 text-sm'>
+                  {recommendations.map((rec, idx) => (
+                    <li key={idx} className='flex items-start gap-2'>
+                      <span
+                        className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${
+                          rec.priority === 'high'
+                            ? 'bg-red-400'
+                            : 'bg-yellow-400'
+                        }`}
+                      />
+                      <span className='text-gray-700'>{rec.suggestion}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* Validation */}
+          <div className='p-4 border rounded-lg'>
+            <div className='flex items-center justify-between mb-3'>
+              <div>
+                <h4 className='font-medium'>Unit Validation</h4>
+                <p className='text-sm text-gray-600'>Completeness check</p>
+              </div>
+              <button
+                onClick={loadValidation}
+                disabled={loadingSection === 'validation'}
+                className='px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:opacity-50'
+              >
+                {loadingSection === 'validation' ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <CheckCircle className='w-4 h-4' />
+                )}
+              </button>
+            </div>
+            {validation && (
+              <div className='space-y-2 text-sm'>
+                <div
+                  className={`flex items-center gap-2 font-medium ${
+                    validation.isValid ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  {validation.isValid ? (
+                    <CheckCircle className='w-4 h-4' />
+                  ) : (
+                    <AlertCircle className='w-4 h-4' />
+                  )}
+                  {validation.isValid ? 'Valid' : 'Issues Found'}
+                </div>
+                {validation.errors.map((err, idx) => (
+                  <p key={idx} className='text-red-600 text-xs'>
+                    {err}
+                  </p>
+                ))}
+                {validation.warnings.map((warn, idx) => (
+                  <p key={idx} className='text-yellow-600 text-xs'>
+                    {warn}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============= Main Dashboard Component =============
 
 interface UnitStructureDashboardProps {
   unitId: string;
@@ -217,6 +507,18 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
       </div>
 
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+        {activeTab === 'overview' && !overview && (
+          <div className='bg-white rounded-lg shadow p-8 text-center'>
+            <BarChart3 className='w-12 h-12 text-gray-300 mx-auto mb-4' />
+            <h3 className='text-lg font-medium text-gray-900 mb-2'>
+              No Data Yet
+            </h3>
+            <p className='text-gray-500'>
+              Add content to your unit to see analytics overview.
+            </p>
+          </div>
+        )}
+
         {activeTab === 'overview' && overview && (
           <div className='space-y-6'>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
@@ -277,23 +579,24 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                   </div>
                   <div className='grid grid-cols-3 gap-4 pt-2'>
                     <div>
-                      <p className='text-xs text-gray-600'>Alignment</p>
+                      <p className='text-xs text-gray-600'>ULO Alignment</p>
                       <p className='text-lg font-semibold'>
-                        {qualityScore.subScores.alignment.toFixed(0)}%
+                        {qualityScore.subScores.uloAlignment.toFixed(0)}%
                       </p>
                     </div>
                     <div>
-                      <p className='text-xs text-gray-600'>Completion</p>
+                      <p className='text-xs text-gray-600'>Completeness</p>
                       <p className='text-lg font-semibold'>
-                        {qualityScore.subScores.completion.toFixed(0)}%
+                        {qualityScore.subScores.completeness.toFixed(0)}%
                       </p>
                     </div>
                     <div>
-                      <p className='text-xs text-gray-600'>
-                        Assessment Balance
-                      </p>
+                      <p className='text-xs text-gray-600'>Assessment Dist.</p>
                       <p className='text-lg font-semibold'>
-                        {qualityScore.subScores.assessmentWeights.toFixed(0)}%
+                        {qualityScore.subScores.assessmentDistribution.toFixed(
+                          0
+                        )}
+                        %
                       </p>
                     </div>
                   </div>
@@ -439,103 +742,7 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
 
         {activeTab === 'assessments' && <AssessmentsManager unitId={unitId} />}
 
-        {activeTab === 'analytics' && (
-          <div className='space-y-6'>
-            <div className='bg-white rounded-lg shadow p-6'>
-              <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-                Analytics & Reports
-              </h3>
-
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                <button
-                  onClick={async () => {
-                    // TECH-DEBT: API response not used - could show report inline
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    await analyticsApi.getProgressReport(unitId, true);
-                    toast.success('Progress report generated - check console');
-                  }}
-                  className='p-4 border rounded-lg hover:bg-gray-50 text-left'
-                >
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <h4 className='font-medium'>Progress Report</h4>
-                      <p className='text-sm text-gray-600'>
-                        View detailed progress metrics
-                      </p>
-                    </div>
-                    <TrendingUp className='w-5 h-5 text-gray-400' />
-                  </div>
-                </button>
-
-                <button
-                  onClick={async () => {
-                    // TECH-DEBT: API response not used - could show workload chart
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    await analyticsApi.getWeeklyWorkload(unitId);
-                    toast.success(
-                      'Workload analysis generated - check console'
-                    );
-                  }}
-                  className='p-4 border rounded-lg hover:bg-gray-50 text-left'
-                >
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <h4 className='font-medium'>Workload Analysis</h4>
-                      <p className='text-sm text-gray-600'>
-                        Analyze weekly student workload
-                      </p>
-                    </div>
-                    <Clock className='w-5 h-5 text-gray-400' />
-                  </div>
-                </button>
-
-                {canGenerate && (
-                  <button
-                    onClick={async () => {
-                      // TECH-DEBT: API response not used - could show recommendations list
-                      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                      await analyticsApi.getRecommendations(unitId);
-                      toast.success(
-                        'Recommendations generated - check console'
-                      );
-                    }}
-                    className='p-4 border rounded-lg hover:bg-gray-50 text-left'
-                  >
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <h4 className='font-medium'>AI Recommendations</h4>
-                        <p className='text-sm text-gray-600'>
-                          Get improvement suggestions
-                        </p>
-                      </div>
-                      <AlertCircle className='w-5 h-5 text-gray-400' />
-                    </div>
-                  </button>
-                )}
-
-                <button
-                  onClick={async () => {
-                    // TECH-DEBT: API response not used - could show validation results
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    await analyticsApi.validateUnit(unitId, true);
-                    toast.success('Validation complete - check console');
-                  }}
-                  className='p-4 border rounded-lg hover:bg-gray-50 text-left'
-                >
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <h4 className='font-medium'>Unit Validation</h4>
-                      <p className='text-sm text-gray-600'>
-                        Check for completeness and issues
-                      </p>
-                    </div>
-                    <CheckCircle className='w-5 h-5 text-gray-400' />
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === 'analytics' && <AnalyticsReports unitId={unitId} />}
       </div>
 
       {/* Generated Content Review Modal */}

@@ -13,8 +13,13 @@ import {
   FileText,
   Edit,
 } from 'lucide-react';
-import { materialsApi } from '../../services/unitStructureApi';
-import { MaterialResponse, MaterialType } from '../../types/unitStructure';
+import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
+import {
+  MaterialResponse,
+  MaterialType,
+  WeekQualityScore,
+} from '../../types/unitStructure';
+import StarRating from '../shared/StarRating';
 import toast from 'react-hot-toast';
 
 interface WeekAccordionProps {
@@ -65,6 +70,26 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   const navigate = useNavigate();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
   const [allMaterialsLoaded, setAllMaterialsLoaded] = useState(false);
+  const [weeklyQuality, setWeeklyQuality] = useState<
+    Map<number, WeekQualityScore>
+  >(new Map());
+
+  // Load weekly quality scores
+  useEffect(() => {
+    const loadQuality = async () => {
+      try {
+        const data = await analyticsApi.getWeeklyQuality(unitId, durationWeeks);
+        const map = new Map<number, WeekQualityScore>();
+        for (const w of data) {
+          map.set(w.weekNumber, w);
+        }
+        setWeeklyQuality(map);
+      } catch {
+        // Non-critical
+      }
+    };
+    loadQuality();
+  }, [unitId, durationWeeks]);
 
   // Load all materials for the unit on mount to show counts
   useEffect(() => {
@@ -199,6 +224,15 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                 </div>
 
                 <div className='flex items-center gap-4'>
+                  {/* Week quality star */}
+                  {weeklyQuality.get(weekNumber)?.hasContent && (
+                    <StarRating
+                      rating={weeklyQuality.get(weekNumber)?.starRating ?? 0}
+                      size='sm'
+                      tooltipContent={`${weeklyQuality.get(weekNumber)?.materialCount ?? 0} materials, ${formatDuration(weeklyQuality.get(weekNumber)?.totalDurationMinutes ?? 0)}`}
+                    />
+                  )}
+
                   {/* Duration */}
                   {summary.duration > 0 && (
                     <span className='text-sm text-gray-500 flex items-center gap-1'>
