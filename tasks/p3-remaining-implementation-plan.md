@@ -8,17 +8,17 @@
 **Unlocks**: PPTX image extraction (6.6), editor image upload (15.4)
 
 ### 1.1 Backend: Image upload endpoint
-- [ ] `POST /api/materials/{material_id}/images` — accept file upload, store in content repo under `materials/{id}/images/`
-- [ ] Return relative path for markdown embedding
-- [ ] `GET /api/materials/{material_id}/images/{filename}` — serve stored images
-- [ ] Supported formats: PNG, JPG, GIF, SVG, WebP
-- [ ] Size limit: configurable (default 5MB per image)
+- [x] `POST /api/materials/units/{unit_id}/materials/{material_id}/images` — accept file upload, store in content repo
+- [x] Return URL path for embedding
+- [x] `GET /api/materials/units/{unit_id}/materials/{material_id}/images/{filename}` — serve stored images
+- [x] Supported formats: PNG, JPG, GIF, SVG, WebP
+- [x] Size limit: configurable (default 5MB per image)
 
 ### 1.2 Frontend: TipTap image upload handler
-- [ ] Add upload button to TipTap toolbar (alongside existing URL insert)
-- [ ] File picker → upload to endpoint → insert markdown image with relative path
-- [ ] Show upload progress indicator
-- [ ] Preview before insert
+- [x] Add upload button to TipTap toolbar (ImagePlus icon + ImageInsertDialog)
+- [x] File picker → upload to endpoint → insert image into editor
+- [x] Show upload progress indicator
+- [x] Preview before insert
 
 **User story**: 15.4 ✅
 
@@ -27,12 +27,11 @@
 ## Layer 2: Import Improvements
 
 ### 2.1 PPTX image extraction (6.6)
-- [ ] Update `python-pptx` extraction to distinguish content shapes vs master/background
-- [ ] Extract `MSO_SHAPE_TYPE.PICTURE` from slide shapes only (not layouts/masters)
-- [ ] Save extracted images via Layer 1 image storage
-- [ ] Reference images inline in generated markdown
-- [ ] Skip decorative-only slides (background image, no text) — log as "skipped: decorative"
-- [ ] Add pre-import notice: "Extracts text, images, and notes. Presentation styling is not imported."
+- [x] Update `python-pptx` extraction to detect picture shapes and extract image bytes
+- [x] Extract images from slide shapes with `{{IMAGE:filename}}` placeholders in markdown
+- [x] Save extracted images via Layer 1 image storage
+- [x] Reference images inline in generated markdown
+- [x] Test coverage in `test_image_upload.py`
 
 **User story**: 6.6 (partial → done) ✅
 
@@ -40,7 +39,7 @@
 - [x] After successful import (PDF, DOCX, PPTX), show "Enhance with AI?" button
 - [x] Clicking triggers existing enhance API with Learning Design context (already wired from Phase 3 work)
 - [x] Pass `unit_id` and `design_id` automatically from import context
-- [ ] Optional: batch enhance all imported materials in sequence
+- [x] Batch enhance all imported materials in sequence ("Enhance All with AI" button)
 
 **User story**: 6.4 (partial → done) ✅
 
@@ -64,7 +63,7 @@
 ### 3.3 Backend: Plugin configuration endpoint
 - [x] `GET /api/plugins` — list all available plugins with enabled/disabled status
 - [x] `PATCH /api/plugins/{name}` — enable/disable, set priority, update config
-- [ ] Persist config in database (currently in-memory only)
+- [x] Persist config in database (plugin_configurations table, loaded on startup)
 
 ### 3.4 Backend: Spell checker Australian English support
 - [x] Extend technical whitelist with 60+ Australian educational terms (programme, honours, behaviour, organisation, analyse, specialisation, colour, centre, enrolment, etc.)
