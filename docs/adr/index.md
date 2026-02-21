@@ -42,6 +42,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0032](0032-ai-assistance-levels.md) | AI Assistance Levels | Accepted |
 | [0033](0033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
 | [0035](0035-electron-desktop-app.md) | Electron Desktop App with Embedded Backend | Accepted |
+| [0036](0036-learning-design-generation-spec.md) | Learning Design as Canonical Generation Spec | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -65,6 +66,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0022: Content Type System Evolution](0022-content-type-system-evolution.md) - Comprehensive content categorization
 - [ADR-0028: Australian University Terminology](0028-australian-university-terminology.md) - Unit (not Course) as core entity
 - [ADR-0029: Accreditation Framework Mappings](0029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
+- [ADR-0036: Learning Design as Generation Spec](0036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
 
 ### Authentication & Security
 - [ADR-0007: Simple Authentication for Internal Network](0007-simple-authentication-internal-network.md) - Basic auth approach
