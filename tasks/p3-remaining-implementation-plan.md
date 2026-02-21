@@ -37,9 +37,9 @@
 **User story**: 6.6 (partial → done) ✅
 
 ### 2.2 Post-import enhance prompt (6.4)
-- [ ] After successful import (PDF, DOCX, PPTX), show "Enhance with AI?" button
-- [ ] Clicking triggers existing enhance API with Learning Design context (already wired from Phase 3 work)
-- [ ] Pass `unit_id` and `design_id` automatically from import context
+- [x] After successful import (PDF, DOCX, PPTX), show "Enhance with AI?" button
+- [x] Clicking triggers existing enhance API with Learning Design context (already wired from Phase 3 work)
+- [x] Pass `unit_id` and `design_id` automatically from import context
 - [ ] Optional: batch enhance all imported materials in sequence
 
 **User story**: 6.4 (partial → done) ✅
