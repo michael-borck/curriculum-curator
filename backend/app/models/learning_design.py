@@ -1,5 +1,5 @@
 """
-Learning Requirements Document (LRD) model
+Learning Design model
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     from app.models.unit import Unit
 
 
-class LRDStatus(str, Enum):
-    """LRD approval status"""
+class DesignStatus(str, Enum):
+    """Learning design approval status"""
 
     DRAFT = "draft"
     UNDER_REVIEW = "under_review"
@@ -29,10 +29,10 @@ class LRDStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class LRD(Base):
-    """Learning Requirements Document for course planning"""
+class LearningDesign(Base):
+    """Learning Design for course planning"""
 
-    __tablename__ = "lrds"
+    __tablename__ = "learning_designs"
 
     id: Mapped[str] = mapped_column(
         GUID(), primary_key=True, default=uuid.uuid4, index=True
@@ -41,16 +41,16 @@ class LRD(Base):
         GUID(), ForeignKey("units.id"), nullable=False, index=True
     )
 
-    # LRD metadata
+    # Metadata
     version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0")
     status: Mapped[str] = mapped_column(
-        String(20), default=LRDStatus.DRAFT.value, nullable=False
+        String(20), default=DesignStatus.DRAFT.value, nullable=False
     )
 
-    # LRD content (structured JSON)
+    # Content (structured JSON)
     content: Mapped[dict[str, Any]] = mapped_column(
         JSON, nullable=False
-    )  # Complete LRD content
+    )  # Complete learning design content
     approval_history: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, default=None
     )  # Approval tracking
@@ -64,10 +64,10 @@ class LRD(Base):
     )
 
     # Relationships
-    unit: Mapped[Unit] = relationship("Unit", back_populates="lrds")
+    unit: Mapped[Unit] = relationship("Unit", back_populates="designs")
     task_lists: Mapped[list[TaskList]] = relationship(
-        "TaskList", back_populates="lrd", cascade="all, delete-orphan"
+        "TaskList", back_populates="design", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        return f"<LRD(id={self.id}, version='{self.version}', status='{self.status}')>"
+        return f"<LearningDesign(id={self.id}, version='{self.version}', status='{self.status}')>"

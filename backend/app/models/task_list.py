@@ -1,5 +1,5 @@
 """
-Task list model for LRD implementation tracking
+Task list model for learning design implementation tracking
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from app.core.database import Base
 from app.models.common import GUID
 
 if TYPE_CHECKING:
-    from app.models.lrd import LRD
+    from app.models.learning_design import LearningDesign
     from app.models.unit import Unit
 
 
@@ -30,15 +30,15 @@ class TaskStatus(str, Enum):
 
 
 class TaskList(Base):
-    """Task list generated from LRD"""
+    """Task list generated from a learning design"""
 
     __tablename__ = "task_lists"
 
     id: Mapped[str] = mapped_column(
         GUID(), primary_key=True, default=uuid.uuid4, index=True
     )
-    lrd_id: Mapped[str | None] = mapped_column(
-        GUID(), ForeignKey("lrds.id"), index=True, default=None
+    design_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("learning_designs.id"), index=True, default=None
     )
     unit_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("units.id"), nullable=False, index=True
@@ -70,7 +70,7 @@ class TaskList(Base):
 
     # Relationships
     unit: Mapped[Unit] = relationship("Unit", back_populates="task_lists")
-    lrd: Mapped[LRD | None] = relationship("LRD", back_populates="task_lists")
+    design: Mapped[LearningDesign | None] = relationship("LearningDesign", back_populates="task_lists")
 
     def __repr__(self) -> str:
         return f"<TaskList(id={self.id}, status='{self.status}', progress={self.completed_tasks}/{self.total_tasks})>"

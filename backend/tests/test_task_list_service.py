@@ -7,7 +7,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
-from app.models.lrd import LRD
+from app.models.learning_design import LearningDesign
 from app.models.task_list import TaskList
 from app.models.unit import Unit
 from app.services.task_list_service import task_list_service
@@ -16,13 +16,13 @@ from app.services.task_list_service import task_list_service
 def _create_task_list(
     db: Session,
     unit: Unit,
-    lrd: LRD | None = None,
+    design: LearningDesign | None = None,
 ) -> TaskList:
     """Helper to create a TaskList in the test DB."""
     tl = TaskList(
         id=str(uuid.uuid4()),
         unit_id=unit.id,
-        lrd_id=lrd.id if lrd else None,
+        design_id=design.id if design else None,
         tasks={
             "items": [
                 {"index": 0, "title": "Task A", "status": "pending"},
@@ -59,14 +59,14 @@ async def test_get_task_lists_by_unit(test_db: Session, test_unit: Unit):
 
 
 @pytest.mark.asyncio
-async def test_get_task_lists_by_lrd(test_db: Session, test_unit: Unit, test_lrd: LRD):
-    _create_task_list(test_db, test_unit, lrd=test_lrd)
+async def test_get_task_lists_by_design(test_db: Session, test_unit: Unit, test_design: LearningDesign):
+    _create_task_list(test_db, test_unit, design=test_design)
 
     results = await task_list_service.get_task_lists(
-        test_db, lrd_id=str(test_lrd.id)
+        test_db, design_id=str(test_design.id)
     )
     assert len(results) >= 1
-    assert all(str(r.lrd_id) == str(test_lrd.id) for r in results)
+    assert all(str(r.design_id) == str(test_design.id) for r in results)
 
 
 @pytest.mark.asyncio

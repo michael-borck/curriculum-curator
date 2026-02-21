@@ -12,7 +12,7 @@ class TaskListResponse(CamelModel):
     """Full TaskList response schema"""
 
     id: str
-    lrd_id: str | None = None
+    design_id: str | None = None
     unit_id: str
     tasks: dict[str, Any]
     status: str

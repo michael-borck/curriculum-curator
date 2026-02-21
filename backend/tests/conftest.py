@@ -35,8 +35,8 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment, AssessmentType
+from app.models.learning_design import DesignStatus, LearningDesign
 from app.models.learning_outcome import UnitLearningOutcome
-from app.models.lrd import LRD, LRDStatus
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 
@@ -442,13 +442,13 @@ def populated_unit(
 
 
 @pytest.fixture
-def test_lrd(test_db: Session, test_unit: Unit) -> LRD:
-    """Insert a real LRD row into the test database."""
-    lrd = LRD(
+def test_design(test_db: Session, test_unit: Unit) -> LearningDesign:
+    """Insert a real LearningDesign row into the test database."""
+    design = LearningDesign(
         id=str(uuid.uuid4()),
         unit_id=test_unit.id,
         version="1.0",
-        status=LRDStatus.DRAFT.value,
+        status=DesignStatus.DRAFT.value,
         content={
             "topic": "Web Development Fundamentals",
             "description": "An introductory unit on web technologies",
@@ -463,7 +463,7 @@ def test_lrd(test_db: Session, test_unit: Unit) -> LRD:
             ],
         },
     )
-    test_db.add(lrd)
+    test_db.add(design)
     test_db.commit()
-    test_db.refresh(lrd)
-    return lrd
+    test_db.refresh(design)
+    return design

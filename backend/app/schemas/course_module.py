@@ -126,7 +126,7 @@ class CourseClone(CamelModel):
     new_code: str = Field(..., description="Code for the cloned course")
     include_modules: bool = Field(True, description="Clone modules")
     include_materials: bool = Field(False, description="Clone materials")
-    include_lrd: bool = Field(False, description="Clone LRD")
+    include_designs: bool = Field(False, description="Clone learning designs")
     semester: str | None = Field(None, description="Target semester")
 
 

@@ -19,8 +19,8 @@ if TYPE_CHECKING:
     from app.models.chat import ChatSession
     from app.models.chat_session import WorkflowChatSession
     from app.models.content import Content
+    from app.models.learning_design import LearningDesign
     from app.models.learning_outcome import UnitLearningOutcome
-    from app.models.lrd import LRD
     from app.models.material import Material
     from app.models.research_source import ResearchSource
     from app.models.task_list import TaskList
@@ -159,7 +159,7 @@ class Unit(Base):
     assessments: Mapped[list["Assessment"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
-    lrds: Mapped[list["LRD"]] = relationship(
+    designs: Mapped[list["LearningDesign"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
     task_lists: Mapped[list["TaskList"]] = relationship(

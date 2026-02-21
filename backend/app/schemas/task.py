@@ -27,7 +27,7 @@ class TaskListCreate(CamelModel):
     """Create a new task list"""
 
     course_id: UUID
-    lrd_id: UUID | None = None
+    design_id: UUID | None = None
     tasks: list[dict[str, Any]] = Field(default_factory=list)
 
 
@@ -44,7 +44,7 @@ class TaskListResponse(CamelModel):
 
     id: UUID
     course_id: UUID
-    lrd_id: UUID | None
+    design_id: UUID | None
     tasks: list[dict[str, Any]]
     status: str
     total_tasks: int

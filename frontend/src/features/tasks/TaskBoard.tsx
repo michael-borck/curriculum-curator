@@ -16,7 +16,7 @@ interface Task {
 interface TaskList {
   id: string;
   unitId: string;
-  lrdId?: string;
+  designId?: string;
   tasks: Task[];
   status: string;
   totalTasks: number;
@@ -28,10 +28,10 @@ interface TaskList {
 
 interface TaskBoardProps {
   unitId?: string;
-  lrdId?: string;
+  designId?: string;
 }
 
-const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
+const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, designId }) => {
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [selectedList, setSelectedList] = useState<TaskList | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
       setLoading(true);
       const params = new URLSearchParams();
       if (unitId) params.append('unitId', unitId);
-      if (lrdId) params.append('lrdId', lrdId);
+      if (designId) params.append('designId', designId);
 
       const response = await api.get(`/tasks?${params.toString()}`);
       setTaskLists(response.data);
@@ -67,7 +67,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, lrdId }) => {
     } finally {
       setLoading(false);
     }
-  }, [unitId, lrdId, selectedList]);
+  }, [unitId, designId, selectedList]);
 
   useEffect(() => {
     fetchTaskLists();

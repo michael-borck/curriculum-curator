@@ -19,14 +19,14 @@ class TaskListService:
         self,
         db: Session,
         unit_id: str | None = None,
-        lrd_id: str | None = None,
+        design_id: str | None = None,
     ) -> list[TaskList]:
         """Get task lists with optional filtering"""
         query = db.query(TaskList)
         if unit_id:
             query = query.filter(TaskList.unit_id == unit_id)
-        if lrd_id:
-            query = query.filter(TaskList.lrd_id == lrd_id)
+        if design_id:
+            query = query.filter(TaskList.design_id == design_id)
         return query.order_by(TaskList.created_at.desc()).all()
 
     async def get_task_list(

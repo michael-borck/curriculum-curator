@@ -62,7 +62,7 @@ export interface Unit {
   progressPercentage?: number;
   moduleCount?: number;
   materialCount?: number;
-  lrdCount?: number;
+  designCount?: number;
 }
 
 // Content related types

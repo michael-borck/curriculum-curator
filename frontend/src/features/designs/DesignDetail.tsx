@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 
-interface LRDContent {
+interface DesignContent {
   topic?: string;
   duration?: string;
   teachingPhilosophy?: string;
@@ -52,9 +52,9 @@ interface LRDContent {
   technologyRequirements?: string[];
 }
 
-interface LRD {
+interface Design {
   id: string;
-  content?: LRDContent;
+  content?: DesignContent;
   version: string;
   status: string;
   createdAt: string;
@@ -82,11 +82,14 @@ interface TaskList {
   >;
 }
 
-const LRDDetail = () => {
-  const { unitId, lrdId } = useParams<{ unitId: string; lrdId: string }>();
+const DesignDetail = () => {
+  const { unitId, designId } = useParams<{
+    unitId: string;
+    designId: string;
+  }>();
   const navigate = useNavigate();
 
-  const [lrd, setLrd] = useState<LRD | null>(null);
+  const [design, setDesign] = useState<Design | null>(null);
   const [unit, setUnit] = useState<Unit | null>(null);
   const [taskList, setTaskList] = useState<TaskList | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,18 +99,18 @@ const LRDDetail = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [lrdRes, courseRes] = await Promise.all([
-          api.get(`/lrds/${lrdId}`),
+        const [designRes, courseRes] = await Promise.all([
+          api.get(`/designs/${designId}`),
           api.get(`/units/${unitId}`),
         ]);
 
-        setLrd(lrdRes.data);
+        setDesign(designRes.data);
         setUnit(courseRes.data);
 
         // Fetch associated task list if exists
-        if (lrdRes.data.taskLists && lrdRes.data.taskLists.length > 0) {
+        if (designRes.data.taskLists && designRes.data.taskLists.length > 0) {
           const taskRes = await api.get(
-            `/task-lists/${lrdRes.data.taskLists[0].id}`
+            `/task-lists/${designRes.data.taskLists[0].id}`
           );
           setTaskList(taskRes.data);
         }
@@ -119,7 +122,7 @@ const LRDDetail = () => {
     };
 
     fetchData();
-  }, [unitId, lrdId]);
+  }, [unitId, designId]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -145,7 +148,7 @@ const LRDDetail = () => {
 
   const handleExport = async () => {
     try {
-      const response = await api.get(`/lrds/${lrdId}/export`, {
+      const response = await api.get(`/designs/${designId}/export`, {
         responseType: 'blob',
       });
 
@@ -154,13 +157,13 @@ const LRDDetail = () => {
       link.href = url;
       link.setAttribute(
         'download',
-        `LRD_${lrd?.content?.topic || 'document'}.pdf`
+        `LearningDesign_${design?.content?.topic || 'document'}.pdf`
       );
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error('Error exporting LRD:', error);
+      console.error('Error exporting learning design:', error);
     }
   };
 
@@ -176,11 +179,11 @@ const LRDDetail = () => {
     );
   }
 
-  if (!lrd) {
+  if (!design) {
     return (
       <div className='max-w-7xl mx-auto p-6'>
         <div className='bg-red-50 border border-red-200 rounded-lg p-4'>
-          <p className='text-red-800'>LRD not found</p>
+          <p className='text-red-800'>Learning design not found</p>
         </div>
       </div>
     );
@@ -191,26 +194,26 @@ const LRDDetail = () => {
       {/* Header */}
       <div className='mb-6'>
         <button
-          onClick={() => navigate(`/units/${unitId}/lrds`)}
+          onClick={() => navigate(`/units/${unitId}/designs`)}
           className='flex items-center text-gray-600 hover:text-gray-900 mb-4'
         >
           <ArrowLeft className='h-4 w-4 mr-1' />
-          Back to LRDs
+          Back to Learning Designs
         </button>
 
         <div className='flex justify-between items-start'>
           <div>
             <h1 className='text-3xl font-bold text-gray-900 mb-2'>
-              {lrd.content?.topic || 'Untitled LRD'}
+              {design.content?.topic || 'Untitled Design'}
             </h1>
             <div className='flex items-center space-x-4 text-sm text-gray-600'>
-              <span>Version {lrd.version}</span>
+              <span>Version {design.version}</span>
               <span>•</span>
               <span>
-                Created {new Date(lrd.createdAt).toLocaleDateString()}
+                Created {new Date(design.createdAt).toLocaleDateString()}
               </span>
               <span>•</span>
-              {getStatusBadge(lrd.status)}
+              {getStatusBadge(design.status)}
             </div>
           </div>
 
@@ -229,9 +232,11 @@ const LRDDetail = () => {
               <Download className='h-4 w-4 mr-2' />
               Export
             </button>
-            {lrd.status === 'DRAFT' && (
+            {design.status === 'DRAFT' && (
               <button
-                onClick={() => navigate(`/units/${unitId}/lrds/${lrdId}/edit`)}
+                onClick={() =>
+                  navigate(`/units/${unitId}/designs/${designId}/edit`)
+                }
                 className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center'
               >
                 <Edit className='h-4 w-4 mr-2' />
@@ -317,7 +322,7 @@ const LRDDetail = () => {
                     Duration
                   </label>
                   <p className='text-gray-900'>
-                    {lrd.content?.duration || 'Not specified'}
+                    {design.content?.duration || 'Not specified'}
                   </p>
                 </div>
 
@@ -326,7 +331,7 @@ const LRDDetail = () => {
                     Teaching Philosophy
                   </label>
                   <p className='text-gray-900'>
-                    {lrd.content?.teachingPhilosophy?.replace('_', ' ') ||
+                    {design.content?.teachingPhilosophy?.replace('_', ' ') ||
                       unit?.teachingPhilosophy?.replace('_', ' ') ||
                       'Not specified'}
                   </p>
@@ -341,9 +346,10 @@ const LRDDetail = () => {
                 Learning Objectives
               </h2>
 
-              {lrd.content?.objectives && lrd.content.objectives.length > 0 ? (
+              {design.content?.objectives &&
+              design.content.objectives.length > 0 ? (
                 <ul className='list-disc list-inside space-y-2'>
-                  {lrd.content.objectives.map(
+                  {design.content.objectives.map(
                     (objective: string, index: number) => (
                       <li key={index} className='text-gray-700'>
                         {objective}
@@ -363,10 +369,10 @@ const LRDDetail = () => {
                 Learning Outcomes
               </h2>
 
-              {lrd.content?.learningOutcomes &&
-              lrd.content.learningOutcomes.length > 0 ? (
+              {design.content?.learningOutcomes &&
+              design.content.learningOutcomes.length > 0 ? (
                 <ul className='list-disc list-inside space-y-2'>
-                  {lrd.content.learningOutcomes.map(
+                  {design.content.learningOutcomes.map(
                     (outcome: string, index: number) => (
                       <li key={index} className='text-gray-700'>
                         {outcome}
@@ -380,8 +386,8 @@ const LRDDetail = () => {
             </div>
 
             {/* Prerequisites */}
-            {lrd.content?.prerequisites &&
-              lrd.content.prerequisites.length > 0 && (
+            {design.content?.prerequisites &&
+              design.content.prerequisites.length > 0 && (
                 <div className='bg-white rounded-lg shadow-md p-6'>
                   <h2 className='text-xl font-semibold mb-4 flex items-center'>
                     <AlertCircle className='h-5 w-5 mr-2 text-orange-600' />
@@ -389,7 +395,7 @@ const LRDDetail = () => {
                   </h2>
 
                   <ul className='list-disc list-inside space-y-2'>
-                    {lrd.content.prerequisites.map(
+                    {design.content.prerequisites.map(
                       (prereq: string, index: number) => (
                         <li key={index} className='text-gray-700'>
                           {prereq}
@@ -411,21 +417,21 @@ const LRDDetail = () => {
                   Pre-Class Activities
                 </h3>
 
-                {lrd.content?.structure?.preClass?.duration && (
+                {design.content?.structure?.preClass?.duration && (
                   <p className='text-sm text-gray-600 mb-3'>
                     <Clock className='inline h-4 w-4 mr-1' />
-                    Duration: {lrd.content.structure.preClass.duration}
+                    Duration: {design.content.structure.preClass.duration}
                   </p>
                 )}
 
-                {lrd.content?.structure?.preClass?.activities &&
-                  lrd.content.structure.preClass.activities.length > 0 && (
+                {design.content?.structure?.preClass?.activities &&
+                  design.content.structure.preClass.activities.length > 0 && (
                     <div className='mb-4'>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Activities:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.preClass.activities.map(
+                        {design.content.structure.preClass.activities.map(
                           (activity, index) => (
                             <li key={index} className='text-gray-600'>
                               {activity}
@@ -436,14 +442,14 @@ const LRDDetail = () => {
                     </div>
                   )}
 
-                {lrd.content?.structure?.preClass?.materials &&
-                  lrd.content.structure.preClass.materials.length > 0 && (
+                {design.content?.structure?.preClass?.materials &&
+                  design.content.structure.preClass.materials.length > 0 && (
                     <div>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Materials:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.preClass.materials.map(
+                        {design.content.structure.preClass.materials.map(
                           (material, index) => (
                             <li key={index} className='text-gray-600'>
                               {material}
@@ -463,21 +469,21 @@ const LRDDetail = () => {
                   In-Class Activities
                 </h3>
 
-                {lrd.content?.structure?.inClass?.duration && (
+                {design.content?.structure?.inClass?.duration && (
                   <p className='text-sm text-gray-600 mb-3'>
                     <Clock className='inline h-4 w-4 mr-1' />
-                    Duration: {lrd.content.structure.inClass.duration}
+                    Duration: {design.content.structure.inClass.duration}
                   </p>
                 )}
 
-                {lrd.content?.structure?.inClass?.activities &&
-                  lrd.content.structure.inClass.activities.length > 0 && (
+                {design.content?.structure?.inClass?.activities &&
+                  design.content.structure.inClass.activities.length > 0 && (
                     <div className='mb-4'>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Activities:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.inClass.activities.map(
+                        {design.content.structure.inClass.activities.map(
                           (activity, index) => (
                             <li key={index} className='text-gray-600'>
                               {activity}
@@ -488,14 +494,14 @@ const LRDDetail = () => {
                     </div>
                   )}
 
-                {lrd.content?.structure?.inClass?.materials &&
-                  lrd.content.structure.inClass.materials.length > 0 && (
+                {design.content?.structure?.inClass?.materials &&
+                  design.content.structure.inClass.materials.length > 0 && (
                     <div>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Materials:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.inClass.materials.map(
+                        {design.content.structure.inClass.materials.map(
                           (material, index) => (
                             <li key={index} className='text-gray-600'>
                               {material}
@@ -515,21 +521,21 @@ const LRDDetail = () => {
                   Post-Class Activities
                 </h3>
 
-                {lrd.content?.structure?.postClass?.duration && (
+                {design.content?.structure?.postClass?.duration && (
                   <p className='text-sm text-gray-600 mb-3'>
                     <Clock className='inline h-4 w-4 mr-1' />
-                    Duration: {lrd.content.structure.postClass.duration}
+                    Duration: {design.content.structure.postClass.duration}
                   </p>
                 )}
 
-                {lrd.content?.structure?.postClass?.activities &&
-                  lrd.content.structure.postClass.activities.length > 0 && (
+                {design.content?.structure?.postClass?.activities &&
+                  design.content.structure.postClass.activities.length > 0 && (
                     <div className='mb-4'>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Activities:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.postClass.activities.map(
+                        {design.content.structure.postClass.activities.map(
                           (activity, index) => (
                             <li key={index} className='text-gray-600'>
                               {activity}
@@ -540,14 +546,14 @@ const LRDDetail = () => {
                     </div>
                   )}
 
-                {lrd.content?.structure?.postClass?.materials &&
-                  lrd.content.structure.postClass.materials.length > 0 && (
+                {design.content?.structure?.postClass?.materials &&
+                  design.content.structure.postClass.materials.length > 0 && (
                     <div>
                       <h4 className='font-medium text-gray-700 mb-2'>
                         Materials:
                       </h4>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.structure.postClass.materials.map(
+                        {design.content.structure.postClass.materials.map(
                           (material, index) => (
                             <li key={index} className='text-gray-600'>
                               {material}
@@ -566,49 +572,49 @@ const LRDDetail = () => {
           <div className='bg-white rounded-lg shadow-md p-6'>
             <h2 className='text-xl font-semibold mb-4'>Assessment Details</h2>
 
-            {lrd.content?.assessment ? (
+            {design.content?.assessment ? (
               <div className='space-y-4'>
-                {lrd.content.assessment.type && (
+                {design.content.assessment.type && (
                   <div>
                     <label className='block text-sm font-medium text-gray-700 mb-1'>
                       Assessment Type
                     </label>
                     <p className='text-gray-900'>
-                      {lrd.content.assessment.type}
+                      {design.content.assessment.type}
                     </p>
                   </div>
                 )}
 
-                {lrd.content.assessment.weight && (
+                {design.content.assessment.weight && (
                   <div>
                     <label className='block text-sm font-medium text-gray-700 mb-1'>
                       Weight
                     </label>
                     <p className='text-gray-900'>
-                      {lrd.content.assessment.weight}
+                      {design.content.assessment.weight}
                     </p>
                   </div>
                 )}
 
-                {lrd.content.assessment.description && (
+                {design.content.assessment.description && (
                   <div>
                     <label className='block text-sm font-medium text-gray-700 mb-1'>
                       Description
                     </label>
                     <p className='text-gray-900'>
-                      {lrd.content.assessment.description}
+                      {design.content.assessment.description}
                     </p>
                   </div>
                 )}
 
-                {lrd.content.assessment.criteria &&
-                  lrd.content.assessment.criteria.length > 0 && (
+                {design.content.assessment.criteria &&
+                  design.content.assessment.criteria.length > 0 && (
                     <div>
                       <label className='block text-sm font-medium text-gray-700 mb-1'>
                         Assessment Criteria
                       </label>
                       <ul className='list-disc list-inside space-y-1'>
-                        {lrd.content.assessment.criteria.map(
+                        {design.content.assessment.criteria.map(
                           (criterion, index) => (
                             <li key={index} className='text-gray-700'>
                               {criterion}
@@ -628,14 +634,14 @@ const LRDDetail = () => {
         {activeTab === 'resources' && (
           <div className='space-y-6'>
             {/* Required Resources */}
-            {lrd.content?.resources?.required &&
-              lrd.content.resources.required.length > 0 && (
+            {design.content?.resources?.required &&
+              design.content.resources.required.length > 0 && (
                 <div className='bg-white rounded-lg shadow-md p-6'>
                   <h3 className='text-lg font-semibold mb-3'>
                     Required Resources
                   </h3>
                   <ul className='list-disc list-inside space-y-1'>
-                    {lrd.content.resources.required.map(
+                    {design.content.resources.required.map(
                       (resource: string, index: number) => (
                         <li key={index} className='text-gray-700'>
                           {resource}
@@ -647,14 +653,14 @@ const LRDDetail = () => {
               )}
 
             {/* Recommended Resources */}
-            {lrd.content?.resources?.recommended &&
-              lrd.content.resources.recommended.length > 0 && (
+            {design.content?.resources?.recommended &&
+              design.content.resources.recommended.length > 0 && (
                 <div className='bg-white rounded-lg shadow-md p-6'>
                   <h3 className='text-lg font-semibold mb-3'>
                     Recommended Resources
                   </h3>
                   <ul className='list-disc list-inside space-y-1'>
-                    {lrd.content.resources.recommended.map(
+                    {design.content.resources.recommended.map(
                       (resource, index) => (
                         <li key={index} className='text-gray-700'>
                           {resource}
@@ -666,14 +672,14 @@ const LRDDetail = () => {
               )}
 
             {/* Supplementary Resources */}
-            {lrd.content?.resources?.supplementary &&
-              lrd.content.resources.supplementary.length > 0 && (
+            {design.content?.resources?.supplementary &&
+              design.content.resources.supplementary.length > 0 && (
                 <div className='bg-white rounded-lg shadow-md p-6'>
                   <h3 className='text-lg font-semibold mb-3'>
                     Supplementary Resources
                   </h3>
                   <ul className='list-disc list-inside space-y-1'>
-                    {lrd.content.resources.supplementary.map(
+                    {design.content.resources.supplementary.map(
                       (resource, index) => (
                         <li key={index} className='text-gray-700'>
                           {resource}
@@ -685,14 +691,14 @@ const LRDDetail = () => {
               )}
 
             {/* Technology Requirements */}
-            {lrd.content?.technologyRequirements &&
-              lrd.content.technologyRequirements.length > 0 && (
+            {design.content?.technologyRequirements &&
+              design.content.technologyRequirements.length > 0 && (
                 <div className='bg-white rounded-lg shadow-md p-6'>
                   <h3 className='text-lg font-semibold mb-3'>
                     Technology Requirements
                   </h3>
                   <ul className='list-disc list-inside space-y-1'>
-                    {lrd.content.technologyRequirements.map(
+                    {design.content.technologyRequirements.map(
                       (req: string, index: number) => (
                         <li key={index} className='text-gray-700'>
                           {req}
@@ -769,4 +775,4 @@ const LRDDetail = () => {
   );
 };
 
-export default LRDDetail;
+export default DesignDetail;

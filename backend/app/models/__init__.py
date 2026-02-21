@@ -31,6 +31,7 @@ from .email_whitelist import EmailWhitelist
 
 # Generation tracking
 from .generation_history import GenerationHistory, GenerationType
+from .learning_design import DesignStatus, LearningDesign
 from .learning_outcome import (
     AssessmentLearningOutcome,
     BloomLevel,
@@ -40,7 +41,6 @@ from .learning_outcome import (
 from .llm_config import LLMConfiguration, TokenUsageLog
 from .local_learning_outcome import LocalLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
-from .lrd import LRD, LRDStatus
 from .mappings import (
     assessment_material_links,
     assessment_ulo_mappings,
@@ -117,9 +117,9 @@ __all__ = [
     "TokenUsageLog",
     # Local Learning Outcomes
     "LocalLearningOutcome",
-    # LRD and TaskList
-    "LRD",
-    "LRDStatus",
+    # Learning Designs and TaskList
+    "LearningDesign",
+    "DesignStatus",
     "TaskList",
     "TaskStatus",
     # Materials

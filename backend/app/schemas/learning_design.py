@@ -1,5 +1,5 @@
 """
-LRD (Learning Requirements Document) API schemas
+Learning Design API schemas
 """
 
 from datetime import datetime
@@ -10,23 +10,23 @@ from pydantic import Field
 from app.schemas.base import CamelModel
 
 
-class LRDCreate(CamelModel):
-    """Request schema for creating an LRD"""
+class DesignCreate(CamelModel):
+    """Request schema for creating a learning design"""
 
     unit_id: str
     content: dict[str, Any] = Field(default_factory=dict)
     version: str = "1.0"
 
 
-class LRDUpdate(CamelModel):
-    """Request schema for updating an LRD"""
+class DesignUpdate(CamelModel):
+    """Request schema for updating a learning design"""
 
     content: dict[str, Any] | None = None
     version: str | None = None
 
 
-class LRDResponse(CamelModel):
-    """Full LRD response schema"""
+class DesignResponse(CamelModel):
+    """Full learning design response schema"""
 
     id: str
     unit_id: str
@@ -38,8 +38,8 @@ class LRDResponse(CamelModel):
     updated_at: datetime
 
 
-class LRDListItem(CamelModel):
-    """Summary LRD response (without full content)"""
+class DesignListItem(CamelModel):
+    """Summary learning design response (without full content)"""
 
     id: str
     unit_id: str

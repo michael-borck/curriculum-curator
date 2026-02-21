@@ -23,7 +23,7 @@ interface Unit {
   teachingPhilosophy: string;
 }
 
-interface LRDErrors {
+interface DesignErrors {
   topic?: string;
   duration?: string;
   objectives?: string;
@@ -31,7 +31,7 @@ interface LRDErrors {
   submit?: string;
 }
 
-interface LRDContent {
+interface DesignContent {
   topic: string;
   duration: string;
   objectives: string[];
@@ -71,25 +71,25 @@ interface LRDContent {
   teachingPhilosophy?: string;
 }
 
-interface LRDData {
+interface DesignData {
   unitId: string | undefined;
   version: string;
   status: string;
-  content: LRDContent;
+  content: DesignContent;
   [key: string]: any;
 }
 
-const LRDCreator = () => {
+const DesignCreator = () => {
   const { unitId } = useParams<{ unitId: string }>();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [unit, setUnit] = useState<Unit | null>(null);
-  const [errors, setErrors] = useState<LRDErrors>({});
+  const [errors, setErrors] = useState<DesignErrors>({});
 
-  // LRD Form State
-  const [lrdData, setLrdData] = useState<LRDData>({
+  // Design Form State
+  const [designData, setDesignData] = useState<DesignData>({
     unitId: unitId,
     version: '1.0',
     status: 'DRAFT',
@@ -142,7 +142,7 @@ const LRDCreator = () => {
         setUnit(response.data);
 
         // Set teaching philosophy from course
-        setLrdData(prev => ({
+        setDesignData(prev => ({
           ...prev,
           content: {
             ...prev.content,
@@ -162,7 +162,7 @@ const LRDCreator = () => {
   // Handle array field operations
   const addArrayItem = (path: string) => {
     const keys = path.split('.');
-    setLrdData(prev => {
+    setDesignData(prev => {
       const newData = { ...prev };
       let current = newData;
 
@@ -179,7 +179,7 @@ const LRDCreator = () => {
 
   const removeArrayItem = (path: string, index: number) => {
     const keys = path.split('.');
-    setLrdData(prev => {
+    setDesignData(prev => {
       const newData = { ...prev };
       let current = newData;
 
@@ -198,7 +198,7 @@ const LRDCreator = () => {
 
   const updateArrayItem = (path: string, index: number, value: string) => {
     const keys = path.split('.');
-    setLrdData(prev => {
+    setDesignData(prev => {
       const newData = { ...prev };
       let current = newData;
 
@@ -215,24 +215,24 @@ const LRDCreator = () => {
 
   // Validate form
   const validateForm = () => {
-    const newErrors: LRDErrors = {};
+    const newErrors: DesignErrors = {};
 
-    if (!lrdData.content.topic) {
+    if (!designData.content.topic) {
       newErrors.topic = 'Topic is required';
     }
 
-    if (!lrdData.content.duration) {
+    if (!designData.content.duration) {
       newErrors.duration = 'Duration is required';
     }
 
     if (
-      lrdData.content.objectives.filter((o: string) => o.trim()).length === 0
+      designData.content.objectives.filter((o: string) => o.trim()).length === 0
     ) {
       newErrors.objectives = 'At least one objective is required';
     }
 
     if (
-      lrdData.content.learningOutcomes.filter((o: string) => o.trim())
+      designData.content.learningOutcomes.filter((o: string) => o.trim())
         .length === 0
     ) {
       newErrors.learningOutcomes = 'At least one learning outcome is required';
@@ -242,8 +242,8 @@ const LRDCreator = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Save LRD
-  const saveLRD = async (submitForReview: boolean = false) => {
+  // Save Learning Design
+  const saveDesign = async (submitForReview: boolean = false) => {
     if (!validateForm()) {
       return;
     }
@@ -253,87 +253,98 @@ const LRDCreator = () => {
 
       // Clean empty arrays
       const cleanedData = {
-        ...lrdData,
+        ...designData,
         content: {
-          ...lrdData.content,
-          objectives: lrdData.content.objectives.filter((o: string) =>
+          ...designData.content,
+          objectives: designData.content.objectives.filter((o: string) =>
             o.trim()
           ),
-          learningOutcomes: lrdData.content.learningOutcomes.filter(
+          learningOutcomes: designData.content.learningOutcomes.filter(
             (o: string) => o.trim()
           ),
-          prerequisites: lrdData.content.prerequisites.filter((p: string) =>
+          prerequisites: designData.content.prerequisites.filter((p: string) =>
             p.trim()
           ),
           structure: {
             preClass: {
-              ...lrdData.content.structure.preClass,
-              activities: lrdData.content.structure.preClass.activities.filter(
-                (a: string) => a.trim()
-              ),
-              materials: lrdData.content.structure.preClass.materials.filter(
+              ...designData.content.structure.preClass,
+              activities:
+                designData.content.structure.preClass.activities.filter(
+                  (a: string) => a.trim()
+                ),
+              materials: designData.content.structure.preClass.materials.filter(
                 (m: string) => m.trim()
               ),
             },
             inClass: {
-              ...lrdData.content.structure.inClass,
-              activities: lrdData.content.structure.inClass.activities.filter(
-                (a: string) => a.trim()
-              ),
-              materials: lrdData.content.structure.inClass.materials.filter(
+              ...designData.content.structure.inClass,
+              activities:
+                designData.content.structure.inClass.activities.filter(
+                  (a: string) => a.trim()
+                ),
+              materials: designData.content.structure.inClass.materials.filter(
                 (m: string) => m.trim()
               ),
             },
             postClass: {
-              ...lrdData.content.structure.postClass,
-              activities: lrdData.content.structure.postClass.activities.filter(
-                (a: string) => a.trim()
-              ),
-              materials: lrdData.content.structure.postClass.materials.filter(
-                (m: string) => m.trim()
-              ),
+              ...designData.content.structure.postClass,
+              activities:
+                designData.content.structure.postClass.activities.filter(
+                  (a: string) => a.trim()
+                ),
+              materials:
+                designData.content.structure.postClass.materials.filter(
+                  (m: string) => m.trim()
+                ),
             },
           },
           assessment: {
-            ...lrdData.content.assessment,
-            criteria: lrdData.content.assessment.criteria.filter((c: string) =>
-              c.trim()
+            ...designData.content.assessment,
+            criteria: designData.content.assessment.criteria.filter(
+              (c: string) => c.trim()
             ),
           },
           resources: {
-            required: lrdData.content.resources.required.filter((r: string) =>
-              r.trim()
-            ),
-            recommended: lrdData.content.resources.recommended.filter(
+            required: designData.content.resources.required.filter(
               (r: string) => r.trim()
             ),
-            supplementary: lrdData.content.resources.supplementary.filter(
+            recommended: designData.content.resources.recommended.filter(
+              (r: string) => r.trim()
+            ),
+            supplementary: designData.content.resources.supplementary.filter(
               (r: string) => r.trim()
             ),
           },
-          technologyRequirements: lrdData.content.technologyRequirements.filter(
-            (t: string) => t.trim()
-          ),
+          technologyRequirements:
+            designData.content.technologyRequirements.filter((t: string) =>
+              t.trim()
+            ),
         },
       };
 
-      const response = await api.post('/lrds', cleanedData);
+      const response = await api.post('/designs', cleanedData);
 
       if (submitForReview && response.data.id) {
         // Submit for review
-        await api.post(`/lrds/${response.data.id}/submit-review`);
+        await api.post(`/designs/${response.data.id}/submit-review`);
       }
 
       // Generate tasks if requested
-      if (window.confirm('Would you like to generate tasks from this LRD?')) {
-        await api.post(`/lrds/${response.data.id}/generate-tasks`);
+      if (
+        window.confirm(
+          'Would you like to generate tasks from this learning design?'
+        )
+      ) {
+        await api.post(`/designs/${response.data.id}/generate-tasks`);
       }
 
-      navigate(`/units/${unitId}/lrds`);
+      navigate(`/units/${unitId}/designs`);
     } catch (error) {
-      console.error('Error saving LRD:', error);
+      console.error('Error saving learning design:', error);
       setErrors({
-        submit: (error as any).response?.data?.detail || 'Failed to save LRD',
+        submit:
+          (error as any).response?.data?.detail ||
+          'Failed to save learning design',
       });
     } finally {
       setSaving(false);
@@ -353,7 +364,7 @@ const LRDCreator = () => {
       {/* Header */}
       <div className='mb-8'>
         <h1 className='text-3xl font-bold text-gray-900 mb-2'>
-          Create Learning Resource Document (LRD)
+          Create Learning Design
         </h1>
         {unit && (
           <p className='text-gray-600'>
@@ -384,9 +395,9 @@ const LRDCreator = () => {
             </label>
             <input
               type='text'
-              value={lrdData.content.topic}
+              value={designData.content.topic}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: { ...prev.content, topic: e.target.value },
                 }))
@@ -407,9 +418,9 @@ const LRDCreator = () => {
             </label>
             <input
               type='text'
-              value={lrdData.content.duration}
+              value={designData.content.duration}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: { ...prev.content, duration: e.target.value },
                 }))
@@ -430,9 +441,9 @@ const LRDCreator = () => {
             </label>
             <input
               type='text'
-              value={lrdData.version}
+              value={designData.version}
               onChange={e =>
-                setLrdData(prev => ({ ...prev, version: e.target.value }))
+                setDesignData(prev => ({ ...prev, version: e.target.value }))
               }
               className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
               placeholder='1.0'
@@ -445,12 +456,12 @@ const LRDCreator = () => {
             </label>
             <select
               value={
-                lrdData.content.teachingPhilosophy ||
+                designData.content.teachingPhilosophy ||
                 unit?.teachingPhilosophy ||
                 'TRADITIONAL'
               }
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: {
                     ...prev.content,
@@ -487,7 +498,7 @@ const LRDCreator = () => {
             <label className='block text-sm font-medium text-gray-700 mb-2'>
               Learning Objectives *
             </label>
-            {lrdData.content.objectives.map((objective, index) => (
+            {designData.content.objectives.map((objective, index) => (
               <div key={index} className='flex mb-2'>
                 <input
                   type='text'
@@ -501,7 +512,7 @@ const LRDCreator = () => {
                 <button
                   onClick={() => removeArrayItem('content.objectives', index)}
                   className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                  disabled={lrdData.content.objectives.length === 1}
+                  disabled={designData.content.objectives.length === 1}
                 >
                   <X className='h-5 w-5' />
                 </button>
@@ -524,7 +535,7 @@ const LRDCreator = () => {
             <label className='block text-sm font-medium text-gray-700 mb-2'>
               Learning Outcomes *
             </label>
-            {lrdData.content.learningOutcomes.map((outcome, index) => (
+            {designData.content.learningOutcomes.map((outcome, index) => (
               <div key={index} className='flex mb-2'>
                 <input
                   type='text'
@@ -544,7 +555,7 @@ const LRDCreator = () => {
                     removeArrayItem('content.learningOutcomes', index)
                   }
                   className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                  disabled={lrdData.content.learningOutcomes.length === 1}
+                  disabled={designData.content.learningOutcomes.length === 1}
                 >
                   <X className='h-5 w-5' />
                 </button>
@@ -569,7 +580,7 @@ const LRDCreator = () => {
             <label className='block text-sm font-medium text-gray-700 mb-2'>
               Prerequisites
             </label>
-            {lrdData.content.prerequisites.map((prereq, index) => (
+            {designData.content.prerequisites.map((prereq, index) => (
               <div key={index} className='flex mb-2'>
                 <input
                   type='text'
@@ -589,7 +600,7 @@ const LRDCreator = () => {
                     removeArrayItem('content.prerequisites', index)
                   }
                   className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                  disabled={lrdData.content.prerequisites.length === 1}
+                  disabled={designData.content.prerequisites.length === 1}
                 >
                   <X className='h-5 w-5' />
                 </button>
@@ -624,9 +635,9 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.preClass.duration}
+                value={designData.content.structure.preClass.duration}
                 onChange={e =>
-                  setLrdData(prev => ({
+                  setDesignData(prev => ({
                     ...prev,
                     content: {
                       ...prev.content,
@@ -649,7 +660,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.preClass.activities.map(
+              {designData.content.structure.preClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -674,8 +685,8 @@ const LRDCreator = () => {
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.preClass.activities.length ===
-                        1
+                        designData.content.structure.preClass.activities
+                          .length === 1
                       }
                     >
                       <X className='h-5 w-5' />
@@ -705,9 +716,9 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.inClass.duration}
+                value={designData.content.structure.inClass.duration}
                 onChange={e =>
-                  setLrdData(prev => ({
+                  setDesignData(prev => ({
                     ...prev,
                     content: {
                       ...prev.content,
@@ -730,7 +741,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.inClass.activities.map(
+              {designData.content.structure.inClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -755,8 +766,8 @@ const LRDCreator = () => {
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.inClass.activities.length ===
-                        1
+                        designData.content.structure.inClass.activities
+                          .length === 1
                       }
                     >
                       <X className='h-5 w-5' />
@@ -786,9 +797,9 @@ const LRDCreator = () => {
               </label>
               <input
                 type='text'
-                value={lrdData.content.structure.postClass.duration}
+                value={designData.content.structure.postClass.duration}
                 onChange={e =>
-                  setLrdData(prev => ({
+                  setDesignData(prev => ({
                     ...prev,
                     content: {
                       ...prev.content,
@@ -811,7 +822,7 @@ const LRDCreator = () => {
               <label className='block text-sm font-medium text-gray-700 mb-2'>
                 Activities
               </label>
-              {lrdData.content.structure.postClass.activities.map(
+              {designData.content.structure.postClass.activities.map(
                 (activity, index) => (
                   <div key={index} className='flex mb-2'>
                     <input
@@ -836,7 +847,7 @@ const LRDCreator = () => {
                       }
                       className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
                       disabled={
-                        lrdData.content.structure.postClass.activities
+                        designData.content.structure.postClass.activities
                           .length === 1
                       }
                     >
@@ -873,9 +884,9 @@ const LRDCreator = () => {
             </label>
             <input
               type='text'
-              value={lrdData.content.assessment.type}
+              value={designData.content.assessment.type}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: {
                     ...prev.content,
@@ -897,9 +908,9 @@ const LRDCreator = () => {
             </label>
             <input
               type='text'
-              value={lrdData.content.assessment.weight}
+              value={designData.content.assessment.weight}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: {
                     ...prev.content,
@@ -921,9 +932,9 @@ const LRDCreator = () => {
             Description
           </label>
           <textarea
-            value={lrdData.content.assessment.description}
+            value={designData.content.assessment.description}
             onChange={e =>
-              setLrdData(prev => ({
+              setDesignData(prev => ({
                 ...prev,
                 content: {
                   ...prev.content,
@@ -954,7 +965,7 @@ const LRDCreator = () => {
             <label className='block text-sm font-medium text-gray-700 mb-2'>
               Required Resources
             </label>
-            {lrdData.content.resources.required.map((resource, index) => (
+            {designData.content.resources.required.map((resource, index) => (
               <div key={index} className='flex mb-2'>
                 <input
                   type='text'
@@ -974,7 +985,7 @@ const LRDCreator = () => {
                     removeArrayItem('content.resources.required', index)
                   }
                   className='ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg'
-                  disabled={lrdData.content.resources.required.length === 1}
+                  disabled={designData.content.resources.required.length === 1}
                 >
                   <X className='h-5 w-5' />
                 </button>
@@ -1004,9 +1015,9 @@ const LRDCreator = () => {
               Pedagogy Notes
             </label>
             <textarea
-              value={lrdData.content.pedagogyNotes}
+              value={designData.content.pedagogyNotes}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
                   content: { ...prev.content, pedagogyNotes: e.target.value },
                 }))
@@ -1022,11 +1033,14 @@ const LRDCreator = () => {
               Differentiation Strategies
             </label>
             <textarea
-              value={lrdData.content.differentiation}
+              value={designData.content.differentiation}
               onChange={e =>
-                setLrdData(prev => ({
+                setDesignData(prev => ({
                   ...prev,
-                  content: { ...prev.content, differentiation: e.target.value },
+                  content: {
+                    ...prev.content,
+                    differentiation: e.target.value,
+                  },
                 }))
               }
               className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
@@ -1046,7 +1060,7 @@ const LRDCreator = () => {
           Cancel
         </button>
         <button
-          onClick={() => saveLRD(false)}
+          onClick={() => saveDesign(false)}
           disabled={saving}
           className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
         >
@@ -1058,7 +1072,7 @@ const LRDCreator = () => {
           Save as Draft
         </button>
         <button
-          onClick={() => saveLRD(true)}
+          onClick={() => saveDesign(true)}
           disabled={saving}
           className='px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center'
         >
@@ -1074,4 +1088,4 @@ const LRDCreator = () => {
   );
 };
 
-export default LRDCreator;
+export default DesignCreator;

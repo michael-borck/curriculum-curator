@@ -1610,7 +1610,7 @@ const ImportMaterials = () => {
               type='checkbox'
               className='mr-3 h-4 w-4 text-blue-600 rounded border-gray-300'
             />
-            <span>Generate LRDs from imported materials</span>
+            <span>Generate learning designs from imported materials</span>
           </label>
         </div>
       </div>

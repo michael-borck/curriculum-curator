@@ -21,9 +21,9 @@ import ContentView from './features/content/ContentView';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
 import AdminDashboard from './features/admin/AdminDashboard';
-import LRDCreator from './features/lrd/LRDCreator';
-import LRDList from './features/lrd/LRDList';
-import LRDDetail from './features/lrd/LRDDetail';
+import DesignCreator from './features/designs/DesignCreator';
+import DesignList from './features/designs/DesignList';
+import DesignDetail from './features/designs/DesignDetail';
 import ImportMaterials from './features/import/ImportMaterials';
 import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
@@ -53,7 +53,7 @@ const TaskBoardWrapper = () => {
   return (
     <TaskBoard
       {...(unitId ? { unitId } : {})}
-      {...(taskListId ? { lrdId: taskListId } : {})}
+      {...(taskListId ? { designId: taskListId } : {})}
     />
   );
 };
@@ -199,13 +199,19 @@ function App() {
               element={<TaskBoardWrapper />}
             />
 
-            {/* LRD Routes */}
-            <Route path='/units/:unitId/lrds' element={<LRDList />} />
-            <Route path='/units/:unitId/lrds/new' element={<LRDCreator />} />
-            <Route path='/units/:unitId/lrds/:lrdId' element={<LRDDetail />} />
+            {/* Learning Design Routes */}
+            <Route path='/units/:unitId/designs' element={<DesignList />} />
             <Route
-              path='/units/:unitId/lrds/:lrdId/edit'
-              element={<LRDCreator />}
+              path='/units/:unitId/designs/new'
+              element={<DesignCreator />}
+            />
+            <Route
+              path='/units/:unitId/designs/:designId'
+              element={<DesignDetail />}
+            />
+            <Route
+              path='/units/:unitId/designs/:designId/edit'
+              element={<DesignCreator />}
             />
 
             {/* Catch-all redirect */}

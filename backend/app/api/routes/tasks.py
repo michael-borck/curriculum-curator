@@ -18,7 +18,7 @@ def _task_list_to_response(tl: TaskList) -> TaskListResponse:
     """Convert a TaskList model to a response schema"""
     return TaskListResponse(
         id=str(tl.id),
-        lrd_id=str(tl.lrd_id) if tl.lrd_id else None,
+        design_id=str(tl.design_id) if tl.design_id else None,
         unit_id=str(tl.unit_id),
         tasks=tl.tasks,
         status=tl.status,
@@ -35,12 +35,12 @@ def _task_list_to_response(tl: TaskList) -> TaskListResponse:
 @router.get("/tasks", response_model=list[TaskListResponse])
 async def list_task_lists(
     unit_id: str | None = Query(None, alias="unitId"),
-    lrd_id: str | None = Query(None, alias="lrdId"),
+    design_id: str | None = Query(None, alias="designId"),
     db: Session = Depends(deps.get_db),
     current_user: UserResponse = Depends(deps.get_current_active_user),
 ) -> list[TaskListResponse]:
     """List task lists with optional filtering"""
-    task_lists = await task_list_service.get_task_lists(db, unit_id, lrd_id)
+    task_lists = await task_list_service.get_task_lists(db, unit_id, design_id)
     return [_task_list_to_response(tl) for tl in task_lists]
 
 
