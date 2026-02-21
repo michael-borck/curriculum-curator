@@ -156,6 +156,16 @@ class ContentGenerationRequest(CamelModel):
     topic: str | None = None
     context: str | None = None
     stream: bool = False
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )
+    pedagogy_override: str | None = Field(
+        default=None, description="Per-week pedagogy override"
+    )
+    week_number: int | None = Field(default=None, description="Week number for context")
 
 
 class ContentEnhanceRequest(CamelModel):
@@ -164,3 +174,9 @@ class ContentEnhanceRequest(CamelModel):
     content: str
     pedagogy_style: str
     suggestions: list[str] | None = None
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )

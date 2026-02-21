@@ -44,6 +44,10 @@ from app.schemas.llm import (
     SummaryGenerationRequest,
     ValidationResult,
 )
+from app.services.design_context import (
+    build_pedagogy_instruction,
+    get_design_context,
+)
 from app.services.llm_service import llm_service
 
 router = APIRouter()
@@ -64,9 +68,22 @@ async def generate_content(
     try:
         topic: str = request.topic or request.context or "General educational content"
 
+        # Inject Learning Design context
+        design_ctx = None
+        if request.unit_id or request.design_id:
+            design_ctx = await get_design_context(
+                db, request.unit_id or "", request.design_id
+            )
+
+        if design_ctx:
+            topic = f"{design_ctx}\n\n{topic}"
+
+        # Use pedagogy override or design-aware pedagogy
+        pedagogy = request.pedagogy_override or request.pedagogy_style
+
         async def stream_response():
             async for chunk in llm_service.generate_content(
-                pedagogy=request.pedagogy_style,
+                pedagogy=pedagogy,
                 topic=topic,
                 content_type=request.content_type,
                 user=current_user,
@@ -80,7 +97,7 @@ async def generate_content(
         # Non-streaming response
         result = ""
         async for chunk in llm_service.generate_content(
-            pedagogy=request.pedagogy_style,
+            pedagogy=pedagogy,
             topic=topic,
             content_type=request.content_type,
             user=current_user,
@@ -109,13 +126,24 @@ async def enhance_content(
     - summarize: Create concise summary
     """
     try:
+        # Inject Learning Design context into focus areas
+        design_ctx = None
+        if request.unit_id or request.design_id:
+            design_ctx = await get_design_context(
+                db, request.unit_id or "", request.design_id
+            )
+
+        focus_areas = list(request.focus_areas) if request.focus_areas else []
+        if design_ctx:
+            focus_areas.insert(0, f"Align with the following spec:\n{design_ctx}")
+
         enhanced_content = await llm_service.enhance_content(
             content=request.content,
             enhancement_type=request.enhancement_type,
             pedagogy_style=request.pedagogy_style,
             target_level=request.target_level,
             preserve_structure=request.preserve_structure,
-            focus_areas=request.focus_areas,
+            focus_areas=focus_areas or None,
             user=current_user,
             db=db,
         )
@@ -495,21 +523,31 @@ async def generate_course_schedule(
 
     Uses AI to create a logical progression of topics across the specified weeks.
     """
+    # Inject Learning Design context
+    design_ctx = None
+    if request.unit_id or request.design_id:
+        design_ctx = await get_design_context(
+            db, request.unit_id or "", request.design_id
+        )
+
     outcomes_text = (
         "; ".join(request.learning_outcomes) if request.learning_outcomes else ""
     )
+
     style_instruction = ""
     if request.teaching_style:
-        style_instruction = (
-            f"\nAlign the schedule with a {request.teaching_style} teaching approach."
+        style_instruction = "\n" + build_pedagogy_instruction(
+            fallback_style=request.teaching_style
         )
+
+    design_block = f"\n{design_ctx}\n" if design_ctx else ""
 
     prompt = f"""Create a {request.duration_weeks}-week university course schedule for:
 
 Title: {request.unit_title}
 Description: {request.unit_description}
 Learning Outcomes: {outcomes_text}
-{style_instruction}
+{style_instruction}{design_block}
 
 For each week, provide:
 1. A clear, descriptive title/theme
@@ -783,12 +821,25 @@ async def scaffold_unit(
 
     Returns ULOs, weekly topics, and assessments for human review before saving.
     """
+    # Inject Learning Design context
+    design_ctx = None
+    if request.unit_id or request.design_id:
+        design_ctx = await get_design_context(
+            db, request.unit_id or "", request.design_id
+        )
+
+    pedagogy_instruction = build_pedagogy_instruction(
+        fallback_style=request.pedagogy_style
+    )
+    design_block = f"\n{design_ctx}\n" if design_ctx else ""
+
     prompt = f"""Generate a complete university unit structure for:
 
 Title: {request.title}
-Description: {request.description or 'Not provided'}
+Description: {request.description or "Not provided"}
 Duration: {request.duration_weeks} weeks
-Pedagogy: {request.pedagogy_style}
+Pedagogy: {pedagogy_instruction}
+{design_block}
 
 Return a JSON object with this exact structure (no markdown, no backticks):
 {{
@@ -889,6 +940,11 @@ async def fill_gap(
 
     gap_type can be: ulo, material, assessment
     """
+    # Inject Learning Design context
+    design_ctx = None
+    if request.unit_id or request.design_id:
+        design_ctx = await get_design_context(db, request.unit_id, request.design_id)
+
     gap_prompts = {
         "ulo": "Generate a well-written Unit Learning Outcome (ULO) description. Use Bloom's taxonomy verbs. Be specific and measurable.",
         "material": "Generate a brief content outline for a teaching material. Include key topics, activities, and learning objectives.",
@@ -897,9 +953,10 @@ async def fill_gap(
 
     base_prompt = gap_prompts.get(request.gap_type, gap_prompts["material"])
     context = f"\n\nAdditional context: {request.context}" if request.context else ""
+    design_block = f"\n\n{design_ctx}" if design_ctx else ""
 
     result = await llm_service.generate_text(
-        prompt=f"{base_prompt}{context}",
+        prompt=f"{base_prompt}{context}{design_block}",
         system_prompt="You are an expert university curriculum designer helping fill gaps in a unit structure.",
         user=current_user,
         db=db,

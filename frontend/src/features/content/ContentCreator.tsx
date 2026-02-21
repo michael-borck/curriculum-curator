@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAILevel } from '../../hooks/useAILevel';
+import { useUnitDesign } from '../../hooks/useUnitDesign';
 import type { ContentType, PedagogyType, Unit } from '../../types/index';
 
 interface ValidationResult {
@@ -65,6 +66,7 @@ const ContentCreator = () => {
     useState<ValidationResponse | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
   const { canGenerate, canRefine } = useAILevel();
+  const { designId } = useUnitDesign(selectedUnitId || unitId);
 
   // Determine if we're in edit mode
   const isEditMode = Boolean(unitId && contentId);
@@ -150,6 +152,10 @@ const ContentCreator = () => {
           console.error('Error generating content:', error);
           toast.error(error.message || 'Failed to generate content');
           setIsGenerating(false);
+        },
+        {
+          unitId: selectedUnitId || unitId,
+          designId: designId ?? undefined,
         }
       );
     } catch (error: unknown) {
@@ -169,7 +175,10 @@ const ContentCreator = () => {
 
     setIsGenerating(true);
     try {
-      const enhanced = await enhanceContent(content, pedagogy);
+      const enhanced = await enhanceContent(content, pedagogy, {
+        unitId: selectedUnitId || unitId,
+        designId: designId ?? undefined,
+      });
       setContent(enhanced.data.content);
       toast.success('Content enhanced!');
     } catch (error) {

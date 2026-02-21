@@ -55,6 +55,12 @@ class ContentEnhanceRequest(CamelModel):
     focus_areas: list[str] | None = Field(
         None, description="Specific areas to focus on"
     )
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )
 
 
 class PedagogyAnalysisRequest(CamelModel):
@@ -212,6 +218,12 @@ class ScheduleGenerationRequest(CamelModel):
     )
     duration_weeks: int = Field(12, ge=1, le=52, description="Number of weeks")
     teaching_style: str | None = Field(None, description="Teaching philosophy style")
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )
 
 
 class ScheduleWeek(CamelModel):

@@ -59,22 +59,33 @@ export const register = (
 export const generateContent = (
   type: ContentType,
   pedagogy: PedagogyType,
-  topic: string
+  topic: string,
+  opts?: {
+    unitId?: string | undefined;
+    designId?: string | undefined;
+    pedagogyOverride?: string | undefined;
+  }
 ): Promise<ApiResponse> =>
   api.post('/ai/generate', {
     content_type: type,
     pedagogy_style: pedagogy,
     topic,
+    unit_id: opts?.unitId,
+    design_id: opts?.designId,
+    pedagogy_override: opts?.pedagogyOverride,
   });
 
 export const enhanceContent = (
   content: string,
-  pedagogy: PedagogyType
+  pedagogy: PedagogyType,
+  opts?: { unitId?: string | undefined; designId?: string | undefined }
 ): Promise<ApiResponse> =>
   api.post('/ai/enhance', {
     content,
     enhancement_type: 'improve',
     pedagogy_style: pedagogy,
+    unit_id: opts?.unitId,
+    design_id: opts?.designId,
   });
 
 // Unit endpoints
@@ -166,7 +177,12 @@ export const generateContentStream = async (
   topic: string,
   onChunk: (chunk: string) => void,
   onComplete?: () => void,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
+  opts?: {
+    unitId?: string | undefined;
+    designId?: string | undefined;
+    pedagogyOverride?: string | undefined;
+  }
 ): Promise<void> => {
   const token = localStorage.getItem('token');
 
@@ -182,6 +198,9 @@ export const generateContentStream = async (
         pedagogy_style: pedagogy,
         topic,
         stream: true,
+        unit_id: opts?.unitId,
+        design_id: opts?.designId,
+        pedagogy_override: opts?.pedagogyOverride,
       }),
     });
 

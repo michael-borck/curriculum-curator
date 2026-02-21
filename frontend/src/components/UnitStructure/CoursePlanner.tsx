@@ -24,6 +24,7 @@ interface ScheduleWeek {
 
 interface CoursePlannerProps {
   unit: Unit;
+  designId?: string | undefined;
   onApplySchedule: (weeks: ScheduleWeek[]) => void;
   onClose: () => void;
 }
@@ -32,6 +33,7 @@ type Tab = 'RESEARCH' | 'SCHEDULE';
 
 const CoursePlanner = ({
   unit,
+  designId,
   onApplySchedule,
   onClose,
 }: CoursePlannerProps) => {
@@ -107,9 +109,11 @@ const CoursePlanner = ({
       const response = await api.post('/ai/generate-schedule', {
         unitTitle: unit.title,
         unitDescription: unit.description || '',
-        learningOutcomes: [], // TODO: Get from unit
+        learningOutcomes: [],
         durationWeeks: unit.durationWeeks || 12,
         teachingStyle: unit.pedagogyType,
+        unitId: unit.id,
+        designId,
       });
 
       const schedule = response.data?.weeks || [];

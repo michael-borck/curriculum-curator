@@ -27,15 +27,18 @@ interface AIAssistantProps {
   unitId?: string;
   unitTitle?: string;
   unitULOs?: Array<{ code: string; description: string }>;
+  /** Learning Design ID — when set, the backend injects design context. */
+  designId?: string | undefined;
   /** Render as a compact sidebar panel instead of full page. */
   embedded?: boolean;
   onClose?: () => void;
 }
 
 const AIAssistant = ({
-  // unitId reserved for future per-unit API calls
+  unitId,
   unitTitle,
   unitULOs,
+  designId,
   embedded = false,
   onClose,
 }: AIAssistantProps) => {
@@ -137,9 +140,11 @@ const AIAssistant = ({
     try {
       const response = await api.post('/ai/generate', {
         context: buildContextPrefix() + text,
-        content_type: 'assistant_response',
-        pedagogy_style: user?.teachingPhilosophy || 'mixed_approach',
+        contentType: 'assistant_response',
+        pedagogyStyle: user?.teachingPhilosophy || 'mixed_approach',
         stream: false,
+        unitId,
+        designId,
       });
 
       setMessages(prev => [

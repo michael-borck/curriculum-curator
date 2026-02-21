@@ -28,10 +28,12 @@ import AoLMappingPanel from '../components/UnitStructure/AoLMappingPanel';
 import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
+import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
 import { LoadingState, Button, Modal, Alert } from '../components/ui';
 import { useAILevel } from '../hooks/useAILevel';
+import { useUnitDesign } from '../hooks/useUnitDesign';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
 
@@ -60,6 +62,7 @@ const UnitPage = () => {
     Array<{ code: string; description: string }>
   >([]);
   const { isAIDisabled, canScaffold } = useAILevel();
+  const { designId, hasDesign } = useUnitDesign(unitId);
 
   // Get active tab and week from URL
   const activeTab = (searchParams.get('tab') as TabType) || 'structure';
@@ -192,6 +195,8 @@ const UnitPage = () => {
         description: unit.description,
         durationWeeks: unit.durationWeeks || 12,
         pedagogyStyle: unit.pedagogyType || 'mixed_approach',
+        unitId,
+        designId: designId ?? undefined,
       });
       setScaffoldData(data);
     } catch {
@@ -440,14 +445,17 @@ const UnitPage = () => {
             </div>
             <div className='flex items-center gap-2'>
               {!isAIDisabled && (
-                <Button
-                  variant={showAI ? 'primary' : 'secondary'}
-                  size='sm'
-                  onClick={() => setShowAI(!showAI)}
-                >
-                  <Brain className='w-4 h-4 mr-1' />
-                  {showAI ? 'Close AI' : 'AI Assist'}
-                </Button>
+                <>
+                  <AILevelBadge hasDesign={hasDesign} />
+                  <Button
+                    variant={showAI ? 'primary' : 'secondary'}
+                    size='sm'
+                    onClick={() => setShowAI(!showAI)}
+                  >
+                    <Brain className='w-4 h-4 mr-1' />
+                    {showAI ? 'Close AI' : 'AI Assist'}
+                  </Button>
+                </>
               )}
               <div className='relative' ref={exportMenuRef}>
                 <Button
@@ -612,6 +620,7 @@ const UnitPage = () => {
                 <div className='mb-6'>
                   <CoursePlanner
                     unit={unit}
+                    designId={designId ?? undefined}
                     onApplySchedule={() => {
                       setShowPlanner(false);
                     }}
@@ -684,6 +693,7 @@ const UnitPage = () => {
                 unitId={unitId!}
                 unitTitle={unit.title}
                 unitULOs={unitULOs}
+                designId={designId ?? undefined}
                 onClose={() => setShowAI(false)}
               />
             </div>

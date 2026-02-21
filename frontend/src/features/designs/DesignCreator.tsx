@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import api from '../../services/api';
+import AILevelBadge from '../../components/shared/AILevelBadge';
 
 interface Unit {
   id: string;
@@ -363,9 +364,12 @@ const DesignCreator = () => {
     <div className='max-w-6xl mx-auto p-6'>
       {/* Header */}
       <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-gray-900 mb-2'>
-          Create Learning Design
-        </h1>
+        <div className='flex items-center gap-3 mb-2'>
+          <h1 className='text-3xl font-bold text-gray-900'>
+            Create Learning Design
+          </h1>
+          <AILevelBadge />
+        </div>
         {unit && (
           <p className='text-gray-600'>
             For: {unit.title} ({unit.code})

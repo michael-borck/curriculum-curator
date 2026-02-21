@@ -18,6 +18,12 @@ class ScaffoldUnitRequest(CamelModel):
     description: str = Field(default="", max_length=5000)
     duration_weeks: int = Field(default=12, ge=1, le=52)
     pedagogy_style: str = Field(default="mixed_approach")
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )
 
 
 class ScaffoldULO(CamelModel):
@@ -58,11 +64,10 @@ class FillGapRequest(CamelModel):
     """Request to generate content for a specific gap in a unit."""
 
     unit_id: str
-    gap_type: str = Field(
-        ..., description="Type of gap: ulo, material, assessment"
-    )
-    context: str = Field(
-        default="", description="Additional context for generation"
+    gap_type: str = Field(..., description="Type of gap: ulo, material, assessment")
+    context: str = Field(default="", description="Additional context for generation")
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
     )
 
 

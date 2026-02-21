@@ -50,12 +50,19 @@ export const aiApi = {
     description?: string | undefined;
     durationWeeks?: number | undefined;
     pedagogyStyle?: string | undefined;
+    unitId?: string | undefined;
+    designId?: string | undefined;
   }) {
     return api.post<ScaffoldUnitResponse>('/ai/scaffold-unit', data);
   },
 
   /** Generate content to fill a specific gap. */
-  fillGap(data: { unitId: string; gapType: string; context?: string }) {
+  fillGap(data: {
+    unitId: string;
+    gapType: string;
+    context?: string;
+    designId?: string;
+  }) {
     return api.post<FillGapResponse>('/ai/fill-gap', data);
   },
 };
