@@ -348,6 +348,20 @@ except ImportError as e:
     logger.warning(f"Failed to load content routes: {e}")
 
 try:
+    from app.api.routes import lrds
+
+    app.include_router(lrds.router, prefix="/api", tags=["lrds"])
+except ImportError as e:
+    logger.warning(f"Failed to load lrds routes: {e}")
+
+try:
+    from app.api.routes import tasks
+
+    app.include_router(tasks.router, prefix="/api", tags=["tasks"])
+except ImportError as e:
+    logger.warning(f"Failed to load tasks routes: {e}")
+
+try:
     from app.api.routes import content_export
 
     app.include_router(content_export.router, prefix="/api", tags=["export"])

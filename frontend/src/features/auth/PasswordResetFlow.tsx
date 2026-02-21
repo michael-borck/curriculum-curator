@@ -8,7 +8,7 @@ interface PasswordResetFlowProps {
   onSuccess: () => void;
 }
 
-type Step = 'request' | 'verify' | 'reset' | 'complete';
+type Step = 'request' | 'reset' | 'complete';
 
 const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
   const [currentStep, setCurrentStep] = useState<Step>('request');
@@ -25,11 +25,11 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/auth/request-password-reset', {
+      const response = await api.post('/auth/forgot-password', {
         email,
       });
       if (response.status === 200) {
-        setCurrentStep('verify');
+        setCurrentStep('reset');
       }
     } catch (err: unknown) {
       const error = err as {
@@ -41,35 +41,6 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
         setError(error.response.data.detail);
       } else {
         setError('Failed to send reset code. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await api.post('/auth/verify-reset-code', {
-        email,
-        code,
-      });
-      if (response.status === 200) {
-        setCurrentStep('reset');
-      }
-    } catch (err: unknown) {
-      const error = err as {
-        response?: { status?: number; data?: { detail?: string } };
-      };
-      if (error.response?.status === 400) {
-        setError('Invalid or expired code');
-      } else if (error.response?.data?.detail) {
-        setError(error.response.data.detail);
-      } else {
-        setError('Verification failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -168,7 +139,7 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
           </>
         );
 
-      case 'verify':
+      case 'reset':
         return (
           <>
             <button
@@ -180,15 +151,19 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
             </button>
 
             <div className='text-center mb-6'>
+              <div className='mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4'>
+                <KeyRound className='w-6 h-6 text-purple-600' />
+              </div>
               <h2 className='text-2xl font-semibold text-gray-900 mb-2'>
-                Enter Reset Code
+                Set New Password
               </h2>
               <p className='text-gray-600'>
-                We&apos;ve sent a 6-digit code to {email}
+                Enter the 6-digit code sent to {email} and choose a new
+                password.
               </p>
             </div>
 
-            <form onSubmit={handleVerifyCode} className='space-y-4'>
+            <form onSubmit={handleResetPassword} className='space-y-4'>
               {error && (
                 <Alert variant='error' onDismiss={() => setError('')}>
                   {error}
@@ -196,7 +171,7 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
               )}
 
               <FormInput
-                label='Verification Code'
+                label='Reset Code'
                 type='text'
                 value={code}
                 onChange={e =>
@@ -208,40 +183,6 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
                 disabled={isLoading}
                 maxLength={6}
               />
-
-              <Button
-                type='submit'
-                loading={isLoading}
-                disabled={code.length !== 6}
-                className='w-full'
-              >
-                Verify Code
-              </Button>
-            </form>
-          </>
-        );
-
-      case 'reset':
-        return (
-          <>
-            <div className='text-center mb-6'>
-              <div className='mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-4'>
-                <KeyRound className='w-6 h-6 text-purple-600' />
-              </div>
-              <h2 className='text-2xl font-semibold text-gray-900 mb-2'>
-                Set New Password
-              </h2>
-              <p className='text-gray-600'>
-                Choose a strong password for your account
-              </p>
-            </div>
-
-            <form onSubmit={handleResetPassword} className='space-y-4'>
-              {error && (
-                <Alert variant='error' onDismiss={() => setError('')}>
-                  {error}
-                </Alert>
-              )}
 
               <FormInput
                 label='New Password'
@@ -264,7 +205,12 @@ const PasswordResetFlow = ({ onClose, onSuccess }: PasswordResetFlowProps) => {
                 disabled={isLoading}
               />
 
-              <Button type='submit' loading={isLoading} className='w-full'>
+              <Button
+                type='submit'
+                loading={isLoading}
+                disabled={code.length !== 6}
+                className='w-full'
+              >
                 Reset Password
               </Button>
             </form>

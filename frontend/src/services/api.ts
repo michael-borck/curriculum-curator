@@ -148,10 +148,13 @@ export const deleteContent = (
 export const getContents = getUnitContents;
 
 // File upload
-export const uploadFile = (file: File): Promise<ApiResponse> => {
+export const uploadFile = (
+  unitId: string,
+  file: File
+): Promise<ApiResponse> => {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post('/content/upload', formData, {
+  return api.post(`/units/${unitId}/content/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };

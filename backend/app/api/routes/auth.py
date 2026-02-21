@@ -15,6 +15,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
+from app.models.user import User
 from app.repositories import security_repo, user_repo
 from app.schemas import (
     EmailVerificationRequest,
@@ -31,6 +32,7 @@ from app.schemas import (
     UserRegistrationResponse,
     UserResponse,
 )
+from app.schemas.auth import ChangePasswordRequest, ChangePasswordResponse
 from app.schemas.user import ProfileUpdateRequest, UserCreate
 from app.services.email_service import email_service
 
@@ -520,6 +522,45 @@ async def reset_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password. Please try again.",
+        ) from None
+
+
+@router.post("/change-password", response_model=ChangePasswordResponse)
+async def change_password(
+    change_request: ChangePasswordRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Change password for the currently authenticated user"""
+    # Look up the full user record (with password_hash)
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Verify current password
+    if not security.verify_password(change_request.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    # Ensure new password is different
+    if change_request.current_password == change_request.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password",
+        )
+
+    try:
+        user_repo.update_password(db, user.id, change_request.new_password)
+        return ChangePasswordResponse(message="Password changed successfully")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to change password. Please try again.",
         ) from None
 
 

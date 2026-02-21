@@ -514,7 +514,7 @@ const ImportMaterials = () => {
       );
 
       const response = await api.post(
-        `/content/upload?unitId=${selectedUnit}`,
+        `/units/${selectedUnit}/content/upload`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -600,7 +600,7 @@ const ImportMaterials = () => {
 
     try {
       const response = await api.post(
-        `/content/upload/batch?unitId=${selectedUnit}`,
+        `/units/${selectedUnit}/content/upload/batch`,
         formData,
         {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -1400,13 +1400,13 @@ const ImportMaterials = () => {
                     )}
 
                     {/* Action Buttons */}
-                    {file.result.content_id && (
+                    {file.result.content_id && selectedUnit && (
                       <div className='flex space-x-2 mt-3'>
                         <button
                           className='px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
                           onClick={() => {
                             navigate(
-                              `/content/${file.result?.content_id}/enhance`
+                              `/units/${selectedUnit}/content/${file.result?.content_id}/edit`
                             );
                           }}
                         >
@@ -1416,7 +1416,7 @@ const ImportMaterials = () => {
                           className='px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700'
                           onClick={() => {
                             navigate(
-                              `/content/${file.result?.content_id}/edit`
+                              `/units/${selectedUnit}/content/${file.result?.content_id}/edit`
                             );
                           }}
                         >
@@ -1552,7 +1552,11 @@ const ImportMaterials = () => {
                             )}
                           </select>
                           <button
-                            onClick={() => navigate(`/content/${item.id}/edit`)}
+                            onClick={() =>
+                              navigate(
+                                `/units/${selectedUnit}/content/${item.id}/edit`
+                              )
+                            }
                             className='px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200'
                           >
                             Edit

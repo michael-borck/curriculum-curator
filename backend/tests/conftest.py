@@ -36,6 +36,7 @@ from app.models.accreditation_mappings import (
 )
 from app.models.assessment import Assessment, AssessmentType
 from app.models.learning_outcome import UnitLearningOutcome
+from app.models.lrd import LRD, LRDStatus
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 
@@ -438,3 +439,31 @@ def populated_unit(
     test_db.commit()
 
     return test_unit
+
+
+@pytest.fixture
+def test_lrd(test_db: Session, test_unit: Unit) -> LRD:
+    """Insert a real LRD row into the test database."""
+    lrd = LRD(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        version="1.0",
+        status=LRDStatus.DRAFT.value,
+        content={
+            "topic": "Web Development Fundamentals",
+            "description": "An introductory unit on web technologies",
+            "objectives": [
+                "Understand HTML structure",
+                "Apply CSS styling",
+                "Write basic JavaScript",
+            ],
+            "modules": [
+                {"title": "HTML Basics", "weeks": [1, 2]},
+                {"title": "CSS Fundamentals", "weeks": [3, 4]},
+            ],
+        },
+    )
+    test_db.add(lrd)
+    test_db.commit()
+    test_db.refresh(lrd)
+    return lrd

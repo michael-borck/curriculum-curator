@@ -28,6 +28,7 @@ import ImportMaterials from './features/import/ImportMaterials';
 import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
+import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
 import TeachingStyleOnboarding from './components/onboarding/TeachingStyleOnboarding';
@@ -45,6 +46,16 @@ const UnitDashboardRedirect = () => {
 const UnitStructureRedirect = () => {
   const { unitId } = useParams();
   return <Navigate to={`/units/${unitId}?tab=structure`} replace />;
+};
+
+const TaskBoardWrapper = () => {
+  const { unitId, taskListId } = useParams();
+  return (
+    <TaskBoard
+      {...(unitId ? { unitId } : {})}
+      {...(taskListId ? { lrdId: taskListId } : {})}
+    />
+  );
 };
 
 function App() {
@@ -181,6 +192,12 @@ function App() {
 
             {/* Settings */}
             <Route path='/settings' element={<Settings />} />
+
+            {/* Task Routes */}
+            <Route
+              path='/units/:unitId/tasks/:taskListId'
+              element={<TaskBoardWrapper />}
+            />
 
             {/* LRD Routes */}
             <Route path='/units/:unitId/lrds' element={<LRDList />} />
