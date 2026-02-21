@@ -14,10 +14,13 @@ An Architecture Decision Record captures an important architectural decision mad
 |-----|-------|--------|
 | [0018](0018-workflow-flexibility-philosophy.md) | **Workflow Flexibility Philosophy** | **Accepted** |
 | [0020](0020-ai-optional-user-empowerment.md) | **AI-Optional User Empowerment** | **Accepted** |
+| [0037](0037-privacy-first-byok-architecture.md) | **Privacy-First, Local-First, BYOK** | **Accepted** |
 
 > *"Assist any workflow, don't enforce"* - This principle informs all other architectural decisions.
-> 
+>
 > *"AI assists, never gates"* - Every task achievable with AI must be equally achievable without it.
+>
+> *"You own everything"* - Local data, open source, bring your own AI keys. No middleman.
 
 ### Current Stack (Active Decisions)
 
@@ -43,6 +46,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0033](0033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
 | [0035](0035-electron-desktop-app.md) | Electron Desktop App with Embedded Backend | Accepted |
 | [0036](0036-learning-design-generation-spec.md) | Learning Design as Canonical Generation Spec | Accepted |
+| [0037](0037-privacy-first-byok-architecture.md) | Privacy-First, Local-First, BYOK Architecture | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -58,6 +62,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0027: CamelCase API Serialization](0027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
 - [ADR-0030: IMS Common Cartridge Export](0030-ims-common-cartridge-export.md) - CC v1.2 export for LMS interoperability
 - [ADR-0035: Electron Desktop App](0035-electron-desktop-app.md) - Embedded backend with optional Ollama for offline use
+- [ADR-0037: Privacy-First, BYOK Architecture](0037-privacy-first-byok-architecture.md) - Local data, no telemetry, user-configured AI providers
 
 ### Domain Model & User Experience
 - [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework
