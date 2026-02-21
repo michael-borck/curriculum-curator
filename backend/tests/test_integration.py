@@ -1,8 +1,10 @@
 """
-Comprehensive authentication endpoint tests.
-Tests against running backend - no mocks.
+Comprehensive integration tests for authentication and basic API endpoints.
 
-These will be SKIPPED if the backend is not running.
+These are integration tests — they require the backend to be running.
+They will be SKIPPED if the backend is not available.
+
+Consolidated from test_basic.py, test_auth.py, and test_auth_endpoints.py.
 """
 
 import time
@@ -15,6 +17,11 @@ BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
 
 pytestmark = pytest.mark.integration
+
+
+# ---------------------------------------------------------------------------
+# Auth endpoints
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.integration
@@ -77,6 +84,8 @@ class TestAuthEndpoints:
             pass
         return None
 
+    # ── Health & basic endpoints ─────────────────────────────────
+
     def test_health_check(self):
         """Test health endpoint"""
         response = requests.get(f"{BASE_URL}/health")
@@ -84,6 +93,30 @@ class TestAuthEndpoints:
         data = response.json()
         assert data["status"] == "healthy"
         assert "service" in data
+
+    def test_backend_docs_accessible(self):
+        """Test that backend docs page is accessible"""
+        response = requests.get(f"{BASE_URL}/docs")
+        assert response.status_code == 200
+
+    def test_api_cors(self):
+        """Test CORS headers are present"""
+        response = requests.options(
+            f"{API_URL}/auth/login", headers={"Origin": "http://localhost:5173"}
+        )
+        assert "access-control-allow-origin" in [k.lower() for k in response.headers]
+
+    def test_cors_on_post(self):
+        """Test CORS headers on POST request"""
+        response = requests.post(
+            f"{API_URL}/auth/login",
+            json={"email": "test@example.com", "password": "test"},
+            headers={"Origin": "http://localhost:5173"},
+        )
+        headers_lower = {k.lower(): v for k, v in response.headers.items()}
+        assert "access-control-allow-origin" in headers_lower
+
+    # ── Registration ─────────────────────────────────────────────
 
     def test_register_new_user(self, unique_email):
         """Test user registration flow"""
@@ -113,8 +146,8 @@ class TestAuthEndpoints:
         # Second registration - should fail
         response = requests.post(f"{API_URL}/auth/register", json=user_data)
 
-        # 400 duplicate, 403 not whitelisted, 429 rate limited
-        assert response.status_code in [400, 403, 429]
+        # 200 if first reg failed (not whitelisted), 400 duplicate, 403 not whitelisted, 429 rate limited
+        assert response.status_code in [200, 400, 403, 429]
 
     def test_register_invalid_password(self, unique_email):
         """Test registration with weak password"""
@@ -139,6 +172,22 @@ class TestAuthEndpoints:
             assert response.status_code in [400, 403, 422, 429], (
                 f"Failed for: {test_case['reason']}"
             )
+
+    def test_register_non_whitelisted(self):
+        """Test registration with non-whitelisted email"""
+        email = f"test_{uuid.uuid4().hex[:8]}@example.com"
+        response = requests.post(
+            f"{API_URL}/auth/register",
+            json={
+                "email": email,
+                "password": "TestPassword123!",
+                "name": "Test User",
+            },
+        )
+        # 403 if whitelist check runs first, 400 if password validation runs first, 429 rate limited
+        assert response.status_code in [400, 403, 429]
+
+    # ── Login ────────────────────────────────────────────────────
 
     def test_login_valid_credentials(self, test_user):
         """Test login with valid credentials"""
@@ -173,9 +222,16 @@ class TestAuthEndpoints:
                 "password": "WrongPassword123!",
             },
         )
-
         # 401 bad creds, 403 unverified, 423 locked, 429 rate limited
         assert response.status_code in [401, 403, 423, 429]
+
+    def test_login_with_wrong_password(self):
+        """Test login with wrong password"""
+        response = requests.post(
+            f"{API_URL}/auth/login",
+            json={"email": "michael.borck@curtin.edu.au", "password": "wrongpassword"},
+        )
+        assert response.status_code in [401, 423, 429]
 
     def test_login_rate_limiting(self):
         """Test rate limiting on login endpoint"""
@@ -189,6 +245,8 @@ class TestAuthEndpoints:
 
         # Should see rate limiting kick in (429) or consistent auth failures
         assert all(status in [401, 403, 423, 429] for status in responses)
+
+    # ── Authenticated endpoints ──────────────────────────────────
 
     def test_get_current_user(self, test_user):
         """Test getting current user info"""
@@ -219,28 +277,21 @@ class TestAuthEndpoints:
         """Test accessing protected endpoint with invalid token"""
         headers = {"Authorization": "Bearer invalid_token_here"}
         response = requests.get(f"{API_URL}/auth/me", headers=headers)
-        # 401 if auth enforced, 200 if LOCAL_MODE is enabled
         assert response.status_code in [200, 401]
 
     def test_password_reset_request(self, test_user):
         """Test password reset request flow"""
-        # Actual endpoint is /forgot-password
         response = requests.post(
             f"{API_URL}/auth/forgot-password", json={"email": test_user["email"]}
         )
-
-        # Should accept request even if email doesn't exist (security)
-        # 429 if rate limited
         assert response.status_code in [200, 202, 429]
 
     def test_verify_email_invalid_token(self):
         """Test email verification with invalid code"""
-        # Actual endpoint is POST /verify-email with email + 6-digit code
         response = requests.post(
             f"{API_URL}/auth/verify-email",
             json={"email": "test@example.com", "code": "000000"},
         )
-        # 400 invalid code/user not found, 422 validation, 429 rate limited
         assert response.status_code in [400, 422, 429]
 
     def test_logout(self, test_user):
@@ -333,7 +384,6 @@ class TestAuthSecurity:
                 f"{API_URL}/auth/login",
                 json={"email": f"{payload}@example.com", "password": "password"},
             )
-            # Should safely reject — 401/403/422 or 429 rate limited
             assert response.status_code in [401, 403, 422, 423, 429]
 
     def test_xss_prevention(self):

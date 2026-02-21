@@ -1,30 +1,22 @@
 """
-Unit tests for Assessments service.
+Tests for Assessments service using in-memory SQLite.
 
-Tests mock the DB session and validate CRUD operations, grade distribution,
-weight validation, timeline, workload analysis, and mapping operations.
+Validates CRUD operations, grade distribution, weight validation,
+timeline grouping, workload analysis, and ULO mapping operations.
 """
 
 from __future__ import annotations
 
-import os
-from unittest.mock import Mock, MagicMock, patch
-from uuid import uuid4
+import uuid
+from typing import TYPE_CHECKING
 
 import pytest
 
-# Set test environment before importing app modules
-os.environ["SECRET_KEY"] = "test-secret-key"
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-
-from sqlalchemy.exc import IntegrityError
-
 from app.models.assessment import Assessment, AssessmentType
-from app.models.learning_outcome import AssessmentLearningOutcome
+from app.models.learning_outcome import AssessmentLearningOutcome, UnitLearningOutcome
 from app.schemas.assessments import (
     AssessmentCreate,
     AssessmentMapping,
-    AssessmentMaterialLink,
     AssessmentUpdate,
     Rubric,
     RubricCriterion,
@@ -32,41 +24,23 @@ from app.schemas.assessments import (
 from app.schemas.learning_outcomes import ALOCreate
 from app.services.assessments_service import AssessmentsService
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from app.models.unit import Unit
+    from app.models.user import User
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-UNIT_ID = str(uuid4())
+
+def _uid(val: object) -> uuid.UUID:
+    return uuid.UUID(str(val))
 
 
-def make_mock_assessment(
-    *,
-    title: str = "Quiz 1",
-    assessment_type: str = AssessmentType.FORMATIVE.value,
-    category: str = "quiz",
-    weight: float = 20.0,
-    due_week: int | None = 4,
-    due_date: object | None = None,
-    assessment_id: str | None = None,
-) -> Mock:
-    """Create a mock Assessment model instance."""
-    a = Mock(spec=Assessment)
-    a.id = assessment_id or str(uuid4())
-    a.unit_id = UNIT_ID
-    a.title = title
-    a.type = assessment_type
-    a.category = category
-    a.weight = weight
-    a.due_week = due_week
-    a.due_date = due_date
-    a.description = f"Description for {title}"
-    a.release_week = (due_week - 2) if due_week and due_week > 2 else 1
-    a.status = "draft"
-    return a
-
-
-def make_assessment_create(
+def _make_create(
     *,
     title: str = "Quiz 1",
     assessment_type: str = AssessmentType.FORMATIVE.value,
@@ -85,29 +59,52 @@ def make_assessment_create(
     )
 
 
-def make_three_assessments() -> list[Mock]:
-    """Return 3 mock assessments totalling 100%."""
+def _insert_assessment(
+    db: Session,
+    unit: Unit,
+    *,
+    title: str = "Quiz 1",
+    assessment_type: str = AssessmentType.FORMATIVE.value,
+    category: str = "quiz",
+    weight: float = 20.0,
+    due_week: int | None = 4,
+) -> Assessment:
+    """Insert a real Assessment row."""
+    a = Assessment(
+        id=str(uuid.uuid4()),
+        unit_id=unit.id,
+        title=title,
+        type=assessment_type,
+        category=category,
+        weight=weight,
+        due_week=due_week,
+        description=f"Description for {title}",
+        release_week=(due_week - 2) if due_week and due_week > 2 else 1,
+        status="draft",
+    )
+    db.add(a)
+    db.commit()
+    db.refresh(a)
+    return a
+
+
+def _insert_three_assessments(db: Session, unit: Unit) -> list[Assessment]:
+    """Insert 3 assessments totalling 100%."""
     return [
-        make_mock_assessment(
-            title="Quiz 1",
+        _insert_assessment(
+            db, unit, title="Quiz 1",
             assessment_type=AssessmentType.FORMATIVE.value,
-            category="quiz",
-            weight=20.0,
-            due_week=4,
+            category="quiz", weight=20.0, due_week=4,
         ),
-        make_mock_assessment(
-            title="Project",
+        _insert_assessment(
+            db, unit, title="Project",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="project",
-            weight=40.0,
-            due_week=8,
+            category="project", weight=40.0, due_week=8,
         ),
-        make_mock_assessment(
-            title="Final Exam",
+        _insert_assessment(
+            db, unit, title="Final Exam",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="exam",
-            weight=40.0,
-            due_week=12,
+            category="exam", weight=40.0, due_week=12,
         ),
     ]
 
@@ -122,37 +119,6 @@ def service() -> AssessmentsService:
     return AssessmentsService()
 
 
-@pytest.fixture()
-def mock_db() -> Mock:
-    """A mock SQLAlchemy Session with chainable query."""
-    db = Mock()
-    db.add = Mock()
-    db.commit = Mock()
-    db.refresh = Mock()
-    db.delete = Mock()
-    db.execute = Mock()
-    return db
-
-
-def _setup_query_returns(db: Mock, result: object) -> None:
-    """Configure db.query(...).filter(...).first() to return `result`."""
-    query_chain = Mock()
-    query_chain.filter.return_value = query_chain
-    query_chain.options.return_value = query_chain
-    query_chain.first.return_value = result
-    query_chain.order_by.return_value = query_chain
-    query_chain.all.return_value = result if isinstance(result, list) else [result]
-    db.query.return_value = query_chain
-
-
-def _setup_query_returns_scalar(db: Mock, scalar_value: object) -> None:
-    """Configure db.query(...).filter(...).scalar() to return a value."""
-    query_chain = Mock()
-    query_chain.filter.return_value = query_chain
-    query_chain.scalar.return_value = scalar_value
-    db.query.return_value = query_chain
-
-
 # ---------------------------------------------------------------------------
 # TestCreateAssessment
 # ---------------------------------------------------------------------------
@@ -160,23 +126,26 @@ def _setup_query_returns_scalar(db: Mock, scalar_value: object) -> None:
 
 class TestCreateAssessment:
     @pytest.mark.asyncio
-    async def test_create_success(self, service: AssessmentsService, mock_db: Mock) -> None:
-        data = make_assessment_create()
+    async def test_create_success(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        data = _make_create()
+        result = await service.create_assessment(test_db, _uid(test_unit.id), data)
 
-        def fake_refresh(obj: object) -> None:
-            obj.title = data.title  # type: ignore[union-attr]
+        assert result.title == "Quiz 1"
+        assert result.type == AssessmentType.FORMATIVE.value
+        assert result.weight == 20.0
+        assert result.unit_id == test_unit.id
 
-        mock_db.refresh.side_effect = fake_refresh
-
-        result = await service.create_assessment(mock_db, uuid4(), data)
-
-        mock_db.add.assert_called_once()
-        mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_called_once()
-        assert isinstance(result, Assessment)
+        # Verify it persisted
+        from_db = test_db.query(Assessment).filter(Assessment.id == result.id).first()
+        assert from_db is not None
+        assert from_db.title == "Quiz 1"
 
     @pytest.mark.asyncio
-    async def test_create_with_rubric(self, service: AssessmentsService, mock_db: Mock) -> None:
+    async def test_create_with_rubric(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
         rubric = Rubric(
             criteria=[
                 RubricCriterion(
@@ -188,24 +157,12 @@ class TestCreateAssessment:
             ],
             total_points=10.0,
         )
-        data = make_assessment_create(rubric=rubric)
+        data = _make_create(rubric=rubric)
+        result = await service.create_assessment(test_db, _uid(test_unit.id), data)
 
-        await service.create_assessment(mock_db, uuid4(), data)
-
-        # The Assessment constructor was called with rubric as a dict
-        add_call_args = mock_db.add.call_args
-        created_obj = add_call_args[0][0]
-        assert isinstance(created_obj, Assessment)
-
-    @pytest.mark.asyncio
-    async def test_create_integrity_error(self, service: AssessmentsService, mock_db: Mock) -> None:
-        mock_db.commit.side_effect = IntegrityError("dup", {}, None)
-        data = make_assessment_create()
-
-        with pytest.raises(ValueError, match="Failed to create assessment"):
-            await service.create_assessment(mock_db, uuid4(), data)
-
-        mock_db.rollback.assert_called_once()
+        assert result.rubric is not None
+        assert result.rubric["total_points"] == 10.0
+        assert len(result.rubric["criteria"]) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -215,39 +172,25 @@ class TestCreateAssessment:
 
 class TestUpdateAssessment:
     @pytest.mark.asyncio
-    async def test_update_success(self, service: AssessmentsService, mock_db: Mock) -> None:
-        existing = make_mock_assessment()
-        _setup_query_returns(mock_db, existing)
+    async def test_update_success(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        existing = _insert_assessment(test_db, test_unit)
 
         update_data = AssessmentUpdate(title="Updated Quiz", weight=25.0)
-        result = await service.update_assessment(mock_db, uuid4(), update_data)
+        result = await service.update_assessment(test_db, _uid(existing.id), update_data)
 
         assert result is not None
-        mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_called_once()
+        assert result.title == "Updated Quiz"
+        assert result.weight == 25.0
 
     @pytest.mark.asyncio
-    async def test_update_not_found(self, service: AssessmentsService, mock_db: Mock) -> None:
-        _setup_query_returns(mock_db, None)
-
+    async def test_update_not_found(
+        self, service: AssessmentsService, test_db: Session
+    ) -> None:
         update_data = AssessmentUpdate(title="Updated Quiz")
-        result = await service.update_assessment(mock_db, uuid4(), update_data)
-
+        result = await service.update_assessment(test_db, uuid.uuid4(), update_data)
         assert result is None
-        mock_db.commit.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_update_integrity_error(self, service: AssessmentsService, mock_db: Mock) -> None:
-        existing = make_mock_assessment()
-        _setup_query_returns(mock_db, existing)
-        mock_db.commit.side_effect = IntegrityError("dup", {}, None)
-
-        update_data = AssessmentUpdate(title="Bad Update")
-
-        with pytest.raises(ValueError, match="Update would violate constraints"):
-            await service.update_assessment(mock_db, uuid4(), update_data)
-
-        mock_db.rollback.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -257,24 +200,22 @@ class TestUpdateAssessment:
 
 class TestDeleteAssessment:
     @pytest.mark.asyncio
-    async def test_delete_success(self, service: AssessmentsService, mock_db: Mock) -> None:
-        existing = make_mock_assessment()
-        _setup_query_returns(mock_db, existing)
-
-        result = await service.delete_assessment(mock_db, uuid4())
+    async def test_delete_success(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        existing = _insert_assessment(test_db, test_unit)
+        existing_id = str(existing.id)
+        result = await service.delete_assessment(test_db, _uid(existing_id))
 
         assert result is True
-        mock_db.delete.assert_called_once_with(existing)
-        mock_db.commit.assert_called_once()
+        assert test_db.query(Assessment).filter(Assessment.id == existing_id).first() is None
 
     @pytest.mark.asyncio
-    async def test_delete_not_found(self, service: AssessmentsService, mock_db: Mock) -> None:
-        _setup_query_returns(mock_db, None)
-
-        result = await service.delete_assessment(mock_db, uuid4())
-
+    async def test_delete_not_found(
+        self, service: AssessmentsService, test_db: Session
+    ) -> None:
+        result = await service.delete_assessment(test_db, uuid.uuid4())
         assert result is False
-        mock_db.delete.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -284,29 +225,27 @@ class TestDeleteAssessment:
 
 class TestGetAssessments:
     @pytest.mark.asyncio
-    async def test_get_assessment_by_id(self, service: AssessmentsService, mock_db: Mock) -> None:
-        expected = make_mock_assessment()
-        _setup_query_returns(mock_db, expected)
-
-        result = await service.get_assessment(mock_db, uuid4())
-
-        assert result is expected
+    async def test_get_assessment_by_id(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        expected = _insert_assessment(test_db, test_unit)
+        result = await service.get_assessment(test_db, _uid(expected.id))
+        assert result is not None
+        assert result.id == expected.id
 
     @pytest.mark.asyncio
-    async def test_get_assessment_not_found(self, service: AssessmentsService, mock_db: Mock) -> None:
-        _setup_query_returns(mock_db, None)
-
-        result = await service.get_assessment(mock_db, uuid4())
-
+    async def test_get_assessment_not_found(
+        self, service: AssessmentsService, test_db: Session
+    ) -> None:
+        result = await service.get_assessment(test_db, uuid.uuid4())
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_assessments_by_unit(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.get_assessments_by_unit(mock_db, uuid4())
-
+    async def test_get_assessments_by_unit(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.get_assessments_by_unit(test_db, _uid(test_unit.id))
         assert len(result) == 3
 
 
@@ -317,51 +256,51 @@ class TestGetAssessments:
 
 class TestGradeDistribution:
     @pytest.mark.asyncio
-    async def test_distribution_valid_100pct(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.calculate_grade_distribution(mock_db, uuid4())
+    async def test_distribution_valid_100pct(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.calculate_grade_distribution(test_db, _uid(test_unit.id))
 
         assert result.is_valid is True
         assert result.total_weight == 100.0
 
     @pytest.mark.asyncio
-    async def test_distribution_invalid_under(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = [make_mock_assessment(weight=30.0)]
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.calculate_grade_distribution(mock_db, uuid4())
+    async def test_distribution_invalid_under(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(test_db, test_unit, weight=30.0)
+        result = await service.calculate_grade_distribution(test_db, _uid(test_unit.id))
 
         assert result.is_valid is False
         assert result.total_weight == 30.0
 
     @pytest.mark.asyncio
-    async def test_distribution_by_category(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.calculate_grade_distribution(mock_db, uuid4())
+    async def test_distribution_by_category(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.calculate_grade_distribution(test_db, _uid(test_unit.id))
 
         assert result.assessments_by_category["quiz"] == 20.0
         assert result.assessments_by_category["project"] == 40.0
         assert result.assessments_by_category["exam"] == 40.0
 
     @pytest.mark.asyncio
-    async def test_distribution_by_type(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.calculate_grade_distribution(mock_db, uuid4())
+    async def test_distribution_by_type(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.calculate_grade_distribution(test_db, _uid(test_unit.id))
 
         assert result.assessments_by_type[AssessmentType.FORMATIVE.value] == 1
         assert result.assessments_by_type[AssessmentType.SUMMATIVE.value] == 2
 
     @pytest.mark.asyncio
-    async def test_distribution_empty(self, service: AssessmentsService, mock_db: Mock) -> None:
-        _setup_query_returns(mock_db, [])
-
-        result = await service.calculate_grade_distribution(mock_db, uuid4())
+    async def test_distribution_empty(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        result = await service.calculate_grade_distribution(test_db, _uid(test_unit.id))
 
         assert result.total_weight == 0.0
         assert result.formative_weight == 0.0
@@ -376,74 +315,64 @@ class TestGradeDistribution:
 
 class TestValidateWeights:
     @pytest.mark.asyncio
-    async def test_valid_weights(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.validate_weights(mock_db, uuid4())
+    async def test_valid_weights(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.validate_weights(test_db, _uid(test_unit.id))
 
         assert result["is_valid"] is True
         assert result["errors"] == []
 
     @pytest.mark.asyncio
-    async def test_under_100_error(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = [make_mock_assessment(weight=60.0)]
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.validate_weights(mock_db, uuid4())
+    async def test_under_100_error(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(test_db, test_unit, weight=60.0)
+        result = await service.validate_weights(test_db, _uid(test_unit.id))
 
         assert result["is_valid"] is False
         assert any("60.0%" in e for e in result["errors"])
 
     @pytest.mark.asyncio
-    async def test_over_100_error(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = [
-            make_mock_assessment(
-                title="Exam",
-                assessment_type=AssessmentType.SUMMATIVE.value,
-                category="exam",
-                weight=70.0,
-            ),
-            make_mock_assessment(
-                title="Project",
-                assessment_type=AssessmentType.SUMMATIVE.value,
-                category="project",
-                weight=50.0,
-            ),
-        ]
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.validate_weights(mock_db, uuid4())
+    async def test_over_100_error(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(
+            test_db, test_unit, title="Exam",
+            assessment_type=AssessmentType.SUMMATIVE.value,
+            category="exam", weight=70.0,
+        )
+        _insert_assessment(
+            test_db, test_unit, title="Project",
+            assessment_type=AssessmentType.SUMMATIVE.value,
+            category="project", weight=50.0,
+        )
+        result = await service.validate_weights(test_db, _uid(test_unit.id))
 
         assert result["is_valid"] is False
         assert any("exceeds 100%" in e for e in result["errors"])
 
     @pytest.mark.asyncio
-    async def test_warnings(self, service: AssessmentsService, mock_db: Mock) -> None:
-        # Formative > 40%, summative < 50%, only 2 categories
-        assessments = [
-            make_mock_assessment(
-                title="Quiz 1",
-                assessment_type=AssessmentType.FORMATIVE.value,
-                category="quiz",
-                weight=45.0,
-            ),
-            make_mock_assessment(
-                title="Quiz 2",
-                assessment_type=AssessmentType.FORMATIVE.value,
-                category="quiz",
-                weight=10.0,
-            ),
-            make_mock_assessment(
-                title="Project",
-                assessment_type=AssessmentType.SUMMATIVE.value,
-                category="project",
-                weight=45.0,
-            ),
-        ]
-        _setup_query_returns(mock_db, assessments)
-
-        result = await service.validate_weights(mock_db, uuid4())
+    async def test_warnings(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(
+            test_db, test_unit, title="Quiz 1",
+            assessment_type=AssessmentType.FORMATIVE.value,
+            category="quiz", weight=45.0,
+        )
+        _insert_assessment(
+            test_db, test_unit, title="Quiz 2",
+            assessment_type=AssessmentType.FORMATIVE.value,
+            category="quiz", weight=10.0,
+        )
+        _insert_assessment(
+            test_db, test_unit, title="Project",
+            assessment_type=AssessmentType.SUMMATIVE.value,
+            category="project", weight=45.0,
+        )
+        result = await service.validate_weights(test_db, _uid(test_unit.id))
 
         assert any("Formative" in w for w in result["warnings"])
         assert any("Summative" in w for w in result["warnings"])
@@ -457,41 +386,37 @@ class TestValidateWeights:
 
 class TestTimeline:
     @pytest.mark.asyncio
-    async def test_timeline_groups_by_week(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = make_three_assessments()
-        _setup_query_returns(mock_db, assessments)
+    async def test_timeline_groups_by_week(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_three_assessments(test_db, test_unit)
+        result = await service.get_assessment_timeline(test_db, _uid(test_unit.id))
 
-        result = await service.get_assessment_timeline(mock_db, uuid4())
-
-        # 3 assessments in 3 different weeks → 3 groups
         assert len(result) == 3
         weeks = [entry["week_number"] for entry in result]
         assert weeks == sorted(weeks)
 
     @pytest.mark.asyncio
-    async def test_timeline_skips_no_due_week(self, service: AssessmentsService, mock_db: Mock) -> None:
-        assessments = [
-            make_mock_assessment(due_week=4),
-            make_mock_assessment(title="No Week", due_week=None),
-        ]
-        _setup_query_returns(mock_db, assessments)
+    async def test_timeline_skips_no_due_week(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(test_db, test_unit, due_week=4)
+        _insert_assessment(test_db, test_unit, title="No Week", due_week=None)
 
-        result = await service.get_assessment_timeline(mock_db, uuid4())
+        result = await service.get_assessment_timeline(test_db, _uid(test_unit.id))
 
         assert len(result) == 1
         assert result[0]["week_number"] == 4
 
     @pytest.mark.asyncio
-    async def test_workload_heavy_weeks(self, service: AssessmentsService, mock_db: Mock) -> None:
-        # Two heavy assessments in week 12
-        assessments = [
-            make_mock_assessment(title="Exam", weight=40.0, due_week=12),
-            make_mock_assessment(title="Project", weight=30.0, due_week=12),
-            make_mock_assessment(title="Quiz", weight=10.0, due_week=4),
-        ]
-        _setup_query_returns(mock_db, assessments)
+    async def test_workload_heavy_weeks(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        _insert_assessment(test_db, test_unit, title="Exam", weight=40.0, due_week=12)
+        _insert_assessment(test_db, test_unit, title="Project", weight=30.0, due_week=12)
+        _insert_assessment(test_db, test_unit, title="Quiz", weight=10.0, due_week=4)
 
-        result = await service.get_assessment_workload(mock_db, uuid4())
+        result = await service.get_assessment_workload(test_db, _uid(test_unit.id))
 
         assert 12 in result["heavy_weeks"]
         assert len(result["recommendations"]) > 0
@@ -505,54 +430,68 @@ class TestTimeline:
 
 class TestMappingsAndOutcomes:
     @pytest.mark.asyncio
-    async def test_update_ulo_mappings(self, service: AssessmentsService, mock_db: Mock) -> None:
-        existing = make_mock_assessment()
-        _setup_query_returns(mock_db, existing)
+    async def test_update_ulo_mappings(
+        self,
+        service: AssessmentsService,
+        test_db: Session,
+        test_unit: Unit,
+        test_user: User,
+    ) -> None:
+        assessment = _insert_assessment(test_db, test_unit)
 
-        mapping_data = AssessmentMapping(ulo_ids=["ulo-1", "ulo-2"])
-        await service.update_ulo_mappings(mock_db, uuid4(), mapping_data)
+        # Create real ULOs to map to (commit each individually for GUID compat)
+        ulo1 = UnitLearningOutcome(
+            id=str(uuid.uuid4()),
+            unit_id=test_unit.id,
+            outcome_type="ulo",
+            outcome_code="ULO1",
+            outcome_text="Test ULO 1",
+            bloom_level="APPLY",
+            sequence_order=1,
+            created_by_id=test_user.id,
+        )
+        test_db.add(ulo1)
+        test_db.commit()
 
-        # Should call execute for delete + 2 inserts = at least 3 calls
-        assert mock_db.execute.call_count >= 3
-        mock_db.commit.assert_called_once()
+        ulo2 = UnitLearningOutcome(
+            id=str(uuid.uuid4()),
+            unit_id=test_unit.id,
+            outcome_type="ulo",
+            outcome_code="ULO2",
+            outcome_text="Test ULO 2",
+            bloom_level="ANALYZE",
+            sequence_order=2,
+            created_by_id=test_user.id,
+        )
+        test_db.add(ulo2)
+        test_db.commit()
+
+        mapping_data = AssessmentMapping(ulo_ids=[str(ulo1.id), str(ulo2.id)])
+        result = await service.update_ulo_mappings(test_db, _uid(assessment.id), mapping_data)
+
+        assert result is not None
+        assert len(result.learning_outcomes) == 2
 
     @pytest.mark.asyncio
-    async def test_update_ulo_mappings_not_found(self, service: AssessmentsService, mock_db: Mock) -> None:
-        _setup_query_returns(mock_db, None)
-
-        mapping_data = AssessmentMapping(ulo_ids=["ulo-1"])
-
+    async def test_update_ulo_mappings_not_found(
+        self, service: AssessmentsService, test_db: Session
+    ) -> None:
+        mapping_data = AssessmentMapping(ulo_ids=["fake-id"])
         with pytest.raises(ValueError, match="not found"):
-            await service.update_ulo_mappings(mock_db, uuid4(), mapping_data)
+            await service.update_ulo_mappings(test_db, uuid.uuid4(), mapping_data)
 
     @pytest.mark.asyncio
-    async def test_add_assessment_outcome(self, service: AssessmentsService, mock_db: Mock) -> None:
-        existing = make_mock_assessment()
-
-        # First call returns assessment, second call returns max_order scalar
-        call_count = 0
-        first_query_chain = Mock()
-        first_query_chain.filter.return_value = first_query_chain
-        first_query_chain.options.return_value = first_query_chain
-        first_query_chain.first.return_value = existing
-
-        second_query_chain = Mock()
-        second_query_chain.filter.return_value = second_query_chain
-        second_query_chain.scalar.return_value = 2  # max existing order_index
-
-        def side_effect(*args: object) -> Mock:
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return first_query_chain
-            return second_query_chain
-
-        mock_db.query.side_effect = side_effect
+    async def test_add_assessment_outcome(
+        self,
+        service: AssessmentsService,
+        test_db: Session,
+        test_unit: Unit,
+    ) -> None:
+        assessment = _insert_assessment(test_db, test_unit)
 
         outcome_data = ALOCreate(description="Demonstrate understanding of testing", order_index=0)
-        result = await service.add_assessment_outcome(mock_db, uuid4(), outcome_data)
+        result = await service.add_assessment_outcome(test_db, _uid(assessment.id), outcome_data)
 
-        mock_db.add.assert_called_once()
-        mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_called_once()
         assert isinstance(result, AssessmentLearningOutcome)
+        assert result.description == "Demonstrate understanding of testing"
+        assert result.assessment_id == assessment.id

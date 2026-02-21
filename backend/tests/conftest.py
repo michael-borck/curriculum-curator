@@ -29,6 +29,15 @@ from app.models import (
     User,
     UserRole,
 )
+from app.models.accreditation_mappings import (
+    ULOGraduateCapabilityMapping,
+    UnitAoLMapping,
+    UnitSDGMapping,
+)
+from app.models.assessment import Assessment, AssessmentType
+from app.models.learning_outcome import UnitLearningOutcome
+from app.models.weekly_material import WeeklyMaterial
+from app.models.weekly_topic import WeeklyTopic
 
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
@@ -202,3 +211,230 @@ def test_unit_outline(
     test_db.commit()
     test_db.refresh(outline)
     return outline
+
+
+# ──────────────────────────────────────────────────────────────
+# Additional fixtures for export / assessment tests
+# ──────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def test_assessment(test_db: Session, test_unit: Unit) -> Assessment:
+    """Insert a real Assessment row into the test database."""
+    assessment = Assessment(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        title="Quiz 1",
+        type=AssessmentType.FORMATIVE.value,
+        category="quiz",
+        weight=20.0,
+        description="Short quiz on fundamentals",
+        due_week=4,
+        status="draft",
+    )
+    test_db.add(assessment)
+    test_db.commit()
+    test_db.refresh(assessment)
+    return assessment
+
+
+@pytest.fixture
+def test_weekly_topic(
+    test_db: Session,
+    test_unit_outline: UnitOutline,
+    test_unit: Unit,
+    test_user: User,
+) -> WeeklyTopic:
+    """Insert a real WeeklyTopic row into the test database."""
+    topic = WeeklyTopic(
+        id=str(uuid.uuid4()),
+        unit_outline_id=test_unit_outline.id,
+        unit_id=test_unit.id,
+        week_number=1,
+        topic_title="HTML Basics",
+        created_by_id=test_user.id,
+    )
+    test_db.add(topic)
+    test_db.commit()
+    test_db.refresh(topic)
+    return topic
+
+
+@pytest.fixture
+def test_weekly_material(test_db: Session, test_unit: Unit) -> WeeklyMaterial:
+    """Insert a real WeeklyMaterial row into the test database."""
+    material = WeeklyMaterial(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        week_number=1,
+        title="HTML Lecture",
+        type="lecture",
+        description="<p>Introduction to HTML tags and structure.</p>",
+        order_index=0,
+    )
+    test_db.add(material)
+    test_db.commit()
+    test_db.refresh(material)
+    return material
+
+
+@pytest.fixture
+def test_ulo(
+    test_db: Session, test_unit: Unit, test_user: User
+) -> UnitLearningOutcome:
+    """Insert a real UnitLearningOutcome row into the test database."""
+    ulo = UnitLearningOutcome(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        outcome_type="ulo",
+        outcome_code="ULO1",
+        outcome_text="Analyze web technologies and their applications",
+        bloom_level="ANALYZE",
+        sequence_order=1,
+        created_by_id=test_user.id,
+    )
+    test_db.add(ulo)
+    test_db.commit()
+    test_db.refresh(ulo)
+    return ulo
+
+
+@pytest.fixture
+def populated_unit(
+    test_db: Session,
+    test_unit: Unit,
+    test_unit_outline: UnitOutline,
+    test_user: User,
+) -> Unit:
+    """Populate a unit with topics, materials, ULOs, assessments, and accreditation data.
+
+    Creates:
+    - 3 weekly topics (weeks 1-3)
+    - 3 weekly materials (weeks 1-2)
+    - 2 ULOs with graduate capability mapping
+    - 2 assessments (formative + summative)
+    - AoL and SDG mappings
+    """
+    # Weekly topics — commit each individually to avoid GUID sentinel mismatch
+    for week_num, title in [(1, "HTML Basics"), (2, "CSS Fundamentals"), (3, "JavaScript Intro")]:
+        topic = WeeklyTopic(
+            id=str(uuid.uuid4()),
+            unit_outline_id=test_unit_outline.id,
+            unit_id=test_unit.id,
+            week_number=week_num,
+            topic_title=title,
+            created_by_id=test_user.id,
+        )
+        test_db.add(topic)
+        test_db.commit()
+
+    # Weekly materials
+    materials_data = [
+        (1, "HTML Lecture", "lecture", "<p>Introduction to HTML tags and structure.</p>", 0),
+        (1, "HTML Activity", "activity", "<p>Build your first web page.</p>", 1),
+        (2, "CSS Lecture", "lecture", "<p>Styling with CSS selectors.</p>", 0),
+    ]
+    for week_num, title, mat_type, desc, order in materials_data:
+        mat = WeeklyMaterial(
+            id=str(uuid.uuid4()),
+            unit_id=test_unit.id,
+            week_number=week_num,
+            title=title,
+            type=mat_type,
+            description=desc,
+            order_index=order,
+        )
+        test_db.add(mat)
+        test_db.commit()
+
+    # ULOs
+    ulo1 = UnitLearningOutcome(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        outcome_type="ulo",
+        outcome_code="ULO1",
+        outcome_text="Analyze web technologies and their applications",
+        bloom_level="ANALYZE",
+        sequence_order=1,
+        created_by_id=test_user.id,
+    )
+    test_db.add(ulo1)
+    test_db.commit()
+
+    ulo2 = UnitLearningOutcome(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        outcome_type="ulo",
+        outcome_code="ULO2",
+        outcome_text="Create responsive web applications",
+        bloom_level="CREATE",
+        sequence_order=2,
+        created_by_id=test_user.id,
+    )
+    test_db.add(ulo2)
+    test_db.commit()
+
+    # Graduate Capability mapping on ULO1
+    gc = ULOGraduateCapabilityMapping(
+        id=str(uuid.uuid4()),
+        ulo_id=ulo1.id,
+        capability_code="GC1",
+    )
+    test_db.add(gc)
+    test_db.commit()
+
+    # Assessments
+    a1 = Assessment(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        title="HTML Quiz",
+        type=AssessmentType.FORMATIVE.value,
+        category="quiz",
+        weight=20.0,
+        description="Short quiz on HTML fundamentals",
+        due_week=4,
+        duration="30 minutes",
+        submission_type="online",
+        group_work=False,
+    )
+    test_db.add(a1)
+    test_db.commit()
+
+    a2 = Assessment(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        title="Web Project",
+        type=AssessmentType.SUMMATIVE.value,
+        category="project",
+        weight=40.0,
+        description="Build a complete website",
+        due_week=12,
+        submission_type="online",
+        group_work=True,
+        specification="<h3>Requirements</h3><p>Build a responsive site.</p>",
+    )
+    test_db.add(a2)
+    test_db.commit()
+
+    # AoL mapping
+    aol = UnitAoLMapping(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        competency_code="AOL2",
+        level="R",
+        notes="Critical thinking reinforced",
+    )
+    test_db.add(aol)
+    test_db.commit()
+
+    # SDG mapping
+    sdg = UnitSDGMapping(
+        id=str(uuid.uuid4()),
+        unit_id=test_unit.id,
+        sdg_code="SDG4",
+        notes="Quality Education",
+    )
+    test_db.add(sdg)
+    test_db.commit()
+
+    return test_unit
