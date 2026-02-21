@@ -489,6 +489,8 @@ const ContentCreator = () => {
                 content={content}
                 onChange={setContent}
                 pedagogyHints={[getPedagogyHint(pedagogy)]}
+                unitId={selectedUnitId || unitId}
+                materialId={contentId}
               />
             )}
           </div>

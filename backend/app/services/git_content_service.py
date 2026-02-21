@@ -369,6 +369,112 @@ class GitContentService:
 
         return self.get_current_commit(unit_id)
 
+    def save_binary(
+        self,
+        unit_id: str,
+        path: str,
+        data: bytes,
+        user_email: str,
+        message: str | None = None,
+    ) -> str:
+        """
+        Save binary data (e.g. an image) to unit's Git repository.
+
+        Args:
+            unit_id: Unit identifier
+            path: Relative path for the file within unit repo
+            data: Binary data to save
+            user_email: Email of user making the change
+            message: Optional commit message
+
+        Returns:
+            Commit hash
+        """
+        repo_path = self._ensure_unit_repo(unit_id)
+
+        file_path = repo_path / path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_path.write_bytes(data)
+
+        self._run_git(repo_path, "add", path)
+
+        if not message:
+            message = f"Added {Path(path).name}"
+
+        commit_message = f"{message}\n\nUpdated by: {user_email}"
+
+        try:
+            self._run_git(repo_path, "commit", "-m", commit_message)
+            return self._run_git(repo_path, "rev-parse", "HEAD")
+        except subprocess.CalledProcessError:
+            return self.get_current_commit(unit_id, path)
+
+    def delete_file(self, unit_id: str, path: str, user_email: str, message: str | None = None) -> str:
+        """
+        Delete a file from repository (works for both text and binary).
+
+        Args:
+            unit_id: Unit identifier
+            path: File path to delete
+            user_email: User performing the deletion
+            message: Optional commit message
+
+        Returns:
+            Commit hash
+        """
+        repo_path = self._get_unit_repo_path(unit_id)
+        file_path = repo_path / path
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        self._run_git(repo_path, "rm", path)
+        commit_message = f"{message or f'Deleted {Path(path).name}'}\n\nDeleted by: {user_email}"
+        self._run_git(repo_path, "commit", "-m", commit_message)
+
+        return self.get_current_commit(unit_id)
+
+    def list_directory(self, unit_id: str, dir_path: str) -> list[str]:
+        """
+        List files in a subdirectory of the unit repository.
+
+        Args:
+            unit_id: Unit identifier
+            dir_path: Relative directory path within unit repo
+
+        Returns:
+            List of filenames in the directory
+        """
+        repo_path = self._get_unit_repo_path(unit_id)
+        full_path = repo_path / dir_path
+
+        if not full_path.exists() or not full_path.is_dir():
+            return []
+
+        return [f.name for f in full_path.iterdir() if f.is_file()]
+
+    def read_binary(self, unit_id: str, path: str) -> bytes:
+        """
+        Read binary file from unit's repository.
+
+        Args:
+            unit_id: Unit identifier
+            path: Relative path to file
+
+        Returns:
+            File bytes
+        """
+        repo_path = self._get_unit_repo_path(unit_id)
+
+        if not repo_path.exists():
+            raise FileNotFoundError(f"Unit repository not found: {unit_id}")
+
+        file_path = repo_path / path
+        if file_path.exists():
+            return file_path.read_bytes()
+        raise FileNotFoundError(f"File not found: {path} in unit {unit_id}")
+
     def _file_exists_in_git(self, unit_id: str, path: str) -> bool:
         """Check if file exists in Git repository"""
         repo_path = self._get_unit_repo_path(unit_id)

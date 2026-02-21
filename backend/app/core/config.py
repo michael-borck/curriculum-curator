@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: list[str] = [".md", ".docx", ".pptx", ".pdf", ".txt"]
 
+    # Image Upload
+    MAX_IMAGE_SIZE: int = 5 * 1024 * 1024  # 5MB
+    IMAGE_EXTENSIONS: list[str] = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
+
     # Git Content Repository
     CONTENT_REPO_PATH: str = "./content"  # Default to local content directory
 

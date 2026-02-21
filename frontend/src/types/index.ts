@@ -185,6 +185,8 @@ export interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   pedagogyHints?: string[] | undefined;
+  unitId?: string | undefined;
+  materialId?: string | undefined;
 }
 
 // API related types

@@ -2,13 +2,19 @@
 API endpoints for managing weekly materials
 """
 
+import hashlib
+import mimetypes
+import re
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.config import settings
 from app.models.user import User
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.learning_outcomes import LLOResponse, ULOResponse
@@ -603,3 +609,216 @@ async def revert_material(
     )
 
     return _to_material_response(material)
+
+
+# =============================================================================
+# Image Upload Endpoints
+# =============================================================================
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Sanitize a filename to be safe for filesystem storage."""
+    p = Path(filename)
+    stem = p.stem
+    ext = p.suffix.lower()
+
+    # Replace non-alphanumeric chars (except hyphens/underscores) with hyphens
+    stem = re.sub(r"[^\w\-]", "-", stem)
+    # Collapse multiple hyphens
+    stem = re.sub(r"-+", "-", stem).strip("-")
+
+    if not stem:
+        stem = "image"
+
+    return f"{stem}{ext}"
+
+
+def _images_dir_for_material(material: WeeklyMaterial) -> str:
+    """Build the Git-relative path for a material's images directory."""
+    git_path = _git_path_for_material(material)
+    return f"{git_path}.images"
+
+
+@router.post("/units/{unit_id}/materials/{material_id}/images")
+async def upload_material_image(
+    unit_id: UUID,
+    material_id: UUID,
+    file: UploadFile,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Upload an image for a material."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
+
+    if str(material.unit_id) != str(unit_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found in this unit",
+        )
+
+    # Validate file extension
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required"
+        )
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in settings.IMAGE_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported image type '{ext}'. Allowed: {', '.join(settings.IMAGE_EXTENSIONS)}",
+        )
+
+    # Read and validate size
+    data = await file.read()
+    if len(data) > settings.MAX_IMAGE_SIZE:
+        max_mb = settings.MAX_IMAGE_SIZE / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Image too large. Maximum size is {max_mb:.0f}MB",
+        )
+
+    # Sanitize filename
+    safe_name = _sanitize_filename(file.filename)
+
+    # Handle collisions by adding a short hash
+    git = get_git_service()
+    images_dir = _images_dir_for_material(material)
+    existing = git.list_directory(str(unit_id), images_dir)
+
+    if safe_name in existing:
+        content_hash = hashlib.sha256(data).hexdigest()[:8]
+        stem = Path(safe_name).stem
+        safe_name = f"{stem}-{content_hash}{ext}"
+
+    image_path = f"{images_dir}/{safe_name}"
+
+    git.save_binary(
+        unit_id=str(unit_id),
+        path=image_path,
+        data=data,
+        user_email=current_user.email,
+        message=f"Added image {safe_name} to {material.title}",
+    )
+
+    url = f"/api/materials/units/{unit_id}/materials/{material_id}/images/{safe_name}"
+
+    return {"url": url, "filename": safe_name}
+
+
+@router.get("/units/{unit_id}/materials/{material_id}/images")
+async def list_material_images(
+    unit_id: UUID,
+    material_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """List all images for a material."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
+
+    if str(material.unit_id) != str(unit_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found in this unit",
+        )
+
+    git = get_git_service()
+    images_dir = _images_dir_for_material(material)
+    filenames = git.list_directory(str(unit_id), images_dir)
+
+    return [
+        {
+            "filename": name,
+            "url": f"/api/materials/units/{unit_id}/materials/{material_id}/images/{name}",
+        }
+        for name in sorted(filenames)
+    ]
+
+
+@router.get("/units/{unit_id}/materials/{material_id}/images/{filename}")
+async def serve_material_image(
+    unit_id: UUID,
+    material_id: UUID,
+    filename: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Response:
+    """Serve an image file for a material."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
+
+    if str(material.unit_id) != str(unit_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found in this unit",
+        )
+
+    git = get_git_service()
+    images_dir = _images_dir_for_material(material)
+    image_path = f"{images_dir}/{filename}"
+
+    try:
+        data = git.read_binary(str(unit_id), image_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
+        ) from exc
+
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.delete("/units/{unit_id}/materials/{material_id}/images/{filename}")
+async def delete_material_image(
+    unit_id: UUID,
+    material_id: UUID,
+    filename: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Delete an image from a material."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
+
+    if str(material.unit_id) != str(unit_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Material not found in this unit",
+        )
+
+    git = get_git_service()
+    images_dir = _images_dir_for_material(material)
+    image_path = f"{images_dir}/{filename}"
+
+    try:
+        git.delete_file(
+            unit_id=str(unit_id),
+            path=image_path,
+            user_email=current_user.email,
+            message=f"Deleted image {filename} from {material.title}",
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
+        ) from exc
+
+    return {"message": f"Image {filename} deleted successfully"}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -9,6 +10,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { VideoNode } from './VideoNode';
 import { YoutubeNode } from './YoutubeNode';
 import { MermaidNode } from './MermaidNode';
+import ImageInsertDialog from './ImageInsertDialog';
 import { createLowlight } from 'lowlight';
 import js from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
@@ -45,7 +47,13 @@ import {
   Info,
 } from 'lucide-react';
 
-const MenuBar = ({ editor }: { editor: Editor | null }) => {
+const MenuBar = ({
+  editor,
+  onImageClick,
+}: {
+  editor: Editor | null;
+  onImageClick: () => void;
+}) => {
   if (!editor) return null;
 
   return (
@@ -124,15 +132,9 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
         <TableIcon size={18} />
       </button>
       <button
-        onClick={() => {
-          const url = window.prompt('Enter image URL:');
-          if (url) {
-            const alt = window.prompt('Alt text (optional):') || '';
-            editor.chain().focus().setImage({ src: url, alt }).run();
-          }
-        }}
+        onClick={onImageClick}
         className='p-2 rounded hover:bg-gray-100'
-        title='Insert image from URL'
+        title='Insert image'
       >
         <ImagePlus size={18} />
       </button>
@@ -190,9 +192,12 @@ const RichTextEditor = ({
   content,
   onChange,
   pedagogyHints = [],
+  unitId,
+  materialId,
 }: RichTextEditorProps) => {
   const { isAIDisabled } = useAILevel();
   const globalStyle = useTeachingStyleStore(state => state.globalStyle);
+  const [showImageDialog, setShowImageDialog] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -217,9 +222,20 @@ const RichTextEditor = ({
     ? getPedagogyStaticGuidance(globalStyle)
     : [];
 
+  const handleImageInsert = (src: string, alt: string) => {
+    editor?.chain().focus().setImage({ src, alt }).run();
+  };
+
   return (
     <div className='border border-gray-300 rounded-lg overflow-hidden'>
-      <MenuBar editor={editor} />
+      <MenuBar editor={editor} onImageClick={() => setShowImageDialog(true)} />
+      <ImageInsertDialog
+        isOpen={showImageDialog}
+        onClose={() => setShowImageDialog(false)}
+        onInsert={handleImageInsert}
+        unitId={unitId}
+        materialId={materialId}
+      />
       <EditorContent
         editor={editor}
         className='prose max-w-none p-4 min-h-[400px] focus:outline-none'

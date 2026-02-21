@@ -316,5 +316,35 @@ export const remediateContentStream = async (
   }
 };
 
+// Material image endpoints
+export const uploadMaterialImage = (
+  unitId: string,
+  materialId: string,
+  file: File
+): Promise<ApiResponse<{ url: string; filename: string }>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(
+    `/materials/units/${unitId}/materials/${materialId}/images`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+};
+
+export const listMaterialImages = (
+  unitId: string,
+  materialId: string
+): Promise<ApiResponse<{ filename: string; url: string }[]>> =>
+  api.get(`/materials/units/${unitId}/materials/${materialId}/images`);
+
+export const deleteMaterialImage = (
+  unitId: string,
+  materialId: string,
+  filename: string
+): Promise<ApiResponse<void>> =>
+  api.delete(
+    `/materials/units/${unitId}/materials/${materialId}/images/${filename}`
+  );
+
 export default api;
 export { api };
