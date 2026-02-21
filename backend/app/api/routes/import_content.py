@@ -258,7 +258,7 @@ async def create_unit_structure_from_pdf(
                 outcome = UnitLearningOutcome(
                     id=uuid.uuid4(),
                     unit_id=unit_id,
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     outcome_type=lo_data["outcome_type"],
                     outcome_text=lo_data["outcome_text"],
                     bloom_level=lo_data["bloom_level"] or "understand",
@@ -273,7 +273,7 @@ async def create_unit_structure_from_pdf(
             for topic_data in course_mapping["weekly_topics"]:
                 topic = WeeklyTopic(
                     id=uuid.uuid4(),
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     unit_id=unit_id,
                     week_number=topic_data["week_number"],
                     topic_title=topic_data["topic_title"],
@@ -296,7 +296,7 @@ async def create_unit_structure_from_pdf(
             for assess_data in course_mapping["assessments"]:
                 assessment = AssessmentPlan(
                     id=uuid.uuid4(),
-                    course_outline_id=outline.id,
+                    unit_outline_id=outline.id,
                     unit_id=unit_id,
                     assessment_name=assess_data["assessment_name"],
                     assessment_type=assess_data["assessment_type"],

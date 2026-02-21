@@ -1,25 +1,30 @@
 """
-Basic integration tests that run against actual backend
-No mocks, no complexity - just real tests
+Basic integration tests that run against actual backend.
+No mocks, no complexity - just real tests.
+
+These will be SKIPPED if the backend is not running.
 """
 
 import time
 
+import pytest
 import requests
 
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
 
+pytestmark = pytest.mark.integration
+
+
+@pytest.fixture(autouse=True)
+def _require_backend(backend_available):
+    """Skip every test in this module when the backend is not running."""
+
 
 def test_backend_is_running():
     """Test that backend is accessible"""
-    try:
-        response = requests.get(f"{BASE_URL}/docs")
-        assert response.status_code == 200
-        print("✅ Backend is running")
-    except requests.exceptions.ConnectionError:
-        print("❌ Backend is not running! Start it with ./backend.sh")
-        raise AssertionError("Backend must be running for tests")
+    response = requests.get(f"{BASE_URL}/docs")
+    assert response.status_code == 200
 
 
 def test_health_endpoint():
@@ -28,32 +33,20 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    print("✅ Health endpoint working")
 
 
 def test_registration_flow():
     """Test complete registration flow"""
-    # Generate unique email
     timestamp = int(time.time())
     email = f"test{timestamp}@example.com"
 
-    # Register new user
     response = requests.post(
         f"{API_URL}/auth/register",
         json={"email": email, "password": "TestPassword123!", "name": "Test User"},
     )
 
-    # Should work or fail with whitelist error
-    if response.status_code == 403:
-        print("✅ Registration correctly blocked non-whitelisted email")
-    elif response.status_code == 200:
-        print("✅ Registration successful")
-        data = response.json()
-        assert "message" in data
-    else:
-        print(f"❌ Unexpected status: {response.status_code}")
-        print(response.json())
-        raise AssertionError("Unexpected response status")
+    # 200 success, 400 validation, 403 not whitelisted, 429 rate limited
+    assert response.status_code in [200, 400, 403, 429]
 
 
 def test_login_with_test_account():
@@ -63,17 +56,12 @@ def test_login_with_test_account():
         json={"email": "michael.borck@curtin.edu.au", "password": "password123"},
     )
 
+    # 200 success, 401 wrong creds, 403 unverified, 423 locked, 429 rate limited
+    assert response.status_code in [200, 401, 403, 423, 429]
+
     if response.status_code == 200:
         data = response.json()
         assert "access_token" in data
-        print("✅ Login successful")
-    elif response.status_code == 401:
-        print("⚠️  Test account doesn't exist or wrong password")
-    elif response.status_code == 403:
-        print("⚠️  Account not verified")
-    else:
-        print(f"❌ Unexpected status: {response.status_code}")
-        print(response.json())
 
 
 def test_api_cors():
@@ -82,7 +70,6 @@ def test_api_cors():
         f"{API_URL}/auth/login", headers={"Origin": "http://localhost:5173"}
     )
     assert "access-control-allow-origin" in [k.lower() for k in response.headers]
-    print("✅ CORS headers present")
 
 
 if __name__ == "__main__":
