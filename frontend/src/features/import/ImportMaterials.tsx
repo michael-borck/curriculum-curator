@@ -16,8 +16,13 @@ import {
   Square,
   Plus,
   FolderOpen,
+  Sparkles,
 } from 'lucide-react';
-import api from '../../services/api';
+import api, {
+  enhanceContent,
+  getContent,
+  updateContent,
+} from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 interface UploadedFile {
@@ -102,6 +107,10 @@ const ImportMaterials = () => {
     }>
   >([]);
   const [loadingUnassigned, setLoadingUnassigned] = useState(false);
+
+  // AI enhance state
+  const [enhancingFiles, setEnhancingFiles] = useState<Set<string>>(new Set());
+  const [enhancedFiles, setEnhancedFiles] = useState<Set<string>>(new Set());
 
   // New unit creation state
   const [showCreateUnit, setShowCreateUnit] = useState(false);
@@ -300,6 +309,42 @@ const ImportMaterials = () => {
       }
     } catch (error) {
       console.error('Error bulk updating weeks:', error);
+    }
+  };
+
+  const handleEnhanceImported = async (fileInfo: UploadedFile) => {
+    const contentId = fileInfo.result?.content_id;
+    if (!contentId || !selectedUnit) return;
+
+    setEnhancingFiles(prev => new Set(prev).add(fileInfo.id));
+
+    try {
+      // Fetch the content body
+      const contentResponse = await getContent(selectedUnit, contentId);
+      const body = contentResponse.data.body;
+      if (!body) throw new Error('No content body found');
+
+      // Enhance with AI
+      const enhanceResponse = await enhanceContent(body, 'inquiry-based', {
+        unitId: selectedUnit,
+      });
+      const enhancedBody = enhanceResponse.data.enhanced_content;
+      if (!enhancedBody) throw new Error('No enhanced content returned');
+
+      // Save the enhanced content back
+      await updateContent(selectedUnit, contentId, { body: enhancedBody });
+
+      setEnhancedFiles(prev => new Set(prev).add(fileInfo.id));
+    } catch (error) {
+      console.error('Enhancement failed:', error);
+      const err = error as { message?: string };
+      window.alert(`Enhancement failed: ${err.message || 'Unknown error'}`);
+    } finally {
+      setEnhancingFiles(prev => {
+        const next = new Set(prev);
+        next.delete(fileInfo.id);
+        return next;
+      });
     }
   };
 
@@ -1403,14 +1448,33 @@ const ImportMaterials = () => {
                     {file.result.content_id && selectedUnit && (
                       <div className='flex space-x-2 mt-3'>
                         <button
-                          className='px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700'
-                          onClick={() => {
-                            navigate(
-                              `/units/${selectedUnit}/content/${file.result?.content_id}/edit`
-                            );
-                          }}
+                          className={`px-3 py-1 text-sm rounded flex items-center ${
+                            enhancedFiles.has(file.id)
+                              ? 'bg-green-600 text-white'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                          disabled={
+                            enhancingFiles.has(file.id) ||
+                            enhancedFiles.has(file.id)
+                          }
+                          onClick={() => handleEnhanceImported(file)}
                         >
-                          Enhance with AI
+                          {enhancingFiles.has(file.id) ? (
+                            <>
+                              <Loader2 className='h-3.5 w-3.5 mr-1.5 animate-spin' />
+                              Enhancing...
+                            </>
+                          ) : enhancedFiles.has(file.id) ? (
+                            <>
+                              <CheckCircle className='h-3.5 w-3.5 mr-1.5' />
+                              Enhanced
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className='h-3.5 w-3.5 mr-1.5' />
+                              Enhance with AI
+                            </>
+                          )}
                         </button>
                         <button
                           className='px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700'
