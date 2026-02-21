@@ -157,9 +157,7 @@ class TestMetaJSON:
         assert unit_meta["duration_weeks"] == 12
         assert unit_meta["credit_points"] == 6
 
-    def test_meta_json_outcomes(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_meta_json_outcomes(self, test_db: Session, populated_unit: Unit) -> None:
         service = IMSCCExportService()
         buf, _ = service.export_unit(str(populated_unit.id), test_db)
         meta = self._load_meta(buf)
@@ -211,7 +209,9 @@ class TestHTMLContent:
         buf, _ = service.export_unit(str(populated_unit.id), test_db)
         with zipfile.ZipFile(buf, "r") as zf:
             # Find a week01 material file
-            week01_files = [n for n in zf.namelist() if "week01" in n and n.endswith(".html")]
+            week01_files = [
+                n for n in zf.namelist() if "week01" in n and n.endswith(".html")
+            ]
             assert len(week01_files) > 0
             html = zf.read(week01_files[0]).decode("utf-8")
             assert "<!DOCTYPE html>" in html
@@ -237,7 +237,10 @@ class TestEdgeCases:
             service.export_unit(str(uuid.uuid4()), test_db)
 
     def test_html_special_chars_escaped(self) -> None:
-        assert escape_html("<script>alert('xss')</script>") == "&lt;script&gt;alert('xss')&lt;/script&gt;"
+        assert (
+            escape_html("<script>alert('xss')</script>")
+            == "&lt;script&gt;alert('xss')&lt;/script&gt;"
+        )
         assert escape_html('He said "hello"') == "He said &quot;hello&quot;"
         assert escape_html("A & B") == "A &amp; B"
 

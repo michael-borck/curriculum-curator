@@ -541,7 +541,9 @@ async def change_password(
         )
 
     # Verify current password
-    if not security.verify_password(change_request.current_password, user.password_hash):
+    if not security.verify_password(
+        change_request.current_password, user.password_hash
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
@@ -572,7 +574,13 @@ async def update_profile(
 ):
     """Update current user profile fields"""
     update_fields: dict[str, object] = {}
-    for field_name in ("name", "institution", "department", "teaching_philosophy", "language_preference"):
+    for field_name in (
+        "name",
+        "institution",
+        "department",
+        "teaching_philosophy",
+        "language_preference",
+    ):
         value = getattr(profile_data, field_name)
         if value is not None:
             update_fields[field_name] = value

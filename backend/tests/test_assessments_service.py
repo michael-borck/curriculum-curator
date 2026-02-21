@@ -92,19 +92,31 @@ def _insert_three_assessments(db: Session, unit: Unit) -> list[Assessment]:
     """Insert 3 assessments totalling 100%."""
     return [
         _insert_assessment(
-            db, unit, title="Quiz 1",
+            db,
+            unit,
+            title="Quiz 1",
             assessment_type=AssessmentType.FORMATIVE.value,
-            category="quiz", weight=20.0, due_week=4,
+            category="quiz",
+            weight=20.0,
+            due_week=4,
         ),
         _insert_assessment(
-            db, unit, title="Project",
+            db,
+            unit,
+            title="Project",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="project", weight=40.0, due_week=8,
+            category="project",
+            weight=40.0,
+            due_week=8,
         ),
         _insert_assessment(
-            db, unit, title="Final Exam",
+            db,
+            unit,
+            title="Final Exam",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="exam", weight=40.0, due_week=12,
+            category="exam",
+            weight=40.0,
+            due_week=12,
         ),
     ]
 
@@ -178,7 +190,9 @@ class TestUpdateAssessment:
         existing = _insert_assessment(test_db, test_unit)
 
         update_data = AssessmentUpdate(title="Updated Quiz", weight=25.0)
-        result = await service.update_assessment(test_db, _uid(existing.id), update_data)
+        result = await service.update_assessment(
+            test_db, _uid(existing.id), update_data
+        )
 
         assert result is not None
         assert result.title == "Updated Quiz"
@@ -208,7 +222,10 @@ class TestDeleteAssessment:
         result = await service.delete_assessment(test_db, _uid(existing_id))
 
         assert result is True
-        assert test_db.query(Assessment).filter(Assessment.id == existing_id).first() is None
+        assert (
+            test_db.query(Assessment).filter(Assessment.id == existing_id).first()
+            is None
+        )
 
     @pytest.mark.asyncio
     async def test_delete_not_found(
@@ -339,14 +356,20 @@ class TestValidateWeights:
         self, service: AssessmentsService, test_db: Session, test_unit: Unit
     ) -> None:
         _insert_assessment(
-            test_db, test_unit, title="Exam",
+            test_db,
+            test_unit,
+            title="Exam",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="exam", weight=70.0,
+            category="exam",
+            weight=70.0,
         )
         _insert_assessment(
-            test_db, test_unit, title="Project",
+            test_db,
+            test_unit,
+            title="Project",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="project", weight=50.0,
+            category="project",
+            weight=50.0,
         )
         result = await service.validate_weights(test_db, _uid(test_unit.id))
 
@@ -358,19 +381,28 @@ class TestValidateWeights:
         self, service: AssessmentsService, test_db: Session, test_unit: Unit
     ) -> None:
         _insert_assessment(
-            test_db, test_unit, title="Quiz 1",
+            test_db,
+            test_unit,
+            title="Quiz 1",
             assessment_type=AssessmentType.FORMATIVE.value,
-            category="quiz", weight=45.0,
+            category="quiz",
+            weight=45.0,
         )
         _insert_assessment(
-            test_db, test_unit, title="Quiz 2",
+            test_db,
+            test_unit,
+            title="Quiz 2",
             assessment_type=AssessmentType.FORMATIVE.value,
-            category="quiz", weight=10.0,
+            category="quiz",
+            weight=10.0,
         )
         _insert_assessment(
-            test_db, test_unit, title="Project",
+            test_db,
+            test_unit,
+            title="Project",
             assessment_type=AssessmentType.SUMMATIVE.value,
-            category="project", weight=45.0,
+            category="project",
+            weight=45.0,
         )
         result = await service.validate_weights(test_db, _uid(test_unit.id))
 
@@ -413,7 +445,9 @@ class TestTimeline:
         self, service: AssessmentsService, test_db: Session, test_unit: Unit
     ) -> None:
         _insert_assessment(test_db, test_unit, title="Exam", weight=40.0, due_week=12)
-        _insert_assessment(test_db, test_unit, title="Project", weight=30.0, due_week=12)
+        _insert_assessment(
+            test_db, test_unit, title="Project", weight=30.0, due_week=12
+        )
         _insert_assessment(test_db, test_unit, title="Quiz", weight=10.0, due_week=4)
 
         result = await service.get_assessment_workload(test_db, _uid(test_unit.id))
@@ -467,7 +501,9 @@ class TestMappingsAndOutcomes:
         test_db.commit()
 
         mapping_data = AssessmentMapping(ulo_ids=[str(ulo1.id), str(ulo2.id)])
-        result = await service.update_ulo_mappings(test_db, _uid(assessment.id), mapping_data)
+        result = await service.update_ulo_mappings(
+            test_db, _uid(assessment.id), mapping_data
+        )
 
         assert result is not None
         assert len(result.learning_outcomes) == 2
@@ -489,8 +525,12 @@ class TestMappingsAndOutcomes:
     ) -> None:
         assessment = _insert_assessment(test_db, test_unit)
 
-        outcome_data = ALOCreate(description="Demonstrate understanding of testing", order_index=0)
-        result = await service.add_assessment_outcome(test_db, _uid(assessment.id), outcome_data)
+        outcome_data = ALOCreate(
+            description="Demonstrate understanding of testing", order_index=0
+        )
+        result = await service.add_assessment_outcome(
+            test_db, _uid(assessment.id), outcome_data
+        )
 
         assert isinstance(result, AssessmentLearningOutcome)
         assert result.description == "Demonstrate understanding of testing"

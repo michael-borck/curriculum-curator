@@ -72,7 +72,12 @@ def slugify(text: str) -> str:
 
 def escape_html(text: str) -> str:
     """Escape HTML special characters."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
 
 
 @dataclass
@@ -132,15 +137,11 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
     )
 
     aol_mappings = (
-        db.query(UnitAoLMapping)
-        .filter(UnitAoLMapping.unit_id == unit_id)
-        .all()
+        db.query(UnitAoLMapping).filter(UnitAoLMapping.unit_id == unit_id).all()
     )
 
     sdg_mappings = (
-        db.query(UnitSDGMapping)
-        .filter(UnitSDGMapping.unit_id == unit_id)
-        .all()
+        db.query(UnitSDGMapping).filter(UnitSDGMapping.unit_id == unit_id).all()
     )
 
     gc_mappings: list[ULOGraduateCapabilityMapping] = []

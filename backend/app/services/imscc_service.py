@@ -55,13 +55,28 @@ class IMSCCExportService:
 
         # Overview pages
         lo_html = self._build_learning_outcomes_html(data.learning_outcomes)
-        resources.append(("overview_learning_outcomes", "overview/learning_outcomes.html", "Learning Outcomes"))
+        resources.append(
+            (
+                "overview_learning_outcomes",
+                "overview/learning_outcomes.html",
+                "Learning Outcomes",
+            )
+        )
         file_contents["overview/learning_outcomes.html"] = lo_html
 
         accred_html = self._build_accreditation_html(
-            data.aol_mappings, data.sdg_mappings, data.gc_mappings, data.learning_outcomes
+            data.aol_mappings,
+            data.sdg_mappings,
+            data.gc_mappings,
+            data.learning_outcomes,
         )
-        resources.append(("overview_accreditation", "overview/accreditation.html", "Accreditation Mapping"))
+        resources.append(
+            (
+                "overview_accreditation",
+                "overview/accreditation.html",
+                "Accreditation Mapping",
+            )
+        )
         file_contents["overview/accreditation.html"] = accred_html
 
         # Weekly material pages
@@ -90,12 +105,20 @@ class IMSCCExportService:
 
         # Build manifest XML
         manifest_xml = self._build_manifest(
-            data.unit, data.outline, data.weekly_topics, resources, data.materials_by_week
+            data.unit,
+            data.outline,
+            data.weekly_topics,
+            resources,
+            data.materials_by_week,
         )
 
         # Build metadata JSON
         meta_json = self._build_meta_json(
-            data.unit, data.learning_outcomes, data.aol_mappings, data.sdg_mappings, data.gc_mappings
+            data.unit,
+            data.learning_outcomes,
+            data.aol_mappings,
+            data.sdg_mappings,
+            data.gc_mappings,
         )
 
         # Package into ZIP
@@ -160,41 +183,70 @@ class IMSCCExportService:
         root_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="root")
 
         # Overview folder
-        overview_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier="overview")
+        overview_item = ET.SubElement(
+            root_item, f"{{{NS_CP}}}item", identifier="overview"
+        )
         overview_title = ET.SubElement(overview_item, f"{{{NS_CP}}}title")
         overview_title.text = "Overview"
         for res_id, _href, res_title in resources:
             if res_id.startswith("overview_"):
-                item = ET.SubElement(overview_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                item = ET.SubElement(
+                    overview_item,
+                    f"{{{NS_CP}}}item",
+                    identifier=f"item_{res_id}",
+                    identifierref=res_id,
+                )
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
         # Weekly folders
-        topic_map: dict[int, WeeklyTopic] = {int(t.week_number): t for t in weekly_topics}
+        topic_map: dict[int, WeeklyTopic] = {
+            int(t.week_number): t for t in weekly_topics
+        }
         for week_num in sorted(materials_by_week.keys()):
             topic = topic_map.get(week_num)
             week_title = f"Week {week_num}"
             if topic and topic.topic_title:
                 week_title = f"Week {week_num}: {topic.topic_title}"
 
-            week_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}")
+            week_item = ET.SubElement(
+                root_item, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}"
+            )
             week_title_elem = ET.SubElement(week_item, f"{{{NS_CP}}}title")
             week_title_elem.text = week_title
 
             for res_id, _href, res_title in resources:
-                if res_id.startswith("mat_") and _href.startswith(f"week{week_num:02d}/"):
-                    item = ET.SubElement(week_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                if res_id.startswith("mat_") and _href.startswith(
+                    f"week{week_num:02d}/"
+                ):
+                    item = ET.SubElement(
+                        week_item,
+                        f"{{{NS_CP}}}item",
+                        identifier=f"item_{res_id}",
+                        identifierref=res_id,
+                    )
                     t = ET.SubElement(item, f"{{{NS_CP}}}title")
                     t.text = res_title
 
         # Assessments folder
-        assessment_resources = [(r_id, r_href, r_title) for r_id, r_href, r_title in resources if r_id.startswith("assessment_")]
+        assessment_resources = [
+            (r_id, r_href, r_title)
+            for r_id, r_href, r_title in resources
+            if r_id.startswith("assessment_")
+        ]
         if assessment_resources:
-            assess_item = ET.SubElement(root_item, f"{{{NS_CP}}}item", identifier="assessments")
+            assess_item = ET.SubElement(
+                root_item, f"{{{NS_CP}}}item", identifier="assessments"
+            )
             assess_title = ET.SubElement(assess_item, f"{{{NS_CP}}}title")
             assess_title.text = "Assessments"
             for res_id, _href, res_title in assessment_resources:
-                item = ET.SubElement(assess_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                item = ET.SubElement(
+                    assess_item,
+                    f"{{{NS_CP}}}item",
+                    identifier=f"item_{res_id}",
+                    identifierref=res_id,
+                )
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
@@ -218,7 +270,11 @@ class IMSCCExportService:
 
     def _material_to_html(self, title: str, content: str) -> str:
         """Convert material content to standalone HTML page."""
-        return HTML_TEMPLATE.format(title=escape_html(title), content=content or "<p>No content available.</p>", extra_head="")
+        return HTML_TEMPLATE.format(
+            title=escape_html(title),
+            content=content or "<p>No content available.</p>",
+            extra_head="",
+        )
 
     def _assessment_to_html(self, assessment: Assessment) -> str:
         """Convert an assessment to a standalone HTML page."""
@@ -238,7 +294,9 @@ class IMSCCExportService:
         if assessment.duration:
             parts.append(f"<tr><td>Duration</td><td>{assessment.duration}</td></tr>")
         if assessment.submission_type:
-            parts.append(f"<tr><td>Submission</td><td>{assessment.submission_type}</td></tr>")
+            parts.append(
+                f"<tr><td>Submission</td><td>{assessment.submission_type}</td></tr>"
+            )
         if assessment.group_work:
             parts.append("<tr><td>Group Work</td><td>Yes</td></tr>")
 
@@ -248,14 +306,18 @@ class IMSCCExportService:
             parts.append(f"<h2>Specification</h2>\n{assessment.specification}")
 
         content = "\n".join(parts)
-        return HTML_TEMPLATE.format(title=escape_html(str(assessment.title)), content=content, extra_head="")
+        return HTML_TEMPLATE.format(
+            title=escape_html(str(assessment.title)), content=content, extra_head=""
+        )
 
-    def _build_learning_outcomes_html(
-        self, outcomes: list[UnitLearningOutcome]
-    ) -> str:
+    def _build_learning_outcomes_html(self, outcomes: list[UnitLearningOutcome]) -> str:
         """Generate learning outcomes HTML page."""
         if not outcomes:
-            return HTML_TEMPLATE.format(title="Learning Outcomes", content="<p>No learning outcomes defined.</p>", extra_head="")
+            return HTML_TEMPLATE.format(
+                title="Learning Outcomes",
+                content="<p>No learning outcomes defined.</p>",
+                extra_head="",
+            )
 
         rows: list[str] = []
         rows.append("<table>")
@@ -268,7 +330,9 @@ class IMSCCExportService:
                 f"<td>{escape_html(str(lo.bloom_level))}</td></tr>"
             )
         rows.append("</table>")
-        return HTML_TEMPLATE.format(title="Learning Outcomes", content="\n".join(rows), extra_head="")
+        return HTML_TEMPLATE.format(
+            title="Learning Outcomes", content="\n".join(rows), extra_head=""
+        )
 
     def _build_accreditation_html(
         self,
@@ -301,7 +365,9 @@ class IMSCCExportService:
             parts.append("<tr><th>ULO</th><th>Capability</th></tr>")
             for gc in gc_mappings:
                 ulo = outcome_map.get(str(gc.ulo_id))
-                ulo_code = ulo.outcome_code if ulo and ulo.outcome_code else str(gc.ulo_id)
+                ulo_code = (
+                    ulo.outcome_code if ulo and ulo.outcome_code else str(gc.ulo_id)
+                )
                 parts.append(
                     f"<tr><td>{escape_html(ulo_code)}</td>"
                     f"<td>{escape_html(str(gc.capability_code))}</td></tr>"
@@ -323,7 +389,9 @@ class IMSCCExportService:
         if not parts:
             parts.append("<p>No accreditation mappings defined.</p>")
 
-        return HTML_TEMPLATE.format(title="Accreditation Mapping", content="\n".join(parts), extra_head="")
+        return HTML_TEMPLATE.format(
+            title="Accreditation Mapping", content="\n".join(parts), extra_head=""
+        )
 
     def _build_meta_json(
         self,
@@ -370,10 +438,7 @@ class IMSCCExportService:
                 }
                 for m in aol_mappings
             ],
-            "sdg_mappings": [
-                {"sdg_code": str(s.sdg_code)}
-                for s in sdg_mappings
-            ],
+            "sdg_mappings": [{"sdg_code": str(s.sdg_code)} for s in sdg_mappings],
         }
         return json.dumps(meta, indent=2)
 

@@ -19,11 +19,14 @@ class TestLLMService:
     def test_check_providers_without_keys(self):
         """Test provider checking without API keys"""
         # Clear relevant API key environment variables
-        with patch.dict(
-            "os.environ",
-            {"OPENAI_API_KEY": "", "ANTHROPIC_API_KEY": "", "GEMINI_API_KEY": ""},
-            clear=False,
-        ), patch("app.core.config.settings") as mock_settings:
+        with (
+            patch.dict(
+                "os.environ",
+                {"OPENAI_API_KEY": "", "ANTHROPIC_API_KEY": "", "GEMINI_API_KEY": ""},
+                clear=False,
+            ),
+            patch("app.core.config.settings") as mock_settings,
+        ):
             mock_settings.OPENAI_API_KEY = None
             mock_settings.ANTHROPIC_API_KEY = None
             mock_settings.GEMINI_API_KEY = None

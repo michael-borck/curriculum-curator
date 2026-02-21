@@ -97,12 +97,16 @@ class OllamaService:
         """Delete a model from Ollama."""
         try:
             async with self._client() as client:
-                resp = await client.request("DELETE", "/api/delete", json={"name": model_name})
+                resp = await client.request(
+                    "DELETE", "/api/delete", json={"name": model_name}
+                )
                 return resp.status_code == 200
         except (httpx.ConnectError, httpx.TimeoutException):
             return False
 
-    async def test_generation(self, model_name: str, prompt: str = "Say hello in one sentence.") -> dict[str, Any]:
+    async def test_generation(
+        self, model_name: str, prompt: str = "Say hello in one sentence."
+    ) -> dict[str, Any]:
         """Run a quick generation test to verify a model works."""
         try:
             async with self._client(timeout=60.0) as client:
@@ -118,9 +122,17 @@ class OllamaService:
                     "model": model_name,
                 }
         except (httpx.ConnectError, httpx.TimeoutException) as e:
-            return {"success": False, "error": f"Connection failed: {e}", "model": model_name}
+            return {
+                "success": False,
+                "error": f"Connection failed: {e}",
+                "model": model_name,
+            }
         except httpx.HTTPStatusError as e:
-            return {"success": False, "error": f"HTTP {e.response.status_code}: {e.response.text}", "model": model_name}
+            return {
+                "success": False,
+                "error": f"HTTP {e.response.status_code}: {e.response.text}",
+                "model": model_name,
+            }
 
 
 ollama_service = OllamaService()

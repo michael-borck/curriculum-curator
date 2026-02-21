@@ -70,7 +70,9 @@ class TaskList(Base):
 
     # Relationships
     unit: Mapped[Unit] = relationship("Unit", back_populates="task_lists")
-    design: Mapped[LearningDesign | None] = relationship("LearningDesign", back_populates="task_lists")
+    design: Mapped[LearningDesign | None] = relationship(
+        "LearningDesign", back_populates="task_lists"
+    )
 
     def __repr__(self) -> str:
         return f"<TaskList(id={self.id}, status='{self.status}', progress={self.completed_tasks}/{self.total_tasks})>"

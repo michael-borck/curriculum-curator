@@ -56,7 +56,9 @@ def _make_material_create(
     )
 
 
-def _insert_ulo(db: Session, unit_id: str, user_id: str, code: str = "ULO1") -> UnitLearningOutcome:
+def _insert_ulo(
+    db: Session, unit_id: str, user_id: str, code: str = "ULO1"
+) -> UnitLearningOutcome:
     ulo = UnitLearningOutcome(
         unit_id=unit_id,
         outcome_type=OutcomeType.ULO.value,
@@ -176,9 +178,15 @@ class TestGetMaterial:
         self, mat_service: MaterialsService, test_db: Session, test_unit: Unit
     ):
         uid = _uid(test_unit.id)
-        await mat_service.create_material(test_db, uid, _make_material_create(week=1, title="W1A"))
-        await mat_service.create_material(test_db, uid, _make_material_create(week=1, title="W1B"))
-        await mat_service.create_material(test_db, uid, _make_material_create(week=2, title="W2A"))
+        await mat_service.create_material(
+            test_db, uid, _make_material_create(week=1, title="W1A")
+        )
+        await mat_service.create_material(
+            test_db, uid, _make_material_create(week=1, title="W1B")
+        )
+        await mat_service.create_material(
+            test_db, uid, _make_material_create(week=2, title="W2A")
+        )
 
         results = await mat_service.get_materials_by_week(test_db, uid, 1)
         assert len(results) == 2
@@ -188,8 +196,12 @@ class TestGetMaterial:
         self, mat_service: MaterialsService, test_db: Session, test_unit: Unit
     ):
         uid = _uid(test_unit.id)
-        await mat_service.create_material(test_db, uid, _make_material_create(week=1, title="A"))
-        await mat_service.create_material(test_db, uid, _make_material_create(week=2, title="B"))
+        await mat_service.create_material(
+            test_db, uid, _make_material_create(week=1, title="A")
+        )
+        await mat_service.create_material(
+            test_db, uid, _make_material_create(week=2, title="B")
+        )
 
         results = await mat_service.get_materials_by_unit(test_db, uid)
         assert len(results) == 2
@@ -200,7 +212,9 @@ class TestGetMaterial:
     ):
         uid = _uid(test_unit.id)
         await mat_service.create_material(
-            test_db, uid, _make_material_create(week=1, title="Lecture", mat_type="lecture")
+            test_db,
+            uid,
+            _make_material_create(week=1, title="Lecture", mat_type="lecture"),
         )
         await mat_service.create_material(
             test_db, uid, _make_material_create(week=1, title="Quiz", mat_type="quiz")
@@ -235,7 +249,11 @@ class TestGetMaterial:
 class TestDuplicateMaterial:
     @pytest.mark.asyncio
     async def test_duplicate_material(
-        self, mat_service: MaterialsService, test_db: Session, test_unit: Unit, test_user: User
+        self,
+        mat_service: MaterialsService,
+        test_db: Session,
+        test_unit: Unit,
+        test_user: User,
     ):
         uid = _uid(test_unit.id)
         original = await mat_service.create_material(
@@ -243,7 +261,9 @@ class TestDuplicateMaterial:
         )
 
         dup_data = MaterialDuplicate(target_week=3, new_title="Copied Material")
-        result = await mat_service.duplicate_material(test_db, _uid(original.id), dup_data)
+        result = await mat_service.duplicate_material(
+            test_db, _uid(original.id), dup_data
+        )
 
         assert result.title == "Copied Material"
         assert result.week_number == 3
@@ -272,10 +292,14 @@ class TestDuplicateMaterial:
         test_db.commit()
 
         dup_data = MaterialDuplicate(target_week=2)
-        result = await mat_service.duplicate_material(test_db, _uid(original.id), dup_data)
+        result = await mat_service.duplicate_material(
+            test_db, _uid(original.id), dup_data
+        )
 
         # Fetch with outcomes
-        fetched = await mat_service.get_material(test_db, _uid(result.id), include_outcomes=True)
+        fetched = await mat_service.get_material(
+            test_db, _uid(result.id), include_outcomes=True
+        )
         assert fetched is not None
         assert len(fetched.local_outcomes) == 1
 
@@ -297,8 +321,12 @@ class TestReorderMaterials:
         self, mat_service: MaterialsService, test_db: Session, test_unit: Unit
     ):
         uid = _uid(test_unit.id)
-        m1 = await mat_service.create_material(test_db, uid, _make_material_create(week=1, title="A"))
-        m2 = await mat_service.create_material(test_db, uid, _make_material_create(week=1, title="B"))
+        m1 = await mat_service.create_material(
+            test_db, uid, _make_material_create(week=1, title="A")
+        )
+        m2 = await mat_service.create_material(
+            test_db, uid, _make_material_create(week=1, title="B")
+        )
 
         reorder = MaterialReorder(material_ids=[str(m2.id), str(m1.id)])
         results = await mat_service.reorder_materials(test_db, uid, 1, reorder)
@@ -329,11 +357,15 @@ class TestULOMappings:
         test_user: User,
     ):
         uid = _uid(test_unit.id)
-        material = await mat_service.create_material(test_db, uid, _make_material_create())
+        material = await mat_service.create_material(
+            test_db, uid, _make_material_create()
+        )
         ulo = _insert_ulo(test_db, test_unit.id, test_user.id)
 
         mapping = MaterialMapping(ulo_ids=[str(ulo.id)])
-        result = await mat_service.update_ulo_mappings(test_db, _uid(material.id), mapping)
+        result = await mat_service.update_ulo_mappings(
+            test_db, _uid(material.id), mapping
+        )
         assert result is not None
 
     @pytest.mark.asyncio
@@ -345,7 +377,9 @@ class TestULOMappings:
         test_user: User,
     ):
         uid = _uid(test_unit.id)
-        material = await mat_service.create_material(test_db, uid, _make_material_create())
+        material = await mat_service.create_material(
+            test_db, uid, _make_material_create()
+        )
         ulo1 = _insert_ulo(test_db, test_unit.id, test_user.id, code="U1")
         ulo2 = _insert_ulo(test_db, test_unit.id, test_user.id, code="U2")
 
@@ -380,7 +414,9 @@ class TestAddLocalOutcome:
             test_db, _uid(test_unit.id), _make_material_create()
         )
         llo_data = LLOCreate(description="Understand basic concepts", order_index=0)
-        result = await mat_service.add_local_outcome(test_db, _uid(material.id), llo_data)
+        result = await mat_service.add_local_outcome(
+            test_db, _uid(material.id), llo_data
+        )
 
         assert result.description == "Understand basic concepts"
         assert result.material_id == material.id

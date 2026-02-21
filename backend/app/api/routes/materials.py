@@ -491,7 +491,9 @@ async def get_material_history(
     """Get version history for a material's description."""
     material = await materials_service.get_material(db, material_id)
     if not material:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
 
     git = get_git_service()
     git_path = _git_path_for_material(material)
@@ -519,14 +521,18 @@ async def get_material_at_version(
     """Get material description at a specific version."""
     material = await materials_service.get_material(db, material_id)
     if not material:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
 
     git = get_git_service()
     git_path = _git_path_for_material(material)
     try:
         body = git.get_content(str(material.unit_id), git_path, commit)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Version not found"
+        ) from exc
 
     return {"commit": commit, "body": body}
 
@@ -542,7 +548,9 @@ async def get_material_diff(
     """Get diff between two versions of a material's description."""
     material = await materials_service.get_material(db, material_id)
     if not material:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
 
     git = get_git_service()
     git_path = _git_path_for_material(material)
@@ -566,7 +574,9 @@ async def revert_material(
     """Revert material description to a previous version."""
     material = await materials_service.get_material(db, material_id)
     if not material:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
+        )
 
     git = get_git_service()
     git_path = _git_path_for_material(material)
@@ -574,7 +584,9 @@ async def revert_material(
     try:
         old_body = git.get_content(str(material.unit_id), git_path, data.commit)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Version not found"
+        ) from exc
 
     # Update DB
     material.description = old_body

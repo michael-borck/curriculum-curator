@@ -280,9 +280,7 @@ def test_weekly_material(test_db: Session, test_unit: Unit) -> WeeklyMaterial:
 
 
 @pytest.fixture
-def test_ulo(
-    test_db: Session, test_unit: Unit, test_user: User
-) -> UnitLearningOutcome:
+def test_ulo(test_db: Session, test_unit: Unit, test_user: User) -> UnitLearningOutcome:
     """Insert a real UnitLearningOutcome row into the test database."""
     ulo = UnitLearningOutcome(
         id=str(uuid.uuid4()),
@@ -317,7 +315,11 @@ def populated_unit(
     - AoL and SDG mappings
     """
     # Weekly topics — commit each individually to avoid GUID sentinel mismatch
-    for week_num, title in [(1, "HTML Basics"), (2, "CSS Fundamentals"), (3, "JavaScript Intro")]:
+    for week_num, title in [
+        (1, "HTML Basics"),
+        (2, "CSS Fundamentals"),
+        (3, "JavaScript Intro"),
+    ]:
         topic = WeeklyTopic(
             id=str(uuid.uuid4()),
             unit_outline_id=test_unit_outline.id,
@@ -331,7 +333,13 @@ def populated_unit(
 
     # Weekly materials
     materials_data = [
-        (1, "HTML Lecture", "lecture", "<p>Introduction to HTML tags and structure.</p>", 0),
+        (
+            1,
+            "HTML Lecture",
+            "lecture",
+            "<p>Introduction to HTML tags and structure.</p>",
+            0,
+        ),
         (1, "HTML Activity", "activity", "<p>Build your first web page.</p>", 1),
         (2, "CSS Lecture", "lecture", "<p>Styling with CSS selectors.</p>", 0),
     ]

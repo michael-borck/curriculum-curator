@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+
 class TestImportEndpoints:
     """Test import API endpoints"""
 
@@ -68,9 +69,7 @@ class TestImportEndpoints:
         mock_get_unit.return_value = None
 
         files = {"file": ("test.pdf", b"fake pdf content", "application/pdf")}
-        response = client.post(
-            "/api/units/unit-999/content/upload", files=files
-        )
+        response = client.post("/api/units/unit-999/content/upload", files=files)
 
         assert response.status_code == 404
         assert "Unit not found" in response.json()["detail"]
@@ -87,9 +86,7 @@ class TestImportEndpoints:
         large_content = b"x" * (51 * 1024 * 1024)
         files = {"file": ("large.pdf", large_content, "application/pdf")}
 
-        response = client.post(
-            "/api/units/unit-123/content/upload", files=files
-        )
+        response = client.post("/api/units/unit-123/content/upload", files=files)
 
         # 400 if our endpoint catches it, 413 if framework rejects it first
         assert response.status_code in [400, 413]
@@ -211,9 +208,7 @@ class TestImportEndpoints:
         }
 
         files = {"file": ("unit_materials.zip", b"fake zip content", "application/zip")}
-        response = client.post(
-            f"/api/content/import/zip/{test_unit.id}", files=files
-        )
+        response = client.post(f"/api/content/import/zip/{test_unit.id}", files=files)
 
         assert response.status_code == 200
         data = response.json()
@@ -226,9 +221,7 @@ class TestImportEndpoints:
     def test_import_zip_invalid_file_type(self, client, test_unit):
         """Test ZIP import with non-ZIP file"""
         files = {"file": ("not_a_zip.pdf", b"fake pdf content", "application/pdf")}
-        response = client.post(
-            f"/api/content/import/zip/{test_unit.id}", files=files
-        )
+        response = client.post(f"/api/content/import/zip/{test_unit.id}", files=files)
 
         assert response.status_code == 400
         assert "Only ZIP files" in response.json()["detail"]
@@ -239,9 +232,7 @@ class TestImportEndpoints:
         mock_process_zip.side_effect = zipfile.BadZipFile("Invalid ZIP file")
 
         files = {"file": ("bad.zip", b"not a real zip", "application/zip")}
-        response = client.post(
-            f"/api/content/import/zip/{test_unit.id}", files=files
-        )
+        response = client.post(f"/api/content/import/zip/{test_unit.id}", files=files)
 
         assert response.status_code == 400
         assert "Invalid ZIP file" in response.json()["detail"]
@@ -400,9 +391,7 @@ class TestImportEndpoints:
             ],
         }
 
-        files = {
-            "file": ("unit_outline.pdf", b"fake pdf content", "application/pdf")
-        }
+        files = {"file": ("unit_outline.pdf", b"fake pdf content", "application/pdf")}
         response = client.post(
             f"/api/content/import/pdf/create-unit-structure/{test_unit.id}",
             files=files,

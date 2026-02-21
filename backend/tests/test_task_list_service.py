@@ -59,7 +59,9 @@ async def test_get_task_lists_by_unit(test_db: Session, test_unit: Unit):
 
 
 @pytest.mark.asyncio
-async def test_get_task_lists_by_design(test_db: Session, test_unit: Unit, test_design: LearningDesign):
+async def test_get_task_lists_by_design(
+    test_db: Session, test_unit: Unit, test_design: LearningDesign
+):
     _create_task_list(test_db, test_unit, design=test_design)
 
     results = await task_list_service.get_task_lists(
@@ -82,7 +84,9 @@ async def test_get_task_list(test_db: Session, test_unit: Unit):
 
 @pytest.mark.asyncio
 async def test_get_task_list_not_found(test_db: Session):
-    result = await task_list_service.get_task_list(test_db, "00000000-0000-0000-0000-000000000000")
+    result = await task_list_service.get_task_list(
+        test_db, "00000000-0000-0000-0000-000000000000"
+    )
     assert result is None
 
 
@@ -106,7 +110,10 @@ async def test_update_task_status(test_db: Session, test_unit: Unit):
 @pytest.mark.asyncio
 async def test_update_task_status_not_found(test_db: Session):
     result = await task_list_service.update_task_status(
-        test_db, "00000000-0000-0000-0000-000000000000", task_index=0, new_status="complete"
+        test_db,
+        "00000000-0000-0000-0000-000000000000",
+        task_index=0,
+        new_status="complete",
     )
     assert result is None
 

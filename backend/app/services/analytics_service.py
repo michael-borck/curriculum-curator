@@ -55,7 +55,10 @@ class AnalyticsService:
 
         material_stats = {
             "total": sum(count for _, count in material_counts),
-            "by_status": {(status.value if hasattr(status, "value") else status): count for status, count in material_counts},
+            "by_status": {
+                (status.value if hasattr(status, "value") else status): count
+                for status, count in material_counts
+            },
         }
 
         # Count assessments by status
@@ -71,7 +74,10 @@ class AnalyticsService:
 
         assessment_stats = {
             "total": sum(count for _, count in assessment_counts),
-            "by_status": {(status.value if hasattr(status, "value") else status): count for status, count in assessment_counts},
+            "by_status": {
+                (status.value if hasattr(status, "value") else status): count
+                for status, count in assessment_counts
+            },
         }
 
         # Calculate total weight of assessments

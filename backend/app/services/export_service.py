@@ -228,7 +228,9 @@ class ExportService:
             FileNotFoundError: If required binaries are not available.
             RuntimeError: If the conversion fails.
         """
-        material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        material = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        )
         if not material:
             msg = f"Material {material_id} not found"
             raise ValueError(msg)
@@ -449,9 +451,7 @@ class ExportService:
 
             if fmt == ExportFormat.PDF:
                 return self._convert_pdf(input_file, temp_dir, title, author)
-            return self._convert_pandoc(
-                input_file, temp_dir, fmt, title, author
-            )
+            return self._convert_pandoc(input_file, temp_dir, fmt, title, author)
         finally:
             # Clean up temp dir
             shutil.rmtree(temp_dir, ignore_errors=True)

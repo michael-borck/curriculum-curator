@@ -35,12 +35,16 @@ async def test_get_design(test_db: Session, test_design: LearningDesign):
 
 @pytest.mark.asyncio
 async def test_get_design_not_found(test_db: Session):
-    result = await design_service.get_design(test_db, "00000000-0000-0000-0000-000000000000")
+    result = await design_service.get_design(
+        test_db, "00000000-0000-0000-0000-000000000000"
+    )
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_list_by_unit(test_db: Session, test_design: LearningDesign, test_unit: Unit):
+async def test_list_by_unit(
+    test_db: Session, test_design: LearningDesign, test_unit: Unit
+):
     results = await design_service.list_by_unit(test_db, str(test_unit.id))
     assert len(results) >= 1
     assert any(str(r.id) == str(test_design.id) for r in results)
@@ -49,7 +53,9 @@ async def test_list_by_unit(test_db: Session, test_design: LearningDesign, test_
 @pytest.mark.asyncio
 async def test_update_design(test_db: Session, test_design: LearningDesign):
     update_data = DesignUpdate(content={"topic": "Updated Topic"}, version="1.1")
-    updated = await design_service.update_design(test_db, str(test_design.id), update_data)
+    updated = await design_service.update_design(
+        test_db, str(test_design.id), update_data
+    )
 
     assert updated is not None
     assert updated.content["topic"] == "Updated Topic"
@@ -59,7 +65,9 @@ async def test_update_design(test_db: Session, test_design: LearningDesign):
 @pytest.mark.asyncio
 async def test_update_design_not_found(test_db: Session):
     update_data = DesignUpdate(content={"topic": "Updated"})
-    result = await design_service.update_design(test_db, "00000000-0000-0000-0000-000000000000", update_data)
+    result = await design_service.update_design(
+        test_db, "00000000-0000-0000-0000-000000000000", update_data
+    )
     assert result is None
 
 
@@ -76,7 +84,9 @@ async def test_delete_design(test_db: Session, test_design: LearningDesign):
 
 @pytest.mark.asyncio
 async def test_delete_design_not_found(test_db: Session):
-    deleted = await design_service.delete_design(test_db, "00000000-0000-0000-0000-000000000000")
+    deleted = await design_service.delete_design(
+        test_db, "00000000-0000-0000-0000-000000000000"
+    )
     assert deleted is False
 
 
@@ -115,7 +125,9 @@ async def test_clone_design(test_db: Session, test_design: LearningDesign):
 
 @pytest.mark.asyncio
 async def test_clone_design_not_found(test_db: Session):
-    result = await design_service.clone_design(test_db, "00000000-0000-0000-0000-000000000000")
+    result = await design_service.clone_design(
+        test_db, "00000000-0000-0000-0000-000000000000"
+    )
     assert result is None
 
 
@@ -138,5 +150,7 @@ async def test_generate_tasks(test_db: Session, test_design: LearningDesign):
 
 @pytest.mark.asyncio
 async def test_generate_tasks_not_found(test_db: Session):
-    result = await design_service.generate_tasks(test_db, "00000000-0000-0000-0000-000000000000")
+    result = await design_service.generate_tasks(
+        test_db, "00000000-0000-0000-0000-000000000000"
+    )
     assert result is None

@@ -182,7 +182,9 @@ async def delete_unit(
     unit_id: str,
     db: Annotated[Session, Depends(deps.get_db)],
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
-    permanent: bool = Query(False, description="Permanently delete the unit and its git repo"),
+    permanent: bool = Query(
+        False, description="Permanently delete the unit and its git repo"
+    ),
 ):
     """
     Delete a unit.
@@ -224,7 +226,9 @@ async def delete_unit(
         # Delete the Git repository for this unit (if it exists)
         git_service = get_git_service()
         git_service.delete_unit_repo(unit_id)
-        logger.info(f"[DELETE_UNIT] Permanently deleted unit {unit_id} and its Git repository")
+        logger.info(
+            f"[DELETE_UNIT] Permanently deleted unit {unit_id} and its Git repository"
+        )
     else:
         # Soft delete: mark as archived
         if not unit_repo.soft_delete_unit(db, unit_id):

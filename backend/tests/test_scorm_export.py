@@ -79,9 +79,7 @@ class TestExportBasics:
 class TestScormApiJs:
     """Test the SCORM API JavaScript file."""
 
-    def test_scorm_api_js_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_scorm_api_js_present(self, test_db: Session, populated_unit: Unit) -> None:
         service = SCORMExportService()
         buf, _ = service.export_unit(str(populated_unit.id), test_db)
         with zipfile.ZipFile(buf, "r") as zf:
@@ -177,7 +175,10 @@ class TestHTMLScriptInjection:
         service = SCORMExportService()
         buf, _ = service.export_unit(str(populated_unit.id), test_db)
         with zipfile.ZipFile(buf, "r") as zf:
-            for name in ["overview/learning_outcomes.html", "overview/accreditation.html"]:
+            for name in [
+                "overview/learning_outcomes.html",
+                "overview/accreditation.html",
+            ]:
                 html = zf.read(name).decode("utf-8")
                 assert 'src="../scorm_api.js"' in html
 

@@ -14,7 +14,12 @@ from app.models.mappings import assessment_ulo_mappings, material_ulo_mappings
 from app.models.unit import Unit
 from app.models.user import User
 from app.models.weekly_material import WeeklyMaterial
-from app.schemas.learning_outcomes import BulkULOCreate, OutcomeReorder, ULOCreate, ULOUpdate
+from app.schemas.learning_outcomes import (
+    BulkULOCreate,
+    OutcomeReorder,
+    ULOCreate,
+    ULOUpdate,
+)
 from app.services.ulo_service import ULOService
 
 
@@ -57,7 +62,9 @@ class TestCreateULO:
         test_user: User,
     ):
         data = _make_ulo_create(code="ULO1", description="Analyse data structures")
-        result = await ulo_service.create_ulo(test_db, _uid(test_unit.id), data, _uid(test_user.id))
+        result = await ulo_service.create_ulo(
+            test_db, _uid(test_unit.id), data, _uid(test_user.id)
+        )
 
         assert result.outcome_code == "ULO1"
         assert result.outcome_text == "Analyse data structures"
@@ -77,8 +84,12 @@ class TestCreateULO:
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
 
-        data1 = ULOCreate(code="ULO1", description="First", bloom_level=BloomLevel.APPLY.value)
-        data2 = ULOCreate(code="ULO2", description="Second", bloom_level=BloomLevel.APPLY.value)
+        data1 = ULOCreate(
+            code="ULO1", description="First", bloom_level=BloomLevel.APPLY.value
+        )
+        data2 = ULOCreate(
+            code="ULO2", description="Second", bloom_level=BloomLevel.APPLY.value
+        )
         ulo1 = await ulo_service.create_ulo(test_db, uid, data1, user_id)
         ulo2 = await ulo_service.create_ulo(test_db, uid, data2, user_id)
 
@@ -95,13 +106,17 @@ class TestCreateULO:
     ):
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
-        await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO1"), user_id)
+        await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO1"), user_id
+        )
 
         # Creating another with same code in a scenario where there's a unique constraint
         # The service catches IntegrityError — but SQLite may not enforce uniqueness here
         # since there's no unique constraint on (outcome_code, unit_id).
         # Test that create at least succeeds for non-conflicting codes.
-        ulo2 = await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO2"), user_id)
+        ulo2 = await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO2"), user_id
+        )
         assert ulo2.outcome_code == "ULO2"
 
 
@@ -120,7 +135,9 @@ class TestUpdateULO:
         ulo = await ulo_service.create_ulo(
             test_db, _uid(test_unit.id), _make_ulo_create(), _uid(test_user.id)
         )
-        update_data = ULOUpdate(description="Updated description", bloom_level=BloomLevel.EVALUATE.value)
+        update_data = ULOUpdate(
+            description="Updated description", bloom_level=BloomLevel.EVALUATE.value
+        )
         result = await ulo_service.update_ulo(test_db, _uid(ulo.id), update_data)
 
         assert result is not None
@@ -209,7 +226,9 @@ class TestDeleteULO:
         test_db.add(material)
         test_db.flush()
         test_db.execute(
-            material_ulo_mappings.insert().values(material_id=material.id, ulo_id=ulo.id)
+            material_ulo_mappings.insert().values(
+                material_id=material.id, ulo_id=ulo.id
+            )
         )
         test_db.commit()
 
@@ -237,7 +256,9 @@ class TestDeleteULO:
         test_db.add(assessment)
         test_db.flush()
         test_db.execute(
-            assessment_ulo_mappings.insert().values(assessment_id=assessment.id, ulo_id=ulo.id)
+            assessment_ulo_mappings.insert().values(
+                assessment_id=assessment.id, ulo_id=ulo.id
+            )
         )
         test_db.commit()
 
@@ -274,8 +295,12 @@ class TestGetULO:
     ):
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
-        await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO1"), user_id)
-        await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO2"), user_id)
+        await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO1"), user_id
+        )
+        await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO2"), user_id
+        )
 
         results = await ulo_service.get_ulos_by_unit(test_db, uid)
         assert len(results) == 2
@@ -291,7 +316,9 @@ class TestGetULO:
     ):
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
-        await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ACTIVE"), user_id)
+        await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ACTIVE"), user_id
+        )
 
         # Manually create an inactive ULO
         inactive = UnitLearningOutcome(
@@ -328,8 +355,12 @@ class TestReorderULOs:
     ):
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
-        ulo1 = await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO1"), user_id)
-        ulo2 = await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO2"), user_id)
+        ulo1 = await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO1"), user_id
+        )
+        ulo2 = await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO2"), user_id
+        )
 
         reorder = OutcomeReorder(outcome_ids=[str(ulo2.id), str(ulo1.id)])
         results = await ulo_service.reorder_ulos(test_db, uid, reorder)
@@ -349,7 +380,9 @@ class TestReorderULOs:
     ):
         uid = _uid(test_unit.id)
         user_id = _uid(test_user.id)
-        await ulo_service.create_ulo(test_db, uid, _make_ulo_create(code="ULO1"), user_id)
+        await ulo_service.create_ulo(
+            test_db, uid, _make_ulo_create(code="ULO1"), user_id
+        )
 
         reorder = OutcomeReorder(outcome_ids=["nonexistent-id"])
         with pytest.raises(ValueError, match="not found"):

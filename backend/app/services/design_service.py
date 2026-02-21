@@ -35,12 +35,16 @@ class DesignService:
             db.add(design)
             db.commit()
             db.refresh(design)
-            logger.info(f"Created learning design {design.id} for unit {design_data.unit_id}")
+            logger.info(
+                f"Created learning design {design.id} for unit {design_data.unit_id}"
+            )
             return design
         except IntegrityError as e:
             db.rollback()
             logger.exception("Failed to create learning design")
-            raise ValueError("Failed to create learning design — unit may not exist") from e
+            raise ValueError(
+                "Failed to create learning design — unit may not exist"
+            ) from e
 
     async def get_design(
         self,
@@ -146,7 +150,9 @@ class DesignService:
         design_id: str,
     ) -> LearningDesign | None:
         """Clone a learning design with incremented version"""
-        original = db.query(LearningDesign).filter(LearningDesign.id == design_id).first()
+        original = (
+            db.query(LearningDesign).filter(LearningDesign.id == design_id).first()
+        )
         if not original:
             return None
 

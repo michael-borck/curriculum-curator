@@ -53,7 +53,9 @@ class TaskListService:
         items: list[dict[str, object]] = tasks.get("items", [])
 
         if task_index < 0 or task_index >= len(items):
-            raise ValueError(f"Task index {task_index} out of range (0-{len(items) - 1})")
+            raise ValueError(
+                f"Task index {task_index} out of range (0-{len(items) - 1})"
+            )
 
         items[task_index]["status"] = new_status
 
@@ -67,7 +69,9 @@ class TaskListService:
 
         db.commit()
         db.refresh(task_list)
-        logger.info(f"Updated task {task_index} in TaskList {task_list_id} to '{new_status}'")
+        logger.info(
+            f"Updated task {task_index} in TaskList {task_list_id} to '{new_status}'"
+        )
         return task_list
 
 

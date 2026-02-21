@@ -173,9 +173,7 @@ class TestSubmitAnswer:
     ):
         svc = ContentWorkflowService(test_db)
         with pytest.raises(ValueError, match="not found"):
-            await svc.submit_answer(
-                str(uuid.uuid4()), test_user.id, "key", "value"
-            )
+            await svc.submit_answer(str(uuid.uuid4()), test_user.id, "key", "value")
 
 
 # ─── RESET SESSION ───────────────────────────────────────────
@@ -183,9 +181,7 @@ class TestSubmitAnswer:
 
 class TestResetSession:
     @pytest.mark.asyncio
-    async def test_reset(
-        self, test_db: Session, test_unit: Unit, test_user: User
-    ):
+    async def test_reset(self, test_db: Session, test_unit: Unit, test_user: User):
         svc = ContentWorkflowService(test_db)
         session = await svc.create_workflow_session(
             unit_id=test_unit.id, user_id=test_user.id
@@ -220,9 +216,7 @@ class TestResetSession:
 
 class TestWorkflowStatus:
     @pytest.mark.asyncio
-    async def test_get_status(
-        self, test_db: Session, test_unit: Unit, test_user: User
-    ):
+    async def test_get_status(self, test_db: Session, test_unit: Unit, test_user: User):
         svc = ContentWorkflowService(test_db)
         session = await svc.create_workflow_session(
             unit_id=test_unit.id, user_id=test_user.id
@@ -354,7 +348,11 @@ class TestGenerateUnitStructure:
 
     @pytest.mark.asyncio
     async def test_generate_returns_exists_if_outline_exists(
-        self, test_db: Session, test_unit: Unit, test_user: User, test_unit_outline: UnitOutline
+        self,
+        test_db: Session,
+        test_unit: Unit,
+        test_user: User,
+        test_unit_outline: UnitOutline,
     ):
         svc = ContentWorkflowService(test_db)
         session = await svc.create_workflow_session(

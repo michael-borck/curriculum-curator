@@ -32,7 +32,9 @@ def export_unit_html(unit_id: str, db: Session) -> tuple[str, str]:
     if data.learning_outcomes:
         sections.append("<h2>Learning Outcomes</h2>")
         sections.append("<table>")
-        sections.append("<tr><th>Code</th><th>Description</th><th>Bloom's Level</th></tr>")
+        sections.append(
+            "<tr><th>Code</th><th>Description</th><th>Bloom's Level</th></tr>"
+        )
         for lo in data.learning_outcomes:
             code = lo.outcome_code or ""
             sections.append(
@@ -67,7 +69,10 @@ def export_unit_html(unit_id: str, db: Session) -> tuple[str, str]:
         for assessment in data.assessments:
             # Get mapped ULO codes
             ulo_codes: list[str] = []
-            if hasattr(assessment, "learning_outcomes") and assessment.learning_outcomes:
+            if (
+                hasattr(assessment, "learning_outcomes")
+                and assessment.learning_outcomes
+            ):
                 ulo_codes = [
                     str(ulo.outcome_code or ulo.id)
                     for ulo in assessment.learning_outcomes

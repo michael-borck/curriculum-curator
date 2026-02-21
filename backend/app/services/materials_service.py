@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 class MaterialsService:
     """Service for managing Weekly Materials"""
 
-    def _save_to_git(self, material: WeeklyMaterial, user_email: str, message: str) -> None:
+    def _save_to_git(
+        self, material: WeeklyMaterial, user_email: str, message: str
+    ) -> None:
         """Save material description to Git for version history."""
         if not material.description:
             return

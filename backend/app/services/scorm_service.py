@@ -89,13 +89,28 @@ class SCORMExportService:
 
         # Overview pages
         lo_html = self._build_learning_outcomes_html(data.learning_outcomes)
-        resources.append(("overview_learning_outcomes", "overview/learning_outcomes.html", "Learning Outcomes"))
+        resources.append(
+            (
+                "overview_learning_outcomes",
+                "overview/learning_outcomes.html",
+                "Learning Outcomes",
+            )
+        )
         file_contents["overview/learning_outcomes.html"] = lo_html
 
         accred_html = self._build_accreditation_html(
-            data.aol_mappings, data.sdg_mappings, data.gc_mappings, data.learning_outcomes
+            data.aol_mappings,
+            data.sdg_mappings,
+            data.gc_mappings,
+            data.learning_outcomes,
         )
-        resources.append(("overview_accreditation", "overview/accreditation.html", "Accreditation Mapping"))
+        resources.append(
+            (
+                "overview_accreditation",
+                "overview/accreditation.html",
+                "Accreditation Mapping",
+            )
+        )
         file_contents["overview/accreditation.html"] = accred_html
 
         # Weekly material pages
@@ -124,12 +139,20 @@ class SCORMExportService:
 
         # Build SCORM manifest XML
         manifest_xml = self._build_manifest(
-            data.unit, data.outline, data.weekly_topics, resources, data.materials_by_week
+            data.unit,
+            data.outline,
+            data.weekly_topics,
+            resources,
+            data.materials_by_week,
         )
 
         # Build metadata JSON
         meta_json = self._build_meta_json(
-            data.unit, data.learning_outcomes, data.aol_mappings, data.sdg_mappings, data.gc_mappings
+            data.unit,
+            data.learning_outcomes,
+            data.aol_mappings,
+            data.sdg_mappings,
+            data.gc_mappings,
         )
 
         # Package into ZIP
@@ -171,7 +194,9 @@ class SCORMExportService:
         schema_version.text = "1.2"
 
         # Organizations
-        organizations = ET.SubElement(manifest, f"{{{NS_CP}}}organizations", default="org_1")
+        organizations = ET.SubElement(
+            manifest, f"{{{NS_CP}}}organizations", default="org_1"
+        )
         org = ET.SubElement(
             organizations,
             f"{{{NS_CP}}}organization",
@@ -186,36 +211,63 @@ class SCORMExportService:
         overview_title.text = "Overview"
         for res_id, _href, res_title in resources:
             if res_id.startswith("overview_"):
-                item = ET.SubElement(overview_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                item = ET.SubElement(
+                    overview_item,
+                    f"{{{NS_CP}}}item",
+                    identifier=f"item_{res_id}",
+                    identifierref=res_id,
+                )
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
         # Weekly folders
-        topic_map: dict[int, WeeklyTopic] = {int(t.week_number): t for t in weekly_topics}
+        topic_map: dict[int, WeeklyTopic] = {
+            int(t.week_number): t for t in weekly_topics
+        }
         for week_num in sorted(materials_by_week.keys()):
             topic = topic_map.get(week_num)
             week_title = f"Week {week_num}"
             if topic and topic.topic_title:
                 week_title = f"Week {week_num}: {topic.topic_title}"
 
-            week_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}")
+            week_item = ET.SubElement(
+                org, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}"
+            )
             week_title_elem = ET.SubElement(week_item, f"{{{NS_CP}}}title")
             week_title_elem.text = week_title
 
             for res_id, _href, res_title in resources:
-                if res_id.startswith("mat_") and _href.startswith(f"week{week_num:02d}/"):
-                    item = ET.SubElement(week_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                if res_id.startswith("mat_") and _href.startswith(
+                    f"week{week_num:02d}/"
+                ):
+                    item = ET.SubElement(
+                        week_item,
+                        f"{{{NS_CP}}}item",
+                        identifier=f"item_{res_id}",
+                        identifierref=res_id,
+                    )
                     t = ET.SubElement(item, f"{{{NS_CP}}}title")
                     t.text = res_title
 
         # Assessments folder
-        assessment_resources = [(r_id, r_href, r_title) for r_id, r_href, r_title in resources if r_id.startswith("assessment_")]
+        assessment_resources = [
+            (r_id, r_href, r_title)
+            for r_id, r_href, r_title in resources
+            if r_id.startswith("assessment_")
+        ]
         if assessment_resources:
-            assess_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="assessments")
+            assess_item = ET.SubElement(
+                org, f"{{{NS_CP}}}item", identifier="assessments"
+            )
             assess_title = ET.SubElement(assess_item, f"{{{NS_CP}}}title")
             assess_title.text = "Assessments"
             for res_id, _href, res_title in assessment_resources:
-                item = ET.SubElement(assess_item, f"{{{NS_CP}}}item", identifier=f"item_{res_id}", identifierref=res_id)
+                item = ET.SubElement(
+                    assess_item,
+                    f"{{{NS_CP}}}item",
+                    identifier=f"item_{res_id}",
+                    identifierref=res_id,
+                )
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
@@ -265,7 +317,9 @@ class SCORMExportService:
         if assessment.duration:
             parts.append(f"<tr><td>Duration</td><td>{assessment.duration}</td></tr>")
         if assessment.submission_type:
-            parts.append(f"<tr><td>Submission</td><td>{assessment.submission_type}</td></tr>")
+            parts.append(
+                f"<tr><td>Submission</td><td>{assessment.submission_type}</td></tr>"
+            )
         if assessment.group_work:
             parts.append("<tr><td>Group Work</td><td>Yes</td></tr>")
 
@@ -281,9 +335,7 @@ class SCORMExportService:
             extra_head=SCORM_SCRIPT_TAG,
         )
 
-    def _build_learning_outcomes_html(
-        self, outcomes: list[UnitLearningOutcome]
-    ) -> str:
+    def _build_learning_outcomes_html(self, outcomes: list[UnitLearningOutcome]) -> str:
         """Generate learning outcomes HTML page with SCORM script."""
         if not outcomes:
             return HTML_TEMPLATE.format(
@@ -338,7 +390,9 @@ class SCORMExportService:
             parts.append("<tr><th>ULO</th><th>Capability</th></tr>")
             for gc in gc_mappings:
                 ulo = outcome_map.get(str(gc.ulo_id))
-                ulo_code = ulo.outcome_code if ulo and ulo.outcome_code else str(gc.ulo_id)
+                ulo_code = (
+                    ulo.outcome_code if ulo and ulo.outcome_code else str(gc.ulo_id)
+                )
                 parts.append(
                     f"<tr><td>{escape_html(ulo_code)}</td>"
                     f"<td>{escape_html(str(gc.capability_code))}</td></tr>"
@@ -410,10 +464,7 @@ class SCORMExportService:
                 }
                 for m in aol_mappings
             ],
-            "sdg_mappings": [
-                {"sdg_code": str(s.sdg_code)}
-                for s in sdg_mappings
-            ],
+            "sdg_mappings": [{"sdg_code": str(s.sdg_code)} for s in sdg_mappings],
         }
         return json.dumps(meta, indent=2)
 

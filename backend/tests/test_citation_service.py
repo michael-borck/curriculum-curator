@@ -54,7 +54,9 @@ def _make_source(
 
 class TestAuthorParsing:
     def test_author_from_dict(self):
-        a = Author.from_dict({"first_name": "Jane", "last_name": "Doe", "suffix": "Jr."})
+        a = Author.from_dict(
+            {"first_name": "Jane", "last_name": "Doe", "suffix": "Jr."}
+        )
         assert a.first_name == "Jane"
         assert a.last_name == "Doe"
         assert a.suffix == "Jr."
@@ -285,7 +287,9 @@ class TestHelpers:
         assert svc._get_initials("") == ""
 
     def test_format_authors_apa_many(self, svc: CitationService):
-        authors = [Author(first_name=f"Author{i}", last_name=f"Last{i}") for i in range(21)]
+        authors = [
+            Author(first_name=f"Author{i}", last_name=f"Last{i}") for i in range(21)
+        ]
         result = svc._format_authors_apa(authors)
         assert "..." in result
 

@@ -17,7 +17,6 @@ class WebSearchError(Exception):
     """Custom exception for web search errors."""
 
 
-
 class SearchResult:
     """Represents a single search result"""
 

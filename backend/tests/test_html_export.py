@@ -35,16 +35,12 @@ class TestExportBasics:
         assert html.startswith("<!DOCTYPE html>")
         assert "</html>" in html
 
-    def test_export_filename(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_export_filename(self, test_db: Session, populated_unit: Unit) -> None:
         _, filename = export_unit_html(str(populated_unit.id), test_db)
         assert filename.endswith(".html")
         assert "test1001" in filename.lower()
 
-    def test_html_contains_title(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_html_contains_title(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "TEST1001" in html
         assert "Introduction to Testing" in html
@@ -72,16 +68,12 @@ class TestLearningOutcomes:
         assert "ULO1" in html
         assert "ULO2" in html
 
-    def test_outcome_text_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_outcome_text_present(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "Analyze web technologies" in html
         assert "Create responsive web applications" in html
 
-    def test_bloom_levels_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_bloom_levels_present(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "ANALYZE" in html
         assert "CREATE" in html
@@ -141,21 +133,15 @@ class TestAssessments:
 class TestInlineStyles:
     """Test that inline styles are present for standalone rendering."""
 
-    def test_style_tag_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_style_tag_present(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "<style>" in html
 
-    def test_table_styles_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_table_styles_present(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "border-collapse" in html
 
-    def test_body_styles_present(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_body_styles_present(self, test_db: Session, populated_unit: Unit) -> None:
         html, _ = export_unit_html(str(populated_unit.id), test_db)
         assert "font-family" in html
 
@@ -167,9 +153,7 @@ class TestEdgeCases:
         with pytest.raises(ValueError, match=r"Unit .* not found"):
             export_unit_html(str(uuid.uuid4()), test_db)
 
-    def test_empty_unit_still_exports(
-        self, test_db: Session, test_unit: Unit
-    ) -> None:
+    def test_empty_unit_still_exports(self, test_db: Session, test_unit: Unit) -> None:
         """A unit with no materials/assessments still exports valid HTML."""
         html, filename = export_unit_html(str(test_unit.id), test_db)
         assert "<!DOCTYPE html>" in html

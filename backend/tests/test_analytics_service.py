@@ -28,7 +28,9 @@ def analytics() -> AnalyticsService:
     return AnalyticsService()
 
 
-def _add_ulo(db: Session, unit: Unit, user: User, code: str = "ULO1") -> UnitLearningOutcome:
+def _add_ulo(
+    db: Session, unit: Unit, user: User, code: str = "ULO1"
+) -> UnitLearningOutcome:
     ulo = UnitLearningOutcome(
         unit_id=unit.id,
         outcome_type=OutcomeType.ULO.value,
@@ -165,8 +167,15 @@ class TestUnitProgress:
         test_db: Session,
         test_unit: Unit,
     ):
-        _add_material(test_db, test_unit, title="Draft Mat", status=MaterialStatus.DRAFT.value)
-        _add_assessment(test_db, test_unit, title="Draft Assess", status=AssessmentStatus.DRAFT.value)
+        _add_material(
+            test_db, test_unit, title="Draft Mat", status=MaterialStatus.DRAFT.value
+        )
+        _add_assessment(
+            test_db,
+            test_unit,
+            title="Draft Assess",
+            status=AssessmentStatus.DRAFT.value,
+        )
 
         result = await analytics.get_unit_progress(
             test_db, _uid(test_unit.id), include_details=True
@@ -202,10 +211,14 @@ class TestCompletionReport:
 
         # Map ULO to material and assessment
         test_db.execute(
-            material_ulo_mappings.insert().values(material_id=material.id, ulo_id=ulo.id)
+            material_ulo_mappings.insert().values(
+                material_id=material.id, ulo_id=ulo.id
+            )
         )
         test_db.execute(
-            assessment_ulo_mappings.insert().values(assessment_id=assessment.id, ulo_id=ulo.id)
+            assessment_ulo_mappings.insert().values(
+                assessment_id=assessment.id, ulo_id=ulo.id
+            )
         )
         test_db.commit()
 
@@ -333,7 +346,9 @@ class TestValidateUnit:
         _add_material(test_db, test_unit)
         _add_assessment(test_db, test_unit, weight=100.0)
 
-        result = await analytics.validate_unit(test_db, _uid(test_unit.id), strict_mode=True)
+        result = await analytics.validate_unit(
+            test_db, _uid(test_unit.id), strict_mode=True
+        )
         assert any("Only 1 ULO" in w for w in result["warnings"])
 
 
@@ -359,11 +374,17 @@ class TestQualityScore:
     ):
         ulo = _add_ulo(test_db, test_unit, test_user)
         mat = _add_material(test_db, test_unit, status=MaterialStatus.PUBLISHED.value)
-        ass = _add_assessment(test_db, test_unit, weight=100.0, status=AssessmentStatus.PUBLISHED.value)
+        ass = _add_assessment(
+            test_db, test_unit, weight=100.0, status=AssessmentStatus.PUBLISHED.value
+        )
 
         # Map ULO
-        test_db.execute(material_ulo_mappings.insert().values(material_id=mat.id, ulo_id=ulo.id))
-        test_db.execute(assessment_ulo_mappings.insert().values(assessment_id=ass.id, ulo_id=ulo.id))
+        test_db.execute(
+            material_ulo_mappings.insert().values(material_id=mat.id, ulo_id=ulo.id)
+        )
+        test_db.execute(
+            assessment_ulo_mappings.insert().values(assessment_id=ass.id, ulo_id=ulo.id)
+        )
         test_db.commit()
 
         result = await analytics.calculate_quality_score(test_db, _uid(test_unit.id))

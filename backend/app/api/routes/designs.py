@@ -40,7 +40,9 @@ async def list_designs(
     ]
 
 
-@router.post("/designs", response_model=DesignResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/designs", response_model=DesignResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_design(
     design_data: DesignCreate,
     db: Session = Depends(deps.get_db),
@@ -135,7 +137,11 @@ async def submit_for_review(
     return _to_response(design)
 
 
-@router.post("/designs/{design_id}/clone", response_model=DesignResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/designs/{design_id}/clone",
+    response_model=DesignResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def clone_design(
     design_id: str,
     db: Session = Depends(deps.get_db),
