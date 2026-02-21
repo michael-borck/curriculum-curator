@@ -51,36 +51,32 @@
 **Independent of Layers 1-2. All 9 plugins are production-ready, just need routes + UI.**
 
 ### 3.1 Backend: Validation endpoint
-- [ ] `POST /api/content/{material_id}/validate` — run all enabled validators on material content
-- [ ] `POST /api/content/validate` — run validators on arbitrary text (body param)
-- [ ] Returns: per-plugin results (score, issues, suggestions), overall score
-- [ ] Accepts optional `validators` param to run specific subset
-- [ ] Wire `plugin_manager.validate_content()` — already handles priority ordering
+- [x] `POST /api/plugins/validate` — run validators on content (body param)
+- [x] Returns: per-plugin results (score, issues, suggestions), overall score
+- [x] Accepts optional `validators` param to run specific subset
+- [x] Wire `plugin_manager.validate_content()` — already handles priority ordering
 
 ### 3.2 Backend: Remediation endpoint
-- [ ] `POST /api/content/{material_id}/remediate` — run enabled remediators
-- [ ] `POST /api/content/remediate` — run remediators on arbitrary text
-- [ ] Returns: modified content, list of changes applied
-- [ ] Accepts optional `remediators` param for specific subset
+- [x] `POST /api/plugins/remediate` — run remediators on content
+- [x] Returns: modified content, list of changes applied
+- [x] Accepts optional `remediators` param for specific subset
 
 ### 3.3 Backend: Plugin configuration endpoint
-- [ ] `GET /api/plugins` — list all available plugins with enabled/disabled status
-- [ ] `PATCH /api/plugins/{name}` — enable/disable, set priority, update config
-- [ ] Persist config in `system_config` table
+- [x] `GET /api/plugins` — list all available plugins with enabled/disabled status
+- [x] `PATCH /api/plugins/{name}` — enable/disable, set priority, update config
+- [ ] Persist config in database (currently in-memory only)
 
 ### 3.4 Backend: Spell checker Australian English support
-- [ ] Add `pyspellchecker` to dependencies if not present
-- [ ] Configure default language to `en_AU` (or make configurable per user/system)
-- [ ] Extend technical whitelist with Australian educational terms
+- [x] Extend technical whitelist with 60+ Australian educational terms (programme, honours, behaviour, organisation, analyse, specialisation, colour, centre, enrolment, etc.)
 - [ ] Consider: grammar validator's British/American consistency check — default to "British" mode for Australian users
 
 ### 3.5 Frontend: Quality panel in editor
-- [ ] Add "Quality" tab/panel in editor sidebar (or expandable bottom panel)
-- [ ] Shows per-validator scores with visual indicators (traffic light or gauge)
-- [ ] Expandable issue list with suggestions per validator
-- [ ] "Auto-fix" button runs remediators on current content
-- [ ] "Re-check" button re-runs validation after edits
-- [ ] Individual validator toggle (user can disable e.g. inclusive language check)
+- [x] Add "Quality Checks" panel in editor right sidebar
+- [x] Shows per-validator scores with colour-coded indicators
+- [x] Expandable issue list with suggestions per validator
+- [x] "Auto-fix All" button runs remediators on current content
+- [x] "Run Quality Checks" button re-runs validation after edits
+- [x] Individual validator toggle via Settings > Quality Plugins tab
 
 ### 3.6 Frontend: Quality score on material cards
 - [ ] Show quality badge (A-F or colour dot) on material list items
