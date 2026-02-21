@@ -79,6 +79,34 @@ interface MaterialFormData {
   overrideStyle: PedagogyType | null;
 }
 
+const QualityBadge: React.FC<{ score: number }> = ({ score }) => {
+  let grade: string;
+  let colorClass: string;
+
+  if (score >= 90) {
+    grade = 'A';
+    colorClass = 'bg-green-100 text-green-800';
+  } else if (score >= 70) {
+    grade = 'B';
+    colorClass = 'bg-blue-100 text-blue-800';
+  } else if (score >= 50) {
+    grade = 'C';
+    colorClass = 'bg-yellow-100 text-yellow-800';
+  } else {
+    grade = 'D';
+    colorClass = 'bg-red-100 text-red-800';
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`}
+      title={`Quality score: ${score}/100`}
+    >
+      {grade}
+    </span>
+  );
+};
+
 const materialTypeIcons: Record<MaterialType, React.ReactElement> = {
   [MaterialType.LECTURE]: <Presentation className='w-4 h-4' />,
   [MaterialType.TUTORIAL]: <Users className='w-4 h-4' />,
@@ -209,6 +237,10 @@ const SortableMaterialItem: React.FC<{
               </span>
 
               <h4 className='font-medium text-gray-900'>{material.title}</h4>
+
+              {material.qualityScore != null && (
+                <QualityBadge score={material.qualityScore} />
+              )}
 
               {material.durationMinutes && (
                 <span className='inline-flex items-center text-xs text-gray-500'>

@@ -57,6 +57,7 @@ class MaterialResponse(MaterialBase):
     unit_id: str
     file_path: str | None
     material_metadata: dict[str, Any] | None
+    quality_score: int | None = None
     created_at: datetime
     updated_at: datetime
 

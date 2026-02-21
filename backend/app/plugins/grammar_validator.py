@@ -134,30 +134,66 @@ class GrammarValidator(ValidatorPlugin):
 
         return issues, suggestions
 
-    def _check_consistency(self, content: str) -> tuple[list[str], list[str]]:
-        """Check for consistency issues"""
-        issues = []
-        suggestions = []
+    def _check_consistency(
+        self, content: str, spelling_standard: str = "british"
+    ) -> tuple[list[str], list[str]]:
+        """Check for consistency issues.
 
-        # Check for mixed British/American spelling
+        Args:
+            content: Text to check.
+            spelling_standard: One of "british", "american", or "any".
+                "british" (default) flags American-only spellings.
+                "american" flags British-only spellings.
+                "any" only flags mixed usage without preference.
+        """
+        issues: list[str] = []
+        suggestions: list[str] = []
+
+        # British spelling first, American second
         british_american = [
-            (r"\bcolour\b", r"\bcolor\b", "colour/color"),
-            (r"\bfavourite\b", r"\bfavorite\b", "favourite/favorite"),
-            (r"\borganise\b", r"\borganize\b", "organise/organize"),
-            (r"\brealise\b", r"\brealize\b", "realise/realize"),
-            (r"\bcentre\b", r"\bcenter\b", "centre/center"),
+            (r"\bcolour\b", r"\bcolor\b", "colour", "color"),
+            (r"\bfavourite\b", r"\bfavorite\b", "favourite", "favorite"),
+            (r"\borganise\b", r"\borganize\b", "organise", "organize"),
+            (r"\brealise\b", r"\brealize\b", "realise", "realize"),
+            (r"\bcentre\b", r"\bcenter\b", "centre", "center"),
+            (r"\banalyse\b", r"\banalyze\b", "analyse", "analyze"),
+            (r"\bdefence\b", r"\bdefense\b", "defence", "defense"),
+            (r"\blicence\b", r"\blicense\b", "licence", "license"),
+            (r"\bpractise\b", r"\bpractize\b", "practise", "practice"),
+            (r"\bcatalogue\b", r"\bcatalog\b", "catalogue", "catalog"),
+            (r"\bdialogue\b", r"\bdialog\b", "dialogue", "dialog"),
+            (r"\bprogramme\b", r"\bprogram\b", "programme", "program"),
+            (r"\bmodelling\b", r"\bmodeling\b", "modelling", "modeling"),
+            (r"\btravelling\b", r"\btraveling\b", "travelling", "traveling"),
+            (r"\blabelling\b", r"\blabeling\b", "labelling", "labeling"),
+            (r"\benrolment\b", r"\benrollment\b", "enrolment", "enrollment"),
+            (r"\bfulfil\b", r"\bfulfill\b", "fulfil", "fulfill"),
+            (r"\bjudgement\b", r"\bjudgment\b", "judgement", "judgment"),
+            (r"\backnowledgement\b", r"\backnowledgment\b", "acknowledgement", "acknowledgment"),
         ]
 
-        for british, american, word_pair in british_american:
-            has_british = bool(re.search(british, content, re.IGNORECASE))
-            has_american = bool(re.search(american, content, re.IGNORECASE))
+        for british_pat, american_pat, british_word, american_word in british_american:
+            has_british = bool(re.search(british_pat, content, re.IGNORECASE))
+            has_american = bool(re.search(american_pat, content, re.IGNORECASE))
 
-            if has_british and has_american:
-                issues.append(f"Mixed spelling variants: {word_pair}")
+            if spelling_standard == "british" and has_american:
+                issues.append(f"American spelling found: '{american_word}'")
+                suggestions.append(
+                    f"Consider British spelling: '{british_word}' instead of '{american_word}'"
+                )
+            elif spelling_standard == "american" and has_british:
+                issues.append(f"British spelling found: '{british_word}'")
+                suggestions.append(
+                    f"Consider American spelling: '{american_word}' instead of '{british_word}'"
+                )
+            elif spelling_standard == "any" and has_british and has_american:
+                issues.append(
+                    f"Mixed spelling variants: {british_word}/{american_word}"
+                )
                 suggestions.append(
                     "Use consistent spelling throughout (British or American)"
                 )
-                break  # Only report one instance
+                break  # Only report one instance for "any" mode
 
         # Check for number formatting consistency
         has_digits = bool(re.search(r"\b\d{1,2}\b", content))
@@ -208,7 +244,7 @@ class GrammarValidator(ValidatorPlugin):
         weighted_score -= issue_counts.get("passive_voice", 0) * 3
         weighted_score -= issue_counts.get("wordiness", 0) * 4
         weighted_score -= issue_counts.get("spelling", 0) * 5
-        weighted_score -= issue_counts.get("consistency", 0) * 4
+        weighted_score -= issue_counts.get("consistency", 0) * 2
         weighted_score -= issue_counts.get("punctuation", 0) * 2
         weighted_score -= issue_counts.get("repetition", 0) * 3
 
@@ -244,8 +280,18 @@ class GrammarValidator(ValidatorPlugin):
                 ("punctuation", self._check_punctuation),
             ]
 
+            # Read spelling standard from plugin config (default: british)
+            spelling_standard: str = metadata.get("config", {}).get(
+                "spelling_standard", "british"
+            )
+
             for check_name, check_func in checks:
-                issues, suggestions = check_func(content)
+                if check_name == "consistency":
+                    issues, suggestions = self._check_consistency(
+                        content, spelling_standard
+                    )
+                else:
+                    issues, suggestions = check_func(content)
                 issue_counts[check_name] = len(issues)
                 all_issues.extend(issues)
                 all_suggestions.extend(suggestions)

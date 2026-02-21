@@ -130,6 +130,7 @@ export interface MaterialResponse {
   durationMinutes?: number;
   filePath?: string;
   materialMetadata?: Record<string, any>;
+  qualityScore?: number | undefined;
   orderIndex: number;
   status: MaterialStatus;
   createdAt: string;

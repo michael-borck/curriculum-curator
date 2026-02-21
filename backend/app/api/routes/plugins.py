@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.models.material import Material
 from app.plugins.base import PluginResult
 from app.plugins.plugin_manager import PluginConfig, plugin_manager
 from app.schemas.plugins import (
@@ -117,8 +118,16 @@ async def configure_plugin(
 
 
 @router.post("/validate", response_model=PluginValidateResponse)
-async def validate_content(body: PluginValidateRequest) -> PluginValidateResponse:
-    """Run validator plugins on content."""
+async def validate_content(
+    body: PluginValidateRequest,
+    material_id: str | None = None,
+    db: Session = Depends(get_db),
+) -> PluginValidateResponse:
+    """Run validator plugins on content.
+
+    Optionally pass ``material_id`` as a query parameter to persist the
+    overall quality score on the corresponding material row.
+    """
     raw_results = await plugin_manager.validate_content(
         body.content, validators=body.validators
     )
@@ -131,10 +140,18 @@ async def validate_content(body: PluginValidateRequest) -> PluginValidateRespons
             scores.append(float(result.data["score"]))
 
     overall_score = sum(scores) / len(scores) if scores else 100.0
+    rounded_score = round(overall_score, 2)
+
+    # Persist quality score to material if requested
+    if material_id:
+        material = db.query(Material).filter(Material.id == material_id).first()
+        if material:
+            material.quality_score = round(overall_score)
+            db.commit()
 
     return PluginValidateResponse(
         results=results,
-        overall_score=round(overall_score, 2),
+        overall_score=rounded_score,
     )
 
 
