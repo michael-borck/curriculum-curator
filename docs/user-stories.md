@@ -126,6 +126,7 @@
 | 9.4 | As a **Creator**, I want to export my unit as PDF, DOCX, or PPTX. | P2 | **Done** — Pandoc + Typst (ADR-0033) |
 | 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Done** |
 | 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-0034 |
+| 9.7 | As a **Creator**, I want to import a SCORM package from my LMS to create a unit in the system. | P3 | **Planned** |
 
 ## 10. Authentication & User Management
 
