@@ -28,14 +28,22 @@ import {
   FlaskConical,
   Presentation,
   Copy,
+  Clipboard,
   GripVertical,
   ChevronDown,
   ChevronUp,
   Sparkles,
   Loader2,
   Lightbulb,
+  Download,
+  History,
+  X,
 } from 'lucide-react';
+import axios from 'axios';
 import { materialsApi } from '../../services/unitStructureApi';
+import { materialVersionApi } from '../../services/materialVersionApi';
+import VersionHistory from '../../features/materials/VersionHistory';
+import type { VersionHistoryApi } from '../../features/materials/VersionHistory';
 import { generateContent } from '../../services/api';
 import {
   MaterialResponse,
@@ -93,13 +101,71 @@ const materialTypeColors: Record<MaterialType, string> = {
   [MaterialType.OTHER]: 'bg-gray-100 text-gray-800',
 };
 
+const exportFormats = [
+  { value: 'html', label: 'HTML' },
+  { value: 'pdf', label: 'PDF' },
+  { value: 'docx', label: 'DOCX' },
+  { value: 'pptx', label: 'PPTX' },
+] as const;
+
+type ExportFormatValue = (typeof exportFormats)[number]['value'];
+
+const handleMaterialDownload = async (
+  materialId: string,
+  format: ExportFormatValue
+) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(
+      `/api/materials/${materialId}/export?format=${format}`,
+      {
+        responseType: 'blob',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+    const disposition = response.headers['content-disposition'] as
+      | string
+      | undefined;
+    const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] ?? `material.${format}`;
+    const url = URL.createObjectURL(response.data as Blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+    toast.success(`Exported as ${format.toUpperCase()}`);
+  } catch {
+    toast.error('Failed to export material');
+  }
+};
+
 const SortableMaterialItem: React.FC<{
   material: MaterialResponse;
   onEdit: (material: MaterialResponse) => void;
   onDelete: (id: string) => void;
   onDuplicate: (material: MaterialResponse) => void;
-}> = ({ material, onEdit, onDelete, onDuplicate }) => {
+  onHistory: (material: MaterialResponse) => void;
+}> = ({ material, onEdit, onDelete, onDuplicate, onHistory }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportRef = React.useRef<HTMLDivElement>(null);
+
+  // Close export menu on click outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
+
   const {
     attributes,
     listeners,
@@ -181,6 +247,57 @@ const SortableMaterialItem: React.FC<{
         </div>
 
         <div className='flex items-center space-x-2 ml-4'>
+          {material.description && (
+            <div className='relative' ref={exportRef}>
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className='p-1 text-gray-400 hover:text-emerald-600'
+                title='Download material'
+              >
+                <Download className='w-4 h-4' />
+              </button>
+              {showExportMenu && (
+                <div className='absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                  {exportFormats.map(fmt => (
+                    <button
+                      key={fmt.value}
+                      className='w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg'
+                      onClick={() => {
+                        setShowExportMenu(false);
+                        handleMaterialDownload(material.id, fmt.value);
+                      }}
+                    >
+                      {fmt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {material.description && (
+            <button
+              onClick={() => {
+                const wrapper = `<div style="font-family: system-ui, sans-serif; line-height: 1.6;">${material.description}</div>`;
+                navigator.clipboard.writeText(wrapper).then(
+                  () => toast.success('Content copied to clipboard'),
+                  () => toast.error('Failed to copy to clipboard')
+                );
+              }}
+              className='p-1 text-gray-400 hover:text-green-600'
+              title='Copy HTML to clipboard'
+            >
+              <Clipboard className='w-4 h-4' />
+            </button>
+          )}
+          {material.description && (
+            <button
+              onClick={() => onHistory(material)}
+              className='p-1 text-gray-400 hover:text-indigo-600'
+              title='Version history'
+            >
+              <History className='w-4 h-4' />
+            </button>
+          )}
           <button
             onClick={() => onDuplicate(material)}
             className='p-1 text-gray-400 hover:text-blue-600'
@@ -223,6 +340,8 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   const [editingMaterial, setEditingMaterial] =
     useState<MaterialResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [historyMaterial, setHistoryMaterial] =
+    useState<MaterialResponse | null>(null);
   const [formData, setFormData] = useState<MaterialFormData>({
     title: '',
     type: MaterialType.LECTURE,
@@ -441,6 +560,19 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       }
     }
   };
+
+  const historyApi: VersionHistoryApi | null = React.useMemo(() => {
+    if (!historyMaterial) return null;
+    const mid = historyMaterial.id;
+    return {
+      history: (limit?: number) => materialVersionApi.history(mid, limit),
+      versionBody: (commit: string) =>
+        materialVersionApi.versionBody(mid, commit),
+      diff: (oldCommit: string, newCommit?: string) =>
+        materialVersionApi.diff(mid, oldCommit, newCommit),
+      revert: (commit: string) => materialVersionApi.revert(mid, commit),
+    };
+  }, [historyMaterial]);
 
   if (loading) {
     return <div className='animate-pulse'>Loading materials...</div>;
@@ -795,12 +927,40 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onDuplicate={handleDuplicate}
+                  onHistory={setHistoryMaterial}
                 />
               ))
             )}
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* Version History Modal */}
+      {historyMaterial && historyApi && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+          <div className='bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[80vh] overflow-y-auto m-4'>
+            <div className='flex items-center justify-between p-4 border-b'>
+              <h3 className='text-lg font-semibold text-gray-900'>
+                History: {historyMaterial.title}
+              </h3>
+              <button
+                onClick={() => setHistoryMaterial(null)}
+                className='p-1 text-gray-400 hover:text-gray-600'
+              >
+                <X className='w-5 h-5' />
+              </button>
+            </div>
+            <div className='p-4'>
+              <VersionHistory
+                api={historyApi}
+                onVersionRestore={() => {
+                  fetchMaterials();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

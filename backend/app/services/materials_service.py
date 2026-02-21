@@ -22,6 +22,7 @@ from app.schemas.materials import (
     MaterialReorder,
     MaterialUpdate,
 )
+from app.services.git_content_service import get_git_service
 
 logger = logging.getLogger(__name__)
 
@@ -29,11 +30,29 @@ logger = logging.getLogger(__name__)
 class MaterialsService:
     """Service for managing Weekly Materials"""
 
+    def _save_to_git(self, material: WeeklyMaterial, user_email: str, message: str) -> None:
+        """Save material description to Git for version history."""
+        if not material.description:
+            return
+        try:
+            git = get_git_service()
+            git_path = f"weeks/week-{int(material.week_number):02d}/material-{material.id}.html"
+            git.save_content(
+                unit_id=str(material.unit_id),
+                path=git_path,
+                content=material.description,
+                user_email=user_email,
+                message=message,
+            )
+        except Exception:
+            logger.exception("Failed to save material to Git (non-fatal)")
+
     async def create_material(
         self,
         db: Session,
         unit_id: UUID,
         material_data: MaterialCreate,
+        user_email: str = "",
     ) -> WeeklyMaterial:
         """Create a new Weekly Material"""
         try:
@@ -67,6 +86,9 @@ class MaterialsService:
             db.commit()
             db.refresh(material)
 
+            if material_data.description and user_email:
+                self._save_to_git(material, user_email, f"Created {material.title}")
+
             logger.info(
                 f"Created material '{material.title}' for week {material.week_number}"
             )
@@ -82,6 +104,7 @@ class MaterialsService:
         db: Session,
         material_id: UUID,
         material_data: MaterialUpdate,
+        user_email: str = "",
     ) -> WeeklyMaterial | None:
         """Update an existing Weekly Material"""
         material = (
@@ -92,6 +115,7 @@ class MaterialsService:
             return None
 
         update_data = material_data.model_dump(exclude_unset=True)
+        has_description_change = "description" in update_data
 
         for field, value in update_data.items():
             setattr(material, field, value)
@@ -99,6 +123,10 @@ class MaterialsService:
         try:
             db.commit()
             db.refresh(material)
+
+            if has_description_change and material.description and user_email:
+                self._save_to_git(material, user_email, f"Updated {material.title}")
+
             logger.info(f"Updated material {material_id}")
             return material
         except IntegrityError as e:

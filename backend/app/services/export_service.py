@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+import zipfile
 from enum import Enum
 from io import BytesIO
 from pathlib import Path
@@ -24,6 +25,9 @@ from sqlalchemy.orm import Session
 
 from app.models.content import Content
 from app.models.unit import Unit
+from app.models.weekly_material import WeeklyMaterial
+from app.models.weekly_topic import WeeklyTopic
+from app.services.unit_export_data import HTML_TEMPLATE, mermaid_head
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +201,151 @@ class ExportService:
         media_type = FORMAT_MEDIA_TYPES[fmt]
 
         return buf, filename, media_type
+
+    async def export_material(
+        self,
+        material_id: str,
+        db: Session,
+        fmt: ExportFormat,
+        title: str | None = None,
+        author: str | None = None,
+    ) -> tuple[BytesIO, str, str]:
+        """
+        Export a single weekly material to the specified format.
+
+        Args:
+            material_id: The material ID to export.
+            db: Database session.
+            fmt: Target export format.
+            title: Optional title override (uses material.title if not provided).
+            author: Optional author name for the document metadata.
+
+        Returns:
+            Tuple of (BytesIO buffer, filename, media_type).
+
+        Raises:
+            ValueError: If the material is not found.
+            FileNotFoundError: If required binaries are not available.
+            RuntimeError: If the conversion fails.
+        """
+        material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        if not material:
+            msg = f"Material {material_id} not found"
+            raise ValueError(msg)
+
+        doc_title = title or material.title or "Untitled"
+        html_content = material.description or ""
+
+        if fmt == ExportFormat.HTML:
+            html = HTML_TEMPLATE.format(
+                title=doc_title,
+                content=html_content,
+                extra_head=mermaid_head(html_content),
+            )
+            buf = BytesIO(html.encode("utf-8"))
+            buf.seek(0)
+        else:
+            buf = self._convert(
+                markdown=html_content,
+                fmt=fmt,
+                title=doc_title,
+                author=author,
+            )
+
+        slug = self._slugify(doc_title)
+        ext = FORMAT_EXTENSIONS[fmt]
+        filename = f"{slug}{ext}"
+        media_type = FORMAT_MEDIA_TYPES[fmt]
+
+        return buf, filename, media_type
+
+    async def export_materials_zip(
+        self,
+        unit_id: str,
+        db: Session,
+        fmt: ExportFormat,
+        author: str | None = None,
+    ) -> tuple[BytesIO, str]:
+        """
+        Export all weekly materials for a unit as a ZIP archive.
+
+        Materials are organised into week folders named
+        ``week01_topic_title/material_slug.ext``.
+
+        Args:
+            unit_id: The unit ID to export materials from.
+            db: Database session.
+            fmt: Target export format for each material.
+            author: Optional author name for document metadata.
+
+        Returns:
+            Tuple of (BytesIO zip buffer, filename).
+
+        Raises:
+            ValueError: If the unit is not found.
+        """
+        unit = db.query(Unit).filter(Unit.id == unit_id).first()
+        if not unit:
+            msg = f"Unit {unit_id} not found"
+            raise ValueError(msg)
+
+        # Fetch topics for folder naming
+        topics = (
+            db.query(WeeklyTopic)
+            .filter(WeeklyTopic.unit_id == unit_id)
+            .order_by(WeeklyTopic.week_number)
+            .all()
+        )
+        topic_by_week: dict[int, str] = {
+            int(t.week_number): t.topic_title for t in topics
+        }
+
+        # Fetch all materials
+        materials = (
+            db.query(WeeklyMaterial)
+            .filter(WeeklyMaterial.unit_id == unit_id)
+            .order_by(WeeklyMaterial.week_number, WeeklyMaterial.order_index)
+            .all()
+        )
+
+        ext = FORMAT_EXTENSIONS[fmt]
+        zip_buf = BytesIO()
+
+        with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for mat in materials:
+                week = int(mat.week_number)
+                topic_slug = self._slugify(topic_by_week.get(week, ""))
+                folder = f"week{week:02d}"
+                if topic_slug:
+                    folder = f"{folder}_{topic_slug}"
+
+                mat_slug = self._slugify(mat.title or "untitled")
+                html_content = mat.description or ""
+                doc_title = mat.title or "Untitled"
+
+                if fmt == ExportFormat.HTML:
+                    rendered = HTML_TEMPLATE.format(
+                        title=doc_title,
+                        content=html_content,
+                        extra_head=mermaid_head(html_content),
+                    )
+                    data = rendered.encode("utf-8")
+                else:
+                    buf = self._convert(
+                        markdown=html_content,
+                        fmt=fmt,
+                        title=doc_title,
+                        author=author,
+                    )
+                    data = buf.read()
+
+                zf.writestr(f"{folder}/{mat_slug}{ext}", data)
+
+        zip_buf.seek(0)
+        unit_slug = self._slugify(unit.title or "unit")
+        filename = f"{unit_slug}_materials.zip"
+
+        return zip_buf, filename
 
     async def export_unit(
         self,

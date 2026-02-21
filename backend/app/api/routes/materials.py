@@ -16,13 +16,17 @@ from app.schemas.materials import (
     MaterialCreate,
     MaterialDuplicate,
     MaterialFilter,
+    MaterialHistory,
     MaterialMapping,
     MaterialReorder,
     MaterialResponse,
+    MaterialRevert,
     MaterialUpdate,
+    MaterialVersion,
     MaterialWithOutcomes,
     WeekMaterials,
 )
+from app.services.git_content_service import get_git_service
 from app.services.materials_service import materials_service
 
 router = APIRouter()
@@ -91,6 +95,7 @@ async def create_material(
             db=db,
             unit_id=unit_id,
             material_data=material_data,
+            user_email=current_user.email,
         )
         return _to_material_response(material)
     except ValueError as e:
@@ -256,6 +261,7 @@ async def update_material(
             db=db,
             material_id=material_id,
             material_data=material_data,
+            user_email=current_user.email,
         )
 
         if not material:
@@ -463,3 +469,125 @@ async def get_week_summary(
         unit_id=unit_id,
         week_number=week_number,
     )
+
+
+# =============================================================================
+# Version History Endpoints
+# =============================================================================
+
+
+def _git_path_for_material(material: WeeklyMaterial) -> str:
+    """Build the Git-relative path for a material's description file."""
+    return f"weeks/week-{int(material.week_number):02d}/material-{material.id}.html"
+
+
+@router.get("/materials/{material_id}/history", response_model=MaterialHistory)
+async def get_material_history(
+    material_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get version history for a material's description."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+
+    git = get_git_service()
+    git_path = _git_path_for_material(material)
+    commits = git.get_history(str(material.unit_id), git_path, limit=limit)
+
+    versions = [
+        MaterialVersion(
+            commit=c["commit"],
+            date=c["date"],
+            message=c["message"],
+            author_email=c.get("author_email"),
+        )
+        for c in commits
+    ]
+    return MaterialHistory(material_id=str(material_id), versions=versions)
+
+
+@router.get("/materials/{material_id}/version/{commit}")
+async def get_material_at_version(
+    material_id: UUID,
+    commit: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get material description at a specific version."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+
+    git = get_git_service()
+    git_path = _git_path_for_material(material)
+    try:
+        body = git.get_content(str(material.unit_id), git_path, commit)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found") from exc
+
+    return {"commit": commit, "body": body}
+
+
+@router.get("/materials/{material_id}/diff")
+async def get_material_diff(
+    material_id: UUID,
+    old_commit: str = Query(...),
+    new_commit: str = Query("HEAD"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get diff between two versions of a material's description."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+
+    git = get_git_service()
+    git_path = _git_path_for_material(material)
+    diff = git.diff(str(material.unit_id), git_path, old_commit, new_commit)
+
+    return {
+        "materialId": str(material_id),
+        "oldCommit": old_commit,
+        "newCommit": new_commit,
+        "diff": diff,
+    }
+
+
+@router.post("/materials/{material_id}/revert", response_model=MaterialResponse)
+async def revert_material(
+    material_id: UUID,
+    data: MaterialRevert,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Revert material description to a previous version."""
+    material = await materials_service.get_material(db, material_id)
+    if not material:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material not found")
+
+    git = get_git_service()
+    git_path = _git_path_for_material(material)
+
+    try:
+        old_body = git.get_content(str(material.unit_id), git_path, data.commit)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found") from exc
+
+    # Update DB
+    material.description = old_body
+    db.commit()
+    db.refresh(material)
+
+    # Create new Git commit for the revert
+    git.save_content(
+        unit_id=str(material.unit_id),
+        path=git_path,
+        content=old_body,
+        user_email=current_user.email,
+        message=f"Reverted {material.title} to {data.commit[:8]}",
+    )
+
+    return _to_material_response(material)

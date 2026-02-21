@@ -14,15 +14,31 @@ import {
 } from 'lucide-react';
 import { contentApi, type ContentVersion } from '../../services/contentApi';
 
+/**
+ * Adapter interface so VersionHistory works with both Content and Material APIs.
+ */
+export interface VersionHistoryApi {
+  history(limit?: number): Promise<{ data: { versions: ContentVersion[] } }>;
+  versionBody(commit: string): Promise<{ data: { body: string } }>;
+  diff(
+    oldCommit: string,
+    newCommit?: string
+  ): Promise<{ data: { diff: string } }>;
+  revert(commit: string): Promise<unknown>;
+}
+
 interface VersionHistoryProps {
-  unitId: string;
-  contentId: string;
+  /** Provide unitId + contentId for the legacy Content API, OR provide an api adapter. */
+  unitId?: string;
+  contentId?: string;
+  api?: VersionHistoryApi;
   onVersionRestore?: () => void;
 }
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({
   unitId,
   contentId,
+  api: externalApi,
   onVersionRestore,
 }) => {
   const [versions, setVersions] = useState<ContentVersion[]>([]);
@@ -39,10 +55,26 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const [diffText, setDiffText] = useState<string | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
 
+  // Build an adapter: either use the external api prop or fall back to contentApi
+  const adapter: VersionHistoryApi = React.useMemo(() => {
+    if (externalApi) return externalApi;
+    // Legacy content API path
+    return {
+      history: (limit?: number) =>
+        contentApi.history(unitId!, contentId!, limit),
+      versionBody: (commit: string) =>
+        contentApi.versionBody(unitId!, contentId!, commit),
+      diff: (oldCommit: string, newCommit?: string) =>
+        contentApi.diff(unitId!, contentId!, oldCommit, newCommit),
+      revert: (commit: string) =>
+        contentApi.revert(unitId!, contentId!, commit),
+    };
+  }, [externalApi, unitId, contentId]);
+
   const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await contentApi.history(unitId, contentId);
+      const { data } = await adapter.history();
       setVersions(data.versions);
       if (data.versions.length >= 2) {
         setSelectedCommits([data.versions[1].commit, data.versions[0].commit]);
@@ -52,7 +84,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [unitId, contentId]);
+  }, [adapter]);
 
   useEffect(() => {
     fetchHistory();
@@ -61,7 +93,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const handleRestore = async (commit: string) => {
     try {
       setRestoringCommit(commit);
-      await contentApi.revert(unitId, contentId, commit);
+      await adapter.revert(commit);
       onVersionRestore?.();
       await fetchHistory();
     } catch (err) {
@@ -79,7 +111,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     }
     setExpandedCommit(commit);
     try {
-      const { data } = await contentApi.versionBody(unitId, contentId, commit);
+      const { data } = await adapter.versionBody(commit);
       setExpandedBody(data.body);
     } catch {
       setExpandedBody('(failed to load)');
@@ -101,14 +133,14 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     if (!oldC || !newC) return;
     try {
       setDiffLoading(true);
-      const { data } = await contentApi.diff(unitId, contentId, oldC, newC);
+      const { data } = await adapter.diff(oldC, newC);
       setDiffText(data.diff);
     } catch {
       setDiffText('(failed to load diff)');
     } finally {
       setDiffLoading(false);
     }
-  }, [unitId, contentId, selectedCommits]);
+  }, [adapter, selectedCommits]);
 
   useEffect(() => {
     if (viewMode === 'compare' && selectedCommits[0] && selectedCommits[1]) {

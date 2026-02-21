@@ -117,3 +117,25 @@ class MaterialFilter(CamelModel):
     type: str | None = None
     status: str | None = None
     search: str | None = Field(None, description="Search in title and description")
+
+
+class MaterialVersion(CamelModel):
+    """A single version in material history"""
+
+    commit: str
+    date: str
+    message: str
+    author_email: str | None = None
+
+
+class MaterialHistory(CamelModel):
+    """Version history for a material"""
+
+    material_id: str
+    versions: list[MaterialVersion]
+
+
+class MaterialRevert(CamelModel):
+    """Request to revert a material to a previous version"""
+
+    commit: str

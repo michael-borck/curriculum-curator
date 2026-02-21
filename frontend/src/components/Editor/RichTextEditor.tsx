@@ -6,6 +6,9 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { VideoNode } from './VideoNode';
+import { YoutubeNode } from './YoutubeNode';
+import { MermaidNode } from './MermaidNode';
 import { createLowlight } from 'lowlight';
 import js from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
@@ -34,6 +37,9 @@ import {
   Heading2,
   Table as TableIcon,
   ImagePlus,
+  Youtube,
+  Video,
+  GitMerge,
   Undo,
   Redo,
   Info,
@@ -130,6 +136,37 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       >
         <ImagePlus size={18} />
       </button>
+      <button
+        onClick={() => {
+          const url = window.prompt('Enter YouTube URL:');
+          if (url) {
+            editor.commands.setYoutubeVideo({ src: url });
+          }
+        }}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Embed YouTube video'
+      >
+        <Youtube size={18} />
+      </button>
+      <button
+        onClick={() => {
+          const url = window.prompt('Enter video URL (MP4, WebM):');
+          if (url) {
+            editor.commands.setVideo({ src: url });
+          }
+        }}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Embed video from URL'
+      >
+        <Video size={18} />
+      </button>
+      <button
+        onClick={() => editor.commands.insertMermaid()}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Insert Mermaid diagram'
+      >
+        <GitMerge size={18} />
+      </button>
 
       <div className='w-px bg-gray-300 mx-1' />
 
@@ -166,6 +203,9 @@ const RichTextEditor = ({
       TableHeader,
       TableCell,
       CodeBlockLowlight.configure({ lowlight }),
+      VideoNode,
+      YoutubeNode,
+      MermaidNode,
     ],
     content,
     onUpdate: ({ editor }: { editor: Editor }) => {

@@ -24,6 +24,21 @@ from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 
+MERMAID_CDN_SCRIPT = (
+    '  <script type="module">'
+    "import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';"
+    "mermaid.initialize({startOnLoad:true});"
+    "</script>"
+)
+
+
+def mermaid_head(content: str) -> str:
+    """Return the Mermaid CDN script tag if content contains Mermaid blocks."""
+    if '<pre class="mermaid">' in content:
+        return MERMAID_CDN_SCRIPT
+    return ""
+
+
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
