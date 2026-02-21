@@ -184,19 +184,21 @@
 |---|-------|-------|--------|
 | 15.1 | As a **Creator**, I want a simple editing mode that hides technical details (YAML, raw markdown) so I can focus on content. | P2 | **Done** — EditorModeToggle component |
 | 15.2 | As a **power user**, I want an advanced editing mode where I can see and edit YAML front matter and raw markdown directly. | P2 | **Done** — toggle between simple/advanced |
-| 15.3 | As a **Creator**, I want to add images to my materials by providing a URL/link. | P3 | **Planned** — TipTap supports image nodes, needs UI for inserting |
+| 15.3 | As a **Creator**, I want to add images to my materials by providing a URL/link. | P3 | **Done** — TipTap image extension with URL insert dialog |
 | 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Planned** — needs media upload endpoint + storage |
 | 15.5 | As a **Creator**, I want AI to generate images for my materials (diagrams, illustrations) when the LLM provider supports it. | P4 | **Planned** |
 | 15.6 | As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them into my materials. | P4 | **Planned** |
+| 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
+| 15.8 | As a **Creator**, I want to embed YouTube/video links as rich previews in my materials. | P2 | **Done** — TipTap Video/YouTube nodes |
 
 ## 16. Desktop App & Distribution
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 16.1 | As a **user**, I want to download and run Curriculum Curator as a desktop app (macOS, Windows, Linux) without needing Docker or command-line tools. | P3 | **Planned** — LOCAL_MODE + PyInstaller audit done (ADR-0024), Electron scaffolding started |
-| 16.2 | As a **user**, I want the desktop app to work with a locally installed Ollama for AI, so I don't need cloud API keys. | P3 | **Planned** — Ollama integration works in Docker, needs Electron approach |
-| 16.3 | As a **user**, I want PDF/PPTX export in the desktop app, even if I need to install Pandoc separately and point the app to it. | P3 | **Partial** — Pandoc+Typst export works, desktop app bundling TBD |
-| 16.4 | As a **user**, I want the desktop app to auto-update so I don't have to re-download each release. | P3 | **Planned** |
+| 16.1 | As a **user**, I want to download and run Curriculum Curator as a desktop app (macOS, Windows, Linux) without needing Docker or command-line tools. | P3 | **Done** — Electron app with embedded PyInstaller backend (ADR-0035) |
+| 16.2 | As a **user**, I want the desktop app to work with a locally installed Ollama for AI, so I don't need cloud API keys. | P3 | **Done** — Ollama detection, auto-start, and graceful shutdown |
+| 16.3 | As a **user**, I want PDF/PPTX export in the desktop app, even if I need to install Pandoc separately and point the app to it. | P3 | **Done** — Pandoc + Typst bundled in app resources |
+| 16.4 | As a **user**, I want the desktop app to auto-update so I don't have to re-download each release. | P3 | **Done** — electron-updater with GitHub Releases |
 
 ## 17. Flexibility & Workflow Freedom
 
@@ -212,15 +214,15 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~75 |
-| **Partial** | ~5 |
-| **Planned** | ~14 |
+| **Done** | ~82 |
+| **Partial** | ~4 |
+| **Planned** | ~9 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
-| **P3** | Desktop app, IMSCC import, image handling, advanced import/export, web search for courses | In progress |
+| **P3** | Desktop app, IMSCC import, image handling, advanced import/export, web search for courses | Mostly complete |
 | **P4** | AI image generation, stock photos, accessibility validation | Not started |
 
 *Last updated: 2026-02-21*
