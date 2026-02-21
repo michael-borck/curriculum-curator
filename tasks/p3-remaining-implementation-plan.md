@@ -67,7 +67,7 @@
 
 ### 3.4 Backend: Spell checker Australian English support
 - [x] Extend technical whitelist with 60+ Australian educational terms (programme, honours, behaviour, organisation, analyse, specialisation, colour, centre, enrolment, etc.)
-- [ ] Consider: grammar validator's British/American consistency check — default to "British" mode for Australian users
+- [x] Grammar validator defaults to British spelling mode for Australian users (configurable via `spelling_standard` plugin config)
 
 ### 3.5 Frontend: Quality panel in editor
 - [x] Add "Quality Checks" panel in editor right sidebar
@@ -78,8 +78,9 @@
 - [x] Individual validator toggle via Settings > Quality Plugins tab
 
 ### 3.6 Frontend: Quality score on material cards
-- [ ] Show quality badge (A-F or colour dot) on material list items
-- [ ] Tooltip shows breakdown (readability, grammar, spelling scores)
+- [x] Show quality badge (A/B/C/D colour pill) on material list items
+- [x] Tooltip shows numeric score out of 100
+- [x] Validation endpoint persists quality_score to material when `material_id` query param provided
 - [ ] Optional: unit-level aggregate quality score on dashboard
 
 **User stories**: 7.1, 7.2 (partial → done), 7.3 (planned → done) ✅
