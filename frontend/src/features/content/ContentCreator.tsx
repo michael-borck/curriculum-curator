@@ -11,6 +11,12 @@ import {
   generateContentStream,
   validateContent,
   remediateContentStream,
+  runPluginValidation,
+  runPluginRemediation,
+} from '../../services/api';
+import type {
+  PluginResultData,
+  PluginValidateResponse,
 } from '../../services/api';
 import {
   Loader2,
@@ -42,6 +48,91 @@ interface ValidationResponse {
   overallScore?: number;
 }
 
+const scoreColor = (score: number): string => {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-amber-600';
+  return 'text-red-600';
+};
+
+const PluginResultCard: React.FC<{
+  name: string;
+  result: PluginResultData;
+}> = ({ name, result }) => {
+  const [expanded, setExpanded] = useState(false);
+  const score =
+    result.data && typeof result.data.score === 'number'
+      ? result.data.score
+      : null;
+  const issues =
+    result.data && Array.isArray(result.data.issues)
+      ? (result.data.issues as string[])
+      : [];
+
+  return (
+    <div
+      className={`p-3 rounded-lg border ${
+        result.success ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200'
+      }`}
+    >
+      <button
+        type='button'
+        className='flex items-center justify-between w-full text-left'
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span className='font-medium text-sm'>
+          {name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+        </span>
+        <div className='flex items-center gap-2'>
+          {score !== null && (
+            <span className={`text-xs font-semibold ${scoreColor(score)}`}>
+              {Math.round(score)}%
+            </span>
+          )}
+          {result.success ? (
+            <CheckCircle2 className='text-green-500' size={16} />
+          ) : (
+            <XCircle className='text-red-500' size={16} />
+          )}
+        </div>
+      </button>
+
+      <p className='text-xs text-gray-600 mt-1'>{result.message}</p>
+
+      {expanded && (
+        <>
+          {issues.length > 0 && (
+            <ul className='mt-2 space-y-1 max-h-40 overflow-y-auto'>
+              {issues.map((issue, idx) => (
+                <li
+                  key={idx}
+                  className='text-xs text-gray-600 flex items-start gap-1'
+                >
+                  <span className='text-gray-400 shrink-0'>•</span>
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {result.suggestions && result.suggestions.length > 0 && (
+            <ul className='mt-2 space-y-1'>
+              {result.suggestions.map((suggestion, idx) => (
+                <li
+                  key={idx}
+                  className='text-xs text-blue-700 flex items-start gap-1'
+                >
+                  <span className='text-blue-400 shrink-0'>→</span>
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 const ContentCreator = () => {
   const { type, unitId, contentId } = useParams<{
     type?: ContentType;
@@ -65,6 +156,15 @@ const ContentCreator = () => {
   const [validationResults, setValidationResults] =
     useState<ValidationResponse | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
+  const [pluginResults, setPluginResults] = useState<Record<
+    string,
+    PluginResultData
+  > | null>(null);
+  const [pluginOverallScore, setPluginOverallScore] = useState<number | null>(
+    null
+  );
+  const [isRunningPlugins, setIsRunningPlugins] = useState(false);
+  const [isRunningRemediation, setIsRunningRemediation] = useState(false);
   const { canGenerate, canRefine } = useAILevel();
   const { designId } = useUnitDesign(selectedUnitId || unitId);
 
@@ -324,6 +424,69 @@ const ContentCreator = () => {
       console.error('Error remediating content:', error);
       toast.error('Failed to remediate content');
       setIsRemediating(false);
+    }
+  };
+
+  const handlePluginValidation = async () => {
+    if (!content.trim()) {
+      toast.error('Please add some content to validate');
+      return;
+    }
+
+    setIsRunningPlugins(true);
+    setPluginResults(null);
+    setPluginOverallScore(null);
+
+    try {
+      const response = await runPluginValidation(content);
+      const data: PluginValidateResponse = response.data;
+      setPluginResults(data.results);
+      setPluginOverallScore(data.overallScore);
+
+      if (data.overallScore >= 80) {
+        toast.success(
+          `Quality checks passed (${Math.round(data.overallScore)}%)`
+        );
+      } else {
+        toast('Quality issues found — review results below', {
+          icon: '\u26A0\uFE0F',
+        });
+      }
+    } catch (error) {
+      console.error('Error running plugin validation:', error);
+      toast.error('Failed to run quality checks');
+    } finally {
+      setIsRunningPlugins(false);
+    }
+  };
+
+  const handlePluginRemediation = async (remediators?: string[]) => {
+    if (!content.trim()) {
+      toast.error('No content to fix');
+      return;
+    }
+
+    setIsRunningRemediation(true);
+
+    try {
+      const response = await runPluginRemediation(content, remediators);
+      const data = response.data;
+      if (data.content && data.content !== content) {
+        setContent(data.content);
+        setPluginResults(null);
+        setPluginOverallScore(null);
+        const changeCount = data.changesMade.length;
+        toast.success(
+          `Applied ${changeCount} fix${changeCount === 1 ? '' : 'es'}`
+        );
+      } else {
+        toast('No changes needed');
+      }
+    } catch (error) {
+      console.error('Error running plugin remediation:', error);
+      toast.error('Failed to auto-fix content');
+    } finally {
+      setIsRunningRemediation(false);
     }
   };
 
@@ -674,6 +837,82 @@ const ContentCreator = () => {
             {!validationResults && (
               <p className='text-sm text-gray-500'>
                 Run validation to check content readability and structure
+              </p>
+            )}
+          </div>
+
+          {/* Plugin Quality Checks */}
+          <div className='bg-white rounded-lg shadow-md p-6'>
+            <h3 className='text-lg font-semibold mb-4'>Quality Checks</h3>
+
+            <button
+              onClick={handlePluginValidation}
+              disabled={isRunningPlugins || !content.trim()}
+              className='w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-3'
+            >
+              {isRunningPlugins ? (
+                <Loader2 className='animate-spin' size={18} />
+              ) : (
+                <CheckCircle2 size={18} />
+              )}
+              {isRunningPlugins ? 'Running...' : 'Run Quality Checks'}
+            </button>
+
+            {pluginResults && (
+              <div className='space-y-3'>
+                {/* Overall score */}
+                {pluginOverallScore !== null && (
+                  <div
+                    className={`p-3 rounded-lg ${
+                      pluginOverallScore >= 80
+                        ? 'bg-green-50 border border-green-200'
+                        : pluginOverallScore >= 60
+                          ? 'bg-amber-50 border border-amber-200'
+                          : 'bg-red-50 border border-red-200'
+                    }`}
+                  >
+                    <div className='flex items-center gap-2'>
+                      {pluginOverallScore >= 80 ? (
+                        <CheckCircle2 className='text-green-600' size={18} />
+                      ) : (
+                        <AlertTriangle className='text-amber-600' size={18} />
+                      )}
+                      <span className='font-medium text-sm'>
+                        Overall: {Math.round(pluginOverallScore)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Per-plugin results */}
+                {Object.entries(pluginResults).map(([pluginName, result]) => (
+                  <PluginResultCard
+                    key={pluginName}
+                    name={pluginName}
+                    result={result}
+                  />
+                ))}
+
+                {/* Auto-fix All button */}
+                <button
+                  onClick={() => handlePluginRemediation()}
+                  disabled={isRunningRemediation}
+                  className='w-full px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium'
+                >
+                  {isRunningRemediation ? (
+                    <Loader2 className='animate-spin' size={16} />
+                  ) : (
+                    <Wand2 size={16} />
+                  )}
+                  {isRunningRemediation ? 'Fixing...' : 'Auto-fix All'}
+                </button>
+              </div>
+            )}
+
+            {!pluginResults && (
+              <p className='text-sm text-gray-500'>
+                Run rule-based checks for spelling, grammar, readability,
+                accessibility, and inclusive language.
               </p>
             )}
           </div>

@@ -125,6 +125,12 @@ async def lifespan(app: FastAPI):
         git_service = get_git_service()
         logger.info(f"✅ Git content service initialized at {git_service.repos_base}")
 
+        # Load quality plugins (validators + remediators)
+        from app.plugins.plugin_manager import plugin_manager  # noqa: PLC0415
+
+        plugin_manager.load_plugins()
+        logger.info("✅ Quality plugins loaded")
+
         # LOCAL_MODE: seed the default local user and Ollama config
         if settings.LOCAL_MODE:
             _seed_local_user()
@@ -400,6 +406,13 @@ try:
     app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 except ImportError as e:
     logger.warning(f"Failed to load ai routes: {e}")
+
+try:
+    from app.api.routes import plugins
+
+    app.include_router(plugins.router, prefix="/api/plugins", tags=["plugins"])
+except ImportError as e:
+    logger.warning(f"Failed to load plugins routes: {e}")
 
 try:
     from app.api.routes import user_export

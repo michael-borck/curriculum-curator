@@ -9,9 +9,14 @@ import {
   CheckCircle,
   Brain,
   Sparkles,
+  Plug,
+  Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
+import { getPlugins, updatePluginConfig } from '../../services/api';
+import type { PluginInfo } from '../../services/api';
 import LLMSettings from './LLMSettings';
 import TeachingStyleSettings from './TeachingStyleSettings';
 
@@ -45,6 +50,38 @@ const Settings = () => {
     confirmPassword: '',
     twoFactorEnabled: false,
   });
+
+  const [pluginList, setPluginList] = useState<PluginInfo[]>([]);
+  const [pluginsLoading, setPluginsLoading] = useState(false);
+  const [pluginsLoaded, setPluginsLoaded] = useState(false);
+
+  // Load plugins when tab is selected
+  const loadPlugins = async () => {
+    if (pluginsLoaded) return;
+    setPluginsLoading(true);
+    try {
+      const response = await getPlugins();
+      setPluginList(response.data.plugins);
+      setPluginsLoaded(true);
+    } catch (error) {
+      console.error('Failed to load plugins:', error);
+      toast.error('Failed to load quality plugins');
+    } finally {
+      setPluginsLoading(false);
+    }
+  };
+
+  const handlePluginToggle = async (name: string, enabled: boolean) => {
+    try {
+      await updatePluginConfig(name, { enabled });
+      setPluginList(prev =>
+        prev.map(p => (p.name === name ? { ...p, enabled } : p))
+      );
+    } catch (error) {
+      console.error('Failed to update plugin:', error);
+      toast.error('Failed to update plugin');
+    }
+  };
 
   const [llmSettings, setLlmSettings] = useState({
     provider: user?.llmConfig?.provider || 'system',
@@ -115,6 +152,7 @@ const Settings = () => {
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
+    { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
   return (
@@ -912,6 +950,121 @@ const Settings = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'plugins' && (
+            <PluginsTab
+              plugins={pluginList}
+              loading={pluginsLoading}
+              onLoad={loadPlugins}
+              onToggle={handlePluginToggle}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PluginsTab: React.FC<{
+  plugins: PluginInfo[];
+  loading: boolean;
+  onLoad: () => void;
+  onToggle: (name: string, enabled: boolean) => void;
+}> = ({ plugins, loading, onLoad, onToggle }) => {
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Load plugins on first render
+  useState(() => {
+    if (!hasLoaded) {
+      onLoad();
+      setHasLoaded(true);
+    }
+  });
+
+  const validators = plugins.filter(p => p.pluginType === 'validator');
+  const remediators = plugins.filter(p => p.pluginType === 'remediator');
+
+  if (loading && plugins.length === 0) {
+    return (
+      <div className='bg-white rounded-lg shadow-md p-6 flex items-center justify-center h-40'>
+        <Loader2 className='animate-spin text-teal-600' size={32} />
+      </div>
+    );
+  }
+
+  return (
+    <div className='space-y-6'>
+      <div className='bg-white rounded-lg shadow-md p-6'>
+        <h2 className='text-xl font-semibold mb-2'>Quality Plugins</h2>
+        <p className='text-sm text-gray-600 mb-6'>
+          Rule-based checks that run on your content without using AI. Toggle
+          plugins on or off to customise which checks run.
+        </p>
+
+        {/* Validators */}
+        <h3 className='font-medium text-gray-800 mb-3'>Validators</h3>
+        <div className='space-y-3 mb-6'>
+          {validators.map(plugin => (
+            <div
+              key={plugin.name}
+              className='flex items-center justify-between p-3 border border-gray-200 rounded-lg'
+            >
+              <div className='flex-1'>
+                <span className='font-medium text-sm'>
+                  {plugin.name
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
+                <p className='text-xs text-gray-500'>{plugin.description}</p>
+              </div>
+              <label className='relative inline-flex items-center cursor-pointer'>
+                <input
+                  type='checkbox'
+                  checked={plugin.enabled}
+                  onChange={e => onToggle(plugin.name, e.target.checked)}
+                  className='sr-only peer'
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              </label>
+            </div>
+          ))}
+          {validators.length === 0 && (
+            <p className='text-sm text-gray-400'>No validators available</p>
+          )}
+        </div>
+
+        {/* Remediators */}
+        <h3 className='font-medium text-gray-800 mb-3'>Auto-fix Plugins</h3>
+        <div className='space-y-3'>
+          {remediators.map(plugin => (
+            <div
+              key={plugin.name}
+              className='flex items-center justify-between p-3 border border-gray-200 rounded-lg'
+            >
+              <div className='flex-1'>
+                <span className='font-medium text-sm'>
+                  {plugin.name
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, c => c.toUpperCase())}
+                </span>
+                <p className='text-xs text-gray-500'>{plugin.description}</p>
+              </div>
+              <label className='relative inline-flex items-center cursor-pointer'>
+                <input
+                  type='checkbox'
+                  checked={plugin.enabled}
+                  onChange={e => onToggle(plugin.name, e.target.checked)}
+                  className='sr-only peer'
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              </label>
+            </div>
+          ))}
+          {remediators.length === 0 && (
+            <p className='text-sm text-gray-400'>
+              No auto-fix plugins available
+            </p>
           )}
         </div>
       </div>

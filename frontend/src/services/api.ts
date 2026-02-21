@@ -316,6 +316,57 @@ export const remediateContentStream = async (
   }
 };
 
+// Plugin endpoints
+export interface PluginInfo {
+  name: string;
+  description: string;
+  pluginType: string;
+  enabled: boolean;
+  priority: number;
+}
+
+export interface PluginResultData {
+  success: boolean;
+  message: string;
+  data?: Record<string, unknown>;
+  suggestions?: string[];
+}
+
+export interface PluginValidateResponse {
+  results: Record<string, PluginResultData>;
+  overallScore: number;
+}
+
+export interface PluginRemediateResponse {
+  content: string;
+  results: Record<string, PluginResultData>;
+  changesMade: string[];
+}
+
+export const getPlugins = (): Promise<ApiResponse<{ plugins: PluginInfo[] }>> =>
+  api.get('/plugins');
+
+export const runPluginValidation = (
+  content: string,
+  validators?: string[]
+): Promise<ApiResponse<PluginValidateResponse>> =>
+  api.post('/plugins/validate', { content, validators: validators ?? null });
+
+export const runPluginRemediation = (
+  content: string,
+  remediators?: string[]
+): Promise<ApiResponse<PluginRemediateResponse>> =>
+  api.post('/plugins/remediate', { content, remediators: remediators ?? null });
+
+export const updatePluginConfig = (
+  name: string,
+  config: {
+    enabled?: boolean;
+    priority?: number;
+    config?: Record<string, unknown>;
+  }
+): Promise<ApiResponse<PluginInfo>> => api.patch(`/plugins/${name}`, config);
+
 // Material image endpoints
 export const uploadMaterialImage = (
   unitId: string,
