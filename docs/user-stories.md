@@ -122,9 +122,9 @@
 |---|-------|-------|--------|
 | 9.1 | As a **Creator**, I want to export my unit as an IMS Common Cartridge (.imscc) file so I can import it into my LMS (Moodle, Canvas, Blackboard). | P1 | **Done** — IMSCC v1.1 |
 | 9.2 | As a **Creator**, I want to import an .imscc file from my LMS to create a unit in the system. | P3 | **Planned** — spec exists |
-| 9.3 | As a **Creator**, I want to export content as standalone HTML (with inline styles) for pasting into an LMS. | P3 | **Planned** |
+| 9.3 | As a **Creator**, I want to export content as standalone HTML (with inline styles) for pasting into an LMS. | P3 | **Done** |
 | 9.4 | As a **Creator**, I want to export my unit as PDF, DOCX, or PPTX. | P2 | **Done** — Pandoc + Typst (ADR-0033) |
-| 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Planned** |
+| 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Done** |
 | 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-0034 |
 
 ## 10. Authentication & User Management

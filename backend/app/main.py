@@ -447,6 +447,20 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load document_export routes: {e}")
 
+try:
+    from app.api.routes import html_export
+
+    app.include_router(html_export.router, prefix="/api", tags=["html-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load html_export routes: {e}")
+
+try:
+    from app.api.routes import material_export
+
+    app.include_router(material_export.router, prefix="/api", tags=["material-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load material_export routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 
