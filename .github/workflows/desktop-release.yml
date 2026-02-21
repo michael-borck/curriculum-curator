@@ -99,9 +99,9 @@ jobs:
           PANDOC_VERSION="3.6.4"
           case "${{ matrix.platform }}" in
             mac)
-              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-macOS.zip" -o pandoc.zip
+              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-arm64-macOS.zip" -o pandoc.zip
               unzip -q pandoc.zip -d pandoc-tmp
-              cp pandoc-tmp/pandoc-${PANDOC_VERSION}-*/bin/pandoc desktop/vendor/pandoc/
+              cp pandoc-tmp/pandoc-${PANDOC_VERSION}-arm64/bin/pandoc desktop/vendor/pandoc/
               ;;
             win)
               curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-windows-x86_64.zip" -o pandoc.zip
@@ -121,9 +121,9 @@ jobs:
           TYPST_VERSION="v0.13.1"
           case "${{ matrix.platform }}" in
             mac)
-              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-apple-darwin.tar.xz" -o typst.tar.xz
+              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-aarch64-apple-darwin.tar.xz" -o typst.tar.xz
               tar xf typst.tar.xz
-              cp typst-x86_64-apple-darwin/typst desktop/vendor/typst/
+              cp typst-aarch64-apple-darwin/typst desktop/vendor/typst/
               ;;
             win)
               curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-pc-windows-msvc.zip" -o typst.zip
