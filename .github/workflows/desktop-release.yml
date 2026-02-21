@@ -70,6 +70,7 @@ jobs:
             --hidden-import sqlalchemy.dialects.sqlite \
             --collect-data litellm \
             --collect-data tiktoken_ext \
+            --collect-data spellchecker \
             run_server.py
 
       - name: Test backend executable
