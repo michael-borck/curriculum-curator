@@ -4,8 +4,10 @@ Plugin management endpoints — validate, remediate, list, and configure plugins
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
+from app.core.database import get_db
 from app.plugins.base import PluginResult
 from app.plugins.plugin_manager import PluginConfig, plugin_manager
 from app.schemas.plugins import (
@@ -68,8 +70,10 @@ async def list_plugins() -> PluginListResponse:
 
 
 @router.patch("/{name}")
-async def configure_plugin(name: str, body: PluginConfigUpdate) -> PluginInfo:
-    """Update a plugin's configuration (in-memory only)."""
+async def configure_plugin(
+    name: str, body: PluginConfigUpdate, db: Session = Depends(get_db)
+) -> PluginInfo:
+    """Update a plugin's configuration and persist to database."""
     # Verify plugin exists
     all_names = set(plugin_manager.validators.keys()) | set(
         plugin_manager.remediators.keys()
@@ -91,6 +95,9 @@ async def configure_plugin(name: str, body: PluginConfigUpdate) -> PluginInfo:
             config=new_config,
         )
     )
+
+    # Persist to database
+    plugin_manager.save_config_to_db(db, name, new_enabled, new_priority, new_config)
 
     # Determine type
     plugin_type = "validator" if name in plugin_manager.validators else "remediator"

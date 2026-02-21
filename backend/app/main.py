@@ -131,6 +131,14 @@ async def lifespan(app: FastAPI):
         plugin_manager.load_plugins()
         logger.info("✅ Quality plugins loaded")
 
+        # Restore persisted plugin configs from DB
+        db = SessionLocal()
+        try:
+            plugin_manager.load_configs_from_db(db)
+            logger.info("✅ Plugin configs loaded from DB")
+        finally:
+            db.close()
+
         # LOCAL_MODE: seed the default local user and Ollama config
         if settings.LOCAL_MODE:
             _seed_local_user()

@@ -60,6 +60,7 @@ def init_db() -> None:
     from app.models.email_whitelist import EmailWhitelist
     from app.models.login_attempt import LoginAttempt
     from app.models.password_reset import PasswordReset
+    from app.models.plugin_configuration import PluginConfiguration
     from app.models.security_log import SecurityLog
     from app.models.unit import Unit
     from app.models.user import User
@@ -71,6 +72,7 @@ def init_db() -> None:
         EmailWhitelist,
         LoginAttempt,
         PasswordReset,
+        PluginConfiguration,
         SecurityLog,
         Unit,
         User,
@@ -92,6 +94,7 @@ def reset_db() -> None:
     from app.models.email_whitelist import EmailWhitelist
     from app.models.login_attempt import LoginAttempt
     from app.models.password_reset import PasswordReset
+    from app.models.plugin_configuration import PluginConfiguration
     from app.models.security_log import SecurityLog
     from app.models.unit import Unit
     from app.models.user import User
@@ -103,6 +106,7 @@ def reset_db() -> None:
         EmailWhitelist,
         LoginAttempt,
         PasswordReset,
+        PluginConfiguration,
         SecurityLog,
         Unit,
         User,

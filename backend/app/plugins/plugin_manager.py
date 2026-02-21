@@ -8,6 +8,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from app.plugins.base import PluginResult, RemediatorPlugin, ValidatorPlugin
 
 logger = logging.getLogger(__name__)
@@ -115,6 +117,35 @@ class PluginManager:
         if plugin_name in self.plugin_configs:
             return self.plugin_configs[plugin_name].config
         return {}
+
+    def load_configs_from_db(self, db: Session) -> None:
+        """Load all persisted plugin configs from the database into memory."""
+        from app.repositories import plugin_config_repo  # noqa: PLC0415
+
+        rows = plugin_config_repo.get_all(db)
+        for row in rows:
+            self.configure_plugin(
+                PluginConfig(
+                    name=row.name,
+                    enabled=row.enabled,
+                    priority=row.priority,
+                    config=row.config or {},
+                )
+            )
+        logger.info("Loaded %d plugin configs from DB", len(rows))
+
+    def save_config_to_db(
+        self,
+        db: Session,
+        name: str,
+        enabled: bool,
+        priority: int,
+        config: dict[str, Any] | None = None,
+    ) -> None:
+        """Persist a single plugin's config to the database."""
+        from app.repositories import plugin_config_repo  # noqa: PLC0415
+
+        plugin_config_repo.upsert(db, name, enabled, priority, config)
 
     async def validate_content(
         self,

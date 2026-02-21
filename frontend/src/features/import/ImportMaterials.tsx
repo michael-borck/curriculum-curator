@@ -111,6 +111,11 @@ const ImportMaterials = () => {
   // AI enhance state
   const [enhancingFiles, setEnhancingFiles] = useState<Set<string>>(new Set());
   const [enhancedFiles, setEnhancedFiles] = useState<Set<string>>(new Set());
+  const [batchEnhancing, setBatchEnhancing] = useState(false);
+  const [batchEnhanceProgress, setBatchEnhanceProgress] = useState({
+    current: 0,
+    total: 0,
+  });
 
   // New unit creation state
   const [showCreateUnit, setShowCreateUnit] = useState(false);
@@ -346,6 +351,27 @@ const ImportMaterials = () => {
         return next;
       });
     }
+  };
+
+  const handleEnhanceAll = async () => {
+    const eligibleFiles = files.filter(
+      f =>
+        f.status === 'completed' &&
+        f.result?.content_id &&
+        !enhancedFiles.has(f.id) &&
+        !enhancingFiles.has(f.id)
+    );
+    if (eligibleFiles.length === 0) return;
+
+    setBatchEnhancing(true);
+    setBatchEnhanceProgress({ current: 0, total: eligibleFiles.length });
+
+    for (let i = 0; i < eligibleFiles.length; i++) {
+      setBatchEnhanceProgress({ current: i + 1, total: eligibleFiles.length });
+      await handleEnhanceImported(eligibleFiles[i]);
+    }
+
+    setBatchEnhancing(false);
   };
 
   const toggleWeekAssignment = (
@@ -1164,7 +1190,35 @@ const ImportMaterials = () => {
       {/* Import Results */}
       {files.some(f => f.status === 'completed' && f.result) && (
         <div className='bg-white rounded-lg shadow-md p-6 mb-6'>
-          <h3 className='text-lg font-semibold mb-4'>Import Analysis</h3>
+          <div className='flex items-center justify-between mb-4'>
+            <h3 className='text-lg font-semibold'>Import Analysis</h3>
+            {selectedUnit &&
+              files.some(
+                f =>
+                  f.status === 'completed' &&
+                  f.result?.content_id &&
+                  !enhancedFiles.has(f.id)
+              ) && (
+                <button
+                  onClick={handleEnhanceAll}
+                  disabled={batchEnhancing || enhancingFiles.size > 0}
+                  className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm'
+                >
+                  {batchEnhancing ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      Enhancing {batchEnhanceProgress.current} of{' '}
+                      {batchEnhanceProgress.total}...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className='h-4 w-4 mr-2' />
+                      Enhance All with AI
+                    </>
+                  )}
+                </button>
+              )}
+          </div>
 
           {files
             .filter(f => f.status === 'completed' && f.result)
