@@ -12,6 +12,7 @@ import pytest
 from unittest.mock import patch
 
 from app.models.weekly_material import WeeklyMaterial
+from app.services.file_import_service import FileImportService
 from app.services.git_content_service import GitContentService
 
 
@@ -286,3 +287,89 @@ class TestImageEndpoints:
         assert " " not in fn
         assert "(" not in fn
         assert fn.endswith(".png")
+
+
+# ---------------------------------------------------------------------------
+# PPTX image extraction tests
+# ---------------------------------------------------------------------------
+
+
+def _make_pptx_with_image(image_bytes: bytes, image_ext: str = "png") -> bytes:
+    """Create a minimal PPTX file containing one text shape and one picture."""
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    slide_layout = prs.slide_layouts[5]  # blank layout
+    slide = prs.slides.add_slide(slide_layout)
+
+    # Add a text box
+    from pptx.util import Pt
+
+    txBox = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(5), Inches(1))
+    txBox.text_frame.text = "Hello from slide 1"
+
+    # Add a picture from bytes
+    img_stream = io.BytesIO(image_bytes)
+    slide.shapes.add_picture(img_stream, Inches(1), Inches(2.5), Inches(3), Inches(2))
+
+    buf = io.BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
+
+
+class TestPptxImageExtraction:
+    """Tests for extracting images from PPTX files."""
+
+    @pytest.mark.asyncio
+    async def test_extract_pptx_returns_images(self):
+        """_extract_pptx should return image data alongside text."""
+        pptx_bytes = _make_pptx_with_image(TINY_PNG, "png")
+        service = FileImportService()
+        _text, images = await service._extract_pptx(pptx_bytes)
+
+        assert len(images) == 1
+        assert images[0]["filename"].startswith("slide-1-")
+        assert images[0]["filename"].endswith(".png")
+        assert isinstance(images[0]["data"], bytes)
+        assert len(images[0]["data"]) > 0
+
+    @pytest.mark.asyncio
+    async def test_extract_pptx_placeholder_in_text(self):
+        """Extracted text should contain {{IMAGE:filename}} placeholders."""
+        pptx_bytes = _make_pptx_with_image(TINY_PNG, "png")
+        service = FileImportService()
+        text, images = await service._extract_pptx(pptx_bytes)
+
+        filename = images[0]["filename"]
+        assert f"{{{{IMAGE:{filename}}}}}" in text
+
+    @pytest.mark.asyncio
+    async def test_extract_pptx_text_still_present(self):
+        """Text content should still be extracted alongside images."""
+        pptx_bytes = _make_pptx_with_image(TINY_PNG, "png")
+        service = FileImportService()
+        text, _images = await service._extract_pptx(pptx_bytes)
+
+        assert "Hello from slide 1" in text
+        assert "--- Slide 1 ---" in text
+
+    @pytest.mark.asyncio
+    async def test_process_file_includes_images(self):
+        """process_file should include images in the result dict."""
+        pptx_bytes = _make_pptx_with_image(TINY_PNG, "png")
+        service = FileImportService()
+        result = await service.process_file(pptx_bytes, "test.pptx")
+
+        assert result["success"] is True
+        assert len(result["images"]) == 1
+        assert result["images"][0]["filename"].endswith(".png")
+
+    @pytest.mark.asyncio
+    async def test_process_file_non_pptx_has_empty_images(self):
+        """Non-PPTX files should have an empty images list."""
+        service = FileImportService()
+        result = await service.process_file(b"Hello world", "test.txt")
+
+        assert result["success"] is True, f"process_file failed: {result.get('error')}"
+        assert result["images"] == []

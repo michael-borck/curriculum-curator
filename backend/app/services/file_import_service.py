@@ -158,8 +158,8 @@ class FileImportService:
                 r"transcript",
                 r"narration",
                 r"voiceover",
-                r"[music]",
-                r"[scene",
+                r"\[music\]",
+                r"\[scene",
                 r"fade in",
                 r"cut to",
             ],
@@ -225,6 +225,7 @@ class FileImportService:
 
         # Extract content based on file type
         extracted_content = ""
+        extracted_images: list[dict[str, Any]] = []
         metadata = {
             "filename": filename,
             "size": len(file_content),
@@ -238,7 +239,9 @@ class FileImportService:
             elif file_extension == ".docx" and has_docx:
                 extracted_content = await self._extract_docx(file_content)
             elif file_extension in [".ppt", ".pptx"] and has_pptx:
-                extracted_content = await self._extract_pptx(file_content)
+                extracted_content, extracted_images = await self._extract_pptx(
+                    file_content
+                )
             elif file_extension == ".md" and has_markdown:
                 extracted_content = await self._extract_markdown(file_content)
             elif file_extension in [".txt", ".html", ".htm"]:
@@ -278,6 +281,7 @@ class FileImportService:
                 "word_count": len(extracted_content.split()),
                 "estimated_reading_time": len(extracted_content.split())
                 // 200,  # minutes
+                "images": extracted_images,
             }
 
         except Exception as e:
@@ -290,6 +294,7 @@ class FileImportService:
                 "sections": [],
                 "suggestions": [],
                 "gaps": [],
+                "images": [],
             }
 
     async def _extract_pdf(self, file_content: bytes) -> str:
@@ -333,12 +338,22 @@ class FileImportService:
 
         return "\n\n".join(text_content)
 
-    async def _extract_pptx(self, file_content: bytes) -> str:
-        """Extract text from PowerPoint file"""
+    async def _extract_pptx(
+        self, file_content: bytes
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """Extract text and images from PowerPoint file.
+
+        Returns:
+            Tuple of (text_content, images) where images is a list of
+            dicts with 'filename' (str) and 'data' (bytes) keys.
+        """
         if not has_pptx:
             raise ValueError("PPTX processing not available. Install python-pptx.")
 
+        from pptx.enum.shapes import MSO_SHAPE_TYPE  # noqa: PLC0415
+
         text_content = []
+        images: list[dict[str, Any]] = []
         pptx_file = io.BytesIO(file_content)
         presentation = Presentation(pptx_file)
 
@@ -350,11 +365,20 @@ class FileImportService:
                 slide_text.append(f"Title: {slide.shapes.title.text}")
 
             # Extract content from all shapes (avoiding duplicate title)
-            slide_text.extend(
-                shape.text
-                for shape in slide.shapes
-                if hasattr(shape, "text") and shape.text and shape != slide.shapes.title
-            )
+            img_idx = 0
+            for shape in slide.shapes:
+                if shape == slide.shapes.title:
+                    continue
+
+                # Check for picture shapes
+                if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                    ext = shape.image.ext
+                    filename = f"slide-{slide_num}-{img_idx}.{ext}"
+                    images.append({"filename": filename, "data": shape.image.blob})
+                    slide_text.append(f"{{{{IMAGE:{filename}}}}}")
+                    img_idx += 1
+                elif hasattr(shape, "text") and shape.text:
+                    slide_text.append(shape.text)
 
             # Extract notes
             if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text:
@@ -363,7 +387,7 @@ class FileImportService:
             if len(slide_text) > 1:  # Only add if there's content beyond the header
                 text_content.append("\n".join(slide_text))
 
-        return "\n\n".join(text_content)
+        return "\n\n".join(text_content), images
 
     async def _extract_markdown(self, file_content: bytes) -> str:
         """Extract and process markdown content"""

@@ -5,9 +5,11 @@ Content bodies are stored in Git for version control.
 Metadata is stored in SQLAlchemy for fast querying.
 """
 
+import mimetypes
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -25,8 +27,66 @@ from app.schemas.content import (
 )
 from app.schemas.user import UserResponse
 from app.services.file_import_service import file_import_service
+from app.services.git_content_service import get_git_service
 
 router = APIRouter()
+
+
+# =============================================================================
+# Image extraction helpers
+# =============================================================================
+
+
+def _save_extracted_images(
+    unit_id: str,
+    content_id: str,
+    git_path: str,
+    images: list[dict],
+    user_email: str,
+) -> None:
+    """Save images extracted from an uploaded file (e.g. PPTX) to Git.
+
+    For each image, saves to ``{git_path}.images/{filename}`` and then
+    replaces ``{{IMAGE:filename}}`` placeholders in the content body with
+    ``<img>`` tags pointing at the serving URL.
+    """
+    git = get_git_service()
+    images_dir = f"{git_path}.images"
+
+    # Build URL map while saving each image
+    url_map: dict[str, str] = {}
+    for img in images:
+        filename: str = img["filename"]
+        data: bytes = img["data"]
+        image_path = f"{images_dir}/{filename}"
+
+        git.save_binary(
+            unit_id=unit_id,
+            path=image_path,
+            data=data,
+            user_email=user_email,
+            message=f"Extracted image {filename} from upload",
+        )
+
+        url = f"/api/units/{unit_id}/content/{content_id}/images/{filename}"
+        url_map[filename] = url
+
+    # Replace placeholders in the stored body
+    if url_map:
+        body = git.get_content(unit_id, git_path)
+        if body:
+            for filename, url in url_map.items():
+                placeholder = f"{{{{IMAGE:{filename}}}}}"
+                img_tag = f'<img src="{url}" alt="{filename}">'
+                body = body.replace(placeholder, img_tag)
+
+            git.save_content(
+                unit_id=unit_id,
+                path=git_path,
+                content=body,
+                user_email=user_email,
+                message="Resolved image placeholders",
+            )
 
 
 # =============================================================================
@@ -130,6 +190,17 @@ async def upload_content(
             db_content.content_category = content_category
             db.commit()
 
+        # Save extracted images (e.g. from PPTX) and resolve placeholders
+        images = result.get("images", [])
+        if images and db_content and db_content.git_path:
+            _save_extracted_images(
+                unit_id=unit_id,
+                content_id=str(content.id),
+                git_path=db_content.git_path,
+                images=images,
+                user_email=current_user.email,
+            )
+
         # Add categorization data to response
         return {
             "content_id": str(content.id),
@@ -230,6 +301,17 @@ async def upload_content_batch(
             if db_content:
                 db_content.content_category = "general"
                 db.commit()
+
+            # Save extracted images (e.g. from PPTX)
+            batch_images = result.get("images", [])
+            if batch_images and db_content and db_content.git_path:
+                _save_extracted_images(
+                    unit_id=unit_id,
+                    content_id=str(content.id),
+                    git_path=db_content.git_path,
+                    images=batch_images,
+                    user_email=current_user.email,
+                )
 
             results.append(
                 {
@@ -809,3 +891,58 @@ async def revert_content(
         )
 
     return content
+
+
+# =============================================================================
+# Content Image Serving
+# =============================================================================
+
+
+@router.get("/{content_id}/images/{filename}")
+async def serve_content_image(
+    unit_id: str,
+    content_id: str,
+    filename: str,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+) -> Response:
+    """Serve an image extracted from uploaded content (e.g. PPTX slides)."""
+    # Verify user has access to this unit
+    unit = unit_repo.get_unit_by_id(db, unit_id)
+    if not unit or (unit.owner_id != current_user.id and current_user.role != "admin"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Unit not found or access denied",
+        )
+
+    # Get content to find its git_path
+    db_content = db.query(ContentModel).filter(ContentModel.id == content_id).first()
+    if not db_content or str(db_content.unit_id) != unit_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Content not found",
+        )
+
+    if not db_content.git_path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Content has no associated files",
+        )
+
+    git = get_git_service()
+    image_path = f"{db_content.git_path}.images/{filename}"
+
+    try:
+        data = git.read_binary(unit_id, image_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
+        ) from exc
+
+    content_type_str = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+    return Response(
+        content=data,
+        media_type=content_type_str,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
