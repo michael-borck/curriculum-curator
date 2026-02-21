@@ -41,6 +41,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0031](0031-soft-delete-units.md) | Soft-Delete Units | Accepted |
 | [0032](0032-ai-assistance-levels.md) | AI Assistance Levels | Accepted |
 | [0033](0033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
+| [0035](0035-electron-desktop-app.md) | Electron Desktop App with Embedded Backend | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -55,6 +56,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0026: Single-Container Deployment](0026-single-container-deployment.md) - FastAPI serves the React SPA directly
 - [ADR-0027: CamelCase API Serialization](0027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
 - [ADR-0030: IMS Common Cartridge Export](0030-ims-common-cartridge-export.md) - CC v1.2 export for LMS interoperability
+- [ADR-0035: Electron Desktop App](0035-electron-desktop-app.md) - Embedded backend with optional Ollama for offline use
 
 ### Domain Model & User Experience
 - [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework
