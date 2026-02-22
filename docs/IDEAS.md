@@ -143,6 +143,31 @@ the output — the preview is just a UI wrapper around it.
 
 ---
 
+## Deployment & Landing Page
+
+### Landing page with platform-detected download
+
+The app has three deployment modes: VPS (server), Docker, and Electron desktop. A
+landing page could advertise the product and auto-detect the visitor's platform to
+offer the most relevant download/install option (macOS `.dmg`, Windows `.exe`,
+Linux `.AppImage`, or Docker/VPS instructions).
+
+**Key questions:**
+- Should the primary CTA be "Get Started" (→ download page) or split into two CTAs
+  ("Get Started" for hosted/Docker, "Download" for desktop)?
+- Should "Install" appear in the top nav next to "Sign In"? Or does that confuse
+  users who are already running the app?
+- "Sign In" only makes sense for hosted deployments — desktop users launch the app
+  directly. Should the nav adapt based on context?
+- The current login page is a full-page layout for a small form — could it be a
+  modal or half-page instead?
+- Platform detection: use `navigator.userAgent` for OS sniffing, offer a fallback
+  "All downloads" link for edge cases
+
+**Related:** ADR-035 (Electron desktop), story 16.x (desktop app)
+
+---
+
 ## Template
 
 Use this structure for new entries:
