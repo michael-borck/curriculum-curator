@@ -12,8 +12,7 @@ docs/
 ├── concepts/         # Conceptual overviews (teaching philosophy, plugin system, IMSCC spec)
 ├── guides/           # How-to guides (Docker deployment, email, teaching styles)
 ├── mocks/            # UI mockups from early design
-├── PRD-Development/  # PRD workflow process docs
-└── archive/          # Historical docs from FastHTML/NiceGUI/Tauri eras
+└── archive/          # Historical docs (PRD, FastHTML/NiceGUI/Tauri eras, etc.)
 ```
 
 ## Key Documents
@@ -21,7 +20,6 @@ docs/
 | Document | Description |
 |----------|-------------|
 | [CLAUDE.md](../CLAUDE.md) | Development setup, architecture, conventions |
-| [PRD](PRD-Curriculum-Curator.md) | Product requirements document |
 | [User Stories](user-stories.md) | Feature tracking by phase |
 | [Implementation Plan](implementation-plan.md) | Phase completion tracking |
 | [Security](SECURITY.md) | Security architecture, auth, rate limiting, headers |
@@ -47,8 +45,7 @@ docs/
 ## Other
 
 - [UI Mockups](mocks/) — Early design mockups (PNG + TSX)
-- [PRD Development Process](PRD-Development/) — How we create PRDs and task lists
 
 ## Archive
 
-Historical planning documents from previous framework eras (FastHTML, NiceGUI, Tauri) and completed migration plans are preserved in [`archive/`](archive/) for reference.
+Historical planning documents preserved in [`archive/`](archive/) for reference. Includes the original PRD (Dec 2024), PRD development process templates, and docs from previous framework eras (FastHTML, NiceGUI, Tauri).
