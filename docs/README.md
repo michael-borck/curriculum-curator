@@ -11,8 +11,7 @@ docs/
 ├── adr/              # Architecture Decision Records (40 ADRs)
 ├── concepts/         # Conceptual overviews (teaching philosophy, plugin system, IMSCC spec)
 ├── guides/           # How-to guides (Docker deployment, email, teaching styles)
-├── mocks/            # UI mockups from early design
-└── archive/          # Historical docs (PRD, FastHTML/NiceGUI/Tauri eras, etc.)
+└── archive/          # Historical docs (PRD, mockups, FastHTML/NiceGUI/Tauri eras, etc.)
 ```
 
 ## Key Documents
@@ -41,10 +40,6 @@ docs/
 | [Teaching Philosophy](concepts/teaching-philosophy.md) | Core pedagogy system design |
 | [Plugin System](concepts/plugin-system.md) | Content validation/remediation plugins |
 | [IMSCC Spec](concepts/imscc-spec.md) | IMS Common Cartridge export spec |
-
-## Other
-
-- [UI Mockups](mocks/) — Early design mockups (PNG + TSX)
 
 ## Archive
 
