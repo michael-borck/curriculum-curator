@@ -187,8 +187,9 @@
 | 15.2 | As a **power user**, I want an advanced editing mode where I can see and edit YAML front matter and raw markdown directly. | P2 | **Done** — toggle between simple/advanced |
 | 15.3 | As a **Creator**, I want to add images to my materials by providing a URL/link. | P3 | **Done** — TipTap image extension with URL insert dialog |
 | 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Done** — image upload endpoint + TipTap toolbar button with preview |
-| 15.5 | As a **Creator**, I want AI to generate images for my materials (diagrams, illustrations) when the LLM provider supports it. | P4 | **Planned** |
-| 15.6 | As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them into my materials. | P4 | **Planned** |
+| 15.5 | ~~As a **Creator**, I want AI to generate images for my materials.~~ | P4 | **Cut** — outside core scope; educators have dedicated image tools |
+| 15.6 | ~~As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them.~~ | P4 | **Cut** — adds API dependency for marginal value; use browser instead |
+| 15.9 | As a **Creator**, I want to generate an image prompt from my material content (with style options like realistic, sketch, diagram) so I can copy it into my preferred image tool. | P3 | **Planned** — lightweight tool: paste content + pick style → LLM generates copy-paste prompt |
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
 | 15.8 | As a **Creator**, I want to embed YouTube/video links as rich previews in my materials. | P2 | **Done** — TipTap Video/YouTube nodes |
 
@@ -217,13 +218,14 @@
 |--------|-------|
 | **Done** | ~88 |
 | **Planned** | ~5 |
+| **Cut** | 2 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
 | **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | Nearly complete — 9.2, 9.7, 17.2 remain |
-| **P4** | AI image generation, stock photos, accessibility validation | Not started |
+| **P4** | Accessibility validation | Not started |
 
 ### Remaining Stories
 
@@ -231,9 +233,15 @@
 |---|-------|-------|
 | 9.2 | IMSCC import | P3 |
 | 9.7 | SCORM import | P3 |
+| 15.9 | Visual prompt generator (paste content + style → copy-paste prompt) | P3 |
 | 17.2 | Standalone content without a unit | P3 |
 | 7.3 | WCAG accessibility validation | P4 |
-| 15.5 | AI image generation | P4 |
-| 15.6 | Unsplash stock image search | P4 |
+
+### Cut Stories
+
+| # | Story | Reason |
+|---|-------|--------|
+| 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
+| 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
 *Last updated: 2026-02-22*
