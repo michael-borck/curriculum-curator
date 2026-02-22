@@ -30,6 +30,7 @@ import ResearchPage from './features/research/ResearchPage';
 import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
+import AboutPage from './pages/AboutPage';
 import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
@@ -219,6 +220,9 @@ function App() {
               path='/units/:unitId/designs/:designId/edit'
               element={<DesignCreator />}
             />
+
+            {/* About */}
+            <Route path='/about' element={<AboutPage />} />
 
             {/* Catch-all redirect */}
             <Route path='*' element={<Navigate to='/dashboard' replace />} />

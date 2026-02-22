@@ -44,6 +44,7 @@ export default [
         global: 'readonly',
         vi: 'readonly',
         React: 'readonly',
+        __APP_VERSION__: 'readonly',
       },
     },
     plugins: {

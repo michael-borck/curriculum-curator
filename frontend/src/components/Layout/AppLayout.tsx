@@ -5,6 +5,7 @@ import {
   Plus,
   Settings,
   LogOut,
+  Info,
   Menu,
   X,
   ChevronDown,
@@ -427,6 +428,19 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
             )}
           </div>
         </nav>
+
+        {/* Sidebar Footer */}
+        <div className='border-t border-gray-800 p-4'>
+          <button
+            onClick={() => {
+              navigate('/about');
+              setMobileSidebarOpen(false);
+            }}
+            className='text-xs text-gray-500 hover:text-gray-300 transition'
+          >
+            Curriculum Curator v{__APP_VERSION__}
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -553,6 +567,20 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                         >
                           <Settings className='w-4 h-4' />
                           <span>Settings</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/about');
+                            setUserMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition ${
+                            isActive('/about')
+                              ? 'text-purple-600'
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          <Info className='w-4 h-4' />
+                          <span>About</span>
                         </button>
                         <div className='border-t border-gray-100 my-1' />
                         <button
