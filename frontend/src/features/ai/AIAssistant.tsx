@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 import SaveToUnitButton from './SaveToUnitButton';
 
 interface Message {
@@ -45,14 +46,22 @@ const AIAssistant = ({
   onClose,
 }: AIAssistantProps) => {
   const { user } = useAuthStore();
+  const ctx = useWorkingContextStore();
+  const effectiveUnitId = unitId ?? ctx.activeUnitId ?? undefined;
+  const effectiveUnitTitle = unitTitle ?? ctx.activeUnitTitle ?? undefined;
+  const effectiveUnitULOs =
+    unitULOs ?? (ctx.activeULOs.length > 0 ? ctx.activeULOs : undefined);
+  const effectiveDesignId = designId ?? ctx.activeDesignId ?? undefined;
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: unitTitle
-        ? `Hi! I'm your AI teaching assistant for **${unitTitle}**. I can generate lecture content, quizzes, discussion questions, and more — all aligned to this unit's learning outcomes. How can I help?`
-        : "Hi! I'm your AI teaching assistant. I can help you create unit content, answer pedagogical questions, and provide teaching suggestions. How can I assist you today?",
+      content:
+        (unitTitle ?? ctx.activeUnitTitle)
+          ? `Hi! I'm your AI teaching assistant for **${unitTitle ?? ctx.activeUnitTitle}**. I can generate lecture content, quizzes, discussion questions, and more — all aligned to this unit's learning outcomes. How can I help?`
+          : "Hi! I'm your AI teaching assistant. I can help you create unit content, answer pedagogical questions, and provide teaching suggestions. How can I assist you today?",
       timestamp: new Date(),
     },
   ]);
@@ -67,21 +76,21 @@ const AIAssistant = ({
 
   // Build unit-context prefix for prompts
   const buildContextPrefix = () => {
-    if (!unitTitle) return '';
-    let ctx = `[Unit Context] Unit: "${unitTitle}"`;
-    if (unitULOs?.length) {
-      ctx +=
+    if (!effectiveUnitTitle) return '';
+    let prefix = `[Unit Context] Unit: "${effectiveUnitTitle}"`;
+    if (effectiveUnitULOs?.length) {
+      prefix +=
         '\nLearning Outcomes:\n' +
-        unitULOs.map(u => `  ${u.code}: ${u.description}`).join('\n');
+        effectiveUnitULOs.map(u => `  ${u.code}: ${u.description}`).join('\n');
     }
-    ctx += '\n\n';
-    return ctx;
+    prefix += '\n\n';
+    return prefix;
   };
 
   // Quick-action suggestions — contextual when unit is set
-  const suggestions = unitTitle
+  const suggestions = effectiveUnitTitle
     ? [
-        `Generate a lecture outline for ${unitTitle}`,
+        `Generate a lecture outline for ${effectiveUnitTitle}`,
         `Create a quiz covering the learning outcomes`,
         `Suggest discussion questions for this unit`,
         `Write a case study activity`,
@@ -146,8 +155,8 @@ const AIAssistant = ({
         contentType: 'assistant_response',
         pedagogyStyle: user?.teachingPhilosophy || 'mixed_approach',
         stream: false,
-        unitId,
-        designId,
+        unitId: effectiveUnitId,
+        designId: effectiveDesignId,
       });
 
       setMessages(prev => [
@@ -213,8 +222,8 @@ const AIAssistant = ({
               {msg.role === 'assistant' && msg.id !== '1' && !msg.isError && (
                 <SaveToUnitButton
                   messageContent={msg.content}
-                  unitId={unitId}
-                  unitTitle={unitTitle}
+                  unitId={effectiveUnitId}
+                  unitTitle={effectiveUnitTitle}
                 />
               )}
             </div>
@@ -283,8 +292,8 @@ const AIAssistant = ({
             <div>
               <h2 className='text-lg font-semibold'>AI Teaching Assistant</h2>
               <p className='text-sm text-gray-600'>
-                {unitTitle
-                  ? `Context: ${unitTitle}`
+                {effectiveUnitTitle
+                  ? `Context: ${effectiveUnitTitle}`
                   : 'Powered by advanced pedagogy models'}
               </p>
             </div>
@@ -319,8 +328,8 @@ const AIAssistant = ({
                 !message.isError && (
                   <SaveToUnitButton
                     messageContent={message.content}
-                    unitId={unitId}
-                    unitTitle={unitTitle}
+                    unitId={effectiveUnitId}
+                    unitTitle={effectiveUnitTitle}
                   />
                 )}
             </div>
@@ -429,14 +438,14 @@ const AIAssistant = ({
             <div>
               <span className='text-gray-600'>Active Unit:</span>
               <span className='ml-2 font-medium'>
-                {unitTitle || 'None selected'}
+                {effectiveUnitTitle || 'None selected'}
               </span>
             </div>
-            {unitULOs && unitULOs.length > 0 && (
+            {effectiveUnitULOs && effectiveUnitULOs.length > 0 && (
               <div>
                 <span className='text-gray-600'>ULOs:</span>
                 <ul className='mt-1 ml-2 space-y-0.5'>
-                  {unitULOs.map(u => (
+                  {effectiveUnitULOs.map(u => (
                     <li key={u.code} className='text-gray-700 text-xs'>
                       <strong>{u.code}</strong>: {u.description}
                     </li>

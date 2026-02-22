@@ -36,6 +36,7 @@ import type { Unit } from '../types';
 import { LoadingState, Button, Modal, Alert } from '../components/ui';
 import { useAILevel } from '../hooks/useAILevel';
 import { useUnitDesign } from '../hooks/useUnitDesign';
+import { useWorkingContextStore } from '../stores/workingContextStore';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
 
@@ -70,6 +71,15 @@ const UnitPage = () => {
   >([]);
   const { isAIDisabled, canScaffold } = useAILevel();
   const { designId, hasDesign } = useUnitDesign(unitId);
+
+  // Sync designId to working context when it resolves
+  useEffect(() => {
+    if (designId !== undefined) {
+      useWorkingContextStore
+        .getState()
+        .setUnitDetails({ designId: designId ?? null });
+    }
+  }, [designId]);
 
   // Get active tab and week from URL
   const activeTab = (searchParams.get('tab') as TabType) || 'structure';
@@ -127,6 +137,15 @@ const UnitPage = () => {
     }
   }, [unitId]);
 
+  // Write to working context store when unit loads
+  useEffect(() => {
+    if (unit) {
+      useWorkingContextStore
+        .getState()
+        .setActiveUnit({ id: unit.id, title: unit.title, code: unit.code });
+    }
+  }, [unit]);
+
   useEffect(() => {
     fetchUnit();
   }, [fetchUnit]);
@@ -144,6 +163,7 @@ const UnitPage = () => {
           description: u.description,
         }));
         setUnitULOs(ulos);
+        useWorkingContextStore.getState().setUnitDetails({ ulos });
       })
       .catch(() => {
         /* non-critical */

@@ -3,6 +3,7 @@ import { Save, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createContent, quickCreateUnit } from '../../services/api';
 import { useUnitsStore } from '../../stores/unitsStore';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { useModal } from '../../hooks/useModal';
 import { Modal } from '../../components/ui/Modal';
 import type { ContentType } from '../../types/index';
@@ -45,6 +46,10 @@ const SaveToUnitButton = ({
   unitId,
   unitTitle,
 }: SaveToUnitButtonProps) => {
+  const ctx = useWorkingContextStore();
+  const effectiveUnitId = unitId ?? ctx.activeUnitId ?? undefined;
+  const effectiveUnitTitle = unitTitle ?? ctx.activeUnitTitle ?? undefined;
+
   const [contentType, setContentType] = useState<ContentType>('notes');
   const [saving, setSaving] = useState(false);
   const [selectedUnitId, setSelectedUnitId] = useState('');
@@ -72,8 +77,8 @@ const SaveToUnitButton = ({
   };
 
   const handleClick = async () => {
-    if (unitId) {
-      await saveToUnit(unitId);
+    if (effectiveUnitId) {
+      await saveToUnit(effectiveUnitId);
     } else {
       await fetchUnits();
       modal.open();
@@ -111,7 +116,7 @@ const SaveToUnitButton = ({
           ) : (
             <Save className='h-3 w-3' />
           )}
-          Save to {unitTitle ?? 'Unit'}
+          Save to {effectiveUnitTitle ?? 'Unit'}
         </button>
         <select
           value={contentType}

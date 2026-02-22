@@ -27,7 +27,9 @@ import {
 } from '../../stores/teachingStyleStore';
 import { useUnitsStore } from '../../stores/unitsStore';
 import { useAILevel } from '../../hooks/useAILevel';
+import { useWorkingContextSync } from '../../hooks/useWorkingContextSync';
 import { analyticsApi } from '../../services/unitStructureApi';
+import WorkingContextIndicator from './WorkingContextIndicator';
 import StarRating from '../shared/StarRating';
 import type { WeekQualityScore } from '../../types/unitStructure';
 import type { PedagogyType } from '../../types';
@@ -55,6 +57,7 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
   const { user, logout: authStoreLogout } = useAuthStore();
   const { globalStyle, setGlobalStyle } = useTeachingStyleStore();
   const { isAIDisabled } = useAILevel();
+  useWorkingContextSync();
   const logout = onLogout || authStoreLogout;
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -439,6 +442,7 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                 >
                   <Menu className='w-6 h-6' />
                 </button>
+                <WorkingContextIndicator />
               </div>
 
               <div className='flex items-center gap-4'>
