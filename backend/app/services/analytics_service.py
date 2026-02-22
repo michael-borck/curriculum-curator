@@ -507,9 +507,7 @@ class AnalyticsService:
                     "Focus on pedagogical quality and constructive alignment."
                 )
 
-                llm_response = await llm_service.generate_text(
-                    prompt, stream=False
-                )
+                llm_response = await llm_service.generate_text(prompt, stream=False)
                 assert isinstance(llm_response, str)
                 llm_recs = [
                     line.strip().lstrip("0123456789.-) ")
@@ -592,9 +590,7 @@ class AnalyticsService:
         weeks_with_content = len({m.week_number for m in materials})
         week_pct = (weeks_with_content / total_weeks * 100) if total_weeks > 0 else 0
         materials_with_desc = sum(1 for m in materials if m.description)
-        desc_pct = (
-            (materials_with_desc / len(materials) * 100) if materials else 0
-        )
+        desc_pct = (materials_with_desc / len(materials) * 100) if materials else 0
         completeness = week_pct * 0.5 + desc_pct * 0.5
 
         # 2. Content Quality: avg plugin quality_score across materials
@@ -612,9 +608,7 @@ class AnalyticsService:
         weekly_durations: list[float] = []
         for week in range(1, total_weeks + 1):
             dur = sum(
-                m.duration_minutes or 0
-                for m in materials
-                if m.week_number == week
+                m.duration_minutes or 0 for m in materials if m.week_number == week
             )
             weekly_durations.append(float(dur))
         workload_balance = self._calculate_balance_score(weekly_durations)
@@ -626,9 +620,7 @@ class AnalyticsService:
 
         # 6. Assessment Distribution: spread of due_week across semester
         due_weeks = [a.due_week for a in assessments if a.due_week is not None]
-        assessment_distribution = self._calculate_spread_score(
-            due_weeks, total_weeks
-        )
+        assessment_distribution = self._calculate_spread_score(due_weeks, total_weeks)
 
         sub_scores = {
             "completeness": round(completeness, 2),
@@ -641,9 +633,7 @@ class AnalyticsService:
 
         # Calculate overall score based on rating method
         weights = DEFAULT_QUALITY_WEIGHTS
-        overall_score = sum(
-            sub_scores[dim] * weights[dim] for dim in weights
-        )
+        overall_score = sum(sub_scores[dim] * weights[dim] for dim in weights)
         star_rating = self._score_to_stars(overall_score)
 
         if rating_method == "lowest_dimension":
@@ -1016,9 +1006,7 @@ class AnalyticsService:
         return round(evenness * 100.0, 2)
 
     @staticmethod
-    def _calculate_spread_score(
-        values: list[int], total_slots: int
-    ) -> float:
+    def _calculate_spread_score(values: list[int], total_slots: int) -> float:
         """Score how evenly values are spread across slots (0-100)"""
         if not values:
             return 0.0

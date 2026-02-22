@@ -4,7 +4,7 @@ Date: 2025-12-03
 
 ## Status
 
-Accepted
+Accepted (search provider strategy superseded by [ADR-0039](0039-tiered-research-architecture.md); citation management and research source library unchanged)
 
 ## Context
 

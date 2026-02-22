@@ -172,9 +172,7 @@ async def remediate_content(body: PluginRemediateRequest) -> PluginRemediateResp
             if "content" in result.data:
                 final_content = result.data["content"]
             if "changes" in result.data:
-                changes_made.extend(
-                    str(change) for change in result.data["changes"]
-                )
+                changes_made.extend(str(change) for change in result.data["changes"])
 
     return PluginRemediateResponse(
         content=final_content,

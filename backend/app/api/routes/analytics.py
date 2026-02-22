@@ -134,7 +134,11 @@ async def get_quality_score(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
     """Calculate quality score for a unit with 6 dimensions"""
-    prefs = (current_user.teaching_preferences or {}) if current_user.teaching_preferences else {}
+    prefs = (
+        (current_user.teaching_preferences or {})
+        if current_user.teaching_preferences
+        else {}
+    )
     quality_config = prefs.get("qualityRating", {})
     rating_method = quality_config.get("method", "weighted_average")
     return await analytics_service.calculate_quality_score(

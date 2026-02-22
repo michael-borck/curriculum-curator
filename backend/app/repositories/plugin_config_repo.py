@@ -17,9 +17,7 @@ def get_all(db: Session) -> list[PluginConfiguration]:
 def get_by_name(db: Session, name: str) -> PluginConfiguration | None:
     """Look up a single plugin config by its unique name."""
     return (
-        db.query(PluginConfiguration)
-        .filter(PluginConfiguration.name == name)
-        .first()
+        db.query(PluginConfiguration).filter(PluginConfiguration.name == name).first()
     )
 
 

@@ -410,7 +410,9 @@ class GitContentService:
         except subprocess.CalledProcessError:
             return self.get_current_commit(unit_id, path)
 
-    def delete_file(self, unit_id: str, path: str, user_email: str, message: str | None = None) -> str:
+    def delete_file(
+        self, unit_id: str, path: str, user_email: str, message: str | None = None
+    ) -> str:
         """
         Delete a file from repository (works for both text and binary).
 
@@ -430,7 +432,9 @@ class GitContentService:
             raise FileNotFoundError(f"File not found: {path}")
 
         self._run_git(repo_path, "rm", path)
-        commit_message = f"{message or f'Deleted {Path(path).name}'}\n\nDeleted by: {user_email}"
+        commit_message = (
+            f"{message or f'Deleted {Path(path).name}'}\n\nDeleted by: {user_email}"
+        )
         self._run_git(repo_path, "commit", "-m", commit_message)
 
         return self.get_current_commit(unit_id)

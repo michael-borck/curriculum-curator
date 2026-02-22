@@ -75,9 +75,7 @@ class TestGitContentServiceBinary:
         assert data == TINY_PNG
 
     def test_list_directory(self, git_service: GitContentService):
-        git_service.save_binary(
-            "unit-1", "imgs/a.png", TINY_PNG, "test@example.com"
-        )
+        git_service.save_binary("unit-1", "imgs/a.png", TINY_PNG, "test@example.com")
         git_service.save_binary(
             "unit-1", "imgs/b.jpg", b"\xff\xd8\xff\xe0", "test@example.com"
         )
@@ -90,12 +88,8 @@ class TestGitContentServiceBinary:
         assert files == []
 
     def test_delete_file(self, git_service: GitContentService):
-        git_service.save_binary(
-            "unit-1", "imgs/del.png", TINY_PNG, "test@example.com"
-        )
-        commit = git_service.delete_file(
-            "unit-1", "imgs/del.png", "test@example.com"
-        )
+        git_service.save_binary("unit-1", "imgs/del.png", TINY_PNG, "test@example.com")
+        commit = git_service.delete_file("unit-1", "imgs/del.png", "test@example.com")
         assert commit
 
         with pytest.raises(FileNotFoundError):
@@ -103,13 +97,9 @@ class TestGitContentServiceBinary:
 
     def test_delete_file_not_found(self, git_service: GitContentService):
         # Ensure repo exists
-        git_service.save_binary(
-            "unit-1", "imgs/x.png", TINY_PNG, "test@example.com"
-        )
+        git_service.save_binary("unit-1", "imgs/x.png", TINY_PNG, "test@example.com")
         with pytest.raises(FileNotFoundError):
-            git_service.delete_file(
-                "unit-1", "imgs/nope.png", "test@example.com"
-            )
+            git_service.delete_file("unit-1", "imgs/nope.png", "test@example.com")
 
     def test_read_binary_not_found(self, git_service: GitContentService):
         with pytest.raises(FileNotFoundError):
@@ -128,7 +118,9 @@ class TestImageEndpoints:
         return f"/api/materials/units/{unit_id}/materials/{material_id}/images"
 
     def _image_url(self, unit_id: str, material_id: str, filename: str) -> str:
-        return f"/api/materials/units/{unit_id}/materials/{material_id}/images/{filename}"
+        return (
+            f"/api/materials/units/{unit_id}/materials/{material_id}/images/{filename}"
+        )
 
     def test_upload_valid_image(self, client, test_unit, test_material, tmp_path):
         with patch(
@@ -151,7 +143,13 @@ class TestImageEndpoints:
         ):
             resp = client.post(
                 self._upload_url(test_unit.id, test_material.id),
-                files={"file": ("script.exe", io.BytesIO(b"MZ..."), "application/octet-stream")},
+                files={
+                    "file": (
+                        "script.exe",
+                        io.BytesIO(b"MZ..."),
+                        "application/octet-stream",
+                    )
+                },
             )
         assert resp.status_code == 400
         assert "Unsupported image type" in resp.json()["detail"]
@@ -182,7 +180,9 @@ class TestImageEndpoints:
             )
             client.post(
                 self._upload_url(test_unit.id, test_material.id),
-                files={"file": ("b.jpg", io.BytesIO(b"\xff\xd8\xff\xe0"), "image/jpeg")},
+                files={
+                    "file": ("b.jpg", io.BytesIO(b"\xff\xd8\xff\xe0"), "image/jpeg")
+                },
             )
 
             resp = client.get(self._upload_url(test_unit.id, test_material.id))

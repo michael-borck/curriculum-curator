@@ -48,6 +48,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0036](0036-learning-design-generation-spec.md) | Learning Design as Canonical Generation Spec | Accepted |
 | [0037](0037-privacy-first-byok-architecture.md) | Privacy-First, Local-First, BYOK Architecture | Accepted |
 | [0038](0038-content-not-presentation.md) | Content Curation, Not Presentation Design | Accepted |
+| [0039](0039-tiered-research-architecture.md) | Tiered Research Architecture with Propose/Apply Workflows | Accepted |
 | [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -65,6 +66,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0035: Electron Desktop App](0035-electron-desktop-app.md) - Embedded backend with optional Ollama for offline use
 - [ADR-0037: Privacy-First, BYOK Architecture](0037-privacy-first-byok-architecture.md) - Local data, no telemetry, user-configured AI providers
 - [ADR-0038: Content Curation, Not Presentation Design](0038-content-not-presentation.md) - Strip on import, theme on export, semantic editing
+- [ADR-0039: Tiered Research Architecture](0039-tiered-research-architecture.md) - Four-tier search (academic→LLM→web API→SearXNG) with propose/apply synthesis
 
 ### Domain Model & User Experience
 - [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework

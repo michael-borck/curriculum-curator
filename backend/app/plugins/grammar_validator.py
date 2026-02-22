@@ -169,7 +169,12 @@ class GrammarValidator(ValidatorPlugin):
             (r"\benrolment\b", r"\benrollment\b", "enrolment", "enrollment"),
             (r"\bfulfil\b", r"\bfulfill\b", "fulfil", "fulfill"),
             (r"\bjudgement\b", r"\bjudgment\b", "judgement", "judgment"),
-            (r"\backnowledgement\b", r"\backnowledgment\b", "acknowledgement", "acknowledgment"),
+            (
+                r"\backnowledgement\b",
+                r"\backnowledgment\b",
+                "acknowledgement",
+                "acknowledgment",
+            ),
         ]
 
         for british_pat, american_pat, british_word, american_word in british_american:
