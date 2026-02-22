@@ -81,6 +81,7 @@
 | 5.8 | As a **Creator**, I want the AI sidebar to be aware of my active unit (its ULOs, topics, materials) so suggestions are contextual, not generic. | P2 | **Done** — AIAssistant receives unitId, unitTitle, unitULOs |
 | 5.9 | As a **Creator**, I want AI-assist available on any text field (generate from blank, improve existing, get recommendations) so I don't have to use the sidebar for everything. | P2 | **Done** — AIAssistField component |
 | 5.10 | As a **Creator**, I want to partially complete a unit (e.g. some ULOs and a couple of topics) and have AI generate the rest, using what I've provided as context. | P2 | **Done** — fill-gap endpoint |
+| 5.11 | As a **Creator**, I want to save an AI assistant response directly as unit content so I don't have to copy-paste between the chat and the editor. | P2 | **Done** — SaveToUnitButton on assistant messages with content type selector and unit picker modal |
 
 ## 6. Content Import & Enhancement
 
@@ -105,6 +106,7 @@
 | 7.5 | As a **Curator**, I want a quality score for each unit (graded A–F) based on coverage, weights, workload balance. | P1 | **Done** — `analytics_service.calculate_quality_score` |
 | 7.6 | As a **Curator**, I want unit validation that flags errors (missing ULOs, weights != 100%, no materials). | P1 | **Done** — `analytics_service.validate_unit` |
 | 7.7 | As a **Curator**, I want recommendations for improving a unit (AI-generated suggestions). | P1 | **Done** — `analytics_service.get_recommendations` |
+| 7.8 | As a **Curator**, I want automatic markdown cleanup (fix copy-paste artefacts, heading hierarchy, list formatting, code block detection) so pasted or LLM-generated content is well-structured. | P3 | **Done** — `markdown_cleanup` remediator plugin, available via Auto-fix All |
 
 ## 8. Analytics & Reporting
 
@@ -207,7 +209,7 @@
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
 | 17.1 | As a **Creator**, I want to work on my unit in any order — I shouldn't be forced to define ULOs before creating materials, or complete all weeks before exporting. | P1 | **Done** — no enforced sequence |
-| 17.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P3 | **Planned** — currently materials require a unit_id |
+| 17.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P3 | **Done** — Quick Create modal on dashboard; auto-generates lightweight unit behind the scenes |
 | 17.3 | As a **Creator**, I want quality to improve progressively — the system should work with minimal input but produce better results as I add more detail (ULOs, descriptions, pedagogy). | P2 | **Done** — fill-gap + scaffold respect existing context |
 
 ---
@@ -216,15 +218,15 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~89 |
-| **Planned** | 4 |
+| **Done** | ~92 |
+| **Planned** | 3 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
-| **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | Nearly complete — 9.2, 9.7, 17.2 remain |
+| **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | Nearly complete — 9.2, 9.7 remain |
 | **P4** | Accessibility validation | Not started |
 
 ### Remaining Stories
@@ -233,7 +235,6 @@
 |---|-------|-------|
 | 9.2 | IMSCC import | P3 |
 | 9.7 | SCORM import | P3 |
-| 17.2 | Standalone content without a unit | P3 |
 | 7.3 | WCAG accessibility validation | P4 |
 
 ### Cut Stories
