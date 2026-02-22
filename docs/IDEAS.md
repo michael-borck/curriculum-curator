@@ -94,6 +94,24 @@ still earn its place? Removing it would simplify navigation.
 
 ---
 
+## Editor
+
+### Auto-save with save indicator
+
+Add debounced auto-save while editing materials, with a visible indicator
+("Saving...", "Saved", "Unsaved changes"). Currently users must manually save,
+and there's no feedback about save state.
+
+**Key questions:**
+- Debounce interval — 2 seconds after last keystroke? Configurable?
+- What about Git versioning — should auto-save create Git commits, or only
+  save to the database (with explicit "Save Version" for Git commits)?
+- Conflict handling if the same material is open in two tabs
+
+**Related:** Story 13.1 (save version / commit), ADR-013 (Git-backed storage)
+
+---
+
 ## Preview
 
 ### In-app content preview (PDF, PPTX)
