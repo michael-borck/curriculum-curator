@@ -62,20 +62,16 @@
 
 ---
 
-## Phase 3: Desktop App, Images & Advanced Import/Export — IN PROGRESS
+## Phase 3: Desktop App, Images & Advanced Import/Export — COMPLETE
 
 **Goal:** Downloadable app, image support, and full round-trip with LMS platforms.
 
+**Status:** All stories done. Desktop app ships, images work (URL + upload + PPTX extraction), LMS round-trip complete including QTI quiz import/export.
+
 ### 3A. Desktop App — Electron Wrapper (16.1–16.4)
 
-**What already exists:**
-- `LOCAL_MODE` — auto-login, no JWT, privacy-first (working)
-- PyInstaller compatibility audit — ADR-024, all dependency blockers identified
-- Ollama sidecar architecture — ADR-025
-- Pandoc + Typst export service — ADR-033 (working in Docker)
-- Electron scaffolding started in `desktop/` directory
-
 **What was delivered:**
+- `LOCAL_MODE` — auto-login, no JWT, privacy-first
 - `desktop/src/main/` — backend lifecycle, Ollama auto-start, IPC bridge
 - Electron-builder config for macOS/Windows/Linux
 - GitHub Actions workflow for cross-platform builds
@@ -83,9 +79,9 @@
 - Ollama detection, auto-start, graceful shutdown
 - Platform-aware install guidance + local AI quality notices
 
-**What remains:**
+**What remains (non-blocking):**
 - PyInstaller bundling of the backend for production builds
-- Bundle Pandoc + Typst binaries as `extraResources` (~60MB total — this is why we chose them over Quarto's ~500MB+)
+- Bundle Pandoc + Typst binaries as `extraResources` (~60MB total)
 
 **Resolved decisions:**
 
@@ -97,41 +93,44 @@
 
 ### 3B. LMS Import/Export Roundtrip
 
-| Task | Stories | Description |
-|------|---------|-------------|
-| **IMSCC import** | 9.2 | Parse .imscc files → create unit. Spec exists, needs implementation |
-| **HTML export for LMS** | 9.3, 9.5 | Export material as standalone HTML with inline styles. "Copy to clipboard" for LMS pasting |
+| Task | Stories | Status |
+|------|---------|--------|
+| **IMSCC import** | 9.2 | Done — parse .imscc → create unit with structure |
+| **HTML export for LMS** | 9.3, 9.5 | Done — standalone HTML + copy-to-clipboard |
+| **QTI import from packages** | 9.8 | Done — auto-detect QTI 1.2/2.1, create Content + QuizQuestion rows |
+| **Standalone QTI export** | 9.11 | Done — `GET /api/units/{id}/export/qti` returns QTI 2.1 ZIP |
+| **QTI in IMSCC/SCORM** | 9.12 | Done — QTI 1.2 XML embedded in both export formats |
 
 ### 3C. Image Support
 
-| Task | Stories | Description |
-|------|---------|-------------|
-| **Image URL insert** | 15.3 | Add "Insert image from URL" to TipTap toolbar |
-| **Image upload** | 15.4 | Media upload endpoint + file storage + TipTap image insert |
-| **PPTX image extraction** | 6.6 | Extract images from PowerPoint during import, store and reference |
+| Task | Stories | Status |
+|------|---------|--------|
+| **Image URL insert** | 15.3 | Done |
+| **Image upload** | 15.4 | Done — media upload endpoint + file storage + TipTap image insert |
+| **PPTX image extraction** | 6.6 | Done |
 
-### 3D. Remaining Items
+### 3D. Other Items Delivered
 
-| Task | Stories | Description |
-|------|---------|-------------|
-| **Similar course search** | 12.4 | Search for similar units across the web, use as context for generation |
-| **AI-enhanced import** | 6.4 | After import, offer "Enhance with AI" to improve imported content |
-| **Standalone content creation** | 17.2 | Create materials without a parent unit for quick one-off needs |
-| **Content validators** | 7.1–7.2 | Implement readability scoring and structure validation plugins |
-
-**Exit criteria:** Download `.dmg` or `.exe`, launch app, create a unit, generate AI content (with API key or local Ollama), export to IMSCC/SCORM. Image insertion works via URL.
+| Task | Stories | Status |
+|------|---------|--------|
+| **Similar course search** | 12.4 | Done |
+| **AI-enhanced import** | 6.4 | Done |
+| **Standalone content creation** | 17.2 | Done |
+| **Content validators** | 7.1–7.2 | Done — readability scoring and structure validation plugins |
 
 ---
 
-## Phase 4: Polish & Advanced Intelligence
+## Phase 4: Polish & LMS Integration
 
-**Goal:** Professional-grade quality tools and advanced AI features.
+**Goal:** Accessibility tooling and direct LMS API integration.
 
 | Task | Stories | Description |
 |------|---------|-------------|
 | **Accessibility checking** | 7.3 | WCAG compliance validation |
-| **AI image generation** | 15.5 | Generate diagrams/illustrations via DALL-E or similar |
-| **Stock image search** | 15.6 | Unsplash API integration for free images |
+| **LMS terminology mapping** | 9.9 | Map between LMS naming (Canvas Modules, Moodle Sections) and internal naming (Weeks, Materials) |
+| **Target LMS export** | 9.10 | Select target LMS on export → package uses correct naming/structure |
+
+**Cut from this phase:** 15.5 (AI image generation) and 15.6 (stock image search) — outside core scope.
 
 ---
 
@@ -161,4 +160,4 @@ These are explicitly out of scope to keep focus:
 | Electron + external tools for desktop | Accept "install these tools" friction for Pandoc/Typst/Ollama in exchange for shipping sooner. Docker remains the zero-friction option. |
 | AI assistance levels | ADR-032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
 
-*Last updated: 2026-02-21*
+*Last updated: 2026-02-23*

@@ -129,11 +129,11 @@
 | 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Done** |
 | 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-034 |
 | 9.7 | As a **Creator**, I want to import a SCORM package from my LMS to create a unit in the system. | P3 | **Done** |
-| 9.8 | As a **Creator**, I want to import QTI quiz data from IMSCC/SCORM packages so auto-graded quizzes transfer into the system as structured `QuizQuestion` rows (question text, options, correct answers, points, feedback). | P4 | **Planned** |
+| 9.8 | As a **Creator**, I want to import QTI quiz data from IMSCC/SCORM packages so auto-graded quizzes transfer into the system as structured `QuizQuestion` rows (question text, options, correct answers, points, feedback). | P4 | **Done** — `QTIImporter` auto-detects QTI 1.2/2.1, creates Content + QuizQuestion rows on package import |
 | 9.9 | As a **Creator**, I want a mapping table between LMS terminology (Canvas Modules, Moodle Sections, Blackboard Content Areas) and our internal naming (Weeks, Materials, Assessments) so imports are correctly classified. | P4 | **Planned** |
 | 9.10 | As a **Creator**, I want to select a target LMS when exporting so the package uses the correct naming conventions and structure for that LMS. | P4 | **Planned** |
-| 9.11 | As a **Creator**, I want to export quizzes as QTI 2.1 XML (standalone ZIP) so I can import them into any LMS quiz bank without exporting the full unit. | P4 | **Planned** |
-| 9.12 | As a **Creator**, I want IMSCC/SCORM exports to embed QTI quiz items so quizzes import as interactive, auto-graded assessments in the LMS — not just static description pages. | P4 | **Planned** |
+| 9.11 | As a **Creator**, I want to export quizzes as QTI 2.1 XML (standalone ZIP) so I can import them into any LMS quiz bank without exporting the full unit. | P4 | **Done** — `GET /api/units/{id}/export/qti` returns QTI 2.1 package ZIP |
+| 9.12 | As a **Creator**, I want IMSCC/SCORM exports to embed QTI quiz items so quizzes import as interactive, auto-graded assessments in the LMS — not just static description pages. | P4 | **Done** — QTI 1.2 XML embedded in IMSCC (CC assessment resource type) and SCORM exports |
 
 ## 10. Authentication & User Management
 
@@ -223,8 +223,8 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~94 |
-| **Planned** | 6 |
+| **Done** | ~97 |
+| **Planned** | 3 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -232,18 +232,15 @@
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
 | **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | **Complete** |
-| **P4** | Accessibility validation, QTI import/export, LMS terminology mapping, LMS-targeted export | Not started |
+| **P4** | Accessibility validation, LMS terminology mapping, LMS-targeted export | In progress (3 of 6 stories done) |
 
 ### Remaining Stories
 
 | # | Story | Phase |
 |---|-------|-------|
 | 7.3 | WCAG accessibility validation | P4 |
-| 9.8 | QTI quiz data import from IMSCC/SCORM packages | P4 |
 | 9.9 | LMS terminology mapping table | P4 |
 | 9.10 | Target LMS export selection | P4 |
-| 9.11 | Standalone QTI quiz export (ZIP) | P4 |
-| 9.12 | Embed QTI quizzes in IMSCC/SCORM exports | P4 |
 
 ### Cut Stories
 
