@@ -202,7 +202,7 @@ jobs:
             artifacts/desktop-mac/latest*.yml
             artifacts/desktop-win/latest*.yml
             artifacts/desktop-linux/latest*.yml
-          draft: true
+          draft: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
