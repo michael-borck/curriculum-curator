@@ -179,8 +179,8 @@ jobs:
             desktop/dist/*.dmg
             desktop/dist/*.exe
             desktop/dist/*.AppImage
-            desktop/dist/*.yml
-            desktop/dist/*.yaml
+            desktop/dist/latest*.yml
+          if-no-files-found: ignore
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -200,9 +200,9 @@ jobs:
             artifacts/desktop-mac/*.dmg
             artifacts/desktop-win/*.exe
             artifacts/desktop-linux/*.AppImage
-            artifacts/desktop-mac/*.yml
-            artifacts/desktop-win/*.yml
-            artifacts/desktop-linux/*.yml
+            artifacts/desktop-mac/latest*.yml
+            artifacts/desktop-win/latest*.yml
+            artifacts/desktop-linux/latest*.yml
           draft: true
           generate_release_notes: true
         env:
