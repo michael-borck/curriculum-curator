@@ -30,8 +30,7 @@ docs/
 |-------|-------------|
 | [Docker VPS Deployment](guides/docker-vps-deployment.md) | Production deployment with Docker |
 | [Email Configuration](guides/email-configuration.md) | SMTP setup for verification/reset |
-| [Teaching Styles](guides/teaching-styles.md) | 9 pedagogical approaches overview |
-| [Teaching Styles Reference](guides/teaching-styles-reference.md) | Detailed style descriptions and prompts |
+| [Teaching Styles Reference](guides/teaching-styles-reference.md) | Detailed style descriptions, matrix, and prompts |
 
 ## Concepts
 
