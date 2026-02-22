@@ -47,6 +47,17 @@ async def test_post_endpoint():
     return {"message": "POST works!", "status": "OK"}
 
 
+@router.get("/check-code")
+async def check_unit_code(
+    code: str = Query(...),
+    db: Session = Depends(deps.get_db),
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+) -> dict[str, bool]:
+    """Check if a unit with the given code already exists for the current user."""
+    exists = unit_repo.unit_exists_by_code(db, owner_id=current_user.id, code=code)
+    return {"exists": exists}
+
+
 @router.get("", response_model=UnitList)
 async def get_units(
     db: Annotated[Session, Depends(deps.get_db)],

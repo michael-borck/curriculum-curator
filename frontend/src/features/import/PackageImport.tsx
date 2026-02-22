@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   Info,
   CheckCircle2,
   XCircle,
@@ -21,6 +22,7 @@ import {
   unifiedAnalyze,
   unifiedApply,
   unifiedStatus,
+  checkUnitCode,
 } from '../../services/api';
 import type {
   UnifiedImportPreview,
@@ -81,12 +83,38 @@ export default function PackageImport() {
   // Editable file list (mutable copy of preview.files)
   const [editableFiles, setEditableFiles] = useState<FilePreviewItem[]>([]);
 
-  // Cleanup polling on unmount
+  // Duplicate code check
+  const [codeExists, setCodeExists] = useState(false);
+  const [checkingCode, setCheckingCode] = useState(false);
+  const codeCheckTimer = useRef<number | null>(null);
+
+  // Cleanup polling and debounce timers on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) window.clearInterval(pollRef.current);
+      if (codeCheckTimer.current) window.clearTimeout(codeCheckTimer.current);
     };
   }, []);
+
+  // Debounced duplicate code check
+  useEffect(() => {
+    if (!unitCode.trim()) {
+      setCodeExists(false);
+      return;
+    }
+    if (codeCheckTimer.current) window.clearTimeout(codeCheckTimer.current);
+    setCheckingCode(true);
+    codeCheckTimer.current = window.setTimeout(async () => {
+      try {
+        const res = await checkUnitCode(unitCode.trim());
+        setCodeExists(res.data.exists);
+      } catch {
+        setCodeExists(false);
+      } finally {
+        setCheckingCode(false);
+      }
+    }, 500);
+  }, [unitCode]);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);
@@ -281,7 +309,7 @@ export default function PackageImport() {
                 type='text'
                 value={unitCode}
                 onChange={e => setUnitCode(e.target.value)}
-                className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500'
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 ${codeExists ? 'border-yellow-400' : 'border-gray-300'}`}
               />
             </div>
             <div>
@@ -296,6 +324,17 @@ export default function PackageImport() {
               />
             </div>
           </div>
+
+          {/* Duplicate code warning */}
+          {codeExists && !checkingCode && (
+            <div className='p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 flex items-start gap-2 text-sm'>
+              <AlertTriangle className='h-5 w-5 flex-shrink-0 mt-0.5' />
+              <span>
+                A unit with code <strong>{unitCode.trim()}</strong> already
+                exists. Importing will create a second unit with the same code.
+              </span>
+            </div>
+          )}
 
           {/* Summary counts */}
           <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>

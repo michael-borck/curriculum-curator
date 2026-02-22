@@ -121,6 +121,11 @@ export const duplicateUnit = (id: string): Promise<ApiResponse<Unit>> =>
 export const getArchivedUnits = (): Promise<ApiResponse<UnitListResponse>> =>
   api.get('/units/archived');
 
+export const checkUnitCode = (
+  code: string
+): Promise<ApiResponse<{ exists: boolean }>> =>
+  api.get('/units/check-code', { params: { code } });
+
 // Quick create
 export interface QuickCreateRequest {
   contentType: string;

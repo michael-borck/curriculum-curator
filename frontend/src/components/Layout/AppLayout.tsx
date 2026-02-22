@@ -17,7 +17,6 @@ import {
   Brain,
   Home,
   Sparkles,
-  Upload,
   Star,
   Search,
 } from 'lucide-react';
@@ -388,20 +387,6 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                 Tools
               </span>
             </div>
-            <button
-              onClick={() => {
-                navigate('/import');
-                setMobileSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-2 text-left transition ${
-                isActive('/import')
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <Upload className='w-5 h-5 flex-shrink-0' />
-              <span>Import Materials</span>
-            </button>
             <button
               onClick={() => {
                 navigate('/research');

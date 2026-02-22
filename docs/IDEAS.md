@@ -36,23 +36,13 @@ users produce institution-branded exports without manual formatting.
 
 ## Dashboard & Navigation
 
-### Remove Import from the sidebar?
+### ~~Remove Import from the sidebar?~~ — Done
 
-Dashboard quick actions now cover Clone, Export (IMSCC/SCORM/HTML), and Import
-(files into existing unit, or package to create new unit). Does the sidebar Import
-page still earn its place?
+Sidebar "Import Materials" entry removed. The dashboard quick actions cover both
+"Import Files" (per-unit) and "Import Package" (header + per-unit dropdown). The
+`/import` route still works via deep-links from the dashboard.
 
-**Current state:**
-- Dashboard Clone icon → duplicates unit, navigates to clone
-- Dashboard Export dropdown → IMSCC v1.1, SCORM 1.2, HTML (no LMS target selector — use UnitPage for that)
-- Dashboard Import dropdown → "Import Files" (navigates to `/import?unitId=...`), "Import Package" (navigates to `/import/package`)
-- UnitPage still has the full export menu with LMS target selector and materials ZIP export
-
-**Questions:**
-- The sidebar Import page handles both "import into existing unit" and "create new unit
-  from import" — the dashboard quick action covers both via two menu items
-- Could the sidebar entry just deep-link to the dashboard? Or keep it for discoverability?
-- Content-level validation on import (topic/level mismatch detection) is still missing
+Content-level validation on import (topic/level mismatch detection) is still missing.
 
 **Related:** Stories 6.x, ADR-023 (file import architecture)
 

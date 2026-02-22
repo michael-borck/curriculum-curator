@@ -122,12 +122,12 @@ class TestClassifyItemLmsAware:
 
     def test_canvas_source_classifies_assignments(self) -> None:
         # "assignments" is in Canvas terms but not in generic ASSESSMENT_KEYWORDS
-        kind, cat = classify_item("Week 3 Assignments Overview", source_lms="canvas")
+        kind, _cat = classify_item("Week 3 Assignments Overview", source_lms="canvas")
         assert kind == "assessment"
 
     def test_blackboard_source_classifies_tests(self) -> None:
         # "tests" is in Blackboard terms
-        kind, cat = classify_item("Unit Tests Review", source_lms="blackboard")
+        kind, _cat = classify_item("Unit Tests Review", source_lms="blackboard")
         assert kind == "assessment"
 
     def test_source_lms_none_uses_generic(self) -> None:
