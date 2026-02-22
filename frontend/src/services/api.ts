@@ -118,6 +118,25 @@ export const restoreUnit = (id: string): Promise<ApiResponse<Unit>> =>
 export const getArchivedUnits = (): Promise<ApiResponse<UnitListResponse>> =>
   api.get('/units/archived');
 
+// Quick create
+export interface QuickCreateRequest {
+  contentType: string;
+  title?: string | undefined;
+}
+
+export interface QuickCreateResponse {
+  unitId: string;
+  contentId: string;
+  unitTitle: string;
+  contentTitle: string;
+  contentType: string;
+}
+
+export const quickCreateUnit = (
+  data: QuickCreateRequest
+): Promise<ApiResponse<QuickCreateResponse>> =>
+  api.post('/units/quick-create', data);
+
 // Content management - routes are nested under /units/{unitId}/content
 export const getUnitContents = (unitId: string): Promise<ApiResponse> =>
   api.get(`/units/${unitId}/content`);

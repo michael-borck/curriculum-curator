@@ -35,6 +35,7 @@ def _unit_to_response(unit: Unit) -> UnitResponse:
         year=unit.year,
         semester=unit.semester,
         duration_weeks=unit.duration_weeks,
+        unit_metadata=unit.unit_metadata,
         created_at=unit.created_at,
         updated_at=unit.updated_at,
     )

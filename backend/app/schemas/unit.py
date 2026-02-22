@@ -4,10 +4,12 @@ Pydantic schemas for Unit (Australian university subject)
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import Field
 
 from app.schemas.base import CamelModel
+from app.schemas.content import ContentType
 
 
 # Define enums here instead of importing from models
@@ -89,8 +91,26 @@ class UnitResponse(CamelModel):
     year: int | None = None
     semester: str | None = None
     duration_weeks: int
+    unit_metadata: dict[str, Any] | None = None
     created_at: datetime | str
     updated_at: datetime | str | None = None
+
+
+class QuickCreateRequest(CamelModel):
+    """Schema for quick-creating content with an auto-generated unit"""
+
+    content_type: ContentType
+    title: str | None = Field(None, max_length=500)
+
+
+class QuickCreateResponse(CamelModel):
+    """Response from quick-create"""
+
+    unit_id: str
+    content_id: str
+    unit_title: str
+    content_title: str
+    content_type: str
 
 
 class UnitList(CamelModel):

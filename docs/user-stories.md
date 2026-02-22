@@ -216,8 +216,8 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~88 |
-| **Planned** | ~5 |
+| **Done** | ~89 |
+| **Planned** | 4 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |

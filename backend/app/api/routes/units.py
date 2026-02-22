@@ -5,6 +5,8 @@ Uses SQLAlchemy ORM via unit_repo.
 """
 
 import logging
+import uuid
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,8 +14,12 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core.config import settings
-from app.repositories import unit_repo
+from app.models.unit import Unit
+from app.repositories import content_repo, unit_repo
+from app.schemas.content import ContentCreate, ContentType
 from app.schemas.unit import (
+    QuickCreateRequest,
+    QuickCreateResponse,
     UnitCreate,
     UnitList,
     UnitResponse,
@@ -141,6 +147,75 @@ async def create_unit(
     logger.info(f"[CREATE_UNIT] Unit created: {unit.id}")
 
     return unit
+
+
+@router.post("/quick-create", response_model=QuickCreateResponse)
+async def quick_create(
+    data: QuickCreateRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+):
+    """
+    Quick-create content with an auto-generated lightweight unit.
+
+    Creates a minimal unit behind the scenes and an empty content item,
+    then returns both IDs so the frontend can navigate straight to the editor.
+    """
+    now = datetime.utcnow()
+    content_type_value = (
+        data.content_type.value
+        if hasattr(data.content_type, "value")
+        else str(data.content_type)
+    )
+    content_type_label = content_type_value.replace("_", " ").title()
+
+    # Generate title if not provided
+    content_title = data.title or f"{content_type_label} — {now.strftime('%d %b %Y')}"
+    unit_title = f"Quick — {content_type_label} ({now.strftime('%d %b')})"
+
+    # Generate unique code: QC-YYMMDDHHMMSS
+    code = f"QC-{now.strftime('%y%m%d%H%M%S')}"
+
+    # Create lightweight unit directly
+    unit_id = str(uuid.uuid4())
+    unit = Unit(
+        id=unit_id,
+        title=unit_title,
+        code=code,
+        owner_id=current_user.id,
+        created_by_id=current_user.id,
+        year=now.year,
+        semester="semester_1",
+        duration_weeks=1,
+        credit_points=0,
+        unit_metadata={"quick_create": True},
+    )
+    db.add(unit)
+    db.flush()
+
+    # Create content item (this commits both unit and content)
+    content_data = ContentCreate(
+        title=content_title,
+        content_type=ContentType(content_type_value),
+        body="",
+        week_number=None,
+        estimated_duration_minutes=None,
+    )
+    content = content_repo.create_content(
+        db, unit_id=unit_id, data=content_data, user_email=current_user.email
+    )
+
+    logger.info(
+        f"[QUICK_CREATE] Unit {unit_id} + content {content.id} for {current_user.email}"
+    )
+
+    return QuickCreateResponse(
+        unit_id=unit_id,
+        content_id=content.id,
+        unit_title=unit_title,
+        content_title=content_title,
+        content_type=content_type_value,
+    )
 
 
 @router.put("/{unit_id}", response_model=UnitResponse)

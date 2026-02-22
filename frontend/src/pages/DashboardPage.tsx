@@ -13,12 +13,25 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Zap,
+  FileText,
+  HelpCircle,
+  ClipboardList,
+  Briefcase,
+  FolderOpen,
+  Award,
+  StickyNote,
+  Video,
+  Activity,
+  GraduationCap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   createUnit as createUnitApi,
   deleteUnit as deleteUnitApi,
   getArchivedUnits as getArchivedUnitsApi,
   restoreUnit as restoreUnitApi,
+  quickCreateUnit as quickCreateUnitApi,
 } from '../services/api';
 import { useUnitsStore } from '../stores/unitsStore';
 import {
@@ -88,9 +101,23 @@ const difficultyOptions = [
   { value: 'advanced', label: 'Advanced' },
 ];
 
+const contentTypeCards: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: 'lecture', label: 'Lecture', icon: GraduationCap },
+  { value: 'worksheet', label: 'Worksheet', icon: FileText },
+  { value: 'quiz', label: 'Quiz', icon: HelpCircle },
+  { value: 'case_study', label: 'Case Study', icon: Briefcase },
+  { value: 'assignment', label: 'Assignment', icon: ClipboardList },
+  { value: 'project', label: 'Project', icon: FolderOpen },
+  { value: 'assessment', label: 'Assessment', icon: Award },
+  { value: 'notes', label: 'Notes', icon: StickyNote },
+  { value: 'video', label: 'Video', icon: Video },
+  { value: 'activity', label: 'Activity', icon: Activity },
+];
+
 const DashboardPage = () => {
   const navigate = useNavigate();
   const createModal = useModal();
+  const quickCreateModal = useModal();
 
   // Use shared units store
   const { units, loading, fetchUnits, addUnit, removeUnit, invalidate } =
@@ -99,6 +126,11 @@ const DashboardPage = () => {
   const [newUnit, setNewUnit] = useState<UnitFormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Quick create state
+  const [quickCreateTitle, setQuickCreateTitle] = useState('');
+  const [quickCreating, setQuickCreating] = useState(false);
+  const [showQuickContent, setShowQuickContent] = useState(true);
 
   // Archived units
   const [showArchived, setShowArchived] = useState(false);
@@ -152,6 +184,43 @@ const DashboardPage = () => {
       fetchArchivedUnits();
     }
   };
+
+  const handleQuickCreate = async (contentType: string) => {
+    try {
+      setQuickCreating(true);
+      const response = await quickCreateUnitApi({
+        contentType,
+        title: quickCreateTitle || undefined,
+      });
+      const result = response.data;
+      toast.success(`Created ${result.contentType.replace('_', ' ')}`);
+      quickCreateModal.close();
+      setQuickCreateTitle('');
+      invalidate();
+      fetchUnits();
+      navigate(`/units/${result.unitId}/content/${result.contentId}/edit`);
+    } catch {
+      toast.error('Failed to quick-create content');
+    } finally {
+      setQuickCreating(false);
+    }
+  };
+
+  // Split units into regular and quick-created
+  const regularUnits = units.filter(
+    u =>
+      !(
+        u.unitMetadata &&
+        typeof u.unitMetadata === 'object' &&
+        u.unitMetadata.quick_create
+      )
+  );
+  const quickUnits = units.filter(
+    u =>
+      u.unitMetadata &&
+      typeof u.unitMetadata === 'object' &&
+      u.unitMetadata.quick_create
+  );
 
   useEffect(() => {
     fetchUnits();
@@ -314,10 +383,16 @@ const DashboardPage = () => {
             Manage your units and curriculum content
           </p>
         </div>
-        <Button onClick={openCreateModal}>
-          <Plus className='h-5 w-5 mr-2' />
-          New Unit
-        </Button>
+        <div className='flex items-center gap-3'>
+          <Button variant='secondary' onClick={quickCreateModal.open}>
+            <Zap className='h-5 w-5 mr-2' />
+            Quick Create
+          </Button>
+          <Button onClick={openCreateModal}>
+            <Plus className='h-5 w-5 mr-2' />
+            New Unit
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -371,7 +446,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Units List */}
-      {units.length === 0 ? (
+      {regularUnits.length === 0 && quickUnits.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title='No Units Yet'
@@ -397,55 +472,112 @@ const DashboardPage = () => {
           ]}
         />
       ) : (
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
-          <div className='px-6 py-4 border-b border-gray-200'>
-            <h2 className='text-lg font-semibold text-gray-900'>My Units</h2>
-          </div>
-          <div className='divide-y divide-gray-200'>
-            {units.map(unit => (
-              <div
-                key={unit.id}
-                className='px-6 py-4 hover:bg-gray-50 cursor-pointer transition flex items-center justify-between'
-                onClick={() => navigate(`/units/${unit.id}`)}
-              >
-                <div className='flex-1 min-w-0'>
-                  <div className='flex items-center gap-3'>
-                    <h3 className='text-sm font-semibold text-gray-900'>
-                      {unit.code}
-                    </h3>
-                    {getStatusBadge(unit.status)}
-                  </div>
-                  <p className='text-sm text-gray-600 mt-1 truncate'>
-                    {unit.title}
-                  </p>
-                  <div className='flex items-center gap-4 mt-2 text-xs text-gray-500'>
-                    <span className='flex items-center gap-1'>
-                      <Calendar className='w-3.5 h-3.5' />
-                      {unit.semester}
-                    </span>
-                    <span>{unit.creditPoints} credits</span>
-                    <span>{unit.durationWeeks} weeks</span>
-                    {unit.pedagogyType && (
-                      <span className='capitalize'>
-                        {unit.pedagogyType.replace(/-/g, ' ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className='flex items-center gap-2 ml-4'>
-                  <button
-                    onClick={e => deleteUnit(unit.id, e)}
-                    className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'
-                    title='Remove from Dashboard'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </button>
-                  <ChevronRight className='h-5 w-5 text-gray-400' />
-                </div>
+        <>
+          {regularUnits.length > 0 && (
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
+              <div className='px-6 py-4 border-b border-gray-200'>
+                <h2 className='text-lg font-semibold text-gray-900'>
+                  My Units
+                </h2>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className='divide-y divide-gray-200'>
+                {regularUnits.map(unit => (
+                  <div
+                    key={unit.id}
+                    className='px-6 py-4 hover:bg-gray-50 cursor-pointer transition flex items-center justify-between'
+                    onClick={() => navigate(`/units/${unit.id}`)}
+                  >
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex items-center gap-3'>
+                        <h3 className='text-sm font-semibold text-gray-900'>
+                          {unit.code}
+                        </h3>
+                        {getStatusBadge(unit.status)}
+                      </div>
+                      <p className='text-sm text-gray-600 mt-1 truncate'>
+                        {unit.title}
+                      </p>
+                      <div className='flex items-center gap-4 mt-2 text-xs text-gray-500'>
+                        <span className='flex items-center gap-1'>
+                          <Calendar className='w-3.5 h-3.5' />
+                          {unit.semester}
+                        </span>
+                        <span>{unit.creditPoints} credits</span>
+                        <span>{unit.durationWeeks} weeks</span>
+                        {unit.pedagogyType && (
+                          <span className='capitalize'>
+                            {unit.pedagogyType.replace(/-/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-2 ml-4'>
+                      <button
+                        onClick={e => deleteUnit(unit.id, e)}
+                        className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'
+                        title='Remove from Dashboard'
+                      >
+                        <Trash2 className='h-4 w-4' />
+                      </button>
+                      <ChevronRight className='h-5 w-5 text-gray-400' />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Content Section */}
+          {quickUnits.length > 0 && (
+            <div className='mt-6'>
+              <button
+                onClick={() => setShowQuickContent(!showQuickContent)}
+                className='flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition'
+              >
+                <Zap className='w-4 h-4' />
+                <span>Quick Content ({quickUnits.length})</span>
+                {showQuickContent ? (
+                  <ChevronUp className='w-4 h-4' />
+                ) : (
+                  <ChevronDown className='w-4 h-4' />
+                )}
+              </button>
+
+              {showQuickContent && (
+                <div className='mt-3 bg-white rounded-lg border border-gray-200 shadow-sm'>
+                  <div className='divide-y divide-gray-200'>
+                    {quickUnits.map(unit => (
+                      <div
+                        key={unit.id}
+                        className='px-6 py-3 hover:bg-gray-50 cursor-pointer transition flex items-center justify-between'
+                        onClick={() => navigate(`/units/${unit.id}`)}
+                      >
+                        <div className='min-w-0'>
+                          <h3 className='text-sm font-medium text-gray-900'>
+                            {unit.title}
+                          </h3>
+                          <p className='text-xs text-gray-500 mt-0.5'>
+                            {new Date(unit.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className='flex items-center gap-2 ml-4'>
+                          <button
+                            onClick={e => deleteUnit(unit.id, e)}
+                            className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'
+                            title='Remove'
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </button>
+                          <ChevronRight className='h-5 w-5 text-gray-400' />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Archived Units Toggle */}
@@ -622,6 +754,49 @@ const DashboardPage = () => {
             Create Unit
           </Button>
         </div>
+      </Modal>
+
+      {/* Quick Create Modal */}
+      <Modal
+        isOpen={quickCreateModal.isOpen}
+        onClose={quickCreateModal.close}
+        title='Quick Create'
+        size='lg'
+      >
+        <p className='text-sm text-gray-600 mb-4'>
+          Choose a content type. A lightweight unit will be created
+          automatically.
+        </p>
+
+        <FormInput
+          label='Title (optional)'
+          value={quickCreateTitle}
+          onChange={e => setQuickCreateTitle(e.target.value)}
+          placeholder='Auto-generated if left blank'
+        />
+
+        <div className='grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4'>
+          {contentTypeCards.map(ct => {
+            const Icon = ct.icon;
+            return (
+              <button
+                key={ct.value}
+                disabled={quickCreating}
+                onClick={() => handleQuickCreate(ct.value)}
+                className='flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <Icon className='w-6 h-6 text-purple-600' />
+                <span className='text-xs font-medium text-gray-700'>
+                  {ct.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {quickCreating && (
+          <p className='text-sm text-gray-500 mt-4 text-center'>Creating...</p>
+        )}
       </Modal>
     </div>
   );
