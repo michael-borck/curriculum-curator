@@ -27,6 +27,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
     escape_html,
@@ -136,6 +137,17 @@ class SCORMExportService:
             html = self._assessment_to_html(assessment)
             resources.append((identifier, href, str(assessment.title)))
             file_contents[href] = html
+
+        # QTI quiz files (supplementary — SCORM players don't natively
+        # interpret QTI, but LMSs can import them alongside the SCORM package)
+        for content_id, questions in data.quiz_questions_by_content.items():
+            if not questions:
+                continue
+            quiz_title = f"Quiz {content_id[:8]}"
+            qti_ident = f"qti_{content_id[:8]}"
+            qti_href = f"quizzes/{qti_ident}/assessment.xml"
+            qti_xml = qti_exporter.export_qti12(questions, quiz_title)
+            file_contents[qti_href] = qti_xml
 
         # Build SCORM manifest XML
         manifest_xml = self._build_manifest(

@@ -18,7 +18,9 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
+from app.models.content import Content, ContentType
 from app.models.learning_outcome import UnitLearningOutcome
+from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
@@ -94,6 +96,9 @@ class UnitExportData:
     sdg_mappings: list[UnitSDGMapping]
     gc_mappings: list[ULOGraduateCapabilityMapping]
     materials_by_week: dict[int, list[WeeklyMaterial]] = field(default_factory=dict)
+    quiz_questions_by_content: dict[str, list[QuizQuestion]] = field(
+        default_factory=dict
+    )
 
 
 def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
@@ -159,6 +164,23 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
         week = int(mat.week_number)
         materials_by_week.setdefault(week, []).append(mat)
 
+    # Quiz questions grouped by content ID
+    quiz_contents = (
+        db.query(Content)
+        .filter(Content.unit_id == unit_id, Content.type == ContentType.QUIZ.value)
+        .all()
+    )
+    quiz_questions_by_content: dict[str, list[QuizQuestion]] = {}
+    for qc in quiz_contents:
+        questions = (
+            db.query(QuizQuestion)
+            .filter(QuizQuestion.content_id == qc.id)
+            .order_by(QuizQuestion.order_index)
+            .all()
+        )
+        if questions:
+            quiz_questions_by_content[str(qc.id)] = questions
+
     return UnitExportData(
         unit=unit,
         outline=outline,
@@ -170,4 +192,5 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
         sdg_mappings=sdg_mappings,
         gc_mappings=gc_mappings,
         materials_by_week=materials_by_week,
+        quiz_questions_by_content=quiz_questions_by_content,
     )

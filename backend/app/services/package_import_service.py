@@ -30,12 +30,15 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
+from app.models.content import Content, ContentType
 from app.models.learning_outcome import UnitLearningOutcome
+from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 from app.schemas.package_import import ImportPreview, ImportResult
+from app.services.qti_service import qti_importer
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -576,6 +579,9 @@ class PackageImportService:
             db.add(assessment)
             assessment_count += 1
 
+        # Import QTI quiz questions
+        quiz_question_count = self._import_qti_questions(zf, str(unit.id), db)
+
         db.commit()
 
         return ImportResult(
@@ -588,6 +594,7 @@ class PackageImportService:
             aol_mapping_count=aol_count,
             sdg_mapping_count=sdg_count,
             gc_mapping_count=gc_count,
+            quiz_question_count=quiz_question_count,
             weekly_topic_count=topic_count,
         )
 
@@ -766,6 +773,9 @@ class PackageImportService:
                     material_count += 1
                     mat_order += 1
 
+        # Import QTI quiz questions
+        quiz_question_count = self._import_qti_questions(zf, str(unit.id), db)
+
         db.commit()
 
         return ImportResult(
@@ -778,9 +788,60 @@ class PackageImportService:
             aol_mapping_count=0,
             sdg_mapping_count=0,
             gc_mapping_count=0,
+            quiz_question_count=quiz_question_count,
             weekly_topic_count=topic_count,
             source_lms=source_lms,
         )
+
+    # ------------------------------------------------------------------
+    # QTI import helper
+    # ------------------------------------------------------------------
+
+    def _import_qti_questions(
+        self, zf: zipfile.ZipFile, unit_id: str, db: Session
+    ) -> int:
+        """Scan ZIP for QTI files, parse questions, create Content + QuizQuestion rows.
+
+        Returns the total number of QuizQuestion rows created.
+        """
+        try:
+            parsed = qti_importer.parse_qti_from_zip(zf)
+        except Exception:
+            logger.exception("Failed to parse QTI from ZIP")
+            return 0
+
+        total = 0
+        for filename, questions in parsed:
+            if not questions:
+                continue
+
+            # Create a Content row (type=quiz) for this question group
+            quiz_title = filename.rsplit("/", 1)[-1].removesuffix(".xml")
+            content = Content(
+                title=f"Imported Quiz: {quiz_title}",
+                type=ContentType.QUIZ.value,
+                unit_id=unit_id,
+                status="draft",
+            )
+            db.add(content)
+            db.flush()
+
+            for pq in questions:
+                qq = QuizQuestion(
+                    content_id=str(content.id),
+                    question_text=pq.question_text,
+                    question_type=pq.question_type,
+                    order_index=pq.order_index,
+                    options=pq.options if pq.options else None,
+                    correct_answers=pq.correct_answers if pq.correct_answers else None,
+                    answer_explanation=pq.answer_explanation,
+                    points=pq.points,
+                    feedback=pq.feedback,
+                )
+                db.add(qq)
+                total += 1
+
+        return total
 
     # ------------------------------------------------------------------
     # Private helpers

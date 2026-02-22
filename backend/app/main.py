@@ -501,6 +501,13 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load material_export routes: {e}")
 
+try:
+    from app.api.routes import qti_export
+
+    app.include_router(qti_export.router, prefix="/api", tags=["qti-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load qti_export routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 

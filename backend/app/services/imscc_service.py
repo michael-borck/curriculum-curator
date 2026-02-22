@@ -29,6 +29,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
     escape_html,
@@ -103,6 +104,18 @@ class IMSCCExportService:
             resources.append((identifier, href, str(assessment.title)))
             file_contents[href] = html
 
+        # QTI quiz resources (embedded QTI 1.2 for LMS import)
+        qti_resources: list[tuple[str, str, str]] = []
+        for content_id, questions in data.quiz_questions_by_content.items():
+            if not questions:
+                continue
+            quiz_title = f"Quiz {content_id[:8]}"
+            qti_ident = f"qti_{content_id[:8]}"
+            qti_href = f"quizzes/{qti_ident}/assessment.xml"
+            qti_xml = qti_exporter.export_qti12(questions, quiz_title)
+            file_contents[qti_href] = qti_xml
+            qti_resources.append((qti_ident, qti_href, quiz_title))
+
         # Build manifest XML
         manifest_xml = self._build_manifest(
             data.unit,
@@ -110,6 +123,7 @@ class IMSCCExportService:
             data.weekly_topics,
             resources,
             data.materials_by_week,
+            qti_resources=qti_resources,
         )
 
         # Build metadata JSON
@@ -134,13 +148,15 @@ class IMSCCExportService:
         filename = f"{data.unit.code}_{title_slug}.imscc"
         return buf, filename
 
-    def _build_manifest(
+    def _build_manifest(  # noqa: PLR0912
         self,
         unit: Unit,
         outline: UnitOutline | None,
         weekly_topics: list[WeeklyTopic],
         resources: list[tuple[str, str, str]],
         materials_by_week: dict[int, list[WeeklyMaterial]],
+        *,
+        qti_resources: list[tuple[str, str, str]] | None = None,
     ) -> str:
         """Build imsmanifest.xml content."""
         # Register namespaces to avoid ns0: prefixes
@@ -251,6 +267,23 @@ class IMSCCExportService:
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
+        # Quizzes folder (QTI resources)
+        if qti_resources:
+            quiz_item = ET.SubElement(
+                root_item, f"{{{NS_CP}}}item", identifier="quizzes"
+            )
+            quiz_title_elem = ET.SubElement(quiz_item, f"{{{NS_CP}}}title")
+            quiz_title_elem.text = "Quizzes"
+            for qti_id, _qti_href, qti_title in qti_resources:
+                item = ET.SubElement(
+                    quiz_item,
+                    f"{{{NS_CP}}}item",
+                    identifier=f"item_{qti_id}",
+                    identifierref=qti_id,
+                )
+                t = ET.SubElement(item, f"{{{NS_CP}}}title")
+                t.text = qti_title
+
         # Resources section
         resources_elem = ET.SubElement(manifest, f"{{{NS_CP}}}resources")
         for res_id, href, _title in resources:
@@ -262,6 +295,18 @@ class IMSCCExportService:
                 href=href,
             )
             ET.SubElement(res, f"{{{NS_CP}}}file", href=href)
+
+        # QTI resources (CC v1.1 assessment type)
+        if qti_resources:
+            for qti_id, qti_href, _qti_title in qti_resources:
+                res = ET.SubElement(
+                    resources_elem,
+                    f"{{{NS_CP}}}resource",
+                    identifier=qti_id,
+                    type="imsqti_xmlv1p2/imscc_xmlv1p1/assessment",
+                    href=qti_href,
+                )
+                ET.SubElement(res, f"{{{NS_CP}}}file", href=qti_href)
 
         # Serialize
         tree = ET.ElementTree(manifest)

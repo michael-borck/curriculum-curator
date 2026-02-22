@@ -24,6 +24,7 @@ class ImportPreview(CamelModel):
     aol_mapping_count: int
     sdg_mapping_count: int
     gc_mapping_count: int
+    quiz_question_count: int = 0
     source_lms: str | None = None
 
 
@@ -39,6 +40,7 @@ class ImportResult(CamelModel):
     aol_mapping_count: int
     sdg_mapping_count: int
     gc_mapping_count: int
+    quiz_question_count: int = 0
     weekly_topic_count: int
     source_lms: str | None = None
 
