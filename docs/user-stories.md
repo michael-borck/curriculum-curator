@@ -89,17 +89,17 @@
 | 6.1 | As an **Enhancer**, I want to upload existing materials (PDF, DOCX, PPTX, MD, HTML) so the system can parse and import them. | P2 | **Done** — ImportMaterials + PDFImportDialog |
 | 6.2 | As an **Enhancer**, I want the system to extract structure from uploaded PDFs (topics, outcomes, assessments). | P2 | **Done** — `pdf_parser_service` + `document_analyzer_service` |
 | 6.3 | As an **Enhancer**, I want to review and correct auto-detected structure before committing the import. | P2 | **Done** — review UI with week assignment |
-| 6.4 | As an **Enhancer**, I want AI to enhance imported content while preserving my original intent. | P3 | **Partial** — enhancement API works, import-to-enhance pipeline incomplete |
+| 6.4 | As an **Enhancer**, I want AI to enhance imported content while preserving my original intent. | P3 | **Done** — "Enhance with AI" button after import, batch enhance all materials |
 | 6.5 | As an **Enhancer**, I want batch import of multiple files at once (or ZIP upload). | P2 | **Done** — ZIP analysis and import |
-| 6.6 | As an **Enhancer**, I want to import a PowerPoint and have it converted to editable content (text extracted, slides become sections). | P3 | **Partial** — text extraction works, images lost |
+| 6.6 | As an **Enhancer**, I want to import a PowerPoint and have it converted to editable content (text extracted, slides become sections). | P3 | **Done** — text + image extraction via `python-pptx`, images stored in content repo |
 | 6.7 | As an **Enhancer**, I want imported content to go straight into the normal editing flow so I can refine it immediately. | P2 | **Done** — import flow redirects to editing |
 
 ## 7. Content Validation & Quality
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 7.1 | As a **Curator**, I want automatic readability scoring (Flesch-Kincaid) on generated content. | P3 | **Partial** — plugin architecture done, validators incomplete |
-| 7.2 | As a **Curator**, I want structure validation (heading hierarchy, section balance). | P3 | **Partial** — same as above |
+| 7.1 | As a **Curator**, I want automatic readability scoring (Flesch-Kincaid) on generated content. | P3 | **Done** — 9 plugins wired with API endpoints + editor quality panel |
+| 7.2 | As a **Curator**, I want structure validation (heading hierarchy, section balance). | P3 | **Done** — grammar, spell-check, structure validators with Australian English support |
 | 7.3 | As a **Curator**, I want accessibility checking (WCAG compliance). | P4 | **Planned** |
 | 7.4 | As a **Curator**, I want an alignment report showing ULO coverage across materials and assessments. | P1 | **Done** — `analytics_service.get_alignment_report` |
 | 7.5 | As a **Curator**, I want a quality score for each unit (graded A–F) based on coverage, weights, workload balance. | P1 | **Done** — `analytics_service.calculate_quality_score` |
@@ -159,7 +159,7 @@
 | 12.1 | As a **Creator**, I want to search the web for academic sources to reference in my materials. | P2 | **Done** — SearXNG integration with academic domain prioritisation |
 | 12.2 | As a **Creator**, I want to save research sources with metadata (authors, year, DOI, URL). | P1 | **Done** |
 | 12.3 | As a **Creator**, I want to generate citations in multiple formats (APA7, Harvard, MLA, Chicago, IEEE, Vancouver). | P1 | **Done** |
-| 12.4 | As a **Creator**, I want to search for similar courses/units across the internet, see results with titles and descriptions, select the ones I like, and use those as a basis for my unit structure. | P3 | **Planned** |
+| 12.4 | As a **Creator**, I want to search for similar courses/units across the internet, see results with titles and descriptions, select the ones I like, and use those as a basis for my unit structure. | P3 | **Done** — Research page with tiered academic search, URL extraction, scaffold/compare/reading-list actions (ADR-0039) |
 
 ## 13. Version Control & History
 
@@ -186,7 +186,7 @@
 | 15.1 | As a **Creator**, I want a simple editing mode that hides technical details (YAML, raw markdown) so I can focus on content. | P2 | **Done** — EditorModeToggle component |
 | 15.2 | As a **power user**, I want an advanced editing mode where I can see and edit YAML front matter and raw markdown directly. | P2 | **Done** — toggle between simple/advanced |
 | 15.3 | As a **Creator**, I want to add images to my materials by providing a URL/link. | P3 | **Done** — TipTap image extension with URL insert dialog |
-| 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Planned** — needs media upload endpoint + storage |
+| 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Done** — image upload endpoint + TipTap toolbar button with preview |
 | 15.5 | As a **Creator**, I want AI to generate images for my materials (diagrams, illustrations) when the LLM provider supports it. | P4 | **Planned** |
 | 15.6 | As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them into my materials. | P4 | **Planned** |
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
@@ -215,15 +215,25 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~82 |
-| **Partial** | ~4 |
-| **Planned** | ~9 |
+| **Done** | ~88 |
+| **Planned** | ~5 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
-| **P3** | Desktop app, IMSCC import, image handling, advanced import/export, web search for courses | Mostly complete |
+| **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | Nearly complete — 9.2, 9.7, 17.2 remain |
 | **P4** | AI image generation, stock photos, accessibility validation | Not started |
 
-*Last updated: 2026-02-21*
+### Remaining Stories
+
+| # | Story | Phase |
+|---|-------|-------|
+| 9.2 | IMSCC import | P3 |
+| 9.7 | SCORM import | P3 |
+| 17.2 | Standalone content without a unit | P3 |
+| 7.3 | WCAG accessibility validation | P4 |
+| 15.5 | AI image generation | P4 |
+| 15.6 | Unsplash stock image search | P4 |
+
+*Last updated: 2026-02-22*
