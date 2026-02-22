@@ -54,6 +54,46 @@ manifests structured differently per LMS, or is it the content naming that varie
 
 ---
 
+## Dashboard & Navigation
+
+### Unit quick actions: Clone, Export, Import
+
+The unit dashboard currently has a Delete quick action icon. Add Clone, Export,
+and Import as peer quick actions so common operations are one click away.
+
+**Clone:** Duplicate a unit as a starting point. Use case: adapt an undergraduate
+unit for postgraduate (or vice versa) — change depth, add research component,
+adjust assessment weights. The backend already supports `POST /api/units/{id}/duplicate`
+(story 1.5), this just surfaces it on the dashboard.
+
+**Export:** Quick popup — select export format (IMSCC, SCORM, HTML, PDF, DOCX, PPTX),
+optionally choose LMS target, export. Could also offer a "ZIP with rendered content"
+option (HTML + assets bundled).
+
+**Import:** Upload files directly from the dashboard rather than navigating to the
+sidebar Import page. Reduces clicks for a common operation.
+
+**Related:** Stories 1.5, 9.x, 6.x
+
+### Remove Import from the sidebar?
+
+If Import becomes a quick action on the unit dashboard, does the sidebar Import page
+still earn its place? Removing it would simplify navigation.
+
+**Questions:**
+- The sidebar Import page currently handles both "import into existing unit" and
+  "import to create a new unit" — the dashboard quick action only covers the first case
+- What happens when imported material doesn't match the target unit (different topic,
+  different level)? Currently no validation — the content just lands in the unit
+- Could show a confirmation: "This PDF looks like a postgraduate unit but you're
+  importing into ICT101 (undergraduate). Continue?"
+- Maybe the sidebar page stays for "create new unit from import" and the dashboard
+  action handles "add materials to this unit"
+
+**Related:** Stories 6.x, ADR-023 (file import architecture)
+
+---
+
 ## Template
 
 Use this structure for new entries:
