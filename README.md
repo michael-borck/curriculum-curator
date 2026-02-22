@@ -1,6 +1,7 @@
 # Curriculum Curator
 
-> A self-hosted, privacy-first alternative to cloud-based curriculum tools. Bring your own API keys, keep your data local, and own everything you produce — no account, no subscription, no data leaving your machine.
+> **You choose how to install it. You choose how to teach with it.**
+> Deploy on your institution's server or run it on your laptop. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build curriculum your way.
 
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
@@ -12,18 +13,35 @@
 
 Curriculum Curator is a **content creation tool, not a presentation tool**. It helps educators design, structure, and refine unit materials — then export them to the LMS or format of their choice. Think of it as the workshop where you build your curriculum, not the classroom where you deliver it.
 
-### Why Self-Host?
+The same philosophy runs through every layer: **you choose**.
 
-Most AI-powered curriculum tools require a cloud account, send your content to third-party servers, and lock you into a subscription. Curriculum Curator is the opposite:
+- **How to host**: institution VPS, personal Docker, or desktop app
+- **Which AI**: OpenAI, Anthropic, Gemini, local Ollama, or none at all
+- **How to teach**: 9 pedagogical styles shape every piece of generated content
+- **What to export**: IMS Common Cartridge, SCORM, PDF, DOCX, PPTX, HTML
+- **How much AI help**: full generation, refine-only, or write everything yourself
 
-- **No cloud account needed**: Install and run — no sign-up, no subscription, no usage limits
-- **Your keys, your choice**: Bring your own API keys for OpenAI, Anthropic, Google Gemini, or run fully offline with Ollama
-- **Data stays with you**: SQLite database in a single file you control — no external database service, no telemetry, no phone-home
-- **Local Mode**: Run entirely without login or cloud dependencies (`LOCAL_MODE=true`)
-- **Ollama support**: Fully private AI with local models — zero data leaves your machine
-- **Single Docker container**: Deploy on your own server, laptop, or air-gapped network
+### Two Ways to Run
 
-Curriculum Curator never phones home and never stores your API keys on a remote server. If you can run Docker, you can run this.
+| | Institutional Server | Personal / Desktop |
+|---|---|---|
+| **Who it's for** | A teaching team or department | An individual educator |
+| **Deployment** | Docker on your institution's VPS | Desktop app (Mac, Windows, Linux) or Docker locally |
+| **Accounts** | Registration, email verification, email whitelist, forgotten-password flow | No login needed (`LOCAL_MODE=true`) |
+| **Security** | JWT auth, rate limiting, account lockout, role-based access | Single-user, no auth overhead |
+| **AI keys** | Shared keys set by admin, or each user brings their own | Your own keys, or fully offline with Ollama |
+| **Database** | SQLite on the server — one file, no external DB service | SQLite on your machine |
+
+Both modes ship in the same codebase. Flip `LOCAL_MODE=true` for personal use, or leave it off for multi-user institutional hosting.
+
+### Privacy-First, Bring Your Own Key
+
+No matter how you deploy, Curriculum Curator never phones home:
+
+- **BYOK**: Bring your own API keys for OpenAI, Anthropic, Google Gemini — or run fully offline with local Ollama models
+- **No telemetry**: Zero analytics, zero tracking, zero external calls beyond the AI provider you choose
+- **Data stays with you**: SQLite in a single file you control — no cloud database, no vendor lock-in
+- **Air-gapped capable**: Ollama + Local Mode means the app works without any internet connection
 
 **Note**: This application uses Australian university terminology where a **Unit** is an individual subject (e.g., "Programming 101") and a **Course** is a degree program.
 
