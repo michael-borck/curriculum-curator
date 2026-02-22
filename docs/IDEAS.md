@@ -1,8 +1,13 @@
 # Ideas & Future Discussions
 
 > Scratchpad for feature ideas, technical investigations, and design discussions.
-> Items here are speculative — not committed to. When an idea matures, it graduates
-> to a user story in `user-stories.md` or a GitHub issue.
+> Items here are speculative — not committed to.
+>
+> **Workflow:** Explore an idea → make a decision → remove it from this file.
+> - **Build it** → write a user story in `user-stories.md`, update `acceptance-tests.md`, delete from here
+> - **Reject it** → delete from here (note the reason in the commit message)
+>
+> This file should stay small. If it's growing, ideas aren't being resolved.
 
 ---
 
