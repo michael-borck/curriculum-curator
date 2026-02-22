@@ -1,5 +1,5 @@
 """
-Schemas for IMSCC / SCORM package import (round-trip).
+Schemas for IMSCC / SCORM package import (round-trip and unified).
 """
 
 from app.schemas.base import CamelModel
@@ -41,3 +41,56 @@ class ImportResult(CamelModel):
     gc_mapping_count: int
     weekly_topic_count: int
     source_lms: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Unified import schemas
+# ---------------------------------------------------------------------------
+
+
+class FilePreviewItem(CamelModel):
+    """One file inside a package, with best-guess mapping."""
+
+    path: str
+    filename: str
+    extension: str
+    size_bytes: int
+    detected_type: str  # "material" | "assessment" | "outline" | "unknown"
+    material_type: str | None = None  # "lecture", "reading", "quiz", etc.
+    week_number: int | None = None
+    title: str
+    processable: bool
+
+
+class SkippedFile(CamelModel):
+    """A file that cannot be processed."""
+
+    path: str
+    filename: str
+    reason: str  # "unsupported_format", "too_large", "corrupted"
+
+
+class UnifiedImportPreview(CamelModel):
+    """Preview for any ZIP (IMSCC, SCORM, or plain)."""
+
+    package_type: str  # "imscc" | "scorm" | "plain_zip" | "round_trip"
+    source_lms: str | None = None
+    is_round_trip: bool
+    unit_code: str
+    unit_title: str
+    duration_weeks: int
+    files: list[FilePreviewItem]
+    skipped_files: list[SkippedFile]
+    material_count: int
+    assessment_count: int
+    total_processable: int
+    total_skipped: int
+
+
+class UnifiedImportResult(CamelModel):
+    """Result after applying a unified import."""
+
+    unit_id: str
+    unit_code: str
+    unit_title: str
+    task_id: str

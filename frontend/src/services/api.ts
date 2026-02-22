@@ -489,5 +489,94 @@ export const createFromPackage = (
   });
 };
 
+// Unified import (handles IMSCC, SCORM, plain ZIP — all file types)
+export interface FilePreviewItem {
+  path: string;
+  filename: string;
+  extension: string;
+  sizeBytes: number;
+  detectedType: string; // "material" | "assessment" | "outline" | "unknown"
+  materialType: string | null;
+  weekNumber: number | null;
+  title: string;
+  processable: boolean;
+}
+
+export interface SkippedFile {
+  path: string;
+  filename: string;
+  reason: string;
+}
+
+export interface UnifiedImportPreview {
+  packageType: string;
+  sourceLms: string | null;
+  isRoundTrip: boolean;
+  unitCode: string;
+  unitTitle: string;
+  durationWeeks: number;
+  files: FilePreviewItem[];
+  skippedFiles: SkippedFile[];
+  materialCount: number;
+  assessmentCount: number;
+  totalProcessable: number;
+  totalSkipped: number;
+}
+
+export interface UnifiedImportResult {
+  unitId: string;
+  unitCode: string;
+  unitTitle: string;
+  taskId: string;
+}
+
+export interface ImportTaskStatus {
+  taskId: string;
+  status: string; // "pending" | "processing" | "completed" | "failed"
+  totalFiles: number;
+  processedFiles: number;
+  currentFile: string | null;
+  unitId: string | null;
+  unitCode: string | null;
+  unitTitle: string | null;
+  errors: string[];
+}
+
+export const unifiedAnalyze = (
+  file: File
+): Promise<ApiResponse<UnifiedImportPreview>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/import/unified/analyze', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const unifiedApply = (
+  file: File,
+  opts: {
+    unitCode?: string | undefined;
+    unitTitle?: string | undefined;
+    durationWeeks?: number | undefined;
+  }
+): Promise<ApiResponse<UnifiedImportResult>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const params = new URLSearchParams();
+  if (opts.unitCode) params.set('unit_code', opts.unitCode);
+  if (opts.unitTitle) params.set('unit_title', opts.unitTitle);
+  if (opts.durationWeeks)
+    params.set('duration_weeks', String(opts.durationWeeks));
+  const qs = params.toString();
+  return api.post(`/import/unified/apply${qs ? `?${qs}` : ''}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const unifiedStatus = (
+  taskId: string
+): Promise<ApiResponse<ImportTaskStatus>> =>
+  api.get(`/import/unified/status/${taskId}`);
+
 export default api;
 export { api };

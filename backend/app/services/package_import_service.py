@@ -51,7 +51,7 @@ _WEEK_RE = re.compile(r"^week(\d{2})/")
 # Regex to extract material type prefix from filenames like "lecture_foo.html"
 _MAT_TYPE_RE = re.compile(r"^([a-z_]+?)_")
 # Regex to guess a unit code pattern like "ICT100", "COMP2010"
-_UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
+UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
 
 VALID_MATERIAL_TYPES = {
     "lecture",
@@ -125,12 +125,12 @@ class PackageImportError(Exception):
 # ---------------------------------------------------------------------------
 
 
-def _has_meta(zf: zipfile.ZipFile) -> bool:
+def has_meta(zf: zipfile.ZipFile) -> bool:
     """Check whether the ZIP contains our round-trip metadata file."""
     return "curriculum_curator_meta.json" in zf.namelist()
 
 
-def _detect_format_from_manifest(zf: zipfile.ZipFile) -> str:
+def detect_format_from_manifest(zf: zipfile.ZipFile) -> str:
     """Detect IMSCC vs SCORM from the manifest XML."""
     if "imsmanifest.xml" not in zf.namelist():
         return "imscc"
@@ -140,7 +140,7 @@ def _detect_format_from_manifest(zf: zipfile.ZipFile) -> str:
     return "imscc"
 
 
-def _detect_source_lms(manifest_text: str) -> str | None:
+def detect_source_lms(manifest_text: str) -> str | None:
     """Keyword scan to detect which LMS generated the package."""
     lower = manifest_text.lower()
     if "canvas" in lower or "instructure" in lower:
@@ -154,9 +154,7 @@ def _detect_source_lms(manifest_text: str) -> str | None:
     return None
 
 
-def _classify_item(
-    title: str, resource_type: str | None = None
-) -> tuple[str, str]:
+def classify_item(title: str, resource_type: str | None = None) -> tuple[str, str]:
     """Classify a manifest item as assessment or material.
 
     Returns ``("assessment", category)`` or ``("material", mat_type)``.
@@ -221,9 +219,7 @@ class _ManifestData:
     def __init__(self) -> None:
         self.title: str = ""
         self.description: str = ""
-        self.top_items: list[
-            tuple[str, list[tuple[str, str | None, str | None]]]
-        ] = []
+        self.top_items: list[tuple[str, list[tuple[str, str | None, str | None]]]] = []
         # identifier -> (href, type)
         self.resource_map: dict[str, tuple[str, str | None]] = {}
         self.raw_text: str = ""
@@ -280,7 +276,7 @@ def _walk_items(
     return items
 
 
-def _parse_manifest(zf: zipfile.ZipFile) -> _ManifestData:
+def parse_manifest(zf: zipfile.ZipFile) -> _ManifestData:
     """Parse ``imsmanifest.xml`` using ElementTree.
 
     Tries multiple IMS namespace URIs, then falls back to no namespace.
@@ -348,7 +344,7 @@ class PackageImportService:
     def analyze_package(self, zip_bytes: bytes) -> ImportPreview:
         """Analyze a package ZIP and return a preview without persisting."""
         zf = self._open_zip(zip_bytes)
-        if _has_meta(zf):
+        if has_meta(zf):
             return self._analyze_round_trip(zf)
         return self._analyze_generic(zf)
 
@@ -365,7 +361,7 @@ class PackageImportService:
     ) -> ImportResult:
         """Import a package, creating all DB records."""
         zf = self._open_zip(zip_bytes)
-        if _has_meta(zf):
+        if has_meta(zf):
             return self._create_round_trip(
                 zf,
                 current_user_id,
@@ -526,7 +522,7 @@ class PackageImportService:
             week_numbers_seen.add(week_num)
 
             html_content = zf.read(name).decode("utf-8")
-            title_text, body_content = self._extract_html_content(html_content)
+            title_text, body_content = self.extract_html_content(html_content)
 
             filename = name.split("/")[-1]
             mat_type = self._extract_material_type(filename)
@@ -607,13 +603,13 @@ class PackageImportService:
                 "curriculum_curator_meta.json. Cannot determine structure."
             )
 
-        manifest = _parse_manifest(zf)
-        fmt = _detect_format_from_manifest(zf)
-        source_lms = _detect_source_lms(manifest.raw_text)
+        manifest = parse_manifest(zf)
+        fmt = detect_format_from_manifest(zf)
+        source_lms = detect_source_lms(manifest.raw_text)
 
         # Try to extract a unit code from the title or manifest text
         unit_code = ""
-        code_match = _UNIT_CODE_RE.search(manifest.title) or _UNIT_CODE_RE.search(
+        code_match = UNIT_CODE_RE.search(manifest.title) or UNIT_CODE_RE.search(
             manifest.raw_text[:2000]
         )
         if code_match:
@@ -626,7 +622,7 @@ class PackageImportService:
         assessment_count = 0
         for _item_title, children in manifest.top_items:
             for child_title, _href, rtype in children:
-                kind, _cat = _classify_item(child_title, rtype)
+                kind, _cat = classify_item(child_title, rtype)
                 if kind == "assessment":
                     assessment_count += 1
                 else:
@@ -670,16 +666,16 @@ class PackageImportService:
                 "curriculum_curator_meta.json."
             )
 
-        manifest = _parse_manifest(zf)
-        source_lms = _detect_source_lms(manifest.raw_text)
+        manifest = parse_manifest(zf)
+        source_lms = detect_source_lms(manifest.raw_text)
 
         # Resolve title and code
         raw_title = unit_title_override or manifest.title or "Imported Unit"
         raw_code = unit_code_override or ""
         if not raw_code:
-            code_match = _UNIT_CODE_RE.search(
-                manifest.title
-            ) or _UNIT_CODE_RE.search(manifest.raw_text[:2000])
+            code_match = UNIT_CODE_RE.search(manifest.title) or UNIT_CODE_RE.search(
+                manifest.raw_text[:2000]
+            )
             raw_code = code_match.group(1) if code_match else "IMPORT001"
 
         duration_weeks = len(manifest.top_items) or 12
@@ -721,9 +717,7 @@ class PackageImportService:
         assessment_count = 0
         mat_order = 0
 
-        for week_idx, (item_title, children) in enumerate(
-            manifest.top_items, start=1
-        ):
+        for week_idx, (item_title, children) in enumerate(manifest.top_items, start=1):
             # Create weekly topic
             topic = WeeklyTopic(
                 unit_outline_id=str(outline.id),
@@ -736,16 +730,14 @@ class PackageImportService:
             topic_count += 1
 
             for child_title, href, rtype in children:
-                kind, category = _classify_item(child_title, rtype)
+                kind, category = classify_item(child_title, rtype)
 
                 # Read HTML content if available
                 body_html = ""
                 if href:
                     raw_html = _read_resource_content(zf, href)
                     if raw_html:
-                        _title_text, body_html = self._extract_html_content(
-                            raw_html
-                        )
+                        _title_text, body_html = self.extract_html_content(raw_html)
 
                 if kind == "assessment":
                     assessment = Assessment(
@@ -822,9 +814,10 @@ class PackageImportService:
         """Detect whether this is IMSCC or SCORM from meta/manifest."""
         if meta.get("export_format") == "scorm_1.2":
             return "scorm_1.2"
-        return _detect_format_from_manifest(zf)
+        return detect_format_from_manifest(zf)
 
-    def _extract_html_content(self, html: str) -> tuple[str, str]:
+    @staticmethod
+    def extract_html_content(html: str) -> tuple[str, str]:
         """Extract title (from h1) and body content from an HTML page."""
         soup = BeautifulSoup(html, "html.parser")
 
@@ -854,9 +847,7 @@ class PackageImportService:
                 return candidate
         return "resource"
 
-    def _extract_week_titles_from_manifest(
-        self, zf: zipfile.ZipFile
-    ) -> dict[int, str]:
+    def _extract_week_titles_from_manifest(self, zf: zipfile.ZipFile) -> dict[int, str]:
         """Parse imsmanifest.xml to get week folder titles."""
         result: dict[int, str] = {}
         if "imsmanifest.xml" not in zf.namelist():

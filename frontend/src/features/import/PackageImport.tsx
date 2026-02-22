@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Upload,
@@ -6,22 +6,29 @@ import {
   FileCheck,
   ArrowRight,
   BookOpen,
-  GraduationCap,
   ClipboardList,
-  Award,
   Loader2,
   AlertCircle,
   Info,
-  Calendar,
+  CheckCircle2,
+  XCircle,
+  FileQuestion,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { analyzePackage, createFromPackage } from '../../services/api';
+import {
+  unifiedAnalyze,
+  unifiedApply,
+  unifiedStatus,
+} from '../../services/api';
 import type {
-  PackageImportPreview,
-  PackageImportResult,
+  UnifiedImportPreview,
+  ImportTaskStatus,
+  FilePreviewItem,
 } from '../../services/api';
 
-type Phase = 'upload' | 'preview' | 'importing' | 'done';
+type Phase = 'upload' | 'preview' | 'processing' | 'done' | 'failed';
 
 const LMS_LABELS: Record<string, string> = {
   canvas: 'Canvas',
@@ -30,29 +37,68 @@ const LMS_LABELS: Record<string, string> = {
   brightspace: 'Brightspace',
 };
 
+const PACKAGE_TYPE_LABELS: Record<string, string> = {
+  imscc: 'IMSCC',
+  scorm: 'SCORM',
+  plain_zip: 'Plain ZIP',
+  round_trip: 'Round-trip',
+};
+
+const PACKAGE_TYPE_COLORS: Record<string, string> = {
+  imscc: 'bg-purple-100 text-purple-800',
+  scorm: 'bg-indigo-100 text-indigo-800',
+  plain_zip: 'bg-gray-100 text-gray-800',
+  round_trip: 'bg-green-100 text-green-800',
+};
+
+const SKIP_REASON_LABELS: Record<string, string> = {
+  unsupported_format: 'Unsupported format',
+  too_large: 'File too large',
+  corrupted: 'Corrupted',
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function PackageImport() {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('upload');
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<PackageImportPreview | null>(null);
-  const [result, setResult] = useState<PackageImportResult | null>(null);
+  const [preview, setPreview] = useState<UnifiedImportPreview | null>(null);
+  const [taskStatus, setTaskStatus] = useState<ImportTaskStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [showSkipped, setShowSkipped] = useState(false);
+  const pollRef = useRef<number | null>(null);
 
   // Editable overrides
   const [unitCode, setUnitCode] = useState('');
   const [unitTitle, setUnitTitle] = useState('');
+
+  // Editable file list (mutable copy of preview.files)
+  const [editableFiles, setEditableFiles] = useState<FilePreviewItem[]>([]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
+  }, []);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);
     setError(null);
     setAnalyzing(true);
     try {
-      const res = await analyzePackage(f);
+      const res = await unifiedAnalyze(f);
       const data = res.data;
       setPreview(data);
       setUnitCode(data.unitCode);
       setUnitTitle(data.unitTitle);
+      setEditableFiles([...data.files]);
       setPhase('preview');
     } catch (err: unknown) {
       const msg =
@@ -79,16 +125,39 @@ export default function PackageImport() {
 
   const handleImport = useCallback(async () => {
     if (!file) return;
-    setPhase('importing');
+    setPhase('processing');
     setError(null);
     try {
-      const res = await createFromPackage(file, {
+      const res = await unifiedApply(file, {
         unitCode: unitCode || undefined,
         unitTitle: unitTitle || undefined,
+        durationWeeks: preview?.durationWeeks,
       });
-      setResult(res.data);
-      setPhase('done');
-      toast.success('Package imported successfully');
+      const taskId = res.data.taskId;
+
+      // Start polling
+      pollRef.current = window.setInterval(async () => {
+        try {
+          const statusRes = await unifiedStatus(taskId);
+          const status = statusRes.data;
+          setTaskStatus(status);
+
+          if (status.status === 'completed') {
+            if (pollRef.current) window.clearInterval(pollRef.current);
+            pollRef.current = null;
+            setPhase('done');
+            toast.success('Package imported successfully');
+          } else if (status.status === 'failed') {
+            if (pollRef.current) window.clearInterval(pollRef.current);
+            pollRef.current = null;
+            setPhase('failed');
+            setError(status.errors.join('; ') || 'Import failed');
+            toast.error('Import failed');
+          }
+        } catch {
+          // Polling error — keep trying
+        }
+      }, 1000);
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -101,14 +170,29 @@ export default function PackageImport() {
       setPhase('preview');
       toast.error('Import failed');
     }
-  }, [file, unitCode, unitTitle]);
+  }, [file, unitCode, unitTitle, preview?.durationWeeks]);
+
+  const updateFile = (index: number, updates: Partial<FilePreviewItem>) => {
+    setEditableFiles(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...updates };
+      return next;
+    });
+  };
+
+  const materialCount = editableFiles.filter(
+    f => f.detectedType === 'material'
+  ).length;
+  const assessmentCount = editableFiles.filter(
+    f => f.detectedType === 'assessment'
+  ).length;
 
   return (
-    <div className='p-6 max-w-3xl mx-auto'>
+    <div className='p-6 max-w-4xl mx-auto'>
       <h1 className='text-2xl font-bold text-gray-900 mb-2'>Import Package</h1>
       <p className='text-gray-600 mb-6'>
-        Import a unit from an IMSCC or SCORM package — from Curriculum Curator
-        or any LMS (Canvas, Moodle, Blackboard).
+        Import a unit from an IMSCC, SCORM, or plain ZIP package. All file types
+        (PDF, DOCX, PPTX, HTML, TXT, MD) are supported.
       </p>
 
       {error && (
@@ -155,11 +239,13 @@ export default function PackageImport() {
       {/* Phase: Preview */}
       {phase === 'preview' && preview && (
         <div className='space-y-6'>
-          {/* Format + source badges */}
+          {/* Package type + source badges */}
           <div className='flex items-center gap-2 flex-wrap'>
             <Package className='h-5 w-5 text-purple-600' />
-            <span className='inline-flex items-center rounded-full bg-purple-100 px-3 py-0.5 text-sm font-medium text-purple-800'>
-              {preview.format === 'scorm_1.2' ? 'SCORM 1.2' : 'IMSCC'}
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium ${PACKAGE_TYPE_COLORS[preview.packageType] ?? 'bg-gray-100 text-gray-800'}`}
+            >
+              {PACKAGE_TYPE_LABELS[preview.packageType] ?? preview.packageType}
             </span>
             {preview.isRoundTrip && (
               <span className='inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800'>
@@ -174,19 +260,18 @@ export default function PackageImport() {
             )}
           </div>
 
-          {/* Info banner for generic imports */}
+          {/* Info banner for non-round-trip */}
           {!preview.isRoundTrip && (
             <div className='p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 flex items-start gap-2 text-sm'>
               <Info className='h-5 w-5 flex-shrink-0 mt-0.5' />
               <span>
-                This package was not exported by Curriculum Curator. Structure
-                has been inferred from the manifest — ULOs, pedagogy, and
-                accreditation data will need to be added after import.
+                Structure has been inferred from the package. Review the file
+                mapping below and adjust types/weeks as needed before importing.
               </span>
             </div>
           )}
 
-          {/* Editable fields */}
+          {/* Editable unit fields */}
           <div className='grid grid-cols-2 gap-4'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>
@@ -212,64 +297,142 @@ export default function PackageImport() {
             </div>
           </div>
 
-          {/* Counts grid */}
+          {/* Summary counts */}
           <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
-            <StatCard
-              icon={GraduationCap}
-              label='ULOs'
-              count={preview.uloCount}
-            />
-            <StatCard
-              icon={BookOpen}
-              label='Materials'
-              count={preview.materialCount}
-            />
+            <StatCard icon={BookOpen} label='Materials' count={materialCount} />
             <StatCard
               icon={ClipboardList}
               label='Assessments'
-              count={preview.assessmentCount}
+              count={assessmentCount}
             />
-            {preview.isRoundTrip ? (
-              <StatCard
-                icon={Award}
-                label='Accreditation'
-                count={
-                  preview.aolMappingCount +
-                  preview.sdgMappingCount +
-                  preview.gcMappingCount
-                }
-              />
-            ) : (
-              <StatCard
-                icon={Calendar}
-                label='Weeks'
-                count={preview.durationWeeks}
-              />
-            )}
+            <StatCard
+              icon={CheckCircle2}
+              label='Processable'
+              count={preview.totalProcessable}
+            />
+            <StatCard
+              icon={XCircle}
+              label='Skipped'
+              count={preview.totalSkipped}
+            />
           </div>
 
-          {/* Unit metadata summary */}
-          <div className='bg-gray-50 rounded-lg p-4 text-sm text-gray-600 grid grid-cols-2 sm:grid-cols-3 gap-2'>
-            <span>
-              <strong>Year:</strong> {preview.year}
-            </span>
-            <span>
-              <strong>Semester:</strong> {preview.semester.replace('_', ' ')}
-            </span>
-            <span>
-              <strong>Weeks:</strong> {preview.durationWeeks}
-            </span>
-            <span>
-              <strong>Credits:</strong> {preview.creditPoints}
-            </span>
-            <span>
-              <strong>Pedagogy:</strong>{' '}
-              {preview.pedagogyType.replace(/-/g, ' ')}
-            </span>
-            <span>
-              <strong>Level:</strong> {preview.difficultyLevel}
-            </span>
+          {/* File table */}
+          <div className='border border-gray-200 rounded-lg overflow-hidden'>
+            <table className='w-full text-sm'>
+              <thead className='bg-gray-50 border-b border-gray-200'>
+                <tr>
+                  <th className='text-left px-3 py-2 font-medium text-gray-600'>
+                    File
+                  </th>
+                  <th className='text-left px-3 py-2 font-medium text-gray-600 w-28'>
+                    Type
+                  </th>
+                  <th className='text-left px-3 py-2 font-medium text-gray-600 w-20'>
+                    Week
+                  </th>
+                  <th className='text-left px-3 py-2 font-medium text-gray-600'>
+                    Title
+                  </th>
+                  <th className='text-right px-3 py-2 font-medium text-gray-600 w-20'>
+                    Size
+                  </th>
+                </tr>
+              </thead>
+              <tbody className='divide-y divide-gray-100'>
+                {editableFiles.map((f, i) => (
+                  <tr key={f.path} className='hover:bg-gray-50'>
+                    <td
+                      className='px-3 py-2 text-gray-700 truncate max-w-[200px]'
+                      title={f.path}
+                    >
+                      <span className='inline-flex items-center gap-1'>
+                        <span className='text-xs text-gray-400 uppercase font-mono'>
+                          {f.extension}
+                        </span>
+                        <span className='truncate'>{f.filename}</span>
+                      </span>
+                    </td>
+                    <td className='px-3 py-2'>
+                      <select
+                        value={f.detectedType}
+                        onChange={e =>
+                          updateFile(i, { detectedType: e.target.value })
+                        }
+                        className='w-full rounded border border-gray-200 px-1.5 py-1 text-xs'
+                      >
+                        <option value='material'>Material</option>
+                        <option value='assessment'>Assessment</option>
+                        <option value='outline'>Outline</option>
+                      </select>
+                    </td>
+                    <td className='px-3 py-2'>
+                      <input
+                        type='number'
+                        min={1}
+                        max={52}
+                        value={f.weekNumber ?? ''}
+                        onChange={e =>
+                          updateFile(i, {
+                            weekNumber: e.target.value
+                              ? Number(e.target.value)
+                              : null,
+                          })
+                        }
+                        placeholder='-'
+                        className='w-full rounded border border-gray-200 px-1.5 py-1 text-xs text-center'
+                      />
+                    </td>
+                    <td className='px-3 py-2'>
+                      <input
+                        type='text'
+                        value={f.title}
+                        onChange={e => updateFile(i, { title: e.target.value })}
+                        className='w-full rounded border border-gray-200 px-1.5 py-1 text-xs'
+                      />
+                    </td>
+                    <td className='px-3 py-2 text-right text-gray-500 text-xs'>
+                      {formatBytes(f.sizeBytes)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          {/* Skipped files */}
+          {preview.skippedFiles.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowSkipped(!showSkipped)}
+                className='flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700'
+              >
+                {showSkipped ? (
+                  <ChevronUp className='h-4 w-4' />
+                ) : (
+                  <ChevronDown className='h-4 w-4' />
+                )}
+                {preview.skippedFiles.length} skipped file
+                {preview.skippedFiles.length !== 1 ? 's' : ''}
+              </button>
+              {showSkipped && (
+                <div className='mt-2 rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-1'>
+                  {preview.skippedFiles.map(sf => (
+                    <div
+                      key={sf.path}
+                      className='flex items-center gap-2 text-sm text-gray-500'
+                    >
+                      <FileQuestion className='h-4 w-4 flex-shrink-0' />
+                      <span className='truncate'>{sf.filename}</span>
+                      <span className='text-xs text-gray-400'>
+                        {SKIP_REASON_LABELS[sf.reason] ?? sf.reason}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Import button */}
           <button
@@ -282,16 +445,70 @@ export default function PackageImport() {
         </div>
       )}
 
-      {/* Phase: Importing */}
-      {phase === 'importing' && (
-        <div className='text-center py-12'>
-          <Loader2 className='h-12 w-12 text-purple-500 animate-spin mx-auto mb-4' />
-          <p className='text-gray-700 font-medium'>Importing package...</p>
+      {/* Phase: Processing */}
+      {phase === 'processing' && (
+        <div className='py-12 space-y-4'>
+          <div className='flex flex-col items-center'>
+            <Loader2 className='h-12 w-12 text-purple-500 animate-spin mb-4' />
+            <p className='text-gray-700 font-medium'>Importing package...</p>
+            {taskStatus && (
+              <p className='text-sm text-gray-500 mt-1'>
+                {taskStatus.currentFile
+                  ? `Processing: ${taskStatus.currentFile}`
+                  : 'Starting...'}
+              </p>
+            )}
+          </div>
+          {taskStatus && taskStatus.totalFiles > 0 && (
+            <div className='max-w-md mx-auto'>
+              <div className='flex justify-between text-xs text-gray-500 mb-1'>
+                <span>
+                  {taskStatus.processedFiles} / {taskStatus.totalFiles} files
+                </span>
+                <span>
+                  {Math.round(
+                    (taskStatus.processedFiles / taskStatus.totalFiles) * 100
+                  )}
+                  %
+                </span>
+              </div>
+              <div className='w-full bg-gray-200 rounded-full h-2'>
+                <div
+                  className='bg-purple-600 h-2 rounded-full transition-all duration-300'
+                  style={{
+                    width: `${(taskStatus.processedFiles / taskStatus.totalFiles) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phase: Failed */}
+      {phase === 'failed' && (
+        <div className='space-y-6'>
+          <div className='bg-red-50 border border-red-200 rounded-xl p-6 text-center'>
+            <XCircle className='h-10 w-10 text-red-600 mx-auto mb-3' />
+            <h2 className='text-lg font-semibold text-gray-900 mb-1'>
+              Import Failed
+            </h2>
+            <p className='text-gray-600 text-sm'>{error}</p>
+          </div>
+          <button
+            onClick={() => {
+              setPhase('preview');
+              setError(null);
+            }}
+            className='w-full flex items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-3 text-gray-700 font-medium hover:bg-gray-200 transition-colors'
+          >
+            Back to Preview
+          </button>
         </div>
       )}
 
       {/* Phase: Done */}
-      {phase === 'done' && result && (
+      {phase === 'done' && taskStatus && (
         <div className='space-y-6'>
           <div className='bg-green-50 border border-green-200 rounded-xl p-6 text-center'>
             <FileCheck className='h-10 w-10 text-green-600 mx-auto mb-3' />
@@ -299,39 +516,32 @@ export default function PackageImport() {
               Import Complete
             </h2>
             <p className='text-gray-600'>
-              <strong>{result.unitCode}</strong> — {result.unitTitle}
+              <strong>{taskStatus.unitCode}</strong> — {taskStatus.unitTitle}
+            </p>
+            <p className='text-sm text-gray-500 mt-1'>
+              {taskStatus.processedFiles} file
+              {taskStatus.processedFiles !== 1 ? 's' : ''} processed
             </p>
           </div>
 
-          <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
-            <StatCard
-              icon={GraduationCap}
-              label='ULOs'
-              count={result.uloCount}
-            />
-            <StatCard
-              icon={BookOpen}
-              label='Materials'
-              count={result.materialCount}
-            />
-            <StatCard
-              icon={ClipboardList}
-              label='Assessments'
-              count={result.assessmentCount}
-            />
-            <StatCard
-              icon={Award}
-              label='Accreditation'
-              count={
-                result.aolMappingCount +
-                result.sdgMappingCount +
-                result.gcMappingCount
-              }
-            />
-          </div>
+          {taskStatus.errors.length > 0 && (
+            <div className='p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm'>
+              <p className='font-medium mb-1'>
+                Some files had issues ({taskStatus.errors.length}):
+              </p>
+              <ul className='list-disc list-inside space-y-0.5'>
+                {taskStatus.errors.slice(0, 5).map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+                {taskStatus.errors.length > 5 && (
+                  <li>...and {taskStatus.errors.length - 5} more</li>
+                )}
+              </ul>
+            </div>
+          )}
 
           <button
-            onClick={() => navigate(`/units/${result.unitId}`)}
+            onClick={() => navigate(`/units/${taskStatus.unitId}`)}
             className='w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-white font-medium hover:bg-purple-700 transition-colors'
           >
             Go to Unit
