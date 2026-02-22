@@ -12,6 +12,7 @@ import {
   Plug,
   Loader2,
   Star,
+  Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -21,6 +22,7 @@ import type { PluginInfo } from '../../services/api';
 import LLMSettings from './LLMSettings';
 import TeachingStyleSettings from './TeachingStyleSettings';
 import QualityRatingSettings from './QualityRatingSettings';
+import ResearchSettings from './ResearchSettings';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -155,6 +157,7 @@ const Settings = () => {
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
+    { id: 'research', label: 'Research', icon: Search },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
@@ -956,6 +959,8 @@ const Settings = () => {
           )}
 
           {activeTab === 'quality-rating' && <QualityRatingSettings />}
+
+          {activeTab === 'research' && <ResearchSettings />}
 
           {activeTab === 'plugins' && (
             <PluginsTab

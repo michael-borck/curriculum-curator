@@ -1,0 +1,210 @@
+import { useState } from 'react';
+import { Save, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import * as researchApi from '../../services/researchApi';
+import type { ResearchSettings as ResearchSettingsType } from '../../types/research';
+
+const ResearchSettings = () => {
+  const [preferredTier, setPreferredTier] = useState(1);
+  const [googleCseApiKey, setGoogleCseApiKey] = useState('');
+  const [googleCseEngineId, setGoogleCseEngineId] = useState('');
+  const [braveSearchApiKey, setBraveSearchApiKey] = useState('');
+  const [tavilyApiKey, setTavilyApiKey] = useState('');
+  const [searxngUrl, setSearxngUrl] = useState('');
+
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggleShow = (key: string) => {
+    setShowKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const settings: ResearchSettingsType = {
+        preferredTier,
+        searchApiKeys: {
+          googleCseApiKey: googleCseApiKey || undefined,
+          googleCseEngineId: googleCseEngineId || undefined,
+          braveSearchApiKey: braveSearchApiKey || undefined,
+          tavilyApiKey: tavilyApiKey || undefined,
+        },
+        searxngUrl: searxngUrl || undefined,
+      };
+      await researchApi.saveResearchSettings(settings);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 3000);
+    } catch (e: unknown) {
+      setError(
+        e instanceof Error ? e.message : 'Failed to save research settings'
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const apiKeyField = (
+    label: string,
+    id: string,
+    value: string,
+    onChange: (v: string) => void,
+    placeholder: string
+  ) => (
+    <div>
+      <label className='block text-sm font-medium text-gray-700 mb-1'>
+        {label}
+      </label>
+      <div className='relative'>
+        <input
+          type={showKeys[id] ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className='w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+          placeholder={placeholder}
+        />
+        <button
+          type='button'
+          onClick={() => toggleShow(id)}
+          className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+        >
+          {showKeys[id] ? (
+            <EyeOff className='w-4 h-4' />
+          ) : (
+            <Eye className='w-4 h-4' />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className='bg-white rounded-lg shadow-md p-6'>
+      <h2 className='text-xl font-semibold mb-2'>Research Settings</h2>
+      <p className='text-sm text-gray-600 mb-6'>
+        Configure your preferred search tier and API keys for web search
+        providers.
+      </p>
+
+      {error && (
+        <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2'>
+          <AlertCircle className='w-5 h-5 text-red-600 mt-0.5 flex-shrink-0' />
+          <span className='text-sm text-red-800'>{error}</span>
+        </div>
+      )}
+
+      <div className='space-y-6'>
+        {/* Preferred Tier */}
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>
+            Preferred Search Tier
+          </label>
+          <select
+            value={preferredTier}
+            onChange={e => setPreferredTier(parseInt(e.target.value))}
+            className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+          >
+            <option value={1}>
+              Tier 1: Academic (OpenAlex + Semantic Scholar)
+            </option>
+            <option value={2}>Tier 2: LLM Native (coming soon)</option>
+            <option value={3}>
+              Tier 3: General Web (requires API keys below)
+            </option>
+            <option value={4}>Tier 4: SearXNG (requires instance URL)</option>
+          </select>
+          <p className='text-xs text-gray-500 mt-1'>
+            Tier 1 (Academic) is always available. Higher tiers require
+            additional configuration.
+          </p>
+        </div>
+
+        {/* API Keys */}
+        <div>
+          <h3 className='font-medium mb-3'>
+            General Web Search API Keys (Tier 3)
+          </h3>
+          <p className='text-xs text-gray-500 mb-3'>
+            Provide at least one to enable Tier 3 web search. Keys are stored
+            encrypted on the server.
+          </p>
+          <div className='space-y-4'>
+            {apiKeyField(
+              'Google CSE API Key',
+              'googleCseApiKey',
+              googleCseApiKey,
+              setGoogleCseApiKey,
+              'AIza...'
+            )}
+            {apiKeyField(
+              'Google CSE Engine ID',
+              'googleCseEngineId',
+              googleCseEngineId,
+              setGoogleCseEngineId,
+              'abc123...'
+            )}
+            {apiKeyField(
+              'Brave Search API Key',
+              'braveSearchApiKey',
+              braveSearchApiKey,
+              setBraveSearchApiKey,
+              'BSA...'
+            )}
+            {apiKeyField(
+              'Tavily API Key',
+              'tavilyApiKey',
+              tavilyApiKey,
+              setTavilyApiKey,
+              'tvly-...'
+            )}
+          </div>
+        </div>
+
+        {/* SearXNG */}
+        <div>
+          <h3 className='font-medium mb-3'>SearXNG Instance (Tier 4)</h3>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>
+              SearXNG URL
+            </label>
+            <input
+              type='text'
+              value={searxngUrl}
+              onChange={e => setSearxngUrl(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+              placeholder='https://searxng.example.com'
+            />
+            <p className='text-xs text-gray-500 mt-1'>
+              URL of your self-hosted SearXNG instance with JSON format enabled.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className='mt-6 flex justify-end'>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
+        >
+          {saved ? (
+            <>
+              <CheckCircle className='h-4 w-4 mr-2' />
+              Saved
+            </>
+          ) : (
+            <>
+              <Save className='h-4 w-4 mr-2' />
+              {saving ? 'Saving...' : 'Save Research Settings'}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ResearchSettings;

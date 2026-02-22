@@ -25,6 +25,7 @@ import DesignCreator from './features/designs/DesignCreator';
 import DesignList from './features/designs/DesignList';
 import DesignDetail from './features/designs/DesignDetail';
 import ImportMaterials from './features/import/ImportMaterials';
+import ResearchPage from './features/research/ResearchPage';
 import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
@@ -174,6 +175,9 @@ function App() {
 
             {/* Import */}
             <Route path='/import' element={<ImportMaterials />} />
+
+            {/* Research */}
+            <Route path='/research' element={<ResearchPage />} />
 
             {/* Materials — legacy route kept for backward compat */}
             <Route
