@@ -29,6 +29,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminology
 from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
@@ -46,9 +47,16 @@ NS_LOMIMSCC = "http://ltsc.ieee.org/xsd/imsccv1p1/LOM/resource"
 class IMSCCExportService:
     """Exports a Unit as an IMS Common Cartridge v1.1 package."""
 
-    def export_unit(self, unit_id: str, db: Session) -> tuple[BytesIO, str]:
+    def export_unit(
+        self,
+        unit_id: str,
+        db: Session,
+        *,
+        target_lms: TargetLMS = TargetLMS.GENERIC,
+    ) -> tuple[BytesIO, str]:
         """Export a unit as .imscc ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
+        terms = get_terminology(target_lms)
 
         # Build all resources: list of (identifier, href, title)
         resources: list[tuple[str, str, str]] = []
@@ -124,6 +132,7 @@ class IMSCCExportService:
             resources,
             data.materials_by_week,
             qti_resources=qti_resources,
+            terms=terms,
         )
 
         # Build metadata JSON
@@ -133,6 +142,7 @@ class IMSCCExportService:
             data.aol_mappings,
             data.sdg_mappings,
             data.gc_mappings,
+            target_lms=target_lms,
         )
 
         # Package into ZIP
@@ -157,8 +167,12 @@ class IMSCCExportService:
         materials_by_week: dict[int, list[WeeklyMaterial]],
         *,
         qti_resources: list[tuple[str, str, str]] | None = None,
+        terms: LMSTerminology | None = None,
     ) -> str:
         """Build imsmanifest.xml content."""
+        if terms is None:
+            terms = get_terminology()
+
         # Register namespaces to avoid ns0: prefixes
         ET.register_namespace("", NS_CP)
         ET.register_namespace("lom", NS_LOM)
@@ -203,7 +217,7 @@ class IMSCCExportService:
             root_item, f"{{{NS_CP}}}item", identifier="overview"
         )
         overview_title = ET.SubElement(overview_item, f"{{{NS_CP}}}title")
-        overview_title.text = "Overview"
+        overview_title.text = terms.overview_label
         for res_id, _href, res_title in resources:
             if res_id.startswith("overview_"):
                 item = ET.SubElement(
@@ -221,7 +235,11 @@ class IMSCCExportService:
         }
         for week_num in sorted(materials_by_week.keys()):
             topic = topic_map.get(week_num)
-            label = unit.topic_label
+            label = (
+                terms.module_label
+                if terms.lms != TargetLMS.GENERIC
+                else unit.topic_label
+            )
             week_title = f"{label} {week_num}"
             if topic and topic.topic_title:
                 week_title = f"{label} {week_num}: {topic.topic_title}"
@@ -256,7 +274,7 @@ class IMSCCExportService:
                 root_item, f"{{{NS_CP}}}item", identifier="assessments"
             )
             assess_title = ET.SubElement(assess_item, f"{{{NS_CP}}}title")
-            assess_title.text = "Assessments"
+            assess_title.text = terms.assessment_label
             for res_id, _href, res_title in assessment_resources:
                 item = ET.SubElement(
                     assess_item,
@@ -273,7 +291,7 @@ class IMSCCExportService:
                 root_item, f"{{{NS_CP}}}item", identifier="quizzes"
             )
             quiz_title_elem = ET.SubElement(quiz_item, f"{{{NS_CP}}}title")
-            quiz_title_elem.text = "Quizzes"
+            quiz_title_elem.text = terms.quiz_label
             for qti_id, _qti_href, qti_title in qti_resources:
                 item = ET.SubElement(
                     quiz_item,
@@ -446,6 +464,8 @@ class IMSCCExportService:
         aol_mappings: list[UnitAoLMapping],
         sdg_mappings: list[UnitSDGMapping],
         gc_mappings: list[ULOGraduateCapabilityMapping],
+        *,
+        target_lms: TargetLMS = TargetLMS.GENERIC,
     ) -> str:
         """Build the curriculum_curator_meta.json for round-trip."""
         # Build GC lookup: ulo_id -> list of capability codes
@@ -457,6 +477,7 @@ class IMSCCExportService:
             "version": "1.0",
             "exported_from": "curriculum-curator",
             "exported_at": datetime.now(UTC).isoformat(),
+            "target_lms": target_lms.value,
             "unit": {
                 "id": str(unit.id),
                 "code": str(unit.code),

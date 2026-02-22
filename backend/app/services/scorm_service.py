@@ -27,6 +27,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminology
 from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
@@ -80,9 +81,16 @@ SCORM_SCRIPT_TAG = '  <script src="../scorm_api.js"></script>'
 class SCORMExportService:
     """Exports a Unit as a SCORM 1.2 package."""
 
-    def export_unit(self, unit_id: str, db: Session) -> tuple[BytesIO, str]:
+    def export_unit(
+        self,
+        unit_id: str,
+        db: Session,
+        *,
+        target_lms: TargetLMS = TargetLMS.GENERIC,
+    ) -> tuple[BytesIO, str]:
         """Export a unit as SCORM 1.2 ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
+        terms = get_terminology(target_lms)
 
         # Build all resources: list of (identifier, href, title)
         resources: list[tuple[str, str, str]] = []
@@ -156,6 +164,7 @@ class SCORMExportService:
             data.weekly_topics,
             resources,
             data.materials_by_week,
+            terms=terms,
         )
 
         # Build metadata JSON
@@ -165,6 +174,7 @@ class SCORMExportService:
             data.aol_mappings,
             data.sdg_mappings,
             data.gc_mappings,
+            target_lms=target_lms,
         )
 
         # Package into ZIP
@@ -188,8 +198,13 @@ class SCORMExportService:
         weekly_topics: list[WeeklyTopic],
         resources: list[tuple[str, str, str]],
         materials_by_week: dict[int, list[WeeklyMaterial]],
+        *,
+        terms: LMSTerminology | None = None,
     ) -> str:
         """Build SCORM 1.2 imsmanifest.xml content."""
+        if terms is None:
+            terms = get_terminology()
+
         ET.register_namespace("", NS_CP)
         ET.register_namespace("adlcp", NS_ADL)
 
@@ -220,7 +235,7 @@ class SCORMExportService:
         # Overview folder
         overview_item = ET.SubElement(org, f"{{{NS_CP}}}item", identifier="overview")
         overview_title = ET.SubElement(overview_item, f"{{{NS_CP}}}title")
-        overview_title.text = "Overview"
+        overview_title.text = terms.overview_label
         for res_id, _href, res_title in resources:
             if res_id.startswith("overview_"):
                 item = ET.SubElement(
@@ -238,7 +253,11 @@ class SCORMExportService:
         }
         for week_num in sorted(materials_by_week.keys()):
             topic = topic_map.get(week_num)
-            label = unit.topic_label
+            label = (
+                terms.module_label
+                if terms.lms != TargetLMS.GENERIC
+                else unit.topic_label
+            )
             week_title = f"{label} {week_num}"
             if topic and topic.topic_title:
                 week_title = f"{label} {week_num}: {topic.topic_title}"
@@ -273,7 +292,7 @@ class SCORMExportService:
                 org, f"{{{NS_CP}}}item", identifier="assessments"
             )
             assess_title = ET.SubElement(assess_item, f"{{{NS_CP}}}title")
-            assess_title.text = "Assessments"
+            assess_title.text = terms.assessment_label
             for res_id, _href, res_title in assessment_resources:
                 item = ET.SubElement(
                     assess_item,
@@ -439,6 +458,8 @@ class SCORMExportService:
         aol_mappings: list[UnitAoLMapping],
         sdg_mappings: list[UnitSDGMapping],
         gc_mappings: list[ULOGraduateCapabilityMapping],
+        *,
+        target_lms: TargetLMS = TargetLMS.GENERIC,
     ) -> str:
         """Build the curriculum_curator_meta.json for round-trip."""
         gc_by_ulo: dict[str, list[str]] = {}
@@ -450,6 +471,7 @@ class SCORMExportService:
             "exported_from": "curriculum-curator",
             "export_format": "scorm_1.2",
             "exported_at": datetime.now(UTC).isoformat(),
+            "target_lms": target_lms.value,
             "unit": {
                 "id": str(unit.id),
                 "code": str(unit.code),

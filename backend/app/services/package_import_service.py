@@ -38,6 +38,7 @@ from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 from app.schemas.package_import import ImportPreview, ImportResult
+from app.services.lms_terminology import detect_lms_to_target, get_terminology
 from app.services.qti_service import qti_importer
 
 if TYPE_CHECKING:
@@ -157,14 +158,25 @@ def detect_source_lms(manifest_text: str) -> str | None:
     return None
 
 
-def classify_item(title: str, resource_type: str | None = None) -> tuple[str, str]:
+def classify_item(
+    title: str,
+    resource_type: str | None = None,
+    *,
+    source_lms: str | None = None,
+) -> tuple[str, str]:
     """Classify a manifest item as assessment or material.
+
+    When *source_lms* is provided, the LMS-specific keyword set is used
+    for classification (broader than the generic set).
 
     Returns ``("assessment", category)`` or ``("material", mat_type)``.
     """
+    terms = get_terminology(detect_lms_to_target(source_lms))
+    assessment_terms = terms.assessment_terms
+
     title_lower = title.lower()
     # Check assessment keywords first
-    for kw in ASSESSMENT_KEYWORDS:
+    for kw in assessment_terms:
         if kw in title_lower:
             category = ASSESSMENT_CATEGORY_MAP.get(kw, "other")
             return ("assessment", category)
@@ -629,7 +641,7 @@ class PackageImportService:
         assessment_count = 0
         for _item_title, children in manifest.top_items:
             for child_title, _href, rtype in children:
-                kind, _cat = classify_item(child_title, rtype)
+                kind, _cat = classify_item(child_title, rtype, source_lms=source_lms)
                 if kind == "assessment":
                     assessment_count += 1
                 else:
@@ -737,7 +749,7 @@ class PackageImportService:
             topic_count += 1
 
             for child_title, href, rtype in children:
-                kind, category = classify_item(child_title, rtype)
+                kind, category = classify_item(child_title, rtype, source_lms=source_lms)
 
                 # Read HTML content if available
                 body_html = ""

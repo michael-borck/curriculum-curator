@@ -277,6 +277,7 @@ const UnitPage = () => {
   const [exporting, setExporting] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
+  const [targetLms, setTargetLms] = useState<string>('generic');
 
   // Close export menu on click outside
   useEffect(() => {
@@ -340,8 +341,12 @@ const UnitPage = () => {
     try {
       setExporting(true);
       const token = localStorage.getItem('token');
+      const lmsParam =
+        format !== 'html' && targetLms !== 'generic'
+          ? `?target_lms=${targetLms}`
+          : '';
       const response = await axios.get(
-        `/api/units/${unitId}/export/${format}`,
+        `/api/units/${unitId}/export/${format}${lmsParam}`,
         {
           responseType: 'blob',
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -508,8 +513,24 @@ const UnitPage = () => {
                 </Button>
                 {exportMenuOpen && (
                   <div className='absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                    <div className='px-4 py-2 border-b border-gray-100'>
+                      <label className='block text-xs font-medium text-gray-500 mb-1'>
+                        Target LMS
+                      </label>
+                      <select
+                        value={targetLms}
+                        onChange={e => setTargetLms(e.target.value)}
+                        className='w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-purple-400'
+                      >
+                        <option value='generic'>Generic</option>
+                        <option value='canvas'>Canvas</option>
+                        <option value='moodle'>Moodle</option>
+                        <option value='blackboard'>Blackboard</option>
+                        <option value='brightspace'>Brightspace</option>
+                      </select>
+                    </div>
                     <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg'
+                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
                       onClick={() => handleExport('imscc')}
                     >
                       Export IMSCC v1.1 (.imscc)
