@@ -93,8 +93,8 @@ We aim to respond within 48 hours and provide a fix within 7 days for critical i
 ## 📚 Security Documentation
 
 For detailed information, see:
-- [ADR-0010: Security Hardening](docs/adr/0010-security-hardening.md)
-- [ADR-0011: Deployment Best Practices](docs/adr/0011-deployment-best-practices.md)
+- [ADR-010: Security Hardening](docs/adr/010-security-hardening.md)
+- [ADR-011: Deployment Best Practices](docs/adr/011-deployment-best-practices.md)
 - [Authentication & Security Guide](docs/guides/authentication-security.md)
 - [Production Deployment Guide](docs/guides/production-deployment.md)
 

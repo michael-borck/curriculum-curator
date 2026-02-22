@@ -95,7 +95,7 @@
 - [ ] `POST /api/import/imscc/{unit_id}` — upload .imscc file
 - [ ] Parse `imsmanifest.xml` — extract organisations, resources, metadata
 - [ ] Map CC content types to material types (webcontent → lecture/reading, assessment → quiz)
-- [ ] Extract HTML resources → convert to markdown (strip styling per ADR-0038)
+- [ ] Extract HTML resources → convert to markdown (strip styling per ADR-038)
 - [ ] Extract embedded files (images, attachments) → store via image infrastructure
 - [ ] Create materials in unit with week assignment (from organisation structure)
 - [ ] Return import summary (materials created, items skipped, warnings)

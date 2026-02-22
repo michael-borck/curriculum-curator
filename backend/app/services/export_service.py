@@ -5,7 +5,7 @@ Converts Markdown content to HTML, PDF, DOCX, and PPTX formats.
 PDF rendering uses the Pandoc → Typst pipeline (no LaTeX required).
 All other formats use Pandoc directly.
 
-See ADR-0033 for the decision to replace Quarto with Pandoc + Typst.
+See ADR-033 for the decision to replace Quarto with Pandoc + Typst.
 """
 
 import logging

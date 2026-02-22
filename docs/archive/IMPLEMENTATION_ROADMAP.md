@@ -385,7 +385,7 @@ Features:
 
 **Status**: Planned (Post-MVP)
 **Timeline**: 13-19 weeks after current MVP completion
-**Documentation**: [ADR-0013](../adr/0013-git-backed-content-storage.md) | [Git Migration Plan](GIT_MIGRATION_PLAN.md)
+**Documentation**: [ADR-013](../adr/013-git-backed-content-storage.md) | [Git Migration Plan](GIT_MIGRATION_PLAN.md)
 
 ### Overview
 After completing the current MVP implementation, the system will undergo a major architectural enhancement to migrate from database-centric content storage to a Git-backed architecture. This migration will provide:

@@ -49,15 +49,15 @@
 | **One-Click Unit Scaffold** | 1.6, 5.6 | "Quick Scaffold" button → AI generates ULOs, topics, assessments → review modal → accept/edit/discard |
 | **Fill the Gaps** | 1.7, 5.10, 2.8 | `POST /api/ai/fill-gap` — generates missing ULOs, materials, or assessments using unit context |
 | **Per-Field AI Assist** | 5.9 | AIAssistField component — inline Sparkles button on text fields (generate, improve, suggest) |
-| **AI Assistance Levels** | ADR-0032 | Three levels (none/refine/create) — lecturer controls AI involvement |
+| **AI Assistance Levels** | ADR-032 | Three levels (none/refine/create) — lecturer controls AI involvement |
 | **Version Control** | 13.1–13.4 | Git-backed per-unit repositories — save, view history, diff, restore |
 | **Editor Modes** | 15.1–15.2 | EditorModeToggle — simple (TipTap) / advanced (YAML + markdown) |
 | **Import → Edit Flow** | 6.1–6.3, 6.5, 6.7 | Upload → analysis → review structure → assign to weeks → create unit |
 | **Unit Duplication** | 1.5 | `POST /api/units/{id}/duplicate` — deep copy all relationships |
-| **Soft Delete / Archive** | ADR-0031 | Archive with full restore, two-step delete modal in UI |
+| **Soft Delete / Archive** | ADR-031 | Archive with full restore, two-step delete modal in UI |
 | **Web Search** | 12.1 | SearXNG integration with academic domain prioritisation |
-| **SCORM 1.2 Export** | 9.6 | ADR-0034 — universal LMS compatibility alongside IMSCC v1.1 |
-| **Document Export** | 9.4 | ADR-0033 — Pandoc + Typst pipeline for PDF, DOCX, PPTX, HTML |
+| **SCORM 1.2 Export** | 9.6 | ADR-034 — universal LMS compatibility alongside IMSCC v1.1 |
+| **Document Export** | 9.4 | ADR-033 — Pandoc + Typst pipeline for PDF, DOCX, PPTX, HTML |
 | **Progressive Quality** | 17.3 | Scaffold + fill-gap respect existing context |
 
 ---
@@ -70,9 +70,9 @@
 
 **What already exists:**
 - `LOCAL_MODE` — auto-login, no JWT, privacy-first (working)
-- PyInstaller compatibility audit — ADR-0024, all dependency blockers identified
-- Ollama sidecar architecture — ADR-0025
-- Pandoc + Typst export service — ADR-0033 (working in Docker)
+- PyInstaller compatibility audit — ADR-024, all dependency blockers identified
+- Ollama sidecar architecture — ADR-025
+- Pandoc + Typst export service — ADR-033 (working in Docker)
 - Electron scaffolding started in `desktop/` directory
 
 **What was delivered:**
@@ -93,7 +93,7 @@
 |----------|---------|
 | **PDF/PPTX export** | Pandoc + Typst bundled as `extraResources` in Electron. Docker also bundles both. Path detection already wired in `backend.ts`. |
 | **Ollama** | Detect on startup, auto-start if installed, guide user to download if missing. Done. |
-| **Backend bundling** | PyInstaller single-file executable (ADR-0024 audit done). Not yet implemented. |
+| **Backend bundling** | PyInstaller single-file executable (ADR-024 audit done). Not yet implemented. |
 
 ### 3B. LMS Import/Export Roundtrip
 
@@ -157,8 +157,8 @@ These are explicitly out of scope to keep focus:
 | No forced workflow | Educators have different preferences. The system works whether they start with ULOs, a title, a PDF, or one material. |
 | IMSCC v1.1 (not 1.2) | Moodle only supports CC 1.0–1.1. Our webcontent-only exports are identical across versions. v1.1 maximises LMS compatibility. |
 | SCORM 1.2 (not 2004) | SCORM 1.2 is universally supported. 2004 adds sequencing complexity we don't need for content delivery. |
-| Pandoc + Typst (not Quarto) | ADR-0033. Pandoc + Typst = ~60MB vs Quarto's ~500MB+. No LaTeX needed. Easier to bundle in Docker and desktop app. |
+| Pandoc + Typst (not Quarto) | ADR-033. Pandoc + Typst = ~60MB vs Quarto's ~500MB+. No LaTeX needed. Easier to bundle in Docker and desktop app. |
 | Electron + external tools for desktop | Accept "install these tools" friction for Pandoc/Typst/Ollama in exchange for shipping sooner. Docker remains the zero-friction option. |
-| AI assistance levels | ADR-0032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
+| AI assistance levels | ADR-032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
 
 *Last updated: 2026-02-21*

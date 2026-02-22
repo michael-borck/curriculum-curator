@@ -2,7 +2,7 @@
 API endpoints for document export using Pandoc + Typst.
 
 Replaces the Quarto-based content_export routes with a simpler,
-more bundleable export pipeline. See ADR-0033.
+more bundleable export pipeline. See ADR-033.
 """
 
 import logging

@@ -15,13 +15,13 @@ Architecture Decision Records capture important architectural decisions made dur
 
 ## ADR Index
 
-- [ADR-0001](0001-record-architecture-decisions.md) - Record Architecture Decisions
-- [ADR-0002](0002-fasthtml-web-framework.md) - Use FastHTML as Web Framework
-- [ADR-0003](0003-plugin-architecture.md) - Plugin Architecture for Validators and Remediators
-- [ADR-0004](0004-teaching-philosophy-system.md) - Teaching Philosophy and Style System
-- [ADR-0005](0005-hybrid-storage-approach.md) - Hybrid Database and Filesystem Storage
-- [ADR-0006](0006-pure-fasthtml-no-javascript.md) - Pure FastHTML Without JavaScript
-- [ADR-0007](0007-simple-authentication-internal-network.md) - Simple Authentication for Internal Network Deployment
+- [ADR-001](001-record-architecture-decisions.md) - Record Architecture Decisions
+- [ADR-002](002-fasthtml-web-framework.md) - Use FastHTML as Web Framework
+- [ADR-003](003-plugin-architecture.md) - Plugin Architecture for Validators and Remediators
+- [ADR-004](004-teaching-philosophy-system.md) - Teaching Philosophy and Style System
+- [ADR-005](005-hybrid-storage-approach.md) - Hybrid Database and Filesystem Storage
+- [ADR-006](006-pure-fasthtml-no-javascript.md) - Pure FastHTML Without JavaScript
+- [ADR-007](007-simple-authentication-internal-network.md) - Simple Authentication for Internal Network Deployment
 
 ## Creating a New ADR
 

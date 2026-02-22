@@ -12,10 +12,10 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [0018](0018-workflow-flexibility-philosophy.md) | **Workflow Flexibility Philosophy** | **Accepted** |
-| [0020](0020-ai-optional-user-empowerment.md) | **AI-Optional User Empowerment** | **Accepted** |
-| [0037](0037-privacy-first-byok-architecture.md) | **Privacy-First, Local-First, BYOK** | **Accepted** |
-| [0040](0040-ambient-context-pattern.md) | **Ambient Context — Best Guess + Human Override** | **Accepted** |
+| [018](018-workflow-flexibility-philosophy.md) | **Workflow Flexibility Philosophy** | **Accepted** |
+| [020](020-ai-optional-user-empowerment.md) | **AI-Optional User Empowerment** | **Accepted** |
+| [037](037-privacy-first-byok-architecture.md) | **Privacy-First, Local-First, BYOK** | **Accepted** |
+| [040](040-ambient-context-pattern.md) | **Ambient Context — Best Guess + Human Override** | **Accepted** |
 
 > *"Assist any workflow, don't enforce"* - This principle informs all other architectural decisions.
 >
@@ -29,64 +29,64 @@ An Architecture Decision Record captures an important architectural decision mad
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [0016](0016-react-typescript-frontend.md) | React + TypeScript Frontend | **Accepted** |
-| [0017](0017-fastapi-rest-backend.md) | FastAPI REST Backend with JWT Auth | **Accepted** |
-| [0019](0019-database-abstraction-sqlalchemy.md) | Database Abstraction with SQLAlchemy | **Accepted** |
-| [0021](0021-web-search-citation-integration.md) | Web Search and Citation Integration | **Accepted** |
-| [0022](0022-content-type-system-evolution.md) | Content Type System Evolution | **Accepted** |
-| [0023](0023-file-import-processing-architecture.md) | File Import and Processing Architecture | **Accepted** |
-| [0015](0015-content-format-and-export-strategy.md) | Content Format and Export Strategy | Proposed |
-| [0014](0014-litellm-unified-llm-abstraction.md) | LiteLLM for Unified LLM Abstraction | Accepted |
-| [0024](0024-local-mode-pyinstaller-compatibility.md) | LOCAL_MODE and PyInstaller Compatibility | Accepted |
-| [0025](0025-ollama-docker-sidecar-local-ai.md) | Ollama Docker Sidecar for Local AI | Accepted |
-| [0026](0026-single-container-deployment.md) | Single-Container Deployment (FastAPI Serves SPA) | Accepted |
-| [0027](0027-camelcase-api-serialization.md) | CamelCase API Serialization Convention | Accepted |
-| [0028](0028-australian-university-terminology.md) | Australian University Terminology | Accepted |
-| [0029](0029-accreditation-framework-mappings.md) | Accreditation Framework Mappings (AoL, Grad Caps, SDGs) | Accepted |
-| [0030](0030-ims-common-cartridge-export.md) | IMS Common Cartridge Export | Accepted |
-| [0031](0031-soft-delete-units.md) | Soft-Delete Units | Accepted |
-| [0032](0032-ai-assistance-levels.md) | AI Assistance Levels | Accepted |
-| [0033](0033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
-| [0035](0035-electron-desktop-app.md) | Electron Desktop App with Embedded Backend | Accepted |
-| [0036](0036-learning-design-generation-spec.md) | Learning Design as Canonical Generation Spec | Accepted |
-| [0037](0037-privacy-first-byok-architecture.md) | Privacy-First, Local-First, BYOK Architecture | Accepted |
-| [0038](0038-content-not-presentation.md) | Content Curation, Not Presentation Design | Accepted |
-| [0039](0039-tiered-research-architecture.md) | Tiered Research Architecture with Propose/Apply Workflows | Accepted |
-| [0013](0013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
+| [016](016-react-typescript-frontend.md) | React + TypeScript Frontend | **Accepted** |
+| [017](017-fastapi-rest-backend.md) | FastAPI REST Backend with JWT Auth | **Accepted** |
+| [019](019-database-abstraction-sqlalchemy.md) | Database Abstraction with SQLAlchemy | **Accepted** |
+| [021](021-web-search-citation-integration.md) | Web Search and Citation Integration | **Accepted** |
+| [022](022-content-type-system-evolution.md) | Content Type System Evolution | **Accepted** |
+| [023](023-file-import-processing-architecture.md) | File Import and Processing Architecture | **Accepted** |
+| [015](015-content-format-and-export-strategy.md) | Content Format and Export Strategy | Proposed |
+| [014](014-litellm-unified-llm-abstraction.md) | LiteLLM for Unified LLM Abstraction | Accepted |
+| [024](024-local-mode-pyinstaller-compatibility.md) | LOCAL_MODE and PyInstaller Compatibility | Accepted |
+| [025](025-ollama-docker-sidecar-local-ai.md) | Ollama Docker Sidecar for Local AI | Accepted |
+| [026](026-single-container-deployment.md) | Single-Container Deployment (FastAPI Serves SPA) | Accepted |
+| [027](027-camelcase-api-serialization.md) | CamelCase API Serialization Convention | Accepted |
+| [028](028-australian-university-terminology.md) | Australian University Terminology | Accepted |
+| [029](029-accreditation-framework-mappings.md) | Accreditation Framework Mappings (AoL, Grad Caps, SDGs) | Accepted |
+| [030](030-ims-common-cartridge-export.md) | IMS Common Cartridge Export | Accepted |
+| [031](031-soft-delete-units.md) | Soft-Delete Units | Accepted |
+| [032](032-ai-assistance-levels.md) | AI Assistance Levels | Accepted |
+| [033](033-pandoc-typst-export-engine.md) | Pandoc + Typst Export Engine | Accepted |
+| [035](035-electron-desktop-app.md) | Electron Desktop App with Embedded Backend | Accepted |
+| [036](036-learning-design-generation-spec.md) | Learning Design as Canonical Generation Spec | Accepted |
+| [037](037-privacy-first-byok-architecture.md) | Privacy-First, Local-First, BYOK Architecture | Accepted |
+| [038](038-content-not-presentation.md) | Content Curation, Not Presentation Design | Accepted |
+| [039](039-tiered-research-architecture.md) | Tiered Research Architecture with Propose/Apply Workflows | Accepted |
+| [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
-- [ADR-0001: Record Architecture Decisions](0001-record-architecture-decisions.md) - Why we use ADRs
+- [ADR-001: Record Architecture Decisions](001-record-architecture-decisions.md) - Why we use ADRs
 
 ### Architecture
-- [ADR-0003: Plugin Architecture](0003-plugin-architecture.md) - Extensibility approach
-- [ADR-0005: Hybrid Storage Approach](0005-hybrid-storage-approach.md) - Data persistence strategy
-- [ADR-0019: Database Abstraction](0019-database-abstraction-sqlalchemy.md) - SQLAlchemy ORM for portability
-- [ADR-0021: Web Search and Citation Integration](0021-web-search-citation-integration.md) - Academic research integration
-- [ADR-0023: File Import and Processing Architecture](0023-file-import-processing-architecture.md) - Multi-format document processing
-- [ADR-0026: Single-Container Deployment](0026-single-container-deployment.md) - FastAPI serves the React SPA directly
-- [ADR-0027: CamelCase API Serialization](0027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
-- [ADR-0030: IMS Common Cartridge Export](0030-ims-common-cartridge-export.md) - CC v1.2 export for LMS interoperability
-- [ADR-0035: Electron Desktop App](0035-electron-desktop-app.md) - Embedded backend with optional Ollama for offline use
-- [ADR-0037: Privacy-First, BYOK Architecture](0037-privacy-first-byok-architecture.md) - Local data, no telemetry, user-configured AI providers
-- [ADR-0038: Content Curation, Not Presentation Design](0038-content-not-presentation.md) - Strip on import, theme on export, semantic editing
-- [ADR-0039: Tiered Research Architecture](0039-tiered-research-architecture.md) - Four-tier search (academic→LLM→web API→SearXNG) with propose/apply synthesis
+- [ADR-003: Plugin Architecture](003-plugin-architecture.md) - Extensibility approach
+- [ADR-005: Hybrid Storage Approach](005-hybrid-storage-approach.md) - Data persistence strategy
+- [ADR-019: Database Abstraction](019-database-abstraction-sqlalchemy.md) - SQLAlchemy ORM for portability
+- [ADR-021: Web Search and Citation Integration](021-web-search-citation-integration.md) - Academic research integration
+- [ADR-023: File Import and Processing Architecture](023-file-import-processing-architecture.md) - Multi-format document processing
+- [ADR-026: Single-Container Deployment](026-single-container-deployment.md) - FastAPI serves the React SPA directly
+- [ADR-027: CamelCase API Serialization](027-camelcase-api-serialization.md) - snake_case Python, camelCase JSON
+- [ADR-030: IMS Common Cartridge Export](030-ims-common-cartridge-export.md) - CC v1.2 export for LMS interoperability
+- [ADR-035: Electron Desktop App](035-electron-desktop-app.md) - Embedded backend with optional Ollama for offline use
+- [ADR-037: Privacy-First, BYOK Architecture](037-privacy-first-byok-architecture.md) - Local data, no telemetry, user-configured AI providers
+- [ADR-038: Content Curation, Not Presentation Design](038-content-not-presentation.md) - Strip on import, theme on export, semantic editing
+- [ADR-039: Tiered Research Architecture](039-tiered-research-architecture.md) - Four-tier search (academic→LLM→web API→SearXNG) with propose/apply synthesis
 
 ### Domain Model & User Experience
-- [ADR-0004: Teaching Philosophy System](0004-teaching-philosophy-system.md) - Personalization framework
-- [ADR-0018: Workflow Flexibility](0018-workflow-flexibility-philosophy.md) - Assist, don't enforce
-- [ADR-0020: AI-Optional User Empowerment](0020-ai-optional-user-empowerment.md) - AI assists, never gates
-- [ADR-0022: Content Type System Evolution](0022-content-type-system-evolution.md) - Comprehensive content categorization
-- [ADR-0028: Australian University Terminology](0028-australian-university-terminology.md) - Unit (not Course) as core entity
-- [ADR-0029: Accreditation Framework Mappings](0029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
-- [ADR-0036: Learning Design as Generation Spec](0036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
-- [ADR-0040: Ambient Context](0040-ambient-context-pattern.md) - Best guess + human override for working context
+- [ADR-004: Teaching Philosophy System](004-teaching-philosophy-system.md) - Personalization framework
+- [ADR-018: Workflow Flexibility](018-workflow-flexibility-philosophy.md) - Assist, don't enforce
+- [ADR-020: AI-Optional User Empowerment](020-ai-optional-user-empowerment.md) - AI assists, never gates
+- [ADR-022: Content Type System Evolution](022-content-type-system-evolution.md) - Comprehensive content categorization
+- [ADR-028: Australian University Terminology](028-australian-university-terminology.md) - Unit (not Course) as core entity
+- [ADR-029: Accreditation Framework Mappings](029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
+- [ADR-036: Learning Design as Generation Spec](036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
+- [ADR-040: Ambient Context](040-ambient-context-pattern.md) - Best guess + human override for working context
 
 ### Authentication & Security
-- [ADR-0007: Simple Authentication for Internal Network](0007-simple-authentication-internal-network.md) - Basic auth approach
-- [ADR-0008: Email Verification with Cross-Device Support](0008-email-verification-cross-device.md) - Dual-method verification
-- [ADR-0009: Self-Service Password Reset](0009-self-service-password-reset.md) - Email-based password recovery
-- [ADR-0010: Security Hardening](0010-security-hardening.md) - Comprehensive security measures
-- [ADR-0011: Deployment Best Practices](0011-deployment-best-practices.md) - Production deployment guidelines
+- [ADR-007: Simple Authentication for Internal Network](007-simple-authentication-internal-network.md) - Basic auth approach
+- [ADR-008: Email Verification with Cross-Device Support](008-email-verification-cross-device.md) - Dual-method verification
+- [ADR-009: Self-Service Password Reset](009-self-service-password-reset.md) - Email-based password recovery
+- [ADR-010: Security Hardening](010-security-hardening.md) - Comprehensive security measures
+- [ADR-011: Deployment Best Practices](011-deployment-best-practices.md) - Production deployment guidelines
 
 ### Superseded Decisions (Historical)
 
@@ -94,9 +94,9 @@ These ADRs document previous architectural directions that have since been repla
 
 | ADR | Title | Superseded By |
 |-----|-------|---------------|
-| [0002](0002-fasthtml-web-framework.md) | FastHTML Web Framework | ADR-0016 |
-| [0006](0006-pure-fasthtml-no-javascript.md) | Pure FastHTML Without JavaScript | ADR-0016 |
-| [0012](0012-framework-migration-fasthtml-to-nicegui.md) | Framework Migration to NiceGUI | ADR-0016 |
+| [002](002-fasthtml-web-framework.md) | FastHTML Web Framework | ADR-016 |
+| [006](006-pure-fasthtml-no-javascript.md) | Pure FastHTML Without JavaScript | ADR-016 |
+| [012](012-framework-migration-fasthtml-to-nicegui.md) | Framework Migration to NiceGUI | ADR-016 |
 
 **Evolution Summary**: The project started with FastHTML (server-rendered Python), planned a migration to NiceGUI (never implemented), and ultimately adopted React + TypeScript frontend with FastAPI backend for the production stack.
 

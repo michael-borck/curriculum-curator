@@ -5,7 +5,7 @@
 **Status**: Phase 1 & 2 Complete - Ready for Testing  
 **Created**: 2025-12-01  
 **Updated**: 2025-12-01  
-**Related ADRs**: [ADR-0015](../docs/adr/0015-content-format-and-export-strategy.md), [ADR-0016](../docs/adr/0016-react-typescript-frontend.md), [ADR-0017](../docs/adr/0017-fastapi-rest-backend.md)
+**Related ADRs**: [ADR-015](../docs/adr/015-content-format-and-export-strategy.md), [ADR-016](../docs/adr/016-react-typescript-frontend.md), [ADR-017](../docs/adr/017-fastapi-rest-backend.md)
 
 ---
 
@@ -20,7 +20,7 @@
 | Content Save | ✅ Fixed | API path and field names corrected |
 | Content View | ✅ Fixed | API integration complete |
 | Content Edit | ✅ Fixed | Edit mode in ContentCreator |
-| Content Export | ⏳ Planned | Per ADR-0015 (Quarto) |
+| Content Export | ⏳ Planned | Per ADR-015 (Quarto) |
 
 ---
 
@@ -70,7 +70,7 @@
 
 ---
 
-## Phase 3: TipTap Markdown Integration (Per ADR-0015)
+## Phase 3: TipTap Markdown Integration (Per ADR-015)
 
 ### 3.1 Add tiptap-markdown Extension
 - [ ] **Frontend**: Install `tiptap-markdown` package
@@ -84,7 +84,7 @@
 
 ---
 
-## Phase 4: Export Functionality (Per ADR-0015)
+## Phase 4: Export Functionality (Per ADR-015)
 
 ### 4.1 Install Quarto Backend
 - [ ] **Backend**: Add Quarto dependency to Docker/deployment

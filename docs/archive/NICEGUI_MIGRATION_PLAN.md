@@ -3,7 +3,7 @@
 **Document Version**: 1.0  
 **Date**: 2025-08-03  
 **Status**: Active Implementation Plan  
-**Related ADR**: [ADR-0012: Framework Migration](../adr/0012-framework-migration-fasthtml-to-nicegui.md)
+**Related ADR**: [ADR-012: Framework Migration](../adr/012-framework-migration-fasthtml-to-nicegui.md)
 
 ## Executive Summary
 
@@ -47,7 +47,7 @@ This document outlines the complete migration strategy from FastHTML to NiceGUI 
 **Tasks:**
 - [x] Create `python-fasthtml` archive branch
 - [x] Move FastHTML code to `reference-implementations/python-fasthtml-version/`
-- [x] Create ADR-0012 documenting migration decision
+- [x] Create ADR-012 documenting migration decision
 - [x] Create this migration plan document
 - [ ] Clean main branch of FastHTML code
 - [ ] Initialize NiceGUI project structure

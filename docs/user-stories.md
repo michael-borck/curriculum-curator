@@ -125,9 +125,9 @@
 | 9.1 | As a **Creator**, I want to export my unit as an IMS Common Cartridge (.imscc) file so I can import it into my LMS (Moodle, Canvas, Blackboard). | P1 | **Done** — IMSCC v1.1 |
 | 9.2 | As a **Creator**, I want to import an .imscc file from my LMS to create a unit in the system. | P3 | **Done** — round-trip + generic LMS packages |
 | 9.3 | As a **Creator**, I want to export content as standalone HTML (with inline styles) for pasting into an LMS. | P3 | **Done** |
-| 9.4 | As a **Creator**, I want to export my unit as PDF, DOCX, or PPTX. | P2 | **Done** — Pandoc + Typst (ADR-0033) |
+| 9.4 | As a **Creator**, I want to export my unit as PDF, DOCX, or PPTX. | P2 | **Done** — Pandoc + Typst (ADR-033) |
 | 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Done** |
-| 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-0034 |
+| 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-034 |
 | 9.7 | As a **Creator**, I want to import a SCORM package from my LMS to create a unit in the system. | P3 | **Done** |
 | 9.8 | As a **Creator**, I want to import QTI quiz data from IMSCC/SCORM packages so auto-graded quizzes transfer into the system. | P4 | **Planned** |
 | 9.9 | As a **Creator**, I want a mapping table between LMS terminology (Canvas Modules, Moodle Sections, Blackboard Content Areas) and our internal naming (Weeks, Materials, Assessments) so imports are correctly classified. | P4 | **Planned** |
@@ -164,7 +164,7 @@
 | 12.1 | As a **Creator**, I want to search the web for academic sources to reference in my materials. | P2 | **Done** — SearXNG integration with academic domain prioritisation |
 | 12.2 | As a **Creator**, I want to save research sources with metadata (authors, year, DOI, URL). | P1 | **Done** |
 | 12.3 | As a **Creator**, I want to generate citations in multiple formats (APA7, Harvard, MLA, Chicago, IEEE, Vancouver). | P1 | **Done** |
-| 12.4 | As a **Creator**, I want to search for similar courses/units across the internet, see results with titles and descriptions, select the ones I like, and use those as a basis for my unit structure. | P3 | **Done** — Research page with tiered academic search, URL extraction, scaffold/compare/reading-list actions (ADR-0039) |
+| 12.4 | As a **Creator**, I want to search for similar courses/units across the internet, see results with titles and descriptions, select the ones I like, and use those as a basis for my unit structure. | P3 | **Done** — Research page with tiered academic search, URL extraction, scaffold/compare/reading-list actions (ADR-039) |
 
 ## 13. Version Control & History
 
@@ -202,7 +202,7 @@
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 16.1 | As a **user**, I want to download and run Curriculum Curator as a desktop app (macOS, Windows, Linux) without needing Docker or command-line tools. | P3 | **Done** — Electron app with embedded PyInstaller backend (ADR-0035) |
+| 16.1 | As a **user**, I want to download and run Curriculum Curator as a desktop app (macOS, Windows, Linux) without needing Docker or command-line tools. | P3 | **Done** — Electron app with embedded PyInstaller backend (ADR-035) |
 | 16.2 | As a **user**, I want the desktop app to work with a locally installed Ollama for AI, so I don't need cloud API keys. | P3 | **Done** — Ollama detection, auto-start, and graceful shutdown |
 | 16.3 | As a **user**, I want PDF/PPTX export in the desktop app, even if I need to install Pandoc separately and point the app to it. | P3 | **Done** — Pandoc + Typst bundled in app resources |
 | 16.4 | As a **user**, I want the desktop app to auto-update so I don't have to re-download each release. | P3 | **Done** — electron-updater with GitHub Releases |
