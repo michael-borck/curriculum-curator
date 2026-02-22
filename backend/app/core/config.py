@@ -91,6 +91,12 @@ class Settings(BaseSettings):
     SEARXNG_URL: str = "http://localhost:8080"  # SearXNG instance URL
     SEARXNG_TIMEOUT: int = 30  # Search timeout in seconds
 
+    # Tier 3 Search APIs (user can also set per-account via research settings)
+    GOOGLE_CSE_API_KEY: str | None = None
+    GOOGLE_CSE_ENGINE_ID: str | None = None
+    BRAVE_SEARCH_API_KEY: str | None = None
+    TAVILY_API_KEY: str | None = None
+
     class Config:
         env_file = ".env"
         case_sensitive = True

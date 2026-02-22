@@ -453,6 +453,13 @@ except ImportError as e:
     logger.warning(f"Failed to load research_sources routes: {e}")
 
 try:
+    from app.api.routes import research
+
+    app.include_router(research.router, prefix="/api/research", tags=["research"])
+except ImportError as e:
+    logger.warning(f"Failed to load research routes: {e}")
+
+try:
     from app.api.routes import ollama
 
     app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"])
