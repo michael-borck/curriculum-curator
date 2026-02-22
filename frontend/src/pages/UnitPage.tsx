@@ -17,7 +17,10 @@ import {
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
 import api from '../services/api';
-import axios from 'axios';
+import {
+  downloadExport,
+  downloadMaterialsExport,
+} from '../utils/downloadExport';
 import ULOManager from '../components/UnitStructure/ULOManager';
 import { AssessmentsManager } from '../components/UnitStructure/AssessmentsManager';
 import { UnitStructureDashboard } from '../components/UnitStructure/UnitStructureDashboard';
@@ -305,27 +308,7 @@ const UnitPage = () => {
     setMaterialsExportOpen(false);
     try {
       setExporting(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `/api/units/${unitId}/export/materials?format=${format}`,
-        {
-          responseType: 'blob',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-      const disposition = response.headers['content-disposition'] as
-        | string
-        | undefined;
-      const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-      const filename = filenameMatch?.[1] ?? 'materials.zip';
-      const url = URL.createObjectURL(response.data as Blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      a.remove();
+      await downloadMaterialsExport(unitId, format);
       toast.success(`Materials exported as ${format.toUpperCase()} ZIP`);
     } catch (err) {
       toast.error('Failed to export materials');
@@ -338,53 +321,17 @@ const UnitPage = () => {
   const handleExport = async (format: 'imscc' | 'scorm' | 'html') => {
     if (!unitId) return;
     setExportMenuOpen(false);
+    const label =
+      format === 'imscc'
+        ? 'IMSCC v1.1'
+        : format === 'html'
+          ? 'HTML'
+          : 'SCORM 1.2';
     try {
       setExporting(true);
-      const token = localStorage.getItem('token');
-      const lmsParam =
-        format !== 'html' && targetLms !== 'generic'
-          ? `?target_lms=${targetLms}`
-          : '';
-      const response = await axios.get(
-        `/api/units/${unitId}/export/${format}${lmsParam}`,
-        {
-          responseType: 'blob',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-      const disposition = response.headers['content-disposition'] as
-        | string
-        | undefined;
-      const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-      const fallback =
-        format === 'imscc'
-          ? 'export.imscc'
-          : format === 'html'
-            ? 'export.html'
-            : 'export.zip';
-      const filename = filenameMatch?.[1] ?? fallback;
-      const url = URL.createObjectURL(response.data as Blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      a.remove();
-      const label =
-        format === 'imscc'
-          ? 'IMSCC v1.1'
-          : format === 'html'
-            ? 'HTML'
-            : 'SCORM 1.2';
+      await downloadExport(unitId, format, targetLms);
       toast.success(`${label} exported successfully`);
     } catch (err) {
-      const label =
-        format === 'imscc'
-          ? 'IMSCC v1.1'
-          : format === 'html'
-            ? 'HTML'
-            : 'SCORM 1.2';
       toast.error(`Failed to export ${label}`);
       console.error('Export error:', err);
     } finally {

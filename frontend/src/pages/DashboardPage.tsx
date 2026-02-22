@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -25,15 +25,19 @@ import {
   Activity,
   GraduationCap,
   Upload,
+  Copy,
+  Download,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   createUnit as createUnitApi,
   deleteUnit as deleteUnitApi,
+  duplicateUnit as duplicateUnitApi,
   getArchivedUnits as getArchivedUnitsApi,
   restoreUnit as restoreUnitApi,
   quickCreateUnit as quickCreateUnitApi,
 } from '../services/api';
+import { downloadExport } from '../utils/downloadExport';
 import { useUnitsStore } from '../stores/unitsStore';
 import {
   Modal,
@@ -152,6 +156,14 @@ const DashboardPage = () => {
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
+  // Quick action state
+  const [cloningId, setCloningId] = useState<string | null>(null);
+  const [exportMenuUnitId, setExportMenuUnitId] = useState<string | null>(null);
+  const [importMenuUnitId, setImportMenuUnitId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+
   const fetchArchivedUnits = async () => {
     try {
       setArchivedLoading(true);
@@ -185,6 +197,67 @@ const DashboardPage = () => {
     setShowArchived(next);
     if (next) {
       fetchArchivedUnits();
+    }
+  };
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(e.target as Node)
+      ) {
+        setExportMenuUnitId(null);
+      }
+      if (
+        importMenuRef.current &&
+        !importMenuRef.current.contains(e.target as Node)
+      ) {
+        setImportMenuUnitId(null);
+      }
+    };
+    if (exportMenuUnitId || importMenuUnitId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [exportMenuUnitId, importMenuUnitId]);
+
+  const handleClone = async (unitId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setCloningId(unitId);
+      const response = await duplicateUnitApi(unitId);
+      const newUnit = response.data;
+      toast.success('Unit cloned successfully');
+      invalidate();
+      fetchUnits();
+      navigate(`/units/${newUnit.id}`);
+    } catch {
+      toast.error('Failed to clone unit');
+    } finally {
+      setCloningId(null);
+    }
+  };
+
+  const handleQuickExport = async (
+    unitId: string,
+    format: 'imscc' | 'scorm' | 'html'
+  ) => {
+    setExportMenuUnitId(null);
+    const label =
+      format === 'imscc'
+        ? 'IMSCC v1.1'
+        : format === 'html'
+          ? 'HTML'
+          : 'SCORM 1.2';
+    try {
+      setExportingId(unitId);
+      await downloadExport(unitId, format);
+      toast.success(`${label} exported successfully`);
+    } catch {
+      toast.error(`Failed to export ${label}`);
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -524,7 +597,115 @@ const DashboardPage = () => {
                         )}
                       </div>
                     </div>
-                    <div className='flex items-center gap-2 ml-4'>
+                    <div className='flex items-center gap-1 ml-4'>
+                      <button
+                        onClick={e => handleClone(unit.id, e)}
+                        disabled={cloningId === unit.id}
+                        className='p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition disabled:opacity-50'
+                        title='Clone Unit'
+                      >
+                        <Copy className='h-4 w-4' />
+                      </button>
+                      <div
+                        className='relative'
+                        ref={
+                          exportMenuUnitId === unit.id
+                            ? exportMenuRef
+                            : undefined
+                        }
+                      >
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setImportMenuUnitId(null);
+                            setExportMenuUnitId(
+                              exportMenuUnitId === unit.id ? null : unit.id
+                            );
+                          }}
+                          disabled={exportingId === unit.id}
+                          className='p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50'
+                          title='Export'
+                        >
+                          <Download className='h-4 w-4' />
+                        </button>
+                        {exportMenuUnitId === unit.id && (
+                          <div className='absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                            <button
+                              className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleQuickExport(unit.id, 'imscc');
+                              }}
+                            >
+                              IMSCC v1.1 (.imscc)
+                            </button>
+                            <button
+                              className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleQuickExport(unit.id, 'scorm');
+                              }}
+                            >
+                              SCORM 1.2 (.zip)
+                            </button>
+                            <button
+                              className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleQuickExport(unit.id, 'html');
+                              }}
+                            >
+                              HTML (.html)
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className='relative'
+                        ref={
+                          importMenuUnitId === unit.id
+                            ? importMenuRef
+                            : undefined
+                        }
+                      >
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setExportMenuUnitId(null);
+                            setImportMenuUnitId(
+                              importMenuUnitId === unit.id ? null : unit.id
+                            );
+                          }}
+                          className='p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition'
+                          title='Import'
+                        >
+                          <Upload className='h-4 w-4' />
+                        </button>
+                        {importMenuUnitId === unit.id && (
+                          <div className='absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                            <button
+                              className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg'
+                              onClick={e => {
+                                e.stopPropagation();
+                                setImportMenuUnitId(null);
+                                navigate(`/import?unitId=${unit.id}`);
+                              }}
+                            >
+                              Import Files
+                            </button>
+                            <button
+                              className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg'
+                              onClick={e => {
+                                e.stopPropagation();
+                                setImportMenuUnitId(null);
+                                navigate('/import/package');
+                              }}
+                            >
+                              Import Package
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={e => deleteUnit(unit.id, e)}
                         className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'

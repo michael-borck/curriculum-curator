@@ -23,7 +23,7 @@ import api, {
   getContent,
   updateContent,
 } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface UploadedFile {
   id: string;
@@ -91,9 +91,12 @@ interface NewUnitForm {
 
 const ImportMaterials = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState(
+    searchParams.get('unitId') ?? ''
+  );
   const [units, setUnits] = useState<Unit[]>([]);
   const topicLabel =
     units.find(u => u.id === selectedUnit)?.topicLabel || 'Week';

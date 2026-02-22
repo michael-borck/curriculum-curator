@@ -115,6 +115,9 @@ export const deleteUnit = (
 export const restoreUnit = (id: string): Promise<ApiResponse<Unit>> =>
   api.post(`/units/${id}/restore`);
 
+export const duplicateUnit = (id: string): Promise<ApiResponse<Unit>> =>
+  api.post(`/units/${id}/duplicate`);
+
 export const getArchivedUnits = (): Promise<ApiResponse<UnitListResponse>> =>
   api.get('/units/archived');
 
