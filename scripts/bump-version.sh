@@ -21,18 +21,25 @@ fi
 # Resolve project root (script lives in scripts/)
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# Portable in-place sed (works on both macOS and Linux)
+_sed_i() {
+  local file="$1"
+  shift
+  sed "$@" "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
 echo "Bumping version to $VERSION ..."
 
 # 1. frontend/package.json
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT/frontend/package.json"
+_sed_i "$ROOT/frontend/package.json" "s/\"version\": \".*\"/\"version\": \"$VERSION\"/"
 echo "  ✓ frontend/package.json"
 
 # 2. desktop/package.json
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$ROOT/desktop/package.json"
+_sed_i "$ROOT/desktop/package.json" "s/\"version\": \".*\"/\"version\": \"$VERSION\"/"
 echo "  ✓ desktop/package.json"
 
 # 3. backend/pyproject.toml
-sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$ROOT/backend/pyproject.toml"
+_sed_i "$ROOT/backend/pyproject.toml" "s/^version = \".*\"/version = \"$VERSION\"/"
 echo "  ✓ backend/pyproject.toml"
 
 # Commit and tag
