@@ -429,5 +429,65 @@ export const deleteMaterialImage = (
     `/materials/units/${unitId}/materials/${materialId}/images/${filename}`
   );
 
+// Package import (IMSCC / SCORM)
+export interface PackageImportPreview {
+  format: string;
+  isRoundTrip: boolean;
+  unitCode: string;
+  unitTitle: string;
+  pedagogyType: string;
+  difficultyLevel: string;
+  year: number;
+  semester: string;
+  durationWeeks: number;
+  creditPoints: number;
+  uloCount: number;
+  materialCount: number;
+  assessmentCount: number;
+  aolMappingCount: number;
+  sdgMappingCount: number;
+  gcMappingCount: number;
+  sourceLms: string | null;
+}
+
+export interface PackageImportResult {
+  unitId: string;
+  unitCode: string;
+  unitTitle: string;
+  uloCount: number;
+  materialCount: number;
+  assessmentCount: number;
+  aolMappingCount: number;
+  sdgMappingCount: number;
+  gcMappingCount: number;
+  weeklyTopicCount: number;
+  sourceLms: string | null;
+}
+
+export const analyzePackage = (
+  file: File
+): Promise<ApiResponse<PackageImportPreview>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/import/package/analyze', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const createFromPackage = (
+  file: File,
+  overrides?: { unitCode?: string | undefined; unitTitle?: string | undefined }
+): Promise<ApiResponse<PackageImportResult>> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const params = new URLSearchParams();
+  if (overrides?.unitCode) params.set('unit_code', overrides.unitCode);
+  if (overrides?.unitTitle) params.set('unit_title', overrides.unitTitle);
+  const qs = params.toString();
+  return api.post(`/import/package/create${qs ? `?${qs}` : ''}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export default api;
 export { api };

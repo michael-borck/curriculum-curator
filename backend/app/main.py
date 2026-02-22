@@ -481,6 +481,13 @@ except ImportError as e:
     logger.warning(f"Failed to load scorm_export routes: {e}")
 
 try:
+    from app.api.routes import package_import
+
+    app.include_router(package_import.router, prefix="/api", tags=["package-import"])
+except ImportError as e:
+    logger.warning(f"Failed to load package_import routes: {e}")
+
+try:
     from app.api.routes import document_export
 
     app.include_router(document_export.router, prefix="/api", tags=["document-export"])

@@ -123,12 +123,15 @@
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
 | 9.1 | As a **Creator**, I want to export my unit as an IMS Common Cartridge (.imscc) file so I can import it into my LMS (Moodle, Canvas, Blackboard). | P1 | **Done** — IMSCC v1.1 |
-| 9.2 | As a **Creator**, I want to import an .imscc file from my LMS to create a unit in the system. | P3 | **Planned** — spec exists |
+| 9.2 | As a **Creator**, I want to import an .imscc file from my LMS to create a unit in the system. | P3 | **Done** — round-trip + generic LMS packages |
 | 9.3 | As a **Creator**, I want to export content as standalone HTML (with inline styles) for pasting into an LMS. | P3 | **Done** |
 | 9.4 | As a **Creator**, I want to export my unit as PDF, DOCX, or PPTX. | P2 | **Done** — Pandoc + Typst (ADR-0033) |
 | 9.5 | As a **Creator**, I want to copy formatted content to clipboard for quick LMS pasting. | P3 | **Done** |
 | 9.6 | As a **Creator**, I want to export my unit as a SCORM 1.2 package for LMS platforms that don't support Common Cartridge. | P2 | **Done** — ADR-0034 |
-| 9.7 | As a **Creator**, I want to import a SCORM package from my LMS to create a unit in the system. | P3 | **Planned** |
+| 9.7 | As a **Creator**, I want to import a SCORM package from my LMS to create a unit in the system. | P3 | **Done** |
+| 9.8 | As a **Creator**, I want to import QTI quiz data from IMSCC/SCORM packages so auto-graded quizzes transfer into the system. | P4 | **Planned** |
+| 9.9 | As a **Creator**, I want a mapping table between LMS terminology (Canvas Modules, Moodle Sections, Blackboard Content Areas) and our internal naming (Weeks, Materials, Assessments) so imports are correctly classified. | P4 | **Planned** |
+| 9.10 | As a **Creator**, I want to select a target LMS when exporting so the package uses the correct naming conventions and structure for that LMS. | P4 | **Planned** |
 
 ## 10. Authentication & User Management
 
@@ -218,24 +221,25 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~92 |
-| **Planned** | 3 |
+| **Done** | ~94 |
+| **Planned** | 4 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
-| **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | Nearly complete — 9.2, 9.7 remain |
-| **P4** | Accessibility validation | Not started |
+| **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | **Complete** |
+| **P4** | Accessibility validation, QTI import, LMS terminology mapping, LMS-targeted export | Not started |
 
 ### Remaining Stories
 
 | # | Story | Phase |
 |---|-------|-------|
-| 9.2 | IMSCC import | P3 |
-| 9.7 | SCORM import | P3 |
 | 7.3 | WCAG accessibility validation | P4 |
+| 9.8 | QTI quiz data import | P4 |
+| 9.9 | LMS terminology mapping table | P4 |
+| 9.10 | Target LMS export selection | P4 |
 
 ### Cut Stories
 

@@ -24,6 +24,7 @@ import {
   Video,
   Activity,
   GraduationCap,
+  Upload,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -384,6 +385,13 @@ const DashboardPage = () => {
           </p>
         </div>
         <div className='flex items-center gap-3'>
+          <Button
+            variant='secondary'
+            onClick={() => navigate('/import/package')}
+          >
+            <Upload className='h-5 w-5 mr-2' />
+            Import Package
+          </Button>
           <Button variant='secondary' onClick={quickCreateModal.open}>
             <Zap className='h-5 w-5 mr-2' />
             Quick Create
