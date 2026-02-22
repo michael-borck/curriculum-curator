@@ -11,6 +11,7 @@ const WorkingContextIndicator = () => {
     activeUnitId,
     activeUnitTitle,
     activeUnitCode,
+    activeTopicLabel,
     activeWeek,
     setActiveUnit,
     clearContext,
@@ -39,7 +40,9 @@ const WorkingContextIndicator = () => {
             <BookOpen className='w-4 h-4' />
             <span className='hidden sm:inline'>
               {activeUnitCode} &middot; {activeUnitTitle}
-              {activeWeek != null ? ` \u00B7 Week ${activeWeek}` : ''}
+              {activeWeek != null
+                ? ` \u00B7 ${activeTopicLabel || 'Week'} ${activeWeek}`
+                : ''}
             </span>
             <span className='sm:hidden'>{activeUnitCode}</span>
             <ChevronDown className='w-3 h-3' />

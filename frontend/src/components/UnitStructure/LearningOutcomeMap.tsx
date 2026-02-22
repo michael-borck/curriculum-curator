@@ -35,6 +35,7 @@ interface LearningOutcomeMapProps {
   unitId: string;
   isOpen: boolean;
   onClose: () => void;
+  topicLabel?: string | undefined;
 }
 
 interface TreeNode {
@@ -70,6 +71,7 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
   unitId,
   isOpen,
   onClose,
+  topicLabel = 'Week',
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,7 +231,7 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
           weekNodes.push({
             id: `week-${ulo.id}-${weekNum}`,
             type: 'week' as const,
-            label: `Week ${weekNum}`,
+            label: `${topicLabel} ${weekNum}`,
             children: materialNodes,
           });
         });
@@ -730,7 +732,7 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
                 </span>
                 <span className='flex items-center gap-1'>
                   <BookOpen className='w-3 h-3 text-blue-600' />
-                  Week
+                  {topicLabel}
                 </span>
                 <span className='flex items-center gap-1'>
                   <FileText className='w-3 h-3 text-green-600' />

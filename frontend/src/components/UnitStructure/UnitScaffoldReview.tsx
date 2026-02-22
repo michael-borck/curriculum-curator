@@ -5,6 +5,7 @@ import type {
   ScaffoldULO,
   ScaffoldAssessment,
 } from '../../services/aiApi';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 
 interface UnitScaffoldReviewProps {
   scaffold: ScaffoldUnitResponse;
@@ -19,6 +20,7 @@ const UnitScaffoldReview: React.FC<UnitScaffoldReviewProps> = ({
   onCancel,
   accepting = false,
 }) => {
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const [scaffold, setScaffold] =
     useState<ScaffoldUnitResponse>(initialScaffold);
 
@@ -179,13 +181,13 @@ const UnitScaffoldReview: React.FC<UnitScaffoldReviewProps> = ({
         {/* Weekly Topics */}
         <div>
           <h4 className='font-medium text-gray-800 mb-2'>
-            Weekly Topics ({scaffold.weeks.length} weeks)
+            Topics ({scaffold.weeks.length} {topicLabel.toLowerCase()}s)
           </h4>
           <div className='space-y-2'>
             {scaffold.weeks.map((week, i) => (
               <div key={i} className='flex items-center gap-2'>
                 <span className='text-sm text-gray-500 w-16'>
-                  Week {week.weekNumber}
+                  {topicLabel} {week.weekNumber}
                 </span>
                 <input
                   value={week.topic}

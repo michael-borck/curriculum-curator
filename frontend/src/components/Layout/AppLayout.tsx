@@ -45,10 +45,13 @@ interface WeekItem {
 }
 
 // Generate weeks for a unit based on its duration
-const generateWeeks = (durationWeeks: number): WeekItem[] => {
+const generateWeeks = (
+  durationWeeks: number,
+  topicLabel: string = 'Week'
+): WeekItem[] => {
   return Array.from({ length: durationWeeks }, (_, i) => ({
     weekNumber: i + 1,
-    label: `Week ${i + 1}`,
+    label: `${topicLabel} ${i + 1}`,
   }));
 };
 
@@ -329,7 +332,10 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
 
                       {/* Weeks */}
                       <div className='mt-1 pt-1 border-t border-gray-800'>
-                        {generateWeeks(unit.durationWeeks || 12).map(week => {
+                        {generateWeeks(
+                          unit.durationWeeks || 12,
+                          unit.topicLabel || 'Week'
+                        ).map(week => {
                           const weekQuality = weeklyStars[unit.id]?.find(
                             w => w.weekNumber === week.weekNumber
                           );

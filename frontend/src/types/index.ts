@@ -47,6 +47,7 @@ export interface Unit {
   pedagogyType: string;
   difficultyLevel: string;
   durationWeeks: number;
+  topicLabel: string;
   creditPoints: number;
   prerequisites?: string;
   learningHours?: number;

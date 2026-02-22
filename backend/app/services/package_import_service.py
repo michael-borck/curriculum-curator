@@ -541,7 +541,7 @@ class PackageImportService:
 
         topic_count = 0
         for week_num in sorted(week_numbers_seen):
-            topic_title = topic_titles.get(week_num, f"Week {week_num}")
+            topic_title = topic_titles.get(week_num, f"{unit.topic_label} {week_num}")
             topic = WeeklyTopic(
                 unit_outline_id=str(outline.id),
                 unit_id=str(unit.id),

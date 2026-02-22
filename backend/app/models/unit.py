@@ -98,6 +98,7 @@ class Unit(Base):
         String(20), default=DifficultyLevel.INTERMEDIATE.value
     )
     duration_weeks: Mapped[int] = mapped_column(Integer, default=12)
+    topic_label: Mapped[str] = mapped_column(String(50), default="Week")
 
     # Ownership and access control
     owner_id: Mapped[str] = mapped_column(GUID(), ForeignKey("users.id"), index=True)

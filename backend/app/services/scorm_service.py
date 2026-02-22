@@ -226,9 +226,10 @@ class SCORMExportService:
         }
         for week_num in sorted(materials_by_week.keys()):
             topic = topic_map.get(week_num)
-            week_title = f"Week {week_num}"
+            label = unit.topic_label
+            week_title = f"{label} {week_num}"
             if topic and topic.topic_title:
-                week_title = f"Week {week_num}: {topic.topic_title}"
+                week_title = f"{label} {week_num}: {topic.topic_title}"
 
             week_item = ET.SubElement(
                 org, f"{{{NS_CP}}}item", identifier=f"week_{week_num:02d}"

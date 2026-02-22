@@ -140,9 +140,12 @@ const UnitPage = () => {
   // Write to working context store when unit loads
   useEffect(() => {
     if (unit) {
-      useWorkingContextStore
-        .getState()
-        .setActiveUnit({ id: unit.id, title: unit.title, code: unit.code });
+      useWorkingContextStore.getState().setActiveUnit({
+        id: unit.id,
+        title: unit.title,
+        code: unit.code,
+        topicLabel: unit.topicLabel,
+      });
     }
   }, [unit]);
 
@@ -429,6 +432,7 @@ const UnitPage = () => {
   }
 
   const durationWeeks = unit.durationWeeks || 12;
+  const topicLabel = unit.topicLabel || 'Week';
 
   return (
     <div className='min-h-full'>
@@ -464,7 +468,9 @@ const UnitPage = () => {
                 <span>•</span>
                 <span>{unit.creditPoints} credits</span>
                 <span>•</span>
-                <span>{durationWeeks} weeks</span>
+                <span>
+                  {durationWeeks} {topicLabel.toLowerCase()}s
+                </span>
                 {unit.pedagogyType && (
                   <>
                     <span>•</span>
@@ -608,10 +614,11 @@ const UnitPage = () => {
               <div className='flex items-center justify-between mb-6'>
                 <div>
                   <h2 className='text-lg font-semibold text-gray-900'>
-                    Weekly Content
+                    {topicLabel} Content
                   </h2>
                   <p className='text-sm text-gray-500'>
-                    Click on a week to view and manage materials
+                    Click on a {topicLabel.toLowerCase()} to view and manage
+                    materials
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>
@@ -687,6 +694,7 @@ const UnitPage = () => {
               <WeekAccordion
                 unitId={unitId!}
                 durationWeeks={durationWeeks}
+                topicLabel={topicLabel}
                 expandedWeek={expandedWeek}
                 onWeekToggle={handleWeekToggle}
                 onAddMaterial={handleAddMaterial}
@@ -697,6 +705,7 @@ const UnitPage = () => {
                 unitId={unitId!}
                 isOpen={showOutcomeMap}
                 onClose={() => setShowOutcomeMap(false)}
+                topicLabel={topicLabel}
               />
             </div>
           )}
@@ -712,11 +721,16 @@ const UnitPage = () => {
               unitId={unitId!}
               unitName={unit.title}
               durationWeeks={durationWeeks}
+              topicLabel={topicLabel}
             />
           )}
 
           {activeTab === 'quality' && (
-            <QualityDashboard unitId={unitId!} durationWeeks={durationWeeks} />
+            <QualityDashboard
+              unitId={unitId!}
+              durationWeeks={durationWeeks}
+              topicLabel={topicLabel}
+            />
           )}
         </div>
 

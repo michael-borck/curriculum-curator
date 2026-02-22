@@ -83,7 +83,7 @@ class WorkflowStructureCreator:
                     id=str(uuid.uuid4()),
                     unit_id=unit.id,
                     week_number=week_num,
-                    title=f"Week {week_num}: {week_data['topic']}",
+                    title=f"{unit.topic_label} {week_num}: {week_data['topic']}",
                     type="lecture",
                     description=week_data.get("description", ""),
                     order_index=0,

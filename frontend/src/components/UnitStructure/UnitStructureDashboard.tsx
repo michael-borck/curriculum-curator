@@ -321,6 +321,7 @@ interface UnitStructureDashboardProps {
   unitId: string;
   unitName?: string;
   durationWeeks?: number;
+  topicLabel?: string | undefined;
 }
 
 type TabType =
@@ -355,6 +356,7 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
   unitId,
   unitName = 'Unit',
   durationWeeks = 12,
+  topicLabel = 'Week',
 }) => {
   const { canGenerate } = useAILevel();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -729,14 +731,18 @@ export const UnitStructureDashboard: React.FC<UnitStructureDashboardProps> = ({
                 {Array.from({ length: durationWeeks }, (_, i) => i + 1).map(
                   week => (
                     <option key={week} value={week}>
-                      Week {week}
+                      {topicLabel} {week}
                     </option>
                   )
                 )}
               </select>
             </div>
 
-            <WeeklyMaterialsManager unitId={unitId} weekNumber={selectedWeek} />
+            <WeeklyMaterialsManager
+              unitId={unitId}
+              weekNumber={selectedWeek}
+              topicLabel={topicLabel}
+            />
           </div>
         )}
 

@@ -16,6 +16,7 @@ import { contentApi } from '../../services/contentApi';
 import VersionHistory from './VersionHistory';
 import UnifiedEditor from '../../components/Editor/UnifiedEditor';
 import type { Content } from '../../types';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 
 const MaterialDetail: React.FC = () => {
   const { unitId, contentId } = useParams<{
@@ -23,6 +24,7 @@ const MaterialDetail: React.FC = () => {
     contentId: string;
   }>();
   const navigate = useNavigate();
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
 
   const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,7 +179,11 @@ const MaterialDetail: React.FC = () => {
                   content.updatedAt || content.createdAt
                 ).toLocaleDateString()}
               </span>
-              {content.weekNumber && <span>Week {content.weekNumber}</span>}
+              {content.weekNumber && (
+                <span>
+                  {topicLabel} {content.weekNumber}
+                </span>
+              )}
               {content.estimatedDurationMinutes && (
                 <span>{content.estimatedDurationMinutes} min</span>
               )}
@@ -346,8 +352,10 @@ const MaterialDetail: React.FC = () => {
                 )}
                 {content.weekNumber && (
                   <div>
-                    <dt className='text-sm text-gray-500'>Week</dt>
-                    <dd className='text-sm'>Week {content.weekNumber}</dd>
+                    <dt className='text-sm text-gray-500'>{topicLabel}</dt>
+                    <dd className='text-sm'>
+                      {topicLabel} {content.weekNumber}
+                    </dd>
                   </div>
                 )}
                 {content.estimatedDurationMinutes && (

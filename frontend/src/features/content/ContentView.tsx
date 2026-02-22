@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import { getContent, deleteContent } from '../../services/api';
 import { Modal, Button, LoadingState, Alert } from '../../components/ui';
 import type { Content } from '../../types/index';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 
 const ContentView = () => {
   const { unitId, contentId } = useParams<{
@@ -19,6 +20,7 @@ const ContentView = () => {
     contentId: string;
   }>();
   const navigate = useNavigate();
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const [content, setContent] = useState<Content | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -226,8 +228,10 @@ const ContentView = () => {
           </div>
           {content.weekNumber && (
             <div>
-              <span className='text-gray-500'>Week</span>
-              <p className='font-medium'>Week {content.weekNumber}</p>
+              <span className='text-gray-500'>{topicLabel}</span>
+              <p className='font-medium'>
+                {topicLabel} {content.weekNumber}
+              </p>
             </div>
           )}
           <div>

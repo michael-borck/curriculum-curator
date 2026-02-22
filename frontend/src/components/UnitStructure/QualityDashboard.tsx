@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 interface QualityDashboardProps {
   unitId: string;
   durationWeeks?: number;
+  topicLabel?: string | undefined;
 }
 
 interface Recommendation {
@@ -90,6 +91,7 @@ const getGradeColor = (grade: string): string => {
 export const QualityDashboard: React.FC<QualityDashboardProps> = ({
   unitId,
   durationWeeks = 12,
+  topicLabel = 'Week',
 }) => {
   const { canGenerate } = useAILevel();
   const [quality, setQuality] = useState<QualityScore | null>(null);
@@ -239,7 +241,7 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
       {/* Weekly Quality Grid */}
       <div className='bg-white rounded-lg shadow p-6'>
         <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-          Weekly Quality
+          {topicLabel} Quality
         </h3>
         <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3'>
           {weeklyQuality.map(week => (
@@ -252,7 +254,7 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
               }`}
             >
               <p className='text-xs font-medium text-gray-500 mb-1'>
-                Week {week.weekNumber}
+                {topicLabel} {week.weekNumber}
               </p>
               {week.hasContent ? (
                 <>

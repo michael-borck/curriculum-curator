@@ -5,11 +5,17 @@ interface WorkingContextState {
   activeUnitId: string | null;
   activeUnitTitle: string | null;
   activeUnitCode: string | null;
+  activeTopicLabel: string | null;
   activeWeek: number | null;
   activeULOs: Array<{ code: string; description: string }>;
   activeDesignId: string | null;
 
-  setActiveUnit: (unit: { id: string; title: string; code: string }) => void;
+  setActiveUnit: (unit: {
+    id: string;
+    title: string;
+    code: string;
+    topicLabel?: string | undefined;
+  }) => void;
   setUnitDetails: (details: {
     ulos?: Array<{ code: string; description: string }> | undefined;
     designId?: string | null | undefined;
@@ -24,15 +30,22 @@ export const useWorkingContextStore = create<WorkingContextState>()(
       activeUnitId: null,
       activeUnitTitle: null,
       activeUnitCode: null,
+      activeTopicLabel: null,
       activeWeek: null,
       activeULOs: [],
       activeDesignId: null,
 
-      setActiveUnit: (unit: { id: string; title: string; code: string }) =>
+      setActiveUnit: (unit: {
+        id: string;
+        title: string;
+        code: string;
+        topicLabel?: string | undefined;
+      }) =>
         set({
           activeUnitId: unit.id,
           activeUnitTitle: unit.title,
           activeUnitCode: unit.code,
+          activeTopicLabel: unit.topicLabel || 'Week',
           activeWeek: null,
           activeULOs: [],
           activeDesignId: null,
@@ -58,6 +71,7 @@ export const useWorkingContextStore = create<WorkingContextState>()(
           activeUnitId: null,
           activeUnitTitle: null,
           activeUnitCode: null,
+          activeTopicLabel: null,
           activeWeek: null,
           activeULOs: [],
           activeDesignId: null,
@@ -69,6 +83,7 @@ export const useWorkingContextStore = create<WorkingContextState>()(
         activeUnitId: state.activeUnitId,
         activeUnitTitle: state.activeUnitTitle,
         activeUnitCode: state.activeUnitCode,
+        activeTopicLabel: state.activeTopicLabel,
         activeWeek: state.activeWeek,
       }),
     }

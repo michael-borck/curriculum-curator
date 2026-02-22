@@ -507,7 +507,7 @@ class UnifiedImportService:
                     unit_outline_id=str(outline.id),
                     unit_id=str(unit.id),
                     week_number=week_num,
-                    topic_title=f"Week {week_num}",
+                    topic_title=f"{unit.topic_label} {week_num}",
                     created_by_id=str(unit.created_by_id),
                 )
             )

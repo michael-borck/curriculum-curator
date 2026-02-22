@@ -23,6 +23,7 @@ import {
   GradeDistribution,
 } from '../../types/unitStructure';
 import toast from 'react-hot-toast';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 
 interface AssessmentsManagerProps {
   unitId: string;
@@ -59,6 +60,7 @@ const AssessmentCard: React.FC<{
   onEdit: (assessment: AssessmentResponse) => void;
   onDelete: (id: string) => void;
 }> = ({ assessment, onEdit, onDelete }) => {
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const typeColor =
     assessment.type === AssessmentType.FORMATIVE
       ? 'bg-green-100 text-green-800'
@@ -109,14 +111,14 @@ const AssessmentCard: React.FC<{
             {assessment.releaseWeek && (
               <span className='flex items-center'>
                 <Calendar className='w-3 h-3 mr-1' />
-                Release: Week {assessment.releaseWeek}
+                Release: {topicLabel} {assessment.releaseWeek}
               </span>
             )}
 
             {assessment.dueWeek && (
               <span className='flex items-center'>
                 <Calendar className='w-3 h-3 mr-1' />
-                Due: Week {assessment.dueWeek}
+                Due: {topicLabel} {assessment.dueWeek}
               </span>
             )}
 

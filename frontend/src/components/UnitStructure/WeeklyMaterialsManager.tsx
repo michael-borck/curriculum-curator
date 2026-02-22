@@ -66,6 +66,7 @@ import toast from 'react-hot-toast';
 interface WeeklyMaterialsManagerProps {
   unitId: string;
   weekNumber: number;
+  topicLabel?: string | undefined;
 }
 
 interface MaterialFormData {
@@ -360,6 +361,7 @@ const SortableMaterialItem: React.FC<{
 export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   unitId,
   weekNumber,
+  topicLabel = 'Week',
 }) => {
   const { globalStyle } = useTeachingStyleStore();
   const { canGenerate } = useAILevel();
@@ -488,7 +490,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
 
   const handleDuplicate = async (material: MaterialResponse) => {
     const targetWeek = window.prompt(
-      `Duplicate to which week? (Current: Week ${weekNumber})`,
+      `Duplicate to which ${topicLabel.toLowerCase()}? (Current: ${topicLabel} ${weekNumber})`,
       String(weekNumber)
     );
     if (!targetWeek) return;
@@ -501,7 +503,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
 
     try {
       await materialsApi.duplicateMaterial(material.id, weekNum);
-      toast.success(`Material duplicated to Week ${weekNum}`);
+      toast.success(`Material duplicated to ${topicLabel} ${weekNum}`);
       if (weekNum === weekNumber) {
         await fetchMaterials();
       }
@@ -615,7 +617,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       <div className='flex justify-between items-center'>
         <div>
           <h3 className='text-lg font-semibold text-gray-900'>
-            Week {weekNumber} Materials
+            {topicLabel} {weekNumber} Materials
           </h3>
           {weekMaterials && (
             <div className='mt-1 flex items-center space-x-4 text-sm text-gray-600'>
@@ -903,7 +905,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                 <div className='text-center'>
                   <FileText className='w-10 h-10 text-gray-400 mx-auto mb-3' />
                   <h4 className='text-gray-900 font-medium mb-1'>
-                    No materials for Week {weekNumber}
+                    No materials for {topicLabel} {weekNumber}
                   </h4>
                   <p className='text-gray-500 text-sm mb-4'>
                     Add your first material to start building this week&apos;s
@@ -923,7 +925,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   <div className='flex items-center gap-2 mb-3'>
                     <Lightbulb className='w-4 h-4 text-purple-600' />
                     <span className='text-sm font-medium text-purple-900'>
-                      Tips for Week {weekNumber}
+                      Tips for {topicLabel} {weekNumber}
                     </span>
                   </div>
                   <ul className='space-y-2 text-sm'>

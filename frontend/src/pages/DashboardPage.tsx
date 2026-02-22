@@ -58,6 +58,7 @@ interface UnitFormData {
   pedagogyType: string;
   difficultyLevel: string;
   durationWeeks: number;
+  topicLabel: string;
   creditPoints: number;
   prerequisites: string;
   learningHours: number;
@@ -72,6 +73,7 @@ const initialFormData: UnitFormData = {
   pedagogyType: 'inquiry-based',
   difficultyLevel: 'intermediate',
   durationWeeks: 12,
+  topicLabel: 'Week',
   creditPoints: 25,
   prerequisites: '',
   learningHours: 150,
@@ -511,7 +513,10 @@ const DashboardPage = () => {
                           {unit.semester}
                         </span>
                         <span>{unit.creditPoints} credits</span>
-                        <span>{unit.durationWeeks} weeks</span>
+                        <span>
+                          {unit.durationWeeks}{' '}
+                          {(unit.topicLabel || 'Week').toLowerCase()}s
+                        </span>
                         {unit.pedagogyType && (
                           <span className='capitalize'>
                             {unit.pedagogyType.replace(/-/g, ' ')}
@@ -728,7 +733,7 @@ const DashboardPage = () => {
             />
 
             <FormInput
-              label='Duration (weeks)'
+              label={`Duration (${newUnit.topicLabel.toLowerCase()}s)`}
               type='number'
               value={newUnit.durationWeeks}
               onChange={e =>
@@ -738,6 +743,14 @@ const DashboardPage = () => {
               max={52}
             />
           </div>
+
+          <FormInput
+            label='Period Label'
+            type='text'
+            value={newUnit.topicLabel}
+            onChange={e => updateField('topicLabel', e.target.value)}
+            placeholder='e.g. Week, Module, Session'
+          />
 
           <FormSelect
             label='Pedagogy Type'

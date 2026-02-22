@@ -80,6 +80,7 @@ interface Unit {
   title: string;
   code: string;
   description?: string;
+  topicLabel?: string;
 }
 
 interface NewUnitForm {
@@ -94,6 +95,8 @@ const ImportMaterials = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState('');
   const [units, setUnits] = useState<Unit[]>([]);
+  const topicLabel =
+    units.find(u => u.id === selectedUnit)?.topicLabel || 'Week';
   const [unitsLoading, setUnitsLoading] = useState(true);
   const [unitsError, setUnitsError] = useState<string | null>(null);
   const [weekAssignments, setWeekAssignments] = useState<WeekAssignment[]>([]);
@@ -1303,7 +1306,7 @@ const ImportMaterials = () => {
                           </div>
                         </div>
                         <div>
-                          <span className='text-gray-600'>Week:</span>
+                          <span className='text-gray-600'>{topicLabel}:</span>
                           <div className='flex items-center mt-1'>
                             <select
                               className='text-sm font-medium border border-gray-300 rounded px-2 py-1'
@@ -1341,7 +1344,7 @@ const ImportMaterials = () => {
                               {Array.from({ length: 52 }, (_, i) => i + 1).map(
                                 week => (
                                   <option key={week} value={week}>
-                                    Week {week}
+                                    {topicLabel} {week}
                                   </option>
                                 )
                               )}
@@ -1570,10 +1573,10 @@ const ImportMaterials = () => {
                     )
                   }
                 >
-                  <option value=''>Select week...</option>
+                  <option value=''>Select {topicLabel.toLowerCase()}...</option>
                   {Array.from({ length: 52 }, (_, i) => i + 1).map(week => (
                     <option key={week} value={week}>
-                      Week {week}
+                      {topicLabel} {week}
                     </option>
                   ))}
                 </select>
@@ -1660,11 +1663,13 @@ const ImportMaterials = () => {
                               }
                             }}
                           >
-                            <option value=''>Assign to week...</option>
+                            <option value=''>
+                              Assign to {topicLabel.toLowerCase()}...
+                            </option>
                             {Array.from({ length: 52 }, (_, i) => i + 1).map(
                               week => (
                                 <option key={week} value={week}>
-                                  Week {week}
+                                  {topicLabel} {week}
                                 </option>
                               )
                             )}

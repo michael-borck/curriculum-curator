@@ -25,6 +25,7 @@ import toast from 'react-hot-toast';
 interface WeekAccordionProps {
   unitId: string;
   durationWeeks: number;
+  topicLabel?: string | undefined;
   expandedWeek: number | null;
   onWeekToggle: (weekNumber: number) => void;
   onAddMaterial: (weekNumber: number) => void;
@@ -63,6 +64,7 @@ const materialTypeColors: Record<MaterialType, string> = {
 export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   unitId,
   durationWeeks,
+  topicLabel = 'Week',
   expandedWeek,
   onWeekToggle,
   onAddMaterial,
@@ -203,7 +205,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                   <span
                     className={`font-medium ${isEmpty ? 'text-gray-400' : 'text-gray-900'}`}
                   >
-                    Week {weekNumber}
+                    {topicLabel || 'Week'} {weekNumber}
                   </span>
 
                   {/* Material type badges (collapsed view) */}

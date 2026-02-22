@@ -61,6 +61,7 @@ class UnitCreate(CamelModel):
     pedagogy_type: PedagogyType = PedagogyType.INQUIRY_BASED
     difficulty_level: DifficultyLevel = DifficultyLevel.INTERMEDIATE
     duration_weeks: int = Field(12, ge=1, le=52)
+    topic_label: str = Field("Week", min_length=1, max_length=50)
 
 
 class UnitUpdate(CamelModel):
@@ -75,6 +76,7 @@ class UnitUpdate(CamelModel):
     pedagogy_type: PedagogyType | None = None
     difficulty_level: DifficultyLevel | None = None
     duration_weeks: int | None = Field(None, ge=1, le=52)
+    topic_label: str | None = Field(None, min_length=1, max_length=50)
 
 
 class UnitResponse(CamelModel):
@@ -91,6 +93,7 @@ class UnitResponse(CamelModel):
     year: int | None = None
     semester: str | None = None
     duration_weeks: int
+    topic_label: str = "Week"
     unit_metadata: dict[str, Any] | None = None
     created_at: datetime | str
     updated_at: datetime | str | None = None

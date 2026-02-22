@@ -35,6 +35,7 @@ def _unit_to_response(unit: Unit) -> UnitResponse:
         year=unit.year,
         semester=unit.semester,
         duration_weeks=unit.duration_weeks,
+        topic_label=unit.topic_label,
         unit_metadata=unit.unit_metadata,
         created_at=unit.created_at,
         updated_at=unit.updated_at,
@@ -58,6 +59,7 @@ def create_unit(db: Session, data: UnitCreate, owner_id: str) -> UnitResponse:
         year=year,
         semester=_get_enum_value(data.semester) or "semester_1",
         duration_weeks=data.duration_weeks or 12,
+        topic_label=data.topic_label or "Week",
     )
     db.add(unit)
     db.commit()
@@ -252,6 +254,7 @@ def duplicate_unit(
         year=original.year,
         semester=original.semester,
         duration_weeks=original.duration_weeks,
+        topic_label=original.topic_label,
     )
     db.add(new_unit)
     db.commit()

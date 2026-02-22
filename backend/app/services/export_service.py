@@ -401,7 +401,7 @@ class ExportService:
             week = c.week_number
             if week is not None and week != current_week:
                 current_week = week
-                sections.append(f"# Week {week}")
+                sections.append(f"# {unit.topic_label} {week}")
                 sections.append("")
 
             # Content title as heading

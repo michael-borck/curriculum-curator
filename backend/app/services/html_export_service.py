@@ -48,9 +48,10 @@ def export_unit_html(unit_id: str, db: Session) -> tuple[str, str]:
     topic_map = {int(t.week_number): t for t in data.weekly_topics}
     for week_num in sorted(data.materials_by_week.keys()):
         topic = topic_map.get(week_num)
-        week_title = f"Week {week_num}"
+        label = data.unit.topic_label
+        week_title = f"{label} {week_num}"
         if topic and topic.topic_title:
-            week_title = f"Week {week_num}: {escape_html(str(topic.topic_title))}"
+            week_title = f"{label} {week_num}: {escape_html(str(topic.topic_title))}"
 
         sections.append(f"<h2>{week_title}</h2>")
         for mat in data.materials_by_week[week_num]:

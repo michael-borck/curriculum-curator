@@ -8,6 +8,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { useAsyncAction } from '../../hooks/useAsyncAction';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
 import * as researchApi from '../../services/researchApi';
 import type {
   ScaffoldUnitResponse,
@@ -40,6 +41,7 @@ const BLOOM_LEVELS = [
 
 const ScaffoldReview = ({ proposal, onDone }: ScaffoldReviewProps) => {
   const navigate = useNavigate();
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const [title, setTitle] = useState(proposal.title);
   const [description, setDescription] = useState(proposal.description);
   const [ulos, setUlos] = useState<ScaffoldULO[]>(proposal.ulos);
@@ -199,7 +201,7 @@ const ScaffoldReview = ({ proposal, onDone }: ScaffoldReviewProps) => {
             <thead className='bg-gray-50'>
               <tr>
                 <th className='px-3 py-2 text-left font-medium text-gray-600 w-16'>
-                  Week
+                  {topicLabel}
                 </th>
                 <th className='px-3 py-2 text-left font-medium text-gray-600'>
                   Topic
@@ -367,6 +369,7 @@ const COVERAGE_LABELS: Record<string, string> = {
 };
 
 const ComparisonReview = ({ proposal, onDone }: ComparisonReviewProps) => {
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(
     () => new Set(proposal.suggestions.map((_, i) => i))
   );
@@ -412,13 +415,13 @@ const ComparisonReview = ({ proposal, onDone }: ComparisonReviewProps) => {
 
       {/* Weekly coverage table */}
       <div>
-        <h4 className='font-medium text-sm mb-2'>Weekly Coverage</h4>
+        <h4 className='font-medium text-sm mb-2'>{topicLabel} Coverage</h4>
         <div className='border rounded-lg overflow-hidden'>
           <table className='w-full text-sm'>
             <thead className='bg-gray-50'>
               <tr>
                 <th className='px-3 py-2 text-left font-medium text-gray-600 w-16'>
-                  Week
+                  {topicLabel}
                 </th>
                 <th className='px-3 py-2 text-left font-medium text-gray-600'>
                   Topic
@@ -540,6 +543,7 @@ const confidenceColor = (c: number): string => {
 };
 
 const ReadingListReview = ({ proposal, onDone }: ReadingListReviewProps) => {
+  const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
   const [matches, setMatches] = useState<ResourceMatch[]>(proposal.matches);
   const [saveAsSources, setSaveAsSources] = useState(true);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -636,7 +640,7 @@ const ReadingListReview = ({ proposal, onDone }: ReadingListReviewProps) => {
               >
                 {weekOptions.map(w => (
                   <option key={w.weekNumber} value={String(w.weekNumber)}>
-                    Week {w.weekNumber}
+                    {topicLabel} {w.weekNumber}
                   </option>
                 ))}
                 <option value='skip'>Skip</option>
