@@ -189,7 +189,7 @@
 | 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Done** — image upload endpoint + TipTap toolbar button with preview |
 | 15.5 | ~~As a **Creator**, I want AI to generate images for my materials.~~ | P4 | **Cut** — outside core scope; educators have dedicated image tools |
 | 15.6 | ~~As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them.~~ | P4 | **Cut** — adds API dependency for marginal value; use browser instead |
-| 15.9 | As a **Creator**, I want to generate an image prompt from my material content (with style options like realistic, sketch, diagram) so I can copy it into my preferred image tool. | P3 | **Planned** — lightweight tool: paste content + pick style → LLM generates copy-paste prompt |
+| 15.9 | As a **Creator**, I want to generate an image prompt from my material content (with style options like realistic, sketch, diagram) so I can copy it into my preferred image tool. | P3 | **Done** — editor toolbar wand button opens slide-out panel; pick style + aspect ratio → LLM generates copy-paste prompt |
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
 | 15.8 | As a **Creator**, I want to embed YouTube/video links as rich previews in my materials. | P2 | **Done** — TipTap Video/YouTube nodes |
 
@@ -233,7 +233,6 @@
 |---|-------|-------|
 | 9.2 | IMSCC import | P3 |
 | 9.7 | SCORM import | P3 |
-| 15.9 | Visual prompt generator (paste content + style → copy-paste prompt) | P3 |
 | 17.2 | Standalone content without a unit | P3 |
 | 7.3 | WCAG accessibility validation | P4 |
 
