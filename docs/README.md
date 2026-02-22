@@ -24,6 +24,7 @@ docs/
 | [PRD](PRD-Curriculum-Curator.md) | Product requirements document |
 | [User Stories](user-stories.md) | Feature tracking by phase |
 | [Implementation Plan](implementation-plan.md) | Phase completion tracking |
+| [Security](SECURITY.md) | Security architecture, auth, rate limiting, headers |
 | [ADR Index](adr/index.md) | All architecture decision records |
 
 ## Guides
