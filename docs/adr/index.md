@@ -15,12 +15,15 @@ An Architecture Decision Record captures an important architectural decision mad
 | [0018](0018-workflow-flexibility-philosophy.md) | **Workflow Flexibility Philosophy** | **Accepted** |
 | [0020](0020-ai-optional-user-empowerment.md) | **AI-Optional User Empowerment** | **Accepted** |
 | [0037](0037-privacy-first-byok-architecture.md) | **Privacy-First, Local-First, BYOK** | **Accepted** |
+| [0040](0040-ambient-context-pattern.md) | **Ambient Context — Best Guess + Human Override** | **Accepted** |
 
 > *"Assist any workflow, don't enforce"* - This principle informs all other architectural decisions.
 >
 > *"AI assists, never gates"* - Every task achievable with AI must be equally achievable without it.
 >
 > *"You own everything"* - Local data, open source, bring your own AI keys. No middleman.
+>
+> *"Best guess + human override"* - Infer context automatically, but the user can always change or clear it.
 
 ### Current Stack (Active Decisions)
 
@@ -76,6 +79,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-0028: Australian University Terminology](0028-australian-university-terminology.md) - Unit (not Course) as core entity
 - [ADR-0029: Accreditation Framework Mappings](0029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
 - [ADR-0036: Learning Design as Generation Spec](0036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
+- [ADR-0040: Ambient Context](0040-ambient-context-pattern.md) - Best guess + human override for working context
 
 ### Authentication & Security
 - [ADR-0007: Simple Authentication for Internal Network](0007-simple-authentication-internal-network.md) - Basic auth approach
