@@ -375,13 +375,6 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load tasks routes: {e}")
 
-try:
-    from app.api.routes import content_export
-
-    app.include_router(content_export.router, prefix="/api", tags=["export"])
-except ImportError as e:
-    logger.warning(f"Failed to load content_export routes: {e}")
-
 # content_versions removed - version control now via Git in content routes
 
 try:

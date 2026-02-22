@@ -14,7 +14,6 @@ from app.core.database import Base
 from app.models.common import GUID
 
 if TYPE_CHECKING:
-    from app.models.content_quarto_settings import ContentQuartoSettings
     from app.models.content_version import ContentVersion
     from app.models.generation_history import GenerationHistory
     from app.models.learning_outcome import UnitLearningOutcome
@@ -140,11 +139,6 @@ class Content(Base):
     )
     child_contents: Mapped[list["Content"]] = relationship(
         back_populates="parent_content", cascade="all, delete-orphan"
-    )
-    quarto_settings: Mapped["ContentQuartoSettings | None"] = relationship(
-        back_populates="content",
-        uselist=False,
-        cascade="all, delete-orphan",
     )
     versions: Mapped[list["ContentVersion"]] = relationship(
         back_populates="content", cascade="all, delete-orphan"

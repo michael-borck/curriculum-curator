@@ -24,7 +24,6 @@ from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .common import GUID
 from .content import Content, ContentCategory, ContentStatus, ContentType
-from .content_quarto_settings import ContentQuartoSettings
 from .content_version import ContentVersion
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
@@ -48,7 +47,6 @@ from .mappings import (
 )
 from .material import Material, MaterialType
 from .password_reset import PasswordReset
-from .quarto_preset import QuartoPreset
 from .quiz_question import QuestionType, QuizQuestion
 from .research_source import CitationStyle, ContentCitation, ResearchSource, SourceType
 from .security_log import SecurityEventType, SecurityLog
@@ -80,7 +78,6 @@ __all__ = [
     "EmailVerification",
     "EmailWhitelist",
     "PasswordReset",
-    "QuartoPreset",
     "SystemSettings",
     "User",
     "UserRole",
@@ -97,7 +94,6 @@ __all__ = [
     "ContentType",
     "ContentStatus",
     "ContentCategory",
-    "ContentQuartoSettings",
     "ContentVersion",
     "QuizQuestion",
     "QuestionType",

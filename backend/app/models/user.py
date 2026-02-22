@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from app.models.email_verification import EmailVerification
     from app.models.llm_config import LLMConfiguration, TokenUsageLog
     from app.models.password_reset import PasswordReset
-    from app.models.quarto_preset import QuartoPreset
     from app.models.research_source import ResearchSource
     from app.models.unit import Unit
 
@@ -102,9 +101,6 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     password_resets: Mapped[list["PasswordReset"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
-    quarto_presets: Mapped[list["QuartoPreset"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
     owned_units: Mapped[list["Unit"]] = relationship(

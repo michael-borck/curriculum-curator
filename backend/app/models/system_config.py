@@ -107,13 +107,6 @@ class SystemConfig(Base):
                 "is_sensitive": False,
             },
             {
-                "key": "tools.quarto_path",
-                "value": "/usr/local/bin/quarto",
-                "category": ConfigCategory.TOOLS.value,
-                "description": "Path to Quarto executable",
-                "is_sensitive": False,
-            },
-            {
                 "key": "tools.pandoc_path",
                 "value": "/usr/bin/pandoc",
                 "category": ConfigCategory.TOOLS.value,

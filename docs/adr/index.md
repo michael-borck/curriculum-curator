@@ -52,6 +52,17 @@ An Architecture Decision Record captures an important architectural decision mad
 | [037](037-privacy-first-byok-architecture.md) | Privacy-First, Local-First, BYOK Architecture | Accepted |
 | [038](038-content-not-presentation.md) | Content Curation, Not Presentation Design | Accepted |
 | [039](039-tiered-research-architecture.md) | Tiered Research Architecture with Propose/Apply Workflows | Accepted |
+| [041](041-image-storage-in-git.md) | Image Storage in Git Content Repositories | Accepted |
+| [042](042-package-import-round-trip.md) | IMSCC and SCORM Import with Round-Trip Detection | Accepted |
+| [043](043-in-memory-import-task-store.md) | In-Memory Import Task Store | Accepted |
+| [044](044-quality-scoring-algorithm.md) | Unit Quality Scoring Algorithm | Accepted |
+| [045](045-structured-llm-output-retry.md) | Structured LLM Output with Retry Loop | Accepted |
+| [046](046-jinja2-prompt-templates.md) | Jinja2 Prompt Template System | Accepted |
+| [047](047-editor-modes-quarto-export.md) | ~~Editor Modes with Quarto Export Configuration~~ | Superseded by ADR-033 |
+| [048](048-tiptap-custom-extensions.md) | TipTap Custom Node Extensions | Accepted |
+| [049](049-tiered-rate-limiting.md) | Tiered Rate Limiting by Endpoint Classification | Accepted |
+| [050](050-zustand-store-architecture.md) | Zustand Store Architecture with Selective Persistence | Accepted |
+| [051](051-llm-token-cost-tracking.md) | LLM Token Usage and Cost Tracking | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -69,6 +80,15 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-037: Privacy-First, BYOK Architecture](037-privacy-first-byok-architecture.md) - Local data, no telemetry, user-configured AI providers
 - [ADR-038: Content Curation, Not Presentation Design](038-content-not-presentation.md) - Strip on import, theme on export, semantic editing
 - [ADR-039: Tiered Research Architecture](039-tiered-research-architecture.md) - Four-tier search (academic→LLM→web API→SearXNG) with propose/apply synthesis
+- [ADR-041: Image Storage in Git](041-image-storage-in-git.md) - Binary images stored alongside content in per-unit Git repos
+- [ADR-042: IMSCC/SCORM Import](042-package-import-round-trip.md) - Dual-mode import with round-trip detection and LMS heuristics
+- [ADR-043: In-Memory Import Task Store](043-in-memory-import-task-store.md) - Process-local background task tracking for package imports
+- [ADR-044: Quality Scoring Algorithm](044-quality-scoring-algorithm.md) - Six-dimension weighted scoring with Shannon entropy and CV
+
+### AI & Prompt Engineering
+- [ADR-045: Structured LLM Output with Retry](045-structured-llm-output-retry.md) - Multi-attempt JSON extraction with temperature decay and error feedback
+- [ADR-046: Jinja2 Prompt Templates](046-jinja2-prompt-templates.md) - Two-layer template system with AST variable extraction and DB persistence
+- [ADR-051: LLM Token/Cost Tracking](051-llm-token-cost-tracking.md) - Dual-model tracking: per-generation history + aggregated usage stats
 
 ### Domain Model & User Experience
 - [ADR-004: Teaching Philosophy System](004-teaching-philosophy-system.md) - Personalization framework
@@ -80,12 +100,17 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-036: Learning Design as Generation Spec](036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
 - [ADR-040: Ambient Context](040-ambient-context-pattern.md) - Best guess + human override for working context
 
+### Frontend Architecture
+- [ADR-048: TipTap Custom Extensions](048-tiptap-custom-extensions.md) - Mermaid, YouTube, Video nodes with portable HTML serialisation
+- [ADR-050: Zustand Store Architecture](050-zustand-store-architecture.md) - Four stores with selective persistence via partialize
+
 ### Authentication & Security
 - [ADR-007: Simple Authentication for Internal Network](007-simple-authentication-internal-network.md) - Basic auth approach
 - [ADR-008: Email Verification with Cross-Device Support](008-email-verification-cross-device.md) - Dual-method verification
 - [ADR-009: Self-Service Password Reset](009-self-service-password-reset.md) - Email-based password recovery
 - [ADR-010: Security Hardening](010-security-hardening.md) - Comprehensive security measures
 - [ADR-011: Deployment Best Practices](011-deployment-best-practices.md) - Production deployment guidelines
+- [ADR-049: Tiered Rate Limiting](049-tiered-rate-limiting.md) - Endpoint-classified limits with dual IP/user limiter instances
 
 ### Superseded Decisions (Historical)
 
@@ -97,6 +122,7 @@ These ADRs document previous architectural directions that have since been repla
 | [005](005-hybrid-storage-approach.md) | Hybrid Storage Approach | Superseded by ADR-019 |
 | [006](006-pure-fasthtml-no-javascript.md) | Pure FastHTML Without JavaScript | Superseded by ADR-016 |
 | [012](012-framework-migration-fasthtml-to-nicegui.md) | Framework Migration to NiceGUI | Superseded by ADR-016 |
+| [047](047-editor-modes-quarto-export.md) | Editor Modes with Quarto Export Configuration | Superseded by ADR-033 |
 
 **Evolution Summary**: The project started with FastHTML (server-rendered Python), planned a migration to NiceGUI (never implemented), and ultimately adopted React + TypeScript frontend with FastAPI backend for the production stack.
 

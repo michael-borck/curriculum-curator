@@ -95,6 +95,106 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
       !state.saved.every(s => state.current.includes(s))
   );
 
+  const buildTree = useCallback(
+    (
+      ulos: ULOWithMappings[],
+      materials: MaterialWithOutcomes[],
+      capStates: Map<string, ULOCapabilityState>
+    ): TreeNode[] => {
+      // Group materials by week
+      const materialsByWeek = new Map<number, MaterialWithOutcomes[]>();
+      materials.forEach(m => {
+        const week = m.weekNumber;
+        if (!materialsByWeek.has(week)) {
+          materialsByWeek.set(week, []);
+        }
+        materialsByWeek.get(week)!.push(m);
+      });
+
+      // Build tree for each ULO
+      return ulos.map(ulo => {
+        // Find materials mapped to this ULO
+        const mappedMaterials = materials.filter(m =>
+          m.mappedUlos?.some(u => u.id === ulo.id)
+        );
+
+        // Group mapped materials by week
+        const weekNodes: TreeNode[] = [];
+        const weekGroups = new Map<number, MaterialWithOutcomes[]>();
+
+        mappedMaterials.forEach(m => {
+          if (!weekGroups.has(m.weekNumber)) {
+            weekGroups.set(m.weekNumber, []);
+          }
+          weekGroups.get(m.weekNumber)!.push(m);
+        });
+
+        // Sort weeks and create nodes
+        Array.from(weekGroups.entries())
+          .sort((a, b) => a[0] - b[0])
+          .forEach(([weekNum, weekMaterials]) => {
+            const materialNodes: TreeNode[] = weekMaterials.map(m => {
+              // Get LLOs for this material
+              const lloNodes: TreeNode[] = (m.localOutcomes || []).map(llo => ({
+                id: `llo-${llo.id}`,
+                type: 'llo' as const,
+                label: llo.description,
+                children: [],
+              }));
+
+              return {
+                id: `material-${m.id}`,
+                type: 'material' as const,
+                label: m.title,
+                sublabel: m.type,
+                children: lloNodes,
+                metadata: { type: m.type, duration: m.durationMinutes },
+              };
+            });
+
+            weekNodes.push({
+              id: `week-${ulo.id}-${weekNum}`,
+              type: 'week' as const,
+              label: `${topicLabel} ${weekNum}`,
+              children: materialNodes,
+            });
+          });
+
+        // Get capabilities from state
+        const capState = capStates.get(ulo.id);
+        const currentCaps = capState?.current || [];
+        const suggestedCaps = capState?.suggested || [];
+
+        // Convert codes to GraduateCapability objects
+        const savedCapabilities = currentCaps
+          .map(code => getCapabilityByCode(code))
+          .filter((gc): gc is GraduateCapability => gc !== undefined);
+
+        const suggestedCapabilities = suggestedCaps
+          .filter(code => !currentCaps.includes(code))
+          .map(code => getCapabilityByCode(code))
+          .filter((gc): gc is GraduateCapability => gc !== undefined);
+
+        return {
+          id: `ulo-${ulo.id}`,
+          type: 'ulo' as const,
+          label: ulo.code,
+          sublabel: ulo.description,
+          children: weekNodes,
+          metadata: {
+            bloomLevel: ulo.bloomLevel,
+            materialCount: ulo.materialCount,
+            assessmentCount: ulo.assessmentCount,
+          },
+          savedCapabilities,
+          suggestedCapabilities,
+          uloId: ulo.id,
+        };
+      });
+    },
+    [topicLabel]
+  );
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -164,110 +264,13 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [unitId]);
+  }, [unitId, buildTree]);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
     }
   }, [isOpen, loadData]);
-
-  const buildTree = (
-    ulos: ULOWithMappings[],
-    materials: MaterialWithOutcomes[],
-    capStates: Map<string, ULOCapabilityState>
-  ): TreeNode[] => {
-    // Group materials by week
-    const materialsByWeek = new Map<number, MaterialWithOutcomes[]>();
-    materials.forEach(m => {
-      const week = m.weekNumber;
-      if (!materialsByWeek.has(week)) {
-        materialsByWeek.set(week, []);
-      }
-      materialsByWeek.get(week)!.push(m);
-    });
-
-    // Build tree for each ULO
-    return ulos.map(ulo => {
-      // Find materials mapped to this ULO
-      const mappedMaterials = materials.filter(m =>
-        m.mappedUlos?.some(u => u.id === ulo.id)
-      );
-
-      // Group mapped materials by week
-      const weekNodes: TreeNode[] = [];
-      const weekGroups = new Map<number, MaterialWithOutcomes[]>();
-
-      mappedMaterials.forEach(m => {
-        if (!weekGroups.has(m.weekNumber)) {
-          weekGroups.set(m.weekNumber, []);
-        }
-        weekGroups.get(m.weekNumber)!.push(m);
-      });
-
-      // Sort weeks and create nodes
-      Array.from(weekGroups.entries())
-        .sort((a, b) => a[0] - b[0])
-        .forEach(([weekNum, weekMaterials]) => {
-          const materialNodes: TreeNode[] = weekMaterials.map(m => {
-            // Get LLOs for this material
-            const lloNodes: TreeNode[] = (m.localOutcomes || []).map(llo => ({
-              id: `llo-${llo.id}`,
-              type: 'llo' as const,
-              label: llo.description,
-              children: [],
-            }));
-
-            return {
-              id: `material-${m.id}`,
-              type: 'material' as const,
-              label: m.title,
-              sublabel: m.type,
-              children: lloNodes,
-              metadata: { type: m.type, duration: m.durationMinutes },
-            };
-          });
-
-          weekNodes.push({
-            id: `week-${ulo.id}-${weekNum}`,
-            type: 'week' as const,
-            label: `${topicLabel} ${weekNum}`,
-            children: materialNodes,
-          });
-        });
-
-      // Get capabilities from state
-      const capState = capStates.get(ulo.id);
-      const currentCaps = capState?.current || [];
-      const suggestedCaps = capState?.suggested || [];
-
-      // Convert codes to GraduateCapability objects
-      const savedCapabilities = currentCaps
-        .map(code => getCapabilityByCode(code))
-        .filter((gc): gc is GraduateCapability => gc !== undefined);
-
-      const suggestedCapabilities = suggestedCaps
-        .filter(code => !currentCaps.includes(code))
-        .map(code => getCapabilityByCode(code))
-        .filter((gc): gc is GraduateCapability => gc !== undefined);
-
-      return {
-        id: `ulo-${ulo.id}`,
-        type: 'ulo' as const,
-        label: ulo.code,
-        sublabel: ulo.description,
-        children: weekNodes,
-        metadata: {
-          bloomLevel: ulo.bloomLevel,
-          materialCount: ulo.materialCount,
-          assessmentCount: ulo.assessmentCount,
-        },
-        savedCapabilities,
-        suggestedCapabilities,
-        uloId: ulo.id,
-      };
-    });
-  };
 
   // Toggle a capability for a ULO
   const toggleCapability = (uloId: string, code: GraduateCapabilityCode) => {
