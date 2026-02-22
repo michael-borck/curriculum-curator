@@ -124,11 +124,11 @@
 
 **Goal:** Accessibility tooling and direct LMS API integration.
 
-| Task | Stories | Description |
-|------|---------|-------------|
-| **Accessibility checking** | 7.3 | WCAG compliance validation |
-| **LMS terminology mapping** | 9.9 | Map between LMS naming (Canvas Modules, Moodle Sections) and internal naming (Weeks, Materials) |
-| **Target LMS export** | 9.10 | Select target LMS on export → package uses correct naming/structure |
+| Task | Stories | Status |
+|------|---------|--------|
+| **Accessibility checking** | 7.3 | Done — `accessibility_validator` plugin handles markdown + HTML (alt text, headings, links, tables, color refs, video captions, Mermaid diagrams) |
+| **LMS terminology mapping** | 9.9 | Planned |
+| **Target LMS export** | 9.10 | Planned |
 
 **Cut from this phase:** 15.5 (AI image generation) and 15.6 (stock image search) — outside core scope.
 
@@ -160,4 +160,4 @@ These are explicitly out of scope to keep focus:
 | Electron + external tools for desktop | Accept "install these tools" friction for Pandoc/Typst/Ollama in exchange for shipping sooner. Docker remains the zero-friction option. |
 | AI assistance levels | ADR-032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-02-23 (7.3 done)*

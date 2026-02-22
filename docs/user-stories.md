@@ -101,7 +101,7 @@
 |---|-------|-------|--------|
 | 7.1 | As a **Curator**, I want automatic readability scoring (Flesch-Kincaid) on generated content. | P3 | **Done** — 9 plugins wired with API endpoints + editor quality panel |
 | 7.2 | As a **Curator**, I want structure validation (heading hierarchy, section balance). | P3 | **Done** — grammar, spell-check, structure validators with Australian English support |
-| 7.3 | As a **Curator**, I want accessibility checking (WCAG compliance). | P4 | **Planned** |
+| 7.3 | As a **Curator**, I want accessibility checking (WCAG compliance). | P4 | **Done** — `accessibility_validator` plugin handles markdown + HTML: alt text, heading structure, link text, tables, color refs, language complexity, video captions, YouTube titles, Mermaid diagrams |
 | 7.4 | As a **Curator**, I want an alignment report showing ULO coverage across materials and assessments. | P1 | **Done** — `analytics_service.get_alignment_report` |
 | 7.5 | As a **Curator**, I want a quality score for each unit (graded A–F) based on coverage, weights, workload balance. | P1 | **Done** — `analytics_service.calculate_quality_score` |
 | 7.6 | As a **Curator**, I want unit validation that flags errors (missing ULOs, weights != 100%, no materials). | P1 | **Done** — `analytics_service.validate_unit` |
@@ -223,8 +223,8 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~97 |
-| **Planned** | 3 |
+| **Done** | ~98 |
+| **Planned** | 2 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -232,13 +232,12 @@
 | **P1** | Manual editing, core CRUD, auth, analytics, IMSCC export | **Complete** |
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
 | **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | **Complete** |
-| **P4** | Accessibility validation, LMS terminology mapping, LMS-targeted export | In progress (3 of 6 stories done) |
+| **P4** | Accessibility validation, LMS terminology mapping, LMS-targeted export | In progress (4 of 6 stories done) |
 
 ### Remaining Stories
 
 | # | Story | Phase |
 |---|-------|-------|
-| 7.3 | WCAG accessibility validation | P4 |
 | 9.9 | LMS terminology mapping table | P4 |
 | 9.10 | Target LMS export selection | P4 |
 
