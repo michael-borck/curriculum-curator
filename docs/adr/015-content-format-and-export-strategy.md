@@ -4,7 +4,7 @@ Date: 2025-12-01
 
 ## Status
 
-Proposed
+Accepted — TipTap editor and multi-format export implemented. Export engine updated by [ADR-033](033-pandoc-typst-export-engine.md) (Pandoc + Typst replaced Quarto).
 
 ## Context
 

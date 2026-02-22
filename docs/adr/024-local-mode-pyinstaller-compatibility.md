@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — LOCAL_MODE is current. PyInstaller packaging superseded by [ADR-035](035-electron-desktop-app.md) (Electron with embedded backend).
 
 ## Date
 

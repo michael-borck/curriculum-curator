@@ -4,7 +4,7 @@ Date: 2025-08-01
 
 ## Status
 
-Accepted
+Superseded by [ADR-019](019-database-abstraction-sqlalchemy.md) — SQLAlchemy ORM replaced the hybrid storage approach.
 
 ## Context
 

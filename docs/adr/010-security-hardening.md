@@ -4,7 +4,7 @@ Date: 2025-01-08
 
 ## Status
 
-Accepted
+Accepted — partially superseded by [ADR-017](017-fastapi-rest-backend.md) for authentication (JWT replaced sessions; CSRF no longer applicable). Rate limiting, password policies, security headers, and audit logging still apply.
 
 ## Context
 

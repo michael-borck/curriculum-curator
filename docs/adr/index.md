@@ -35,7 +35,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [021](021-web-search-citation-integration.md) | Web Search and Citation Integration | **Accepted** |
 | [022](022-content-type-system-evolution.md) | Content Type System Evolution | **Accepted** |
 | [023](023-file-import-processing-architecture.md) | File Import and Processing Architecture | **Accepted** |
-| [015](015-content-format-and-export-strategy.md) | Content Format and Export Strategy | Proposed |
+| [015](015-content-format-and-export-strategy.md) | Content Format and Export Strategy | Accepted |
 | [014](014-litellm-unified-llm-abstraction.md) | LiteLLM for Unified LLM Abstraction | Accepted |
 | [024](024-local-mode-pyinstaller-compatibility.md) | LOCAL_MODE and PyInstaller Compatibility | Accepted |
 | [025](025-ollama-docker-sidecar-local-ai.md) | Ollama Docker Sidecar for Local AI | Accepted |
@@ -59,7 +59,6 @@ An Architecture Decision Record captures an important architectural decision mad
 
 ### Architecture
 - [ADR-003: Plugin Architecture](003-plugin-architecture.md) - Extensibility approach
-- [ADR-005: Hybrid Storage Approach](005-hybrid-storage-approach.md) - Data persistence strategy
 - [ADR-019: Database Abstraction](019-database-abstraction-sqlalchemy.md) - SQLAlchemy ORM for portability
 - [ADR-021: Web Search and Citation Integration](021-web-search-citation-integration.md) - Academic research integration
 - [ADR-023: File Import and Processing Architecture](023-file-import-processing-architecture.md) - Multi-format document processing
@@ -94,9 +93,10 @@ These ADRs document previous architectural directions that have since been repla
 
 | ADR | Title | Superseded By |
 |-----|-------|---------------|
-| [002](002-fasthtml-web-framework.md) | FastHTML Web Framework | ADR-016 |
-| [006](006-pure-fasthtml-no-javascript.md) | Pure FastHTML Without JavaScript | ADR-016 |
-| [012](012-framework-migration-fasthtml-to-nicegui.md) | Framework Migration to NiceGUI | ADR-016 |
+| [002](002-fasthtml-web-framework.md) | FastHTML Web Framework | Superseded by ADR-016 |
+| [005](005-hybrid-storage-approach.md) | Hybrid Storage Approach | Superseded by ADR-019 |
+| [006](006-pure-fasthtml-no-javascript.md) | Pure FastHTML Without JavaScript | Superseded by ADR-016 |
+| [012](012-framework-migration-fasthtml-to-nicegui.md) | Framework Migration to NiceGUI | Superseded by ADR-016 |
 
 **Evolution Summary**: The project started with FastHTML (server-rendered Python), planned a migration to NiceGUI (never implemented), and ultimately adopted React + TypeScript frontend with FastAPI backend for the production stack.
 
