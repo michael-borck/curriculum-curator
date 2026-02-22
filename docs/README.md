@@ -24,7 +24,6 @@ docs/
 | [PRD](PRD-Curriculum-Curator.md) | Product requirements document |
 | [User Stories](user-stories.md) | Feature tracking by phase |
 | [Implementation Plan](implementation-plan.md) | Phase completion tracking |
-| [Security](SECURITY.md) | Security architecture and policies |
 | [ADR Index](adr/index.md) | All architecture decision records |
 
 ## Guides
@@ -46,8 +45,6 @@ docs/
 
 ## Other
 
-- [Instructional Design Workflow](instructional-design-workflow.md) — End-to-end content creation flow
-- [LRD Content Creation System](LRD-content-creation-system-v1.0.md) — Learning resource design spec
 - [UI Mockups](mocks/) — Early design mockups (PNG + TSX)
 - [PRD Development Process](PRD-Development/) — How we create PRDs and task lists
 
