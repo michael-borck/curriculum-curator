@@ -844,11 +844,11 @@ const ImportMaterials = () => {
               Smart Content Detection
             </p>
             <p className='text-blue-800'>
-              Files are automatically categorized based on their content (e.g.,
+              Files are automatically categorised based on their content (e.g.,
               &quot;Quiz 1&quot; to Quiz, &quot;Lab Exercise&quot; to Lab). You
               can change the type using the dropdown if the detection is
-              incorrect. ZIP archives will be analyzed to detect unit structure
-              and week organization.
+              incorrect. ZIP archives will be analysed to detect unit structure
+              and week organisation.
             </p>
           </div>
         </div>
@@ -1702,7 +1702,7 @@ const ImportMaterials = () => {
               defaultChecked
             />
             <span>
-              Automatically categorize content (Lecture, Quiz, Worksheet, etc.)
+              Automatically categorise content (Lecture, Quiz, Worksheet, etc.)
             </span>
           </label>
 

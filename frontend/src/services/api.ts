@@ -5,6 +5,8 @@ import type {
   UnitListResponse,
   PedagogyType,
   ContentType,
+  VisualPromptRequest,
+  VisualPromptResponse,
 } from '../types/index';
 
 // Same origin - backend serves both API and frontend
@@ -241,6 +243,17 @@ export const generateContentStream = async (
   } catch (error) {
     onError?.(error instanceof Error ? error : new Error('Stream failed'));
   }
+};
+
+// Visual prompt generation
+export const generateVisualPrompt = async (
+  req: VisualPromptRequest
+): Promise<VisualPromptResponse> => {
+  const { data } = await api.post<VisualPromptResponse>(
+    '/ai/visual-prompt',
+    req
+  );
+  return data;
 };
 
 // Content validation

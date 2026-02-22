@@ -451,7 +451,9 @@ export const LearningOutcomeMap: React.FC<LearningOutcomeMapProps> = ({
                     ] || 'bg-gray-100 text-gray-700'
                   }`}
                 >
-                  {String(node.metadata.bloomLevel)}
+                  {String(node.metadata.bloomLevel) === 'analyze'
+                    ? 'Analyse'
+                    : String(node.metadata.bloomLevel)}
                 </span>
               ) : null}
 

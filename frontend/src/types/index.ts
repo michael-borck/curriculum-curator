@@ -235,6 +235,30 @@ export type HandleClickFunction = (
   e: MouseEvent<HTMLButtonElement>
 ) => void | Promise<void>;
 
+// Visual Prompt Generator types
+export type VisualPromptStyle =
+  | 'photographic'
+  | 'illustration'
+  | 'diagram'
+  | 'flat-vector'
+  | 'watercolor'
+  | '3d-render';
+
+export type VisualPromptAspectRatio = 'square' | 'landscape' | 'portrait';
+
+export interface VisualPromptRequest {
+  content: string;
+  style: VisualPromptStyle;
+  aspectRatio: VisualPromptAspectRatio;
+  context?: string | undefined;
+}
+
+export interface VisualPromptResponse {
+  prompt: string;
+  negativePrompt: string;
+  styleNotes: string;
+}
+
 // Utility types
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;

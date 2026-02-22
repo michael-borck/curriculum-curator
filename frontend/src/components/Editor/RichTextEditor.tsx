@@ -11,6 +11,7 @@ import { VideoNode } from './VideoNode';
 import { YoutubeNode } from './YoutubeNode';
 import { MermaidNode } from './MermaidNode';
 import ImageInsertDialog from './ImageInsertDialog';
+import VisualPromptPanel from './VisualPromptPanel';
 import { createLowlight } from 'lowlight';
 import js from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
@@ -42,6 +43,7 @@ import {
   Youtube,
   Video,
   GitMerge,
+  Wand2,
   Undo,
   Redo,
   Info,
@@ -50,9 +52,13 @@ import {
 const MenuBar = ({
   editor,
   onImageClick,
+  onVisualPromptClick,
+  isAIDisabled,
 }: {
   editor: Editor | null;
   onImageClick: () => void;
+  onVisualPromptClick: () => void;
+  isAIDisabled: boolean;
 }) => {
   if (!editor) return null;
 
@@ -169,6 +175,19 @@ const MenuBar = ({
       >
         <GitMerge size={18} />
       </button>
+      <button
+        onClick={isAIDisabled ? undefined : onVisualPromptClick}
+        className={`p-2 rounded ${
+          isAIDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
+        }`}
+        title={
+          isAIDisabled
+            ? 'Enable AI to generate image prompts'
+            : 'Generate image prompt'
+        }
+      >
+        <Wand2 size={18} />
+      </button>
 
       <div className='w-px bg-gray-300 mx-1' />
 
@@ -198,6 +217,8 @@ const RichTextEditor = ({
   const { isAIDisabled } = useAILevel();
   const globalStyle = useTeachingStyleStore(state => state.globalStyle);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showVisualPrompt, setShowVisualPrompt] = useState(false);
+  const [visualPromptText, setVisualPromptText] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -228,13 +249,31 @@ const RichTextEditor = ({
 
   return (
     <div className='border border-gray-300 rounded-lg overflow-hidden'>
-      <MenuBar editor={editor} onImageClick={() => setShowImageDialog(true)} />
+      <MenuBar
+        editor={editor}
+        onImageClick={() => setShowImageDialog(true)}
+        onVisualPromptClick={() => {
+          const { from, to } = editor?.state.selection ?? { from: 0, to: 0 };
+          const text =
+            from !== to
+              ? (editor?.state.doc.textBetween(from, to, ' ') ?? '')
+              : '';
+          setVisualPromptText(text);
+          setShowVisualPrompt(true);
+        }}
+        isAIDisabled={isAIDisabled}
+      />
       <ImageInsertDialog
         isOpen={showImageDialog}
         onClose={() => setShowImageDialog(false)}
         onInsert={handleImageInsert}
         unitId={unitId}
         materialId={materialId}
+      />
+      <VisualPromptPanel
+        isOpen={showVisualPrompt}
+        onClose={() => setShowVisualPrompt(false)}
+        selectedText={visualPromptText}
       />
       <EditorContent
         editor={editor}

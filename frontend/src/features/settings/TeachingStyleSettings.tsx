@@ -231,7 +231,7 @@ const questions = [
       { value: 'traditional', label: 'Lecture first, then practice' },
       {
         value: 'experiential',
-        label: 'Experience first, then reflect and theorize',
+        label: 'Experience first, then reflect and theorise',
       },
       {
         value: 'problem-based',
@@ -561,7 +561,7 @@ const TeachingStyleSettings = () => {
             </h3>
             <p className='text-gray-600 mt-1'>
               {currentStyle?.description ||
-                'Take the quiz or select a style to personalize your AI-generated content.'}
+                'Take the quiz or select a style to personalise your AI-generated content.'}
             </p>
             {currentStyle && (
               <div className='flex flex-wrap gap-2 mt-3'>

@@ -117,7 +117,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
               Sign in to Curriculum Curator
             </h2>
             <p className='mt-2 text-center text-sm text-gray-600'>
-              Access your personalized content creation platform
+              Access your personalised content creation platform
             </p>
           </div>
 

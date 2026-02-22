@@ -77,3 +77,30 @@ class FillGapResponse(CamelModel):
     gap_type: str
     generated_content: str
     suggestions: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# Visual Prompt Generator
+# =============================================================================
+
+
+class VisualPromptRequest(CamelModel):
+    """Request to generate an image-generation prompt from educational content."""
+
+    content: str = Field(..., min_length=1, max_length=10000)
+    style: str = Field(
+        ...,
+        description="Image style: photographic, illustration, diagram, flat-vector, watercolor, 3d-render",
+    )
+    aspect_ratio: str = Field(default="landscape")
+    context: str = Field(
+        default="", max_length=500, description="What the image is for"
+    )
+
+
+class VisualPromptResponse(CamelModel):
+    """Generated image prompt ready to paste into Midjourney/DALL-E/etc."""
+
+    prompt: str
+    negative_prompt: str
+    style_notes: str

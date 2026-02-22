@@ -153,15 +153,15 @@ const UnitScaffoldReview: React.FC<UnitScaffoldReviewProps> = ({
                   className='w-28 px-2 py-1.5 text-sm border border-gray-300 rounded-lg'
                 >
                   {[
-                    'remember',
-                    'understand',
-                    'apply',
-                    'analyze',
-                    'evaluate',
-                    'create',
+                    { value: 'remember', label: 'remember' },
+                    { value: 'understand', label: 'understand' },
+                    { value: 'apply', label: 'apply' },
+                    { value: 'analyze', label: 'analyse' },
+                    { value: 'evaluate', label: 'evaluate' },
+                    { value: 'create', label: 'create' },
                   ].map(lvl => (
-                    <option key={lvl} value={lvl}>
-                      {lvl}
+                    <option key={lvl.value} value={lvl.value}>
+                      {lvl.label}
                     </option>
                   ))}
                 </select>

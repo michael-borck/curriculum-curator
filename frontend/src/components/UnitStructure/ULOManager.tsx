@@ -225,7 +225,7 @@ const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
     { value: 'apply', label: 'Apply', color: 'bg-yellow-100 text-yellow-700' },
     {
       value: 'analyze',
-      label: 'Analyze',
+      label: 'Analyse',
       color: 'bg-orange-100 text-orange-700',
     },
     {

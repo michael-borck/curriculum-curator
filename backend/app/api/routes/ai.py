@@ -21,6 +21,8 @@ from app.schemas.ai import (
     ScaffoldUnitRequest,
     ScaffoldUnitResponse,
     ScaffoldWeek,
+    VisualPromptRequest,
+    VisualPromptResponse,
 )
 from app.schemas.content import ContentGenerationRequest
 from app.schemas.llm import (
@@ -969,3 +971,110 @@ async def fill_gap(
         generated_content=content,
         suggestions=[],
     )
+
+
+# =============================================================================
+# Visual Prompt Generator (15.9)
+# =============================================================================
+
+VISUAL_PROMPT_STYLES = {
+    "photographic",
+    "illustration",
+    "diagram",
+    "flat-vector",
+    "watercolor",
+    "3d-render",
+}
+
+VISUAL_PROMPT_ASPECT_RATIOS = {"square", "landscape", "portrait"}
+
+
+@router.post("/visual-prompt", response_model=VisualPromptResponse)
+async def generate_visual_prompt(
+    request: VisualPromptRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
+) -> VisualPromptResponse:
+    """
+    Generate a ready-to-copy image generation prompt from educational content.
+
+    The user selects text in the editor, picks a visual style, and receives
+    a detailed prompt they can paste into Midjourney, DALL-E, or similar tools.
+    """
+    if request.style not in VISUAL_PROMPT_STYLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid style. Must be one of: {', '.join(sorted(VISUAL_PROMPT_STYLES))}",
+        )
+    if request.aspect_ratio not in VISUAL_PROMPT_ASPECT_RATIOS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid aspect ratio. Must be one of: {', '.join(sorted(VISUAL_PROMPT_ASPECT_RATIOS))}",
+        )
+
+    context_line = f"\nPurpose: {request.context}" if request.context else ""
+
+    prompt = f"""Generate a detailed image-generation prompt based on the following educational content.
+
+Style: {request.style}
+Aspect ratio: {request.aspect_ratio}{context_line}
+
+Educational content:
+{request.content}
+
+Return a JSON object with exactly these keys:
+{{
+  "prompt": "A detailed, vivid image generation prompt (1-3 sentences). Be specific about composition, colours, mood, and subject matter. Make it tool-agnostic (works with Midjourney, DALL-E, Stable Diffusion, etc.).",
+  "negative_prompt": "A comma-separated list of things to avoid (e.g. text, watermarks, blurry, low quality).",
+  "style_notes": "1-2 sentences of practical tips for generating this style of image (e.g. recommended tools, settings, or modifiers)."
+}}
+
+Return ONLY valid JSON, no markdown fences or extra text."""
+
+    try:
+        result = await llm_service.generate_text(
+            prompt=prompt,
+            system_prompt=(
+                "You are an expert visual prompt engineer for AI image generation tools. "
+                "You create detailed, effective prompts that produce high-quality educational imagery. "
+                "Always respond with valid JSON only."
+            ),
+            user=current_user,
+            db=db,
+            temperature=0.8,
+        )
+
+        response_text = (
+            result
+            if isinstance(result, str)
+            else "".join([chunk async for chunk in result])
+        )
+
+        # Clean markdown formatting if present
+        response_text = response_text.strip()
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+
+        parsed = json.loads(response_text)
+
+        return VisualPromptResponse(
+            prompt=parsed.get("prompt", ""),
+            negative_prompt=parsed.get("negative_prompt", ""),
+            style_notes=parsed.get("style_notes", ""),
+        )
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse AI response as JSON: {e}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Visual prompt generation failed: {e!s}",
+        )
