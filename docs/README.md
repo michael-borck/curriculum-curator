@@ -1,57 +1,56 @@
 # Curriculum Curator Documentation
 
-Documentation for Curriculum Curator - an AI-powered tool for creating pedagogically-sound course materials.
+Documentation for Curriculum Curator — an AI-powered tool for creating pedagogically-sound curriculum materials.
+
+For development setup, tooling, and code conventions, see [CLAUDE.md](../CLAUDE.md) (the definitive dev guide).
 
 ## Documentation Structure
 
 ```
 docs/
-├── adr/              # Architecture Decision Records
-├── api/              # API reference documentation
-├── concepts/         # Conceptual overviews
-├── development/      # Development guides
-├── guides/           # How-to guides
-├── reference/        # Reference material
-├── mocks/            # UI mockups
-├── PRD-Development/  # PRD workflow process
-└── archive/          # Historical planning docs
+├── adr/              # Architecture Decision Records (40 ADRs)
+├── concepts/         # Conceptual overviews (teaching philosophy, plugin system, IMSCC spec)
+├── guides/           # How-to guides (Docker deployment, email, teaching styles)
+├── mocks/            # UI mockups from early design
+├── PRD-Development/  # PRD workflow process docs
+└── archive/          # Historical docs from FastHTML/NiceGUI/Tauri eras
 ```
 
-## Quick Links
+## Key Documents
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](guides/getting-started.md) | Setup and first steps |
-| [Architecture](concepts/architecture.md) | System design overview |
-| [Deployment](guides/deployment.md) | Production deployment |
-| [Development Guide](development/DEVELOPMENT_GUIDE.md) | Contributing to the project |
-| [Security](SECURITY.md) | Security considerations |
+| [CLAUDE.md](../CLAUDE.md) | Development setup, architecture, conventions |
+| [PRD](PRD-Curriculum-Curator.md) | Product requirements document |
+| [User Stories](user-stories.md) | Feature tracking by phase |
+| [Implementation Plan](implementation-plan.md) | Phase completion tracking |
+| [Security](SECURITY.md) | Security architecture and policies |
+| [ADR Index](adr/index.md) | All architecture decision records |
 
-## Key Documentation
+## Guides
 
-### Architecture Decision Records (ADRs)
-Located in [`adr/`](adr/) - documents important architectural decisions and their rationale.
+| Guide | Description |
+|-------|-------------|
+| [Docker VPS Deployment](guides/docker-vps-deployment.md) | Production deployment with Docker |
+| [Email Configuration](guides/email-configuration.md) | SMTP setup for verification/reset |
+| [Teaching Styles](guides/teaching-styles.md) | 9 pedagogical approaches overview |
+| [Teaching Styles Reference](guides/teaching-styles-reference.md) | Detailed style descriptions and prompts |
 
-### Product Requirements
-- [PRD-Curriculum-Curator.md](PRD-Curriculum-Curator.md) - Main product requirements document
+## Concepts
 
-### Guides
-- [Authentication & Security](guides/authentication-security.md)
-- [Docker VPS Deployment](guides/docker-vps-deployment.md)
-- [Email Configuration](guides/email-configuration.md)
-- [Teaching Styles](guides/teaching-styles.md)
+| Document | Description |
+|----------|-------------|
+| [Teaching Philosophy](concepts/teaching-philosophy.md) | Core pedagogy system design |
+| [Plugin System](concepts/plugin-system.md) | Content validation/remediation plugins |
+| [IMSCC Spec](concepts/imscc-spec.md) | IMS Common Cartridge export spec |
 
-### Development
-- [Development Guide](development/DEVELOPMENT_GUIDE.md)
-- [Testing Guide](development/TESTING_GUIDE.md)
-- [Git Migration Plan](development/GIT_MIGRATION_PLAN.md)
+## Other
+
+- [Instructional Design Workflow](instructional-design-workflow.md) — End-to-end content creation flow
+- [LRD Content Creation System](LRD-content-creation-system-v1.0.md) — Learning resource design spec
+- [UI Mockups](mocks/) — Early design mockups (PNG + TSX)
+- [PRD Development Process](PRD-Development/) — How we create PRDs and task lists
 
 ## Archive
 
-Historical planning documents and migration plans are preserved in [`archive/`](archive/) for reference.
-These include early UX analysis, migration plans from previous frameworks, and completed refactoring tasks.
-
-## Related
-
-- [CLAUDE.md](../CLAUDE.md) - AI assistant instructions for this project
-- [backend/BACKEND_STATUS.md](../backend/BACKEND_STATUS.md) - Backend code status tracking
+Historical planning documents from previous framework eras (FastHTML, NiceGUI, Tauri) and completed migration plans are preserved in [`archive/`](archive/) for reference.
