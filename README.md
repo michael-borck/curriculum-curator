@@ -1,7 +1,7 @@
 # Curriculum Curator
 
 > **You choose how to install it. You choose how to teach with it.**
-> Deploy on your institution's server or run it on your laptop. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build curriculum your way.
+> Deploy on your institution's server or run it on your laptop. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build, import, and curate curriculum your way.
 
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
