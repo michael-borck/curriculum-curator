@@ -84,7 +84,9 @@ export type ContentType =
   | 'assessment'
   | 'video'
   | 'podcast'
-  | 'tutorial';
+  | 'tutorial'
+  | 'notes'
+  | 'activity';
 export type PedagogyType =
   | 'inquiry-based'
   | 'project-based'

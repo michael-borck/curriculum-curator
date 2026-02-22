@@ -14,12 +14,14 @@ import {
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import SaveToUnitButton from './SaveToUnitButton';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isError?: boolean | undefined;
 }
 
 interface AIAssistantProps {
@@ -121,6 +123,7 @@ const AIAssistant = ({
           content:
             'LLM provider is not configured. Please go to Settings > AI/LLM Settings to configure your API key.',
           timestamp: new Date(),
+          isError: true,
         },
       ]);
       return;
@@ -165,6 +168,7 @@ const AIAssistant = ({
           content:
             'Sorry, I encountered an error. Please check your LLM settings or try again later.',
           timestamp: new Date(),
+          isError: true,
         },
       ]);
     } finally {
@@ -195,7 +199,7 @@ const AIAssistant = ({
           {messages.map(msg => (
             <div
               key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
                 className={`max-w-[85%] px-3 py-2 rounded-lg text-sm ${
@@ -206,6 +210,13 @@ const AIAssistant = ({
               >
                 <p className='whitespace-pre-wrap'>{msg.content}</p>
               </div>
+              {msg.role === 'assistant' && msg.id !== '1' && !msg.isError && (
+                <SaveToUnitButton
+                  messageContent={msg.content}
+                  unitId={unitId}
+                  unitTitle={unitTitle}
+                />
+              )}
             </div>
           ))}
           {loading && (
@@ -285,7 +296,7 @@ const AIAssistant = ({
           {messages.map(message => (
             <div
               key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
                 className={`max-w-2xl px-4 py-3 rounded-lg ${
@@ -303,6 +314,15 @@ const AIAssistant = ({
                   {message.timestamp.toLocaleTimeString()}
                 </p>
               </div>
+              {message.role === 'assistant' &&
+                message.id !== '1' &&
+                !message.isError && (
+                  <SaveToUnitButton
+                    messageContent={message.content}
+                    unitId={unitId}
+                    unitTitle={unitTitle}
+                  />
+                )}
             </div>
           ))}
 
