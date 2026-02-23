@@ -35,6 +35,7 @@ from app.services.package_import_service import (
     PackageImportError,
     PackageImportService,
     classify_item,
+    detect_blackboard_content_areas,
     detect_format_from_manifest,
     detect_source_lms,
     has_meta,
@@ -107,6 +108,12 @@ class UnifiedImportService:
         material_count = sum(1 for f in files if f.detected_type == "material")
         assessment_count = sum(1 for f in files if f.detected_type == "assessment")
 
+        # Detect Blackboard content areas for IMSCC packages
+        detected_content_areas: list[str] | None = None
+        if source_lms == "blackboard" and package_type == "imscc":
+            manifest = parse_manifest(zf)
+            detected_content_areas = detect_blackboard_content_areas(manifest)
+
         return UnifiedImportPreview(
             package_type=package_type,
             source_lms=source_lms,
@@ -120,6 +127,7 @@ class UnifiedImportService:
             assessment_count=assessment_count,
             total_processable=len(files),
             total_skipped=len(skipped),
+            detected_content_areas=detected_content_areas,
         )
 
     @staticmethod
@@ -135,7 +143,7 @@ class UnifiedImportService:
     def detect_source_lms(zf: zipfile.ZipFile) -> str | None:
         if "imsmanifest.xml" in zf.namelist():
             manifest_text = zf.read("imsmanifest.xml").decode("utf-8", errors="replace")
-            return detect_source_lms(manifest_text)
+            return detect_source_lms(manifest_text, zf)
         return None
 
     def _extract_package_metadata(
@@ -161,7 +169,7 @@ class UnifiedImportService:
             duration_weeks = len(manifest.top_items) or 12
 
             for _item_title, children in manifest.top_items:
-                for child_title, href, rtype in children:
+                for child_title, href, rtype, _cat_hint in children:
                     if href:
                         manifest_titles[href] = child_title
                         manifest_types[href] = rtype

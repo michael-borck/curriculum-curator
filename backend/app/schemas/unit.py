@@ -102,6 +102,7 @@ class UnitResponse(CamelModel):
     prerequisites: str | None = None
     learning_hours: int | None = None
     unit_metadata: dict[str, Any] | None = None
+    import_provenance: dict[str, Any] | None = None
     created_at: datetime | str
     updated_at: datetime | str | None = None
 

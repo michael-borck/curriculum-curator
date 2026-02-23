@@ -33,6 +33,7 @@ from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminol
 from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
+    UnitExportData,
     escape_html,
     gather_unit_export_data,
     slugify,
@@ -57,6 +58,19 @@ class IMSCCExportService:
         """Export a unit as .imscc ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
         terms = get_terminology(target_lms)
+
+        # Build provenance reverse maps for identifier reuse on re-export
+        # If provenance exists and target LMS matches source, reuse original CC identifiers
+        mat_reverse: dict[str, str] = {}  # current_db_id -> original_cc_identifier
+        assess_reverse: dict[str, str] = {}
+        prov = data.unit.import_provenance
+        if prov and prov.get("source_lms") == target_lms.value:
+            id_map = prov.get("identifier_map", {})
+            # Reverse: original_cc_key -> new_db_id  =>  new_db_id -> original_cc_key
+            for orig_key, db_id in id_map.get("materials", {}).items():
+                mat_reverse[str(db_id)] = orig_key
+            for orig_key, db_id in id_map.get("assessments", {}).items():
+                assess_reverse[str(db_id)] = orig_key
 
         # Build all resources: list of (identifier, href, title)
         resources: list[tuple[str, str, str]] = []
@@ -96,7 +110,8 @@ class IMSCCExportService:
                 mat_type = str(mat.type)
                 filename = f"{mat_type}_{slug}.html"
                 href = f"{week_dir}/{filename}"
-                identifier = f"mat_{mat.id}"
+                # Reuse original CC identifier if available, else fresh
+                identifier = mat_reverse.get(str(mat.id), f"mat_{mat.id}")
 
                 content = str(mat.description or "")
                 html = self._material_to_html(str(mat.title), content)
@@ -107,7 +122,10 @@ class IMSCCExportService:
         # Assessment pages
         for i, assessment in enumerate(data.assessments, 1):
             href = f"assessments/assessment_{i}.html"
-            identifier = f"assessment_{assessment.id}"
+            # Reuse original CC identifier if available, else fresh
+            identifier = assess_reverse.get(
+                str(assessment.id), f"assessment_{assessment.id}"
+            )
             html = self._assessment_to_html(assessment)
             resources.append((identifier, href, str(assessment.title)))
             file_contents[href] = html
@@ -136,14 +154,7 @@ class IMSCCExportService:
         )
 
         # Build metadata JSON
-        meta_json = self._build_meta_json(
-            data.unit,
-            data.learning_outcomes,
-            data.aol_mappings,
-            data.sdg_mappings,
-            data.gc_mappings,
-            target_lms=target_lms,
-        )
+        meta_json = self._build_meta_json(data, resources, target_lms=target_lms)
 
         # Package into ZIP
         buf = BytesIO()
@@ -250,10 +261,88 @@ class IMSCCExportService:
             week_title_elem = ET.SubElement(week_item, f"{{{NS_CP}}}title")
             week_title_elem.text = week_title
 
-            for res_id, _href, res_title in resources:
-                if res_id.startswith("mat_") and _href.startswith(
-                    f"week{week_num:02d}/"
-                ):
+            # Build resource lookup for this week
+            week_prefix = f"week{week_num:02d}/"
+            week_resources = [
+                (res_id, _href, res_title)
+                for res_id, _href, res_title in resources
+                if res_id.startswith("mat_") and _href.startswith(week_prefix)
+            ]
+
+            # Check if materials have multiple categories
+            week_mats = materials_by_week.get(week_num, [])
+            unique_cats = {str(m.category) for m in week_mats}
+            has_categories = unique_cats != {"general"} and len(unique_cats) > 0
+
+            if has_categories:
+                # Group by category with sub-headers
+                cat_order = [
+                    "pre_class",
+                    "in_class",
+                    "post_class",
+                    "resources",
+                    "general",
+                ]
+                cat_labels = {
+                    "pre_class": "Pre-class",
+                    "in_class": "In-class",
+                    "post_class": "Post-class",
+                    "resources": "Resources",
+                    "general": "General",
+                }
+                # Build mat_id -> resource mapping
+                mat_res_map: dict[str, tuple[str, str, str]] = {}
+                for res_id, _href, res_title in week_resources:
+                    mat_res_map[res_id] = (res_id, _href, res_title)
+
+                for cat in cat_order:
+                    cat_mats = [m for m in week_mats if str(m.category) == cat]
+                    if not cat_mats:
+                        continue
+                    # Insert sub-header item
+                    cat_item = ET.SubElement(
+                        week_item,
+                        f"{{{NS_CP}}}item",
+                        identifier=f"cat_{week_num:02d}_{cat}",
+                    )
+                    cat_title = ET.SubElement(cat_item, f"{{{NS_CP}}}title")
+                    cat_title.text = cat_labels.get(cat, cat.replace("_", " ").title())
+                    for m in cat_mats:
+                        res_key = f"mat_{m.id}"
+                        if res_key in mat_res_map:
+                            r_id, _r_href, r_title = mat_res_map[res_key]
+                            item = ET.SubElement(
+                                cat_item,
+                                f"{{{NS_CP}}}item",
+                                identifier=f"item_{r_id}",
+                                identifierref=r_id,
+                            )
+                            t = ET.SubElement(item, f"{{{NS_CP}}}title")
+                            t.text = r_title
+                        else:
+                            # Check provenance-aware identifiers (title fallback)
+                            for r_id, _r_href, r_title in week_resources:
+                                existing_ids = {
+                                    el.get("identifier", "")
+                                    for el in week_item.iter(f"{{{NS_CP}}}item")
+                                }
+                                if (
+                                    _r_href.startswith(week_prefix)
+                                    and r_title == str(m.title)
+                                    and f"item_{r_id}" not in existing_ids
+                                ):
+                                    item = ET.SubElement(
+                                        cat_item,
+                                        f"{{{NS_CP}}}item",
+                                        identifier=f"item_{r_id}",
+                                        identifierref=r_id,
+                                    )
+                                    t = ET.SubElement(item, f"{{{NS_CP}}}title")
+                                    t.text = r_title
+                                    break
+            else:
+                # Flat structure (all general or single category)
+                for res_id, _href, res_title in week_resources:
                     item = ET.SubElement(
                         week_item,
                         f"{{{NS_CP}}}item",
@@ -459,22 +548,24 @@ class IMSCCExportService:
 
     def _build_meta_json(
         self,
-        unit: Unit,
-        outcomes: list[UnitLearningOutcome],
-        aol_mappings: list[UnitAoLMapping],
-        sdg_mappings: list[UnitSDGMapping],
-        gc_mappings: list[ULOGraduateCapabilityMapping],
+        data: UnitExportData,
+        resources: list[tuple[str, str, str]],
         *,
         target_lms: TargetLMS = TargetLMS.GENERIC,
     ) -> str:
-        """Build the curriculum_curator_meta.json for round-trip."""
+        """Build the curriculum_curator_meta.json for round-trip (v2)."""
+        unit = data.unit
         # Build GC lookup: ulo_id -> list of capability codes
         gc_by_ulo: dict[str, list[str]] = {}
-        for gc in gc_mappings:
+        for gc in data.gc_mappings:
             gc_by_ulo.setdefault(str(gc.ulo_id), []).append(str(gc.capability_code))
 
-        meta = {
+        # Build href lookup from resources: identifier -> href
+        href_map = {res_id: href for res_id, href, _title in resources}
+
+        meta: dict[str, object] = {
             "version": "1.0",
+            "meta_version": "2.0",
             "exported_from": "curriculum-curator",
             "exported_at": datetime.now(UTC).isoformat(),
             "target_lms": target_lms.value,
@@ -496,16 +587,51 @@ class IMSCCExportService:
                     "bloom_level": str(lo.bloom_level),
                     "graduate_capabilities": gc_by_ulo.get(str(lo.id), []),
                 }
-                for lo in outcomes
+                for lo in data.learning_outcomes
             ],
             "aol_mappings": [
                 {
                     "competency_code": str(m.competency_code),
                     "level": str(m.level),
                 }
-                for m in aol_mappings
+                for m in data.aol_mappings
             ],
-            "sdg_mappings": [{"sdg_code": str(s.sdg_code)} for s in sdg_mappings],
+            "sdg_mappings": [{"sdg_code": str(s.sdg_code)} for s in data.sdg_mappings],
+            # v2 fields: per-material, per-assessment, per-topic data
+            "materials": [
+                {
+                    "id": str(mat.id),
+                    "week_number": int(mat.week_number),
+                    "title": str(mat.title),
+                    "type": str(mat.type),
+                    "category": str(mat.category),
+                    "order_index": int(mat.order_index),
+                    "href": href_map.get(f"mat_{mat.id}", ""),
+                }
+                for mat in data.weekly_materials
+            ],
+            "assessments": [
+                {
+                    "id": str(a.id),
+                    "title": str(a.title),
+                    "type": str(a.type),
+                    "category": str(a.category),
+                    "weight": float(a.weight) if a.weight else 0.0,
+                    "due_week": int(a.due_week) if a.due_week else None,
+                    "href": href_map.get(f"assessment_{a.id}", ""),
+                }
+                for a in data.assessments
+            ],
+            "weekly_topics": [
+                {
+                    "week_number": int(t.week_number),
+                    "topic_title": str(t.topic_title) if t.topic_title else "",
+                    "week_type": str(t.week_type)
+                    if hasattr(t, "week_type") and t.week_type
+                    else "standard",
+                }
+                for t in data.weekly_topics
+            ],
         }
         return json.dumps(meta, indent=2)
 

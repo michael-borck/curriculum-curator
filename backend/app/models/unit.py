@@ -112,6 +112,9 @@ class Unit(Base):
     # Additional metadata and context
     unit_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     generation_context: Mapped[str | None] = mapped_column(Text, nullable=True)
+    import_provenance: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
 
     # Credit points and prerequisites (Australian system)
     credit_points: Mapped[int] = mapped_column(default=6)

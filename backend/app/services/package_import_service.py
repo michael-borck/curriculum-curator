@@ -18,6 +18,7 @@ import logging
 import re
 import zipfile
 from collections.abc import Callable
+from datetime import UTC, datetime
 from io import BytesIO
 from typing import TYPE_CHECKING
 from xml.etree import ElementTree as ET
@@ -93,6 +94,24 @@ MATERIAL_TYPE_KEYWORDS: dict[str, str] = {
     "notes": "notes",
 }
 
+# Keyword → material category mapping (for CC sub-headers)
+MATERIAL_CATEGORY_KEYWORDS: dict[str, str] = {
+    "pre-class": "pre_class",
+    "pre class": "pre_class",
+    "pre_class": "pre_class",
+    "before class": "pre_class",
+    "in-class": "in_class",
+    "in class": "in_class",
+    "in_class": "in_class",
+    "during class": "in_class",
+    "post-class": "post_class",
+    "post class": "post_class",
+    "post_class": "post_class",
+    "after class": "post_class",
+    "resources": "resources",
+    "general": "general",
+}
+
 # Keyword → assessment category mapping
 ASSESSMENT_CATEGORY_MAP: dict[str, str] = {
     "quiz": "quiz",
@@ -144,8 +163,13 @@ def detect_format_from_manifest(zf: zipfile.ZipFile) -> str:
     return "imscc"
 
 
-def detect_source_lms(manifest_text: str) -> str | None:
-    """Keyword scan to detect which LMS generated the package."""
+def detect_source_lms(
+    manifest_text: str, zf: zipfile.ZipFile | None = None
+) -> str | None:
+    """Keyword scan to detect which LMS generated the package.
+
+    Also checks for Canvas-specific files (module_meta.xml) in the ZIP.
+    """
     lower = manifest_text.lower()
     if "canvas" in lower or "instructure" in lower:
         return "canvas"
@@ -155,7 +179,40 @@ def detect_source_lms(manifest_text: str) -> str | None:
         return "blackboard"
     if "brightspace" in lower or "d2l" in lower:
         return "brightspace"
+    # Canvas detection via module_meta.xml
+    if zf is not None and "course_settings/module_meta.xml" in zf.namelist():
+        return "canvas"
     return None
+
+
+def detect_blackboard_content_areas(
+    manifest: _ManifestData,
+) -> list[str] | None:
+    """Check if top-level items match Blackboard content-area patterns.
+
+    Blackboard exports use fixed content area names like "Course Information",
+    "Course Materials", "Assignments", etc.  Detecting these helps the user
+    understand the package structure differs from weekly modules.
+    """
+    bb_area_patterns = {
+        "course information",
+        "course materials",
+        "assignments",
+        "course documents",
+        "external links",
+        "tools",
+        "announcements",
+        "discussion board",
+        "groups",
+        "contacts",
+        "staff information",
+        "tests, surveys, and pools",
+    }
+    found: list[str] = []
+    for item_title, _children in manifest.top_items:
+        if item_title.lower().strip() in bb_area_patterns:
+            found.append(item_title)
+    return found if found else None
 
 
 def classify_item(
@@ -234,7 +291,10 @@ class _ManifestData:
     def __init__(self) -> None:
         self.title: str = ""
         self.description: str = ""
-        self.top_items: list[tuple[str, list[tuple[str, str | None, str | None]]]] = []
+        # Each top item: (title, children) where children are (title, href, rtype, category)
+        self.top_items: list[
+            tuple[str, list[tuple[str, str | None, str | None, str | None]]]
+        ] = []
         # identifier -> (href, type)
         self.resource_map: dict[str, tuple[str, str | None]] = {}
         self.raw_text: str = ""
@@ -267,25 +327,50 @@ def _resolve_ref(
     return (None, None)
 
 
+def _detect_category(title: str) -> str | None:
+    """Detect a material category from a sub-header title."""
+    lower = title.lower().strip()
+    for keyword, category in MATERIAL_CATEGORY_KEYWORDS.items():
+        if keyword in lower:
+            return category
+    return None
+
+
 def _walk_items(
     tree: ET.Element,
     tag_fn: _TagFn,
     resource_map: dict[str, tuple[str, str | None]],
-) -> list[tuple[str, list[tuple[str, str | None, str | None]]]]:
-    """Walk organisations → items and return structured top-level items."""
-    items: list[tuple[str, list[tuple[str, str | None, str | None]]]] = []
+) -> list[tuple[str, list[tuple[str, str | None, str | None, str | None]]]]:
+    """Walk organisations → items and return structured top-level items.
+
+    Supports three-level nesting: week → category sub-header → material.
+    When a child has no resource ref but its title matches a known category,
+    its grandchildren are flattened into the parent with that category tag.
+    """
+    items: list[tuple[str, list[tuple[str, str | None, str | None, str | None]]]] = []
     for org in tree.findall(f".//{tag_fn('organization')}"):
         for item in org.findall(tag_fn("item")):
             item_title = _el_title(item, tag_fn)
-            children: list[tuple[str, str | None, str | None]] = []
+            children: list[tuple[str, str | None, str | None, str | None]] = []
             for child in item.findall(tag_fn("item")):
                 child_title = _el_title(child, tag_fn)
                 href, rtype = _resolve_ref(child, resource_map)
-                children.append((child_title, href, rtype))
+
+                # Check for three-level nesting: category sub-header
+                grandchildren = child.findall(tag_fn("item"))
+                detected_cat = _detect_category(child_title)
+                if grandchildren and detected_cat and not href:
+                    # This is a category sub-header — flatten its children
+                    for gc in grandchildren:
+                        gc_title = _el_title(gc, tag_fn)
+                        gc_href, gc_rtype = _resolve_ref(gc, resource_map)
+                        children.append((gc_title, gc_href, gc_rtype, detected_cat))
+                else:
+                    children.append((child_title, href, rtype, None))
 
             if not children:
                 href_val, rtype_val = _resolve_ref(item, resource_map)
-                children.append((item_title, href_val, rtype_val))
+                children.append((item_title, href_val, rtype_val, None))
 
             items.append((item_title, children))
     return items
@@ -433,7 +518,7 @@ class PackageImportService:
             gc_mapping_count=gc_count,
         )
 
-    def _create_round_trip(
+    def _create_round_trip(  # noqa: PLR0912
         self,
         zf: zipfile.ZipFile,
         current_user_id: str,
@@ -527,72 +612,187 @@ class PackageImportService:
         topic_titles = self._extract_week_titles_from_manifest(zf)
 
         material_count = 0
+        assessment_count = 0
         week_numbers_seen: set[int] = set()
-        for name in sorted(zf.namelist()):
-            week_match = _WEEK_RE.match(name)
-            if not week_match or not name.endswith(".html"):
-                continue
+        # Track created records for provenance
+        mat_id_map: dict[str, str] = {}  # original_id -> new_id
+        assessment_id_map: dict[str, str] = {}  # original_id -> new_id
 
-            week_num = int(week_match.group(1))
-            week_numbers_seen.add(week_num)
+        is_v2 = meta.get("meta_version") == "2.0"
+        detected_format = self._detect_format(zf, meta)
 
-            html_content = zf.read(name).decode("utf-8")
-            title_text, body_content = self.extract_html_content(html_content)
+        if is_v2 and "materials" in meta:
+            # v2 path: read materials from meta.json with category, type, order
+            for mat_data in meta["materials"]:
+                week_num = int(mat_data["week_number"])
+                week_numbers_seen.add(week_num)
 
-            filename = name.split("/")[-1]
-            mat_type = self._extract_material_type(filename)
+                # Read HTML content from ZIP using href
+                body_content = ""
+                href = mat_data.get("href", "")
+                if href:
+                    raw_html = _read_resource_content(zf, href)
+                    if raw_html:
+                        _title_text, body_content = self.extract_html_content(raw_html)
 
-            mat = WeeklyMaterial(
-                unit_id=str(unit.id),
-                week_number=week_num,
-                title=title_text or filename.replace(".html", "").replace("_", " "),
-                type=mat_type,
-                description=body_content,
-                order_index=material_count,
-                status="draft",
-            )
-            db.add(mat)
-            material_count += 1
+                mat = WeeklyMaterial(
+                    unit_id=str(unit.id),
+                    week_number=week_num,
+                    title=mat_data.get("title", "Untitled"),
+                    type=mat_data.get("type", "resource"),
+                    category=mat_data.get("category", "general"),
+                    description=body_content,
+                    order_index=mat_data.get("order_index", material_count),
+                    status="draft",
+                )
+                db.add(mat)
+                db.flush()
+                original_id = mat_data.get("id", "")
+                if original_id:
+                    mat_id_map[f"mat_{original_id}"] = str(mat.id)
+                material_count += 1
+        else:
+            # v1 fallback: scan ZIP for week folders
+            for name in sorted(zf.namelist()):
+                week_match = _WEEK_RE.match(name)
+                if not week_match or not name.endswith(".html"):
+                    continue
 
+                week_num = int(week_match.group(1))
+                week_numbers_seen.add(week_num)
+
+                html_content = zf.read(name).decode("utf-8")
+                title_text, body_content = self.extract_html_content(html_content)
+
+                filename = name.split("/")[-1]
+                mat_type = self._extract_material_type(filename)
+
+                mat = WeeklyMaterial(
+                    unit_id=str(unit.id),
+                    week_number=week_num,
+                    title=title_text or filename.replace(".html", "").replace("_", " "),
+                    type=mat_type,
+                    description=body_content,
+                    order_index=material_count,
+                    status="draft",
+                )
+                db.add(mat)
+                material_count += 1
+
+        if is_v2 and "weekly_topics" in meta:
+            # v2 path: read topics from meta.json
+            for topic_data in meta["weekly_topics"]:
+                week_num = int(topic_data["week_number"])
+                week_numbers_seen.add(week_num)
         topic_count = 0
         for week_num in sorted(week_numbers_seen):
-            topic_title = topic_titles.get(week_num, f"{unit.topic_label} {week_num}")
+            topic_title_str: str
+            if is_v2 and "weekly_topics" in meta:
+                # Find topic from meta
+                topic_match_data = next(
+                    (
+                        t
+                        for t in meta["weekly_topics"]
+                        if int(t["week_number"]) == week_num
+                    ),
+                    None,
+                )
+                topic_title_str = (
+                    topic_match_data.get(
+                        "topic_title", f"{unit.topic_label} {week_num}"
+                    )
+                    if topic_match_data
+                    else topic_titles.get(week_num, f"{unit.topic_label} {week_num}")
+                )
+            else:
+                topic_title_str = topic_titles.get(
+                    week_num, f"{unit.topic_label} {week_num}"
+                )
             topic = WeeklyTopic(
                 unit_outline_id=str(outline.id),
                 unit_id=str(unit.id),
                 week_number=week_num,
-                topic_title=topic_title,
+                topic_title=topic_title_str,
                 created_by_id=current_user_id,
             )
             db.add(topic)
             topic_count += 1
 
-        assessment_count = 0
-        for name in sorted(zf.namelist()):
-            if not name.startswith("assessments/") or not name.endswith(".html"):
-                continue
+        if is_v2 and "assessments" in meta:
+            # v2 path: read assessments from meta.json
+            for a_data in meta["assessments"]:
+                # Read HTML content from ZIP using href
+                body_html = ""
+                spec_html = ""
+                href = a_data.get("href", "")
+                if href:
+                    raw_html = _read_resource_content(zf, href)
+                    if raw_html:
+                        parsed = self._parse_assessment_html(raw_html)
+                        body_html = parsed.get("description", "")
+                        spec_html = parsed.get("specification", "")
 
-            html_content = zf.read(name).decode("utf-8")
-            assessment_data = self._parse_assessment_html(html_content)
-            assessment = Assessment(
-                unit_id=str(unit.id),
-                title=assessment_data["title"],
-                type=assessment_data.get("type", "summative"),
-                category=assessment_data.get("category", "other"),
-                weight=assessment_data.get("weight", 0.0),
-                description=assessment_data.get("description"),
-                specification=assessment_data.get("specification"),
-                due_week=assessment_data.get("due_week"),
-                duration=assessment_data.get("duration"),
-                submission_type=assessment_data.get("submission_type"),
-                group_work=assessment_data.get("group_work", False),
-                status="draft",
-            )
-            db.add(assessment)
-            assessment_count += 1
+                assessment = Assessment(
+                    unit_id=str(unit.id),
+                    title=a_data.get("title", "Untitled Assessment"),
+                    type=a_data.get("type", "summative"),
+                    category=a_data.get("category", "other"),
+                    weight=a_data.get("weight", 0.0),
+                    description=body_html or None,
+                    specification=spec_html or None,
+                    due_week=a_data.get("due_week"),
+                    status="draft",
+                )
+                db.add(assessment)
+                db.flush()
+                original_a_id = a_data.get("id", "")
+                if original_a_id:
+                    assessment_id_map[f"assessment_{original_a_id}"] = str(
+                        assessment.id
+                    )
+                assessment_count += 1
+        else:
+            # v1 fallback: scan ZIP for assessment files
+            for name in sorted(zf.namelist()):
+                if not name.startswith("assessments/") or not name.endswith(".html"):
+                    continue
+
+                html_content = zf.read(name).decode("utf-8")
+                assessment_data = self._parse_assessment_html(html_content)
+                assessment = Assessment(
+                    unit_id=str(unit.id),
+                    title=assessment_data["title"],
+                    type=assessment_data.get("type", "summative"),
+                    category=assessment_data.get("category", "other"),
+                    weight=assessment_data.get("weight", 0.0),
+                    description=assessment_data.get("description"),
+                    specification=assessment_data.get("specification"),
+                    due_week=assessment_data.get("due_week"),
+                    duration=assessment_data.get("duration"),
+                    submission_type=assessment_data.get("submission_type"),
+                    group_work=assessment_data.get("group_work", False),
+                    status="draft",
+                )
+                db.add(assessment)
+                assessment_count += 1
 
         # Import QTI quiz questions
         quiz_question_count = self._import_qti_questions(zf, str(unit.id), db)
+
+        # Build and store import provenance
+        provenance: dict[str, object] = {
+            "schema_version": "1.0",
+            "source_lms": meta.get("target_lms"),
+            "source_format": detected_format,
+            "imported_at": datetime.now(UTC).isoformat(),
+            "meta_version": meta.get("meta_version", "1.0"),
+            "original_unit_id": unit_meta.get("id"),
+            "identifier_map": {
+                "materials": mat_id_map,
+                "assessments": assessment_id_map,
+            },
+        }
+        unit.import_provenance = provenance
 
         db.commit()
 
@@ -624,7 +824,7 @@ class PackageImportService:
 
         manifest = parse_manifest(zf)
         fmt = detect_format_from_manifest(zf)
-        source_lms = detect_source_lms(manifest.raw_text)
+        source_lms = detect_source_lms(manifest.raw_text, zf)
 
         # Try to extract a unit code from the title or manifest text
         unit_code = ""
@@ -640,12 +840,17 @@ class PackageImportService:
         material_count = 0
         assessment_count = 0
         for _item_title, children in manifest.top_items:
-            for child_title, _href, rtype in children:
+            for child_title, _href, rtype, _cat_hint in children:
                 kind, _cat = classify_item(child_title, rtype, source_lms=source_lms)
                 if kind == "assessment":
                     assessment_count += 1
                 else:
                     material_count += 1
+
+        # Detect Blackboard content areas
+        detected_content_areas: list[str] | None = None
+        if source_lms == "blackboard":
+            detected_content_areas = detect_blackboard_content_areas(manifest)
 
         return ImportPreview(
             format=fmt,
@@ -665,6 +870,7 @@ class PackageImportService:
             sdg_mapping_count=0,
             gc_mapping_count=0,
             source_lms=source_lms,
+            detected_content_areas=detected_content_areas,
         )
 
     def _create_generic(
@@ -686,7 +892,7 @@ class PackageImportService:
             )
 
         manifest = parse_manifest(zf)
-        source_lms = detect_source_lms(manifest.raw_text)
+        source_lms = detect_source_lms(manifest.raw_text, zf)
 
         # Resolve title and code
         raw_title = unit_title_override or manifest.title or "Imported Unit"
@@ -735,6 +941,9 @@ class PackageImportService:
         material_count = 0
         assessment_count = 0
         mat_order = 0
+        mat_id_map: dict[str, str] = {}
+        assessment_id_map: dict[str, str] = {}
+        organization: list[dict[str, object]] = []
 
         for week_idx, (item_title, children) in enumerate(manifest.top_items, start=1):
             # Create weekly topic
@@ -748,7 +957,13 @@ class PackageImportService:
             db.add(topic)
             topic_count += 1
 
-            for child_title, href, rtype in children:
+            week_org: dict[str, object] = {
+                "title": item_title,
+                "week": week_idx,
+                "items": [],
+            }
+
+            for child_title, href, rtype, cat_hint in children:
                 kind, category = classify_item(
                     child_title, rtype, source_lms=source_lms
                 )
@@ -758,7 +973,13 @@ class PackageImportService:
                 if href:
                     raw_html = _read_resource_content(zf, href)
                     if raw_html:
+                        # Resolve Canvas file tokens if applicable
+                        if source_lms == "canvas":
+                            raw_html = self._resolve_filebase_tokens(raw_html, zf)
                         _title_text, body_html = self.extract_html_content(raw_html)
+
+                # Use category hint from manifest sub-header if available
+                material_category = cat_hint or "general"
 
                 if kind == "assessment":
                     assessment = Assessment(
@@ -772,23 +993,62 @@ class PackageImportService:
                         status="draft",
                     )
                     db.add(assessment)
+                    db.flush()
+                    cc_ident = href or f"assessment_{assessment_count}"
+                    assessment_id_map[cc_ident] = str(assessment.id)
                     assessment_count += 1
+                    week_org_items: list[dict[str, str]] = week_org["items"]  # type: ignore[assignment]
+                    week_org_items.append(
+                        {"title": child_title, "kind": "assessment", "href": href or ""}
+                    )
                 else:
                     mat = WeeklyMaterial(
                         unit_id=str(unit.id),
                         week_number=week_idx,
                         title=child_title,
                         type=category,  # material type from _classify_item
+                        category=material_category,
                         description=body_html,
                         order_index=mat_order,
                         status="draft",
                     )
                     db.add(mat)
+                    db.flush()
+                    cc_ident = href or f"mat_{mat_order}"
+                    mat_id_map[cc_ident] = str(mat.id)
                     material_count += 1
                     mat_order += 1
+                    week_org_items_m: list[dict[str, str]] = week_org["items"]  # type: ignore[assignment]
+                    week_org_items_m.append(
+                        {"title": child_title, "kind": "material", "href": href or ""}
+                    )
+
+            organization.append(week_org)
 
         # Import QTI quiz questions
         quiz_question_count = self._import_qti_questions(zf, str(unit.id), db)
+
+        # Build and store import provenance
+        fmt = detect_format_from_manifest(zf)
+        provenance: dict[str, object] = {
+            "schema_version": "1.0",
+            "source_lms": source_lms,
+            "source_format": fmt,
+            "imported_at": datetime.now(UTC).isoformat(),
+            "meta_version": None,
+            "original_unit_id": None,
+            "organization": organization,
+            "identifier_map": {
+                "materials": mat_id_map,
+                "assessments": assessment_id_map,
+            },
+        }
+        # Add Canvas module_meta info if available
+        if source_lms == "canvas":
+            canvas_modules = self._parse_canvas_module_meta(zf)
+            if canvas_modules:
+                provenance["canvas_modules"] = canvas_modules
+        unit.import_provenance = provenance
 
         db.commit()
 
@@ -856,6 +1116,128 @@ class PackageImportService:
                 total += 1
 
         return total
+
+    # ------------------------------------------------------------------
+    # Canvas-specific helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_canvas_module_meta(
+        zf: zipfile.ZipFile,
+    ) -> list[dict[str, object]]:
+        """Parse Canvas ``course_settings/module_meta.xml`` for module structure.
+
+        Returns a list of modules, each containing items with type, position,
+        and identifier info.
+        """
+        path = "course_settings/module_meta.xml"
+        if path not in zf.namelist():
+            return []
+
+        raw = zf.read(path).decode("utf-8", errors="replace")
+        root = ET.fromstring(raw)
+
+        # Canvas module_meta uses a default namespace
+        ns = ""
+        for candidate in [
+            "http://canvas.instructure.com/xsd/cccv1p0",
+            "",
+        ]:
+            if (
+                root.find(f"{{{candidate}}}module") is not None
+                if candidate
+                else root.find("module") is not None
+            ):
+                ns = candidate
+                break
+
+        def tag(local: str) -> str:
+            return f"{{{ns}}}{local}" if ns else local
+
+        modules: list[dict[str, object]] = []
+        for mod_el in root.findall(f".//{tag('module')}"):
+            title_el = mod_el.find(tag("title"))
+            mod_title = (
+                title_el.text.strip()
+                if title_el is not None and title_el.text
+                else "Untitled"
+            )
+
+            items: list[dict[str, str]] = []
+            for item_el in mod_el.findall(f".//{tag('item')}"):
+                item_title_el = item_el.find(tag("title"))
+                item_type_el = item_el.find(tag("content_type"))
+                item_ident_el = item_el.find(tag("identifierref"))
+                position_el = item_el.find(tag("position"))
+
+                items.append(
+                    {
+                        "title": item_title_el.text.strip()
+                        if item_title_el is not None and item_title_el.text
+                        else "",
+                        "content_type": item_type_el.text.strip()
+                        if item_type_el is not None and item_type_el.text
+                        else "",
+                        "identifierref": item_ident_el.text.strip()
+                        if item_ident_el is not None and item_ident_el.text
+                        else "",
+                        "position": position_el.text.strip()
+                        if position_el is not None and position_el.text
+                        else "0",
+                    }
+                )
+
+            modules.append({"title": mod_title, "items": items})
+
+        return modules
+
+    @staticmethod
+    def _resolve_filebase_tokens(html: str, zf: zipfile.ZipFile) -> str:
+        r"""Replace Canvas ``$IMS-CC-FILEBASE$`` / ``%24IMS-CC-FILEBASE%24`` tokens.
+
+        Canvas uses these tokens to reference files stored in the ZIP.  We resolve
+        them to the actual file paths found inside the archive.
+        """
+        # URL-encoded and literal forms
+        token_patterns = [
+            "%24IMS-CC-FILEBASE%24/",
+            "$IMS-CC-FILEBASE$/",
+        ]
+
+        # Build a lookup of filenames -> full paths in ZIP
+        name_lookup: dict[str, str] = {}
+        for name in zf.namelist():
+            basename = name.rsplit("/", 1)[-1]
+            name_lookup[basename] = name
+            # Also store without web_resources/ prefix
+            if name.startswith("web_resources/"):
+                name_lookup[name.removeprefix("web_resources/")] = name
+
+        result = html
+        for token in token_patterns:
+            while token in result:
+                idx = result.index(token)
+                after = result[idx + len(token) :]
+                # Find the end of the path (quote, space, or tag boundary)
+                end = len(after)
+                for delim in ('"', "'", " ", "<", ">", ")", "\n"):
+                    pos = after.find(delim)
+                    if pos != -1:
+                        end = min(end, pos)
+                rel_path = after[:end]
+                # Try to resolve
+                resolved = rel_path
+                if rel_path in zf.namelist():
+                    resolved = rel_path
+                elif f"web_resources/{rel_path}" in zf.namelist():
+                    resolved = f"web_resources/{rel_path}"
+                elif rel_path.rsplit("/", 1)[-1] in name_lookup:
+                    resolved = name_lookup[rel_path.rsplit("/", 1)[-1]]
+                result = (
+                    result[:idx] + resolved + result[idx + len(token) + len(rel_path) :]
+                )
+
+        return result
 
     # ------------------------------------------------------------------
     # Private helpers

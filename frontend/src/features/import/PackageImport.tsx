@@ -299,6 +299,36 @@ export default function PackageImport() {
             </div>
           )}
 
+          {/* Blackboard content-area info banner */}
+          {preview.sourceLms === 'blackboard' &&
+            preview.detectedContentAreas &&
+            preview.detectedContentAreas.length > 0 && (
+              <div className='p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-2 text-sm'>
+                <AlertTriangle className='h-5 w-5 flex-shrink-0 mt-0.5' />
+                <div>
+                  <p className='font-medium mb-1'>
+                    Blackboard content areas detected
+                  </p>
+                  <p className='mb-2'>
+                    This package uses Blackboard&apos;s content-area structure
+                    instead of weekly modules. Content areas have been mapped to
+                    weeks for import, but you may want to reorganise the
+                    materials after importing.
+                  </p>
+                  <div className='flex flex-wrap gap-1'>
+                    {preview.detectedContentAreas.map(area => (
+                      <span
+                        key={area}
+                        className='inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700'
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           {/* Editable unit fields */}
           <div className='grid grid-cols-2 gap-4'>
             <div>

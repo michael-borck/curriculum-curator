@@ -535,6 +535,7 @@ export interface UnifiedImportPreview {
   assessmentCount: number;
   totalProcessable: number;
   totalSkipped: number;
+  detectedContentAreas?: string[] | undefined;
 }
 
 export interface UnifiedImportResult {

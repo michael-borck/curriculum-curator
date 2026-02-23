@@ -168,6 +168,112 @@ class TestMetaJSON:
         assert "ULO2" in codes
 
 
+class TestManifestCategories:
+    """Test category sub-headers in manifest XML."""
+
+    def _get_root(self, buf: BytesIO) -> ET.Element:
+        with zipfile.ZipFile(buf, "r") as zf:
+            return ET.fromstring(zf.read("imsmanifest.xml").decode("utf-8"))
+
+    def test_manifest_category_subheaders(
+        self, test_db: Session, test_user: Any
+    ) -> None:
+        """Export unit with categorized materials, verify XML nesting."""
+        from app.models.unit import Unit as UnitModel
+        from app.models.unit_outline import UnitOutline
+        from app.models.weekly_material import WeeklyMaterial
+        from app.models.weekly_topic import WeeklyTopic
+
+        # Create a unit with categorized materials
+        unit = UnitModel(
+            id=str(uuid.uuid4()),
+            title="Category Manifest Test",
+            code="CATM001",
+            year=2026,
+            semester="semester_1",
+            pedagogy_type="inquiry-based",
+            difficulty_level="intermediate",
+            duration_weeks=12,
+            owner_id=str(test_user.id),
+            created_by_id=str(test_user.id),
+            credit_points=6,
+        )
+        test_db.add(unit)
+        test_db.flush()
+
+        outline = UnitOutline(
+            unit_id=str(unit.id),
+            title="Cat Test",
+            duration_weeks=12,
+            credit_points=6,
+            status="planning",
+            created_by_id=str(test_user.id),
+        )
+        test_db.add(outline)
+        test_db.flush()
+
+        topic = WeeklyTopic(
+            unit_outline_id=str(outline.id),
+            unit_id=str(unit.id),
+            week_number=1,
+            topic_title="Week with categories",
+            created_by_id=str(test_user.id),
+        )
+        test_db.add(topic)
+        test_db.flush()
+
+        for i, (cat, title) in enumerate(
+            [
+                ("pre_class", "Pre Reading"),
+                ("in_class", "Class Activity"),
+                ("post_class", "Homework"),
+            ]
+        ):
+            mat = WeeklyMaterial(
+                unit_id=str(unit.id),
+                week_number=1,
+                title=title,
+                type="lecture",
+                category=cat,
+                description=f"<p>{title} content</p>",
+                order_index=i,
+            )
+            test_db.add(mat)
+        test_db.commit()
+
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(unit.id), test_db)
+        root = self._get_root(buf)
+
+        # Find week 1 item
+        week_item = root.find(f".//{{{NS_CP}}}item[@identifier='week_01']")
+        assert week_item is not None
+
+        # Should have category sub-headers
+        titles = [t.text for t in week_item.iter(f"{{{NS_CP}}}title") if t.text]
+        assert "Pre-class" in titles
+        assert "In-class" in titles
+        assert "Post-class" in titles
+
+    def test_manifest_no_subheaders_when_all_general(
+        self, test_db: Session, populated_unit: Unit
+    ) -> None:
+        """All general materials → flat structure (no category sub-headers)."""
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(populated_unit.id), test_db)
+        root = self._get_root(buf)
+
+        # Find week 1 item
+        week_item = root.find(f".//{{{NS_CP}}}item[@identifier='week_01']")
+        assert week_item is not None
+
+        # Should NOT have category sub-headers
+        titles = [t.text for t in week_item.iter(f"{{{NS_CP}}}title") if t.text]
+        assert "Pre-class" not in titles
+        assert "In-class" not in titles
+        assert "Post-class" not in titles
+
+
 class TestHTMLContent:
     """Test generated HTML pages."""
 
@@ -216,6 +322,75 @@ class TestHTMLContent:
             html = zf.read(week01_files[0]).decode("utf-8")
             assert "<!DOCTYPE html>" in html
             assert "<style>" in html
+
+
+class TestMetaJSONV2:
+    """Test meta.json v2 fields (materials, assessments, weekly_topics)."""
+
+    def _load_meta(self, buf: BytesIO) -> dict[str, Any]:
+        with zipfile.ZipFile(buf, "r") as zf:
+            return json.loads(zf.read("curriculum_curator_meta.json").decode("utf-8"))
+
+    def test_meta_json_v2_has_materials(
+        self, test_db: Session, populated_unit: Unit
+    ) -> None:
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(populated_unit.id), test_db)
+        meta = self._load_meta(buf)
+        assert meta["meta_version"] == "2.0"
+        assert "materials" in meta
+        materials = meta["materials"]
+        assert len(materials) == 3  # populated_unit has 3 materials
+        for mat in materials:
+            assert "id" in mat
+            assert "week_number" in mat
+            assert "title" in mat
+            assert "type" in mat
+            assert "category" in mat
+            assert "order_index" in mat
+            assert "href" in mat
+
+    def test_meta_json_v2_has_assessments(
+        self, test_db: Session, populated_unit: Unit
+    ) -> None:
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(populated_unit.id), test_db)
+        meta = self._load_meta(buf)
+        assessments = meta["assessments"]
+        assert len(assessments) == 2  # populated_unit has 2 assessments
+        for a in assessments:
+            assert "id" in a
+            assert "title" in a
+            assert "type" in a
+            assert "category" in a
+            assert "weight" in a
+            assert "href" in a
+
+    def test_meta_json_v2_has_weekly_topics(
+        self, test_db: Session, populated_unit: Unit
+    ) -> None:
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(populated_unit.id), test_db)
+        meta = self._load_meta(buf)
+        topics = meta["weekly_topics"]
+        assert len(topics) == 3  # populated_unit has 3 weekly topics
+        for t in topics:
+            assert "week_number" in t
+            assert "topic_title" in t
+            assert "week_type" in t
+
+    def test_meta_json_v2_backward_compat(
+        self, test_db: Session, populated_unit: Unit
+    ) -> None:
+        service = IMSCCExportService()
+        buf, _ = service.export_unit(str(populated_unit.id), test_db)
+        meta = self._load_meta(buf)
+        # v1 compat fields still present
+        assert meta["version"] == "1.0"
+        assert "unit" in meta
+        assert "learning_outcomes" in meta
+        assert "aol_mappings" in meta
+        assert "sdg_mappings" in meta
 
 
 class TestEdgeCases:

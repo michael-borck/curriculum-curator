@@ -26,6 +26,7 @@ class ImportPreview(CamelModel):
     gc_mapping_count: int
     quiz_question_count: int = 0
     source_lms: str | None = None
+    detected_content_areas: list[str] | None = None
 
 
 class ImportResult(CamelModel):
@@ -87,6 +88,7 @@ class UnifiedImportPreview(CamelModel):
     assessment_count: int
     total_processable: int
     total_skipped: int
+    detected_content_areas: list[str] | None = None
 
 
 class UnifiedImportResult(CamelModel):

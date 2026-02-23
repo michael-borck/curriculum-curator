@@ -64,6 +64,7 @@ export interface Unit {
   prerequisites?: string;
   learningHours?: number;
   unitMetadata?: UnitMetadata | undefined;
+  importProvenance?: Record<string, unknown> | undefined;
   generationContext?: string;
   ownerId: string;
   createdById: string;
