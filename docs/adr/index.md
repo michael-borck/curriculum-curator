@@ -63,6 +63,8 @@ An Architecture Decision Record captures an important architectural decision mad
 | [049](049-tiered-rate-limiting.md) | Tiered Rate Limiting by Endpoint Classification | Accepted |
 | [050](050-zustand-store-architecture.md) | Zustand Store Architecture with Selective Persistence | Accepted |
 | [051](051-llm-token-cost-tracking.md) | LLM Token Usage and Cost Tracking | Accepted |
+| [052](052-unit-level-feature-toggles.md) | Unit-Level Feature Toggles via Metadata | Accepted |
+| [053](053-material-content-categories.md) | Material Content Categories | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -99,6 +101,8 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-029: Accreditation Framework Mappings](029-accreditation-framework-mappings.md) - AoL, Graduate Capabilities, UN SDGs
 - [ADR-036: Learning Design as Generation Spec](036-learning-design-generation-spec.md) - Structured spec feeds all AI generation paths
 - [ADR-040: Ambient Context](040-ambient-context-pattern.md) - Best guess + human override for working context
+- [ADR-052: Unit-Level Feature Toggles](052-unit-level-feature-toggles.md) - Per-unit opt-in/out of panels via `unit_metadata.features`
+- [ADR-053: Material Content Categories](053-material-content-categories.md) - Pre-class/In-class/Post-class/Resources learning phase grouping
 
 ### Frontend Architecture
 - [ADR-048: TipTap Custom Extensions](048-tiptap-custom-extensions.md) - Mermaid, YouTube, Video nodes with portable HTML serialisation

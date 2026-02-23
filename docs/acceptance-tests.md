@@ -24,15 +24,18 @@
 
 ## Scenario 2 — Create a Unit with Custom Topic Label
 
-**Covers:** 1.1, 1.2, 1.3, topic_label feature, 17.1
+**Covers:** 1.1, 1.2, 1.3, 1.8, 1.9, 1.10, 17.1
 
 - [ ] 1. From the dashboard, click **Create Unit**.
-- [ ] 2. Fill in: title "Web Development Fundamentals", code "ICT101", credits 12, semester "S1 2026", 12 weeks.
-- [ ] 3. Set the topic label to "Module" (instead of default "Week"). Save the unit.
-- [ ] 4. Verify the unit page shows "Module 1", "Module 2", etc. — not "Week".
-- [ ] 5. Set a teaching philosophy (e.g. "Constructivist"). Verify it saves.
-- [ ] 6. Add topic titles for Modules 1–3 (e.g. "HTML Basics", "CSS Layout", "JavaScript Intro"). Verify they appear in the sidebar/list.
-- [ ] 7. Verify you can work in any order — skip to Module 3 and add content there without completing Module 1 first.
+- [ ] 2. Verify the form is streamlined — only essential fields (title, code, credits, semester, weeks) are shown upfront.
+- [ ] 3. Select a **structure preset** (e.g. "Lecture-heavy" or "Practical"). Verify the form pre-fills sensible defaults.
+- [ ] 4. Fill in: title "Web Development Fundamentals", code "ICT101", credits 12, semester "S1 2026", 12 weeks.
+- [ ] 5. Set the topic label to "Module" (instead of default "Week"). Save the unit.
+- [ ] 6. Verify the unit page shows "Module 1", "Module 2", etc. — not "Week".
+- [ ] 7. Set a teaching philosophy (e.g. "Constructivist"). Verify it saves.
+- [ ] 8. Add topic titles for Modules 1–3 (e.g. "HTML Basics", "CSS Layout", "JavaScript Intro"). Verify they appear in the sidebar/list.
+- [ ] 9. Verify you can work in any order — skip to Module 3 and add content there without completing Module 1 first.
+- [ ] 10. Create a second unit using **Create and Import** — verify you land directly on the import flow after creation.
 
 ---
 
@@ -57,22 +60,31 @@
 
 ## Scenario 4 — Materials & Rich Text Editor
 
-**Covers:** 3.1–3.9, 15.1–15.4, 15.7, 15.8, 2.7
+**Covers:** 3.1–3.12, 15.1–15.4, 15.7–15.9, 2.7
 
-- [ ] 1. In Module 1 of the unit, click **Add Material**. Select type "Lecture", title "Introduction to HTML".
-- [ ] 2. Open the material in the **rich text editor**. Add a heading, a paragraph, a bulleted list, and a code block with HTML.
-- [ ] 3. Insert a table (e.g. comparing HTML elements). Verify it renders correctly.
-- [ ] 4. Toggle to **advanced editing mode** — verify raw markdown/YAML is visible. Toggle back to simple mode.
-- [ ] 5. Insert an image by URL. Verify it renders in the editor.
-- [ ] 6. Upload an image from your computer. Verify it appears in the material.
-- [ ] 7. Insert a YouTube embed link. Verify the video preview renders.
-- [ ] 8. Add a Mermaid diagram (e.g. a simple flowchart). Verify the live preview renders.
-- [ ] 9. Set the material status from "Draft" to "Review". Verify the status badge updates.
-- [ ] 10. Add a second material to Module 1 (type "Tutorial"). Reorder materials via drag-and-drop. Verify the order persists.
-- [ ] 11. Duplicate the lecture material to Module 2. Verify it appears there with the same content.
-- [ ] 12. Check the Module 1 summary — verify material count and type breakdown are shown.
-- [ ] 13. Use the filter/search to find materials by type or search term.
-- [ ] 14. Define a Local Learning Outcome (LLO) on the lecture material. Verify it saves.
+- [ ] 1. In Module 1 of the unit, click **Add Material**. Select type "Lecture", title "Introduction to HTML". Set category to **In-class**.
+- [ ] 2. Add a second material: type "Reading", title "HTML Reference Guide", category **Pre-class**.
+- [ ] 3. Add a third material: type "Quiz", title "HTML Basics Check", category **Post-class**.
+- [ ] 4. Verify Module 1 shows materials grouped under category headers (Pre-class, In-class, Post-class) — not a flat list.
+- [ ] 5. Open the lecture material in the **rich text editor**. Add a heading, a paragraph, a bulleted list, and a code block with HTML.
+- [ ] 6. Insert a table (e.g. comparing HTML elements). Verify it renders correctly.
+- [ ] 7. Toggle to **advanced editing mode** — verify raw markdown/YAML is visible. Toggle back to simple mode.
+- [ ] 8. Insert an image by URL. Verify it renders in the editor.
+- [ ] 9. Upload an image from your computer. Verify it appears in the material.
+- [ ] 10. Insert a YouTube embed link. Verify the video preview renders.
+- [ ] 11. Add a Mermaid diagram (e.g. a simple flowchart). Verify the live preview renders.
+- [ ] 12. Use the **image prompt generator** (wand button in editor toolbar). Pick a style and aspect ratio — verify a copy-paste prompt is generated.
+- [ ] 13. Set the material status from "Draft" to "Review". Verify the status badge updates.
+- [ ] 14. Reorder materials within Module 1 via drag-and-drop. Verify the order persists.
+- [ ] 15. Duplicate the lecture material to Module 2. Verify it appears there with the same content **and the same category** (In-class).
+- [ ] 16. Check the Module 1 summary — verify material count and type breakdown are shown.
+- [ ] 17. Use the filter/search to find materials by type or search term.
+- [ ] 18. Define a Local Learning Outcome (LLO) on the lecture material. Verify it saves.
+- [ ] 19. Click **Add Module** at the bottom of the accordion. Verify a new module appears (Module 13).
+- [ ] 20. Click the delete button on the empty Module 13. Verify it disappears and week count returns to 12.
+- [ ] 21. Click **Apply Module 1 Structure**. Choose **Copy material stubs**. Verify all empty modules now have the same 3 materials (same titles, types, categories) but no content.
+- [ ] 22. Delete materials from Modules 4–6. Click **Apply Module 1 Structure** again → choose **Categories only**. Verify Modules 4–6 now have one placeholder per category (Pre-class, In-class, Post-class) but modules 2, 3, 7–12 are unchanged (non-destructive).
+- [ ] 23. Delete a module that has materials. Verify you get a confirmation dialog. Confirm — verify the module is removed and subsequent modules shift down.
 
 ---
 
@@ -124,34 +136,37 @@
 
 ## Scenario 8 — Package Import (ZIP, IMSCC, SCORM)
 
-**Covers:** 6.5, 9.2, 9.7
+**Covers:** 6.5, 9.2, 9.7, 9.8
 
 - [ ] 1. Prepare or obtain an .imscc file (exported from a Moodle/Canvas course, or from Scenario 9).
 - [ ] 2. Import the .imscc file. Verify the system creates a unit with the imported structure (topics, materials, assessments).
-- [ ] 3. Verify imported content is editable — open a material and make changes.
-- [ ] 4. Import a SCORM 1.2 package. Verify the system creates a unit from it.
-- [ ] 5. Upload a ZIP file containing multiple documents. Verify batch analysis detects the files and allows import.
+- [ ] 3. If the package contained QTI quiz data, verify quiz questions are imported as structured `QuizQuestion` rows (question text, options, correct answers, points).
+- [ ] 4. Verify imported content is editable — open a material and make changes.
+- [ ] 5. Import a SCORM 1.2 package. Verify the system creates a unit from it.
+- [ ] 6. Upload a ZIP file containing multiple documents. Verify batch analysis detects the files and allows import.
 
 ---
 
-## Scenario 9 — Export (HTML, SCORM, IMSCC, Document)
+## Scenario 9 — Export (HTML, SCORM, IMSCC, Document, QTI)
 
-**Covers:** 9.1, 9.3–9.6
+**Covers:** 9.1, 9.3–9.6, 9.11, 9.12
 
-- [ ] 1. In a unit with materials and assessments (from Scenario 2 or 5), go to **Export**.
+- [ ] 1. In a unit with materials, assessments, and quiz questions (from Scenario 2 or 5), go to **Export**.
 - [ ] 2. Export as **IMS Common Cartridge** (.imscc). Download and verify the file is valid (non-zero size, correct extension).
 - [ ] 3. Export as **SCORM 1.2** package. Download and verify.
 - [ ] 4. Export as **standalone HTML**. Open the HTML file in a browser — verify content renders with inline styles.
 - [ ] 5. Export as **PDF**. Verify the document contains unit content with proper formatting.
 - [ ] 6. Export as **DOCX**. Open in a word processor — verify content and structure.
 - [ ] 7. Use **Copy to clipboard** on a material. Paste into a rich text field (e.g. email or LMS) — verify formatting is preserved.
-- [ ] 8. *(Validation)* Import the .imscc file from step 2 back into the app (round-trip). Verify the structure matches the original.
+- [ ] 8. Export **QTI 2.1** quiz package (standalone ZIP). Verify it contains quiz XML with question data.
+- [ ] 9. Verify the .imscc from step 2 contains embedded QTI quiz items (not just static description pages).
+- [ ] 10. *(Validation)* Import the .imscc file from step 2 back into the app (round-trip). Verify the structure matches the original.
 
 ---
 
 ## Scenario 10 — Quality Validation & Analytics
 
-**Covers:** 7.1, 7.2, 7.5–7.8, 8.1–8.5
+**Covers:** 7.1–7.3, 7.5–7.8, 8.1–8.5
 
 - [ ] 1. Open a unit with several weeks of materials. Navigate to the **Analytics** or **Dashboard** view.
 - [ ] 2. Verify the **unit overview** shows counts: ULOs, materials, assessments, total assessment weight.
@@ -161,8 +176,9 @@
 - [ ] 6. Run **unit validation**. Verify it flags any issues (missing ULOs, weight imbalance, empty weeks).
 - [ ] 7. Open a material. Check the **quality panel** — verify readability score (Flesch-Kincaid) is shown.
 - [ ] 8. Verify **structure validation** results are shown (heading hierarchy, section balance).
-- [ ] 9. If issues are found, click **Auto-fix All** (markdown cleanup). Verify the content improves.
-- [ ] 10. Export unit data as **JSON or CSV**. Verify the download contains structured unit data.
+- [ ] 9. Verify **accessibility checks** run (alt text, heading structure, link text, table headers). Confirm any WCAG issues are reported.
+- [ ] 10. If issues are found, click **Auto-fix All** (markdown cleanup). Verify the content improves.
+- [ ] 11. Export unit data as **JSON or CSV**. Verify the download contains structured unit data.
 
 ---
 
@@ -194,19 +210,33 @@
 
 ---
 
+## Scenario 13 — Unit Settings & Feature Toggles
+
+**Covers:** 1.11
+
+- [ ] 1. Open a unit. Navigate to the **Settings** tab.
+- [ ] 2. Verify academic details are editable (year, semester, delivery mode, credit points).
+- [ ] 3. Change the delivery mode (e.g. "On-campus" → "Hybrid"). Save. Verify it persists after page reload.
+- [ ] 4. Find the **feature toggles** section. Verify toggles exist for Graduate Capabilities, AoL Mapping, and SDG Mapping.
+- [ ] 5. Disable **SDG Mapping**. Return to the **Structure** tab. Verify the SDG panel is hidden.
+- [ ] 6. Re-enable SDG Mapping in Settings. Return to Structure — verify the panel is back.
+- [ ] 7. Disable all three accreditation toggles. Verify all mapping panels disappear from the Structure tab.
+
+---
+
 ## Coverage Matrix
 
 | Category | Stories | Scenarios |
 |----------|---------|-----------|
-| 1. Unit Setup | 1.1–1.7 | 2, 5, 7 |
+| 1. Unit Setup | 1.1–1.11 | 2, 5, 7, 13 |
 | 2. Learning Outcomes | 2.1–2.8 | 3, 4, 5 |
-| 3. Weekly Materials | 3.1–3.9 | 4 |
+| 3. Weekly Materials | 3.1–3.12 | 4 |
 | 4. Assessments | 4.1–4.6 | 3 |
 | 5. AI Content | 5.1–5.11 | 5 |
 | 6. Import | 6.1–6.7 | 7, 8 |
 | 7. Quality | 7.1–7.8 | 3, 10 |
 | 8. Analytics | 8.1–8.5 | 10 |
-| 9. Export | 9.1–9.7 | 8, 9 |
+| 9. Export | 9.1–9.8, 9.11–9.12 | 8, 9 |
 | 10. Auth & Settings | 10.1–10.7 | 1 |
 | 12. Research | 12.1–12.4 | 11 |
 | 13. Version Control | 13.1–13.4 | 12 |
@@ -220,7 +250,7 @@
 |----------|--------|
 | 11. Administration | Separate admin role — test independently |
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
-| P4 Planned (7.3, 9.8–9.10) | Not yet implemented |
+| 9.9, 9.10 | P4 Planned — LMS terminology mapping, target LMS export |
 | 15.5, 15.6 | Cut from scope |
 
-*Last updated: 2026-02-22*
+*Last updated: 2026-02-23*

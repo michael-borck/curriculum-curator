@@ -28,6 +28,10 @@
 | 1.5 | As a **Creator**, I want to duplicate an existing unit as a starting point for a new semester. | P2 | **Done** — `POST /api/units/{id}/duplicate` |
 | 1.6 | As a **Creator**, I want to type just a title/topic and have AI scaffold an entire unit (topics, ULOs, assessments, weekly plan) in one action. | P2 | **Done** — "Quick Scaffold" button on UnitPage |
 | 1.7 | As a **Creator**, I want the system to show me what's missing in my unit and offer to fill the gaps (generate missing ULOs, topics, materials, assessments). | P2 | **Done** — `POST /api/ai/fill-gap` endpoint |
+| 1.8 | As a **Creator**, I want to choose from structure presets (lecture-heavy, seminar, practical, etc.) when creating a unit so I get a sensible starting layout without manual setup. | P1 | **Done** — preset selector in Create Unit modal |
+| 1.9 | As a **Creator**, I want a streamlined Create Unit form that only asks essential fields upfront, with a "Create and Import" shortcut to jump straight into importing materials. | P1 | **Done** — slim form + "Create and Import" button |
+| 1.10 | As a **Creator**, I want to customise the time-period label for my unit (Week, Module, Topic, etc.) so the UI matches my institution's terminology. | P1 | **Done** — configurable `topicLabel` on unit |
+| 1.11 | As a **Creator**, I want a Settings tab on my unit page where I can edit academic details (year, semester, delivery mode, credit points) and toggle optional features (accreditation mappings, SDGs, AoL) per unit. | P1 | **Done** — UnitSettings component with feature toggles stored in `unit_metadata.features` |
 
 ## 2. Learning Outcomes
 
@@ -55,6 +59,9 @@
 | 3.7 | As a **Creator**, I want to set material status (draft → review → published) to track my progress. | P1 | **Done** |
 | 3.8 | As a **Creator**, I want to create just a single quiz, worksheet, or material without needing a full unit structure — no ULOs required, no forced workflow. | P1 | **Done** — materials are independent of ULO mappings |
 | 3.9 | As a **Creator**, I want to link to external videos (YouTube, Vimeo) in my materials rather than uploading video files. | P1 | **Done** — content field supports links |
+| 3.10 | As a **Creator**, I want to add and delete weeks dynamically so I can adjust my unit's duration without recreating it. | P1 | **Done** — add/delete week buttons on WeekAccordion; delete shifts subsequent weeks down |
+| 3.11 | As a **Creator**, I want to assign materials to content categories (Pre-class, In-class, Post-class, Resources) so weekly content is organised by when students engage with it. | P1 | **Done** — `category` field on materials; grouped display in WeekAccordion |
+| 3.12 | As a **Creator**, I want to apply Week 1's material structure to all empty weeks in one click, choosing between full material stubs or category-only placeholders, so I don't have to set up each week manually. | P1 | **Done** — "Apply Structure" button with stubs/categories mode selection |
 
 ## 4. Assessments
 
@@ -223,7 +230,7 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~98 |
+| **Done** | ~105 |
 | **Planned** | 2 |
 | **Cut** | 2 |
 
