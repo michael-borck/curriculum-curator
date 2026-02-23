@@ -241,6 +241,18 @@ export const materialsApi = {
     );
     return response.data;
   },
+
+  applyStructure: async (
+    unitId: string,
+    mode: 'stubs' | 'categories',
+    sourceWeek = 1
+  ): Promise<MaterialResponse[]> => {
+    const response = await api.post(
+      `/materials/units/${unitId}/apply-structure`,
+      { mode, sourceWeek }
+    );
+    return response.data;
+  },
 };
 
 // ============= Assessments API =============

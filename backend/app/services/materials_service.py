@@ -246,6 +246,7 @@ class MaterialsService:
             duration_minutes=source_material.duration_minutes,
             file_path=source_material.file_path,
             material_metadata=source_material.material_metadata,
+            category=source_material.category,
             order_index=0,  # Will be at the beginning of the week
             status=MaterialStatus.DRAFT,
         )
@@ -492,6 +493,130 @@ class MaterialsService:
             "by_status": by_status,
             "is_complete": by_status.get(MaterialStatus.DRAFT, 0) == 0,
         }
+
+
+    async def apply_structure(
+        self,
+        db: Session,
+        unit_id: UUID,
+        source_week: int,
+        mode: str,
+    ) -> list[WeeklyMaterial]:
+        """Apply week structure from source_week to all empty weeks.
+
+        Modes:
+            stubs — mirror each material (title, type, category, duration, order)
+            categories — one placeholder per unique category used in source
+        """
+        if mode not in ("stubs", "categories"):
+            raise ValueError(f"Invalid mode '{mode}', must be 'stubs' or 'categories'")
+
+        unit = db.query(Unit).filter(Unit.id == unit_id).first()
+        if not unit:
+            raise ValueError(f"Unit {unit_id} not found")
+
+        duration_weeks = unit.duration_weeks or 12
+        if source_week > duration_weeks:
+            raise ValueError(
+                f"Source week {source_week} exceeds unit duration ({duration_weeks})"
+            )
+
+        source_materials = await self.get_materials_by_week(db, unit_id, source_week)
+        if not source_materials:
+            raise ValueError(f"No materials in week {source_week} to copy")
+
+        # Find weeks with zero materials (excluding source)
+        all_materials = await self.get_materials_by_unit(db, unit_id)
+        weeks_with_content: set[int] = {m.week_number for m in all_materials}
+        target_weeks = [
+            w
+            for w in range(1, duration_weeks + 1)
+            if w != source_week and w not in weeks_with_content
+        ]
+        if not target_weeks:
+            return []
+
+        created = (
+            self._create_stubs(unit_id, source_materials, target_weeks, db)
+            if mode == "stubs"
+            else self._create_category_placeholders(
+                unit_id, source_materials, target_weeks, db
+            )
+        )
+
+        db.commit()
+        for mat in created:
+            db.refresh(mat)
+
+        logger.info(
+            f"Applied '{mode}' structure from week {source_week} "
+            f"to {len(target_weeks)} weeks ({len(created)} materials created)"
+        )
+        return created
+
+    def _create_stubs(
+        self,
+        unit_id: UUID,
+        source_materials: list[WeeklyMaterial],
+        target_weeks: list[int],
+        db: Session,
+    ) -> list[WeeklyMaterial]:
+        created: list[WeeklyMaterial] = []
+        for week in target_weeks:
+            for src in source_materials:
+                mat = WeeklyMaterial(
+                    unit_id=unit_id,
+                    week_number=week,
+                    title=src.title,
+                    type=src.type,
+                    description=None,
+                    duration_minutes=src.duration_minutes,
+                    category=src.category,
+                    order_index=src.order_index,
+                    status=MaterialStatus.DRAFT,
+                )
+                db.add(mat)
+                created.append(mat)
+        return created
+
+    @staticmethod
+    def _create_category_placeholders(
+        unit_id: UUID,
+        source_materials: list[WeeklyMaterial],
+        target_weeks: list[int],
+        db: Session,
+    ) -> list[WeeklyMaterial]:
+        category_labels = {
+            "pre_class": "Pre-class",
+            "in_class": "In-class",
+            "post_class": "Post-class",
+            "resources": "Resources",
+            "general": "General",
+        }
+        seen: set[str] = set()
+        entries: list[tuple[str, int]] = []
+        for src in source_materials:
+            cat = src.category or "general"
+            if cat not in seen:
+                seen.add(cat)
+                entries.append((cat, len(entries)))
+
+        created: list[WeeklyMaterial] = []
+        for week in target_weeks:
+            for cat, idx in entries:
+                mat = WeeklyMaterial(
+                    unit_id=unit_id,
+                    week_number=week,
+                    title=category_labels.get(cat, cat.replace("_", " ").title()),
+                    type="other",
+                    description=None,
+                    category=cat,
+                    order_index=idx,
+                    status=MaterialStatus.DRAFT,
+                )
+                db.add(mat)
+                created.append(mat)
+        return created
 
 
 # Create singleton instance

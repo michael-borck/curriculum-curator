@@ -19,6 +19,7 @@ from app.models.user import User
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.learning_outcomes import LLOResponse, ULOResponse
 from app.schemas.materials import (
+    ApplyStructureRequest,
     MaterialCreate,
     MaterialDuplicate,
     MaterialFilter,
@@ -55,6 +56,7 @@ def _to_material_response(material: WeeklyMaterial) -> MaterialResponse:
         duration_minutes=material.duration_minutes,
         file_path=material.file_path,
         material_metadata=material.material_metadata,
+        category=material.category,
         order_index=material.order_index,
         status=material.status,
         created_at=material.created_at,
@@ -475,6 +477,32 @@ async def get_week_summary(
         unit_id=unit_id,
         week_number=week_number,
     )
+
+
+@router.post(
+    "/units/{unit_id}/apply-structure",
+    response_model=list[MaterialResponse],
+)
+async def apply_structure(
+    unit_id: UUID,
+    data: ApplyStructureRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Apply week structure from a source week to all empty weeks."""
+    try:
+        materials = await materials_service.apply_structure(
+            db=db,
+            unit_id=unit_id,
+            source_week=data.source_week,
+            mode=data.mode,
+        )
+        return [_to_material_response(mat) for mat in materials]
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
 
 
 # =============================================================================

@@ -13,6 +13,8 @@ import {
   FileText,
   Edit,
   Trash2,
+  Copy,
+  X,
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import {
@@ -33,6 +35,7 @@ interface WeekAccordionProps {
   onAddMaterial: (weekNumber: number) => void;
   onAddWeek?: (() => void) | undefined;
   onDeleteWeek?: ((weekNumber: number) => void) | undefined;
+  onApplyStructure?: ((mode: 'stubs' | 'categories') => void) | undefined;
 }
 
 interface WeekData {
@@ -115,10 +118,13 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   onAddMaterial,
   onAddWeek,
   onDeleteWeek,
+  onApplyStructure,
 }) => {
   const navigate = useNavigate();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
   const [allMaterialsLoaded, setAllMaterialsLoaded] = useState(false);
+  const [showApplyPopover, setShowApplyPopover] = useState(false);
+  const week1HasMaterials = (weeksData.get(1)?.materials.length ?? 0) > 0;
   const [weeklyQuality, setWeeklyQuality] = useState<
     Map<number, WeekQualityScore>
   >(new Map());
@@ -437,15 +443,83 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
         }
       )}
 
-      {/* Add Week button */}
-      {onAddWeek && (
-        <button
-          onClick={onAddWeek}
-          className='w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition'
-        >
-          <Plus className='w-4 h-4' />
-          Add {topicLabel}
-        </button>
+      {/* Bottom actions: Add Week + Apply Structure */}
+      {(onAddWeek || onApplyStructure) && (
+        <div className='flex items-center gap-3'>
+          {onAddWeek && (
+            <button
+              onClick={onAddWeek}
+              className='flex-1 flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition'
+            >
+              <Plus className='w-4 h-4' />
+              Add {topicLabel}
+            </button>
+          )}
+          {onApplyStructure && week1HasMaterials && (
+            <div className='relative'>
+              <button
+                onClick={() => setShowApplyPopover(!showApplyPopover)}
+                className='flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition'
+              >
+                <Copy className='w-4 h-4' />
+                Apply {topicLabel} 1 Structure
+              </button>
+              {showApplyPopover && (
+                <div className='absolute bottom-full right-0 mb-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4'>
+                  <div className='flex items-center justify-between mb-3'>
+                    <h4 className='font-semibold text-gray-900 text-sm'>
+                      Apply {topicLabel} 1 Structure
+                    </h4>
+                    <button
+                      onClick={() => setShowApplyPopover(false)}
+                      className='text-gray-400 hover:text-gray-600'
+                    >
+                      <X className='w-4 h-4' />
+                    </button>
+                  </div>
+                  <p className='text-xs text-gray-500 mb-3'>
+                    How should the structure be copied?
+                  </p>
+                  <div className='space-y-2'>
+                    <button
+                      onClick={() => {
+                        setShowApplyPopover(false);
+                        onApplyStructure('stubs');
+                      }}
+                      className='w-full text-left p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition'
+                    >
+                      <span className='font-medium text-sm text-gray-900'>
+                        Copy material stubs
+                      </span>
+                      <p className='text-xs text-gray-500 mt-0.5'>
+                        Mirrors {topicLabel} 1&apos;s materials (title, type,
+                        category) as empty placeholders
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowApplyPopover(false);
+                        onApplyStructure('categories');
+                      }}
+                      className='w-full text-left p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition'
+                    >
+                      <span className='font-medium text-sm text-gray-900'>
+                        Categories only
+                      </span>
+                      <p className='text-xs text-gray-500 mt-0.5'>
+                        One placeholder per category used in {topicLabel} 1
+                      </p>
+                    </button>
+                  </div>
+                  <p className='text-xs text-gray-400 mt-3'>
+                    Only applies to {topicLabel.toLowerCase()}s with no existing
+                    content.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

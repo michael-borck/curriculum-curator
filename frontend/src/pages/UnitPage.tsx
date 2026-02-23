@@ -23,6 +23,7 @@ import {
   deleteWeek as deleteWeekApi,
 } from '../services/api';
 import api from '../services/api';
+import { materialsApi } from '../services/unitStructureApi';
 import {
   downloadExport,
   downloadMaterialsExport,
@@ -178,6 +179,23 @@ const UnitPage = () => {
       setLoading(false);
     }
   }, [unitId]);
+
+  const handleApplyStructure = async (mode: 'stubs' | 'categories') => {
+    if (!unitId) return;
+    try {
+      const created = await materialsApi.applyStructure(unitId, mode);
+      if (created.length === 0) {
+        toast('No empty weeks to apply structure to', { icon: 'ℹ️' });
+      } else {
+        toast.success(
+          `Created ${created.length} material${created.length !== 1 ? 's' : ''} across empty weeks`
+        );
+      }
+      await fetchUnit();
+    } catch {
+      toast.error('Failed to apply structure');
+    }
+  };
 
   // Write to working context store when unit loads
   useEffect(() => {
@@ -723,6 +741,7 @@ const UnitPage = () => {
                 onAddMaterial={handleAddMaterial}
                 onAddWeek={handleAddWeek}
                 onDeleteWeek={handleDeleteWeek}
+                onApplyStructure={handleApplyStructure}
               />
 
               {/* Learning Outcome Map Modal */}

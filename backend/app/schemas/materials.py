@@ -138,6 +138,13 @@ class MaterialHistory(CamelModel):
     versions: list[MaterialVersion]
 
 
+class ApplyStructureRequest(CamelModel):
+    """Request to apply week structure across all empty weeks"""
+
+    source_week: int = Field(default=1, ge=1, le=52, description="Source week to copy structure from")
+    mode: str = Field(..., description="Copy mode: 'stubs' or 'categories'")
+
+
 class MaterialRevert(CamelModel):
     """Request to revert a material to a previous version"""
 
