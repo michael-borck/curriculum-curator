@@ -57,38 +57,21 @@ interface UnitFormData {
   title: string;
   code: string;
   description: string;
-  year: number;
-  semester: string;
   pedagogyType: string;
   difficultyLevel: string;
   durationWeeks: number;
   topicLabel: string;
-  creditPoints: number;
-  prerequisites: string;
-  learningHours: number;
 }
 
 const initialFormData: UnitFormData = {
   title: '',
   code: '',
   description: '',
-  year: new Date().getFullYear(),
-  semester: 'semester_1',
   pedagogyType: 'inquiry-based',
   difficultyLevel: 'intermediate',
   durationWeeks: 12,
   topicLabel: 'Week',
-  creditPoints: 25,
-  prerequisites: '',
-  learningHours: 150,
 };
-
-const semesterOptions = [
-  { value: 'semester_1', label: 'Semester 1' },
-  { value: 'semester_2', label: 'Semester 2' },
-  { value: 'summer', label: 'Summer' },
-  { value: 'winter', label: 'Winter' },
-];
 
 const pedagogyOptions = [
   { value: 'inquiry-based', label: 'Inquiry Based' },
@@ -302,28 +285,19 @@ const DashboardPage = () => {
     fetchUnits();
   }, [fetchUnits]);
 
-  const createUnit = async () => {
+  const doCreateUnit = async (): Promise<string | null> => {
     setError(null);
 
     if (!newUnit.title || !newUnit.code) {
       setError('Unit title and code are required');
-      return;
+      return null;
     }
 
     try {
       setCreating(true);
       const unitData = {
-        title: newUnit.title,
-        code: newUnit.code,
+        ...newUnit,
         description: newUnit.description || '',
-        year: newUnit.year,
-        semester: newUnit.semester,
-        pedagogyType: newUnit.pedagogyType,
-        difficultyLevel: newUnit.difficultyLevel,
-        durationWeeks: newUnit.durationWeeks,
-        creditPoints: newUnit.creditPoints,
-        prerequisites: newUnit.prerequisites || '',
-        learningHours: newUnit.learningHours || 150,
         status: 'draft',
       };
 
@@ -331,16 +305,25 @@ const DashboardPage = () => {
       toast.success('Unit created successfully');
       createModal.close();
       resetForm();
-      // Add unit to store so sidebar updates immediately
       addUnit(response.data);
-      // Navigate to the new unit
-      navigate(`/units/${response.data.id}`);
+      return response.data.id as string;
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err);
       setError(errorMessage);
+      return null;
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleCreate = async () => {
+    const id = await doCreateUnit();
+    if (id) navigate(`/units/${id}`);
+  };
+
+  const handleCreateAndImport = async () => {
+    const id = await doCreateUnit();
+    if (id) navigate(`/import?unitId=${id}`);
   };
 
   const extractErrorMessage = (err: unknown): string => {
@@ -357,12 +340,9 @@ const DashboardPage = () => {
 
     if (Array.isArray(errorDetail)) {
       const fieldMapping: Record<string, string> = {
-        creditPoints: 'Credit Points',
         durationWeeks: 'Duration',
-        learningHours: 'Learning Hours',
         title: 'Unit Title',
         code: 'Unit Code',
-        year: 'Year',
       };
 
       const messages = errorDetail.map(err => {
@@ -883,47 +863,16 @@ const DashboardPage = () => {
             placeholder='Brief description of the unit...'
           />
 
-          <div className='grid grid-cols-2 gap-4'>
-            <FormInput
-              label='Year'
-              type='number'
-              value={newUnit.year}
-              onChange={e => updateField('year', parseInt(e.target.value))}
-              min={2020}
-              max={2100}
-            />
-
-            <FormSelect
-              label='Semester'
-              value={newUnit.semester}
-              onChange={e => updateField('semester', e.target.value)}
-              options={semesterOptions}
-            />
-          </div>
-
-          <div className='grid grid-cols-2 gap-4'>
-            <FormInput
-              label='Credit Points'
-              type='number'
-              value={newUnit.creditPoints}
-              onChange={e =>
-                updateField('creditPoints', parseInt(e.target.value))
-              }
-              min={1}
-              max={100}
-            />
-
-            <FormInput
-              label={`Duration (${newUnit.topicLabel.toLowerCase()}s)`}
-              type='number'
-              value={newUnit.durationWeeks}
-              onChange={e =>
-                updateField('durationWeeks', parseInt(e.target.value))
-              }
-              min={1}
-              max={52}
-            />
-          </div>
+          <FormInput
+            label={`Duration (${newUnit.topicLabel.toLowerCase()}s)`}
+            type='number'
+            value={newUnit.durationWeeks}
+            onChange={e =>
+              updateField('durationWeeks', parseInt(e.target.value))
+            }
+            min={1}
+            max={52}
+          />
 
           <FormInput
             label='Period Label'
@@ -952,7 +901,15 @@ const DashboardPage = () => {
           <Button variant='secondary' onClick={createModal.close}>
             Cancel
           </Button>
-          <Button onClick={createUnit} loading={creating}>
+          <Button
+            variant='secondary'
+            onClick={handleCreateAndImport}
+            loading={creating}
+          >
+            <Upload className='h-4 w-4 mr-2' />
+            Create and Import
+          </Button>
+          <Button onClick={handleCreate} loading={creating}>
             Create Unit
           </Button>
         </div>
