@@ -81,6 +81,11 @@ class Settings(BaseSettings):
     MAX_IMAGE_SIZE: int = 5 * 1024 * 1024  # 5MB
     IMAGE_EXTENSIONS: list[str] = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]
 
+    # Export Templates
+    TEMPLATE_UPLOAD_DIR: str = "./user_templates"
+    TEMPLATE_MAX_SIZE: int = 5 * 1024 * 1024  # 5MB
+    TEMPLATE_EXTENSIONS: list[str] = [".pptx", ".docx"]
+
     # Git Content Repository
     CONTENT_REPO_PATH: str = "./content"  # Default to local content directory
 

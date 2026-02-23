@@ -481,6 +481,17 @@ except ImportError as e:
     logger.warning(f"Failed to load package_import routes: {e}")
 
 try:
+    from app.api.routes import export_templates
+
+    app.include_router(
+        export_templates.router,
+        prefix="/api/export-templates",
+        tags=["export-templates"],
+    )
+except ImportError as e:
+    logger.warning(f"Failed to load export_templates routes: {e}")
+
+try:
     from app.api.routes import document_export
 
     app.include_router(document_export.router, prefix="/api", tags=["document-export"])

@@ -83,3 +83,6 @@ site/
 
 # Session files
 session-*.md
+
+# User-uploaded export templates (runtime data)
+backend/user_templates/

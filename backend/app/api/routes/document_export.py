@@ -12,11 +12,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_user_content, get_user_unit
+from app.api.deps import (
+    get_current_active_user,
+    get_db,
+    get_user_content,
+    get_user_unit,
+)
 from app.schemas.content import ContentResponse
 from app.schemas.export import ExportAvailability, ExportRequest
 from app.schemas.unit import UnitResponse
-from app.services.export_service import export_service
+from app.schemas.user import UserResponse
+from app.services.export_service import export_service, get_user_template_path
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +41,12 @@ async def export_content_document(
     content: Annotated[ContentResponse, Depends(get_user_content)],
     export_request: ExportRequest,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
 ) -> StreamingResponse:
     """Export a single content item to the specified format."""
+    reference_doc = get_user_template_path(
+        current_user.id, export_request.format, current_user.teaching_preferences
+    )
     try:
         buf, filename, media_type = await export_service.export_content(
             content_id=content.id,
@@ -44,6 +54,7 @@ async def export_content_document(
             fmt=export_request.format,
             title=export_request.title,
             author=export_request.author,
+            reference_doc=reference_doc,
         )
     except FileNotFoundError as e:
         raise HTTPException(
@@ -68,8 +79,12 @@ async def export_unit_document(
     unit: Annotated[UnitResponse, Depends(get_user_unit)],
     export_request: ExportRequest,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
 ) -> StreamingResponse:
     """Export an entire unit (all contents) as a single document."""
+    reference_doc = get_user_template_path(
+        current_user.id, export_request.format, current_user.teaching_preferences
+    )
     try:
         buf, filename, media_type = await export_service.export_unit(
             unit_id=unit.id,
@@ -77,6 +92,7 @@ async def export_unit_document(
             fmt=export_request.format,
             title=export_request.title,
             author=export_request.author,
+            reference_doc=reference_doc,
         )
     except FileNotFoundError as e:
         raise HTTPException(

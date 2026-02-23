@@ -13,6 +13,7 @@ import {
   Loader2,
   Star,
   Search,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -23,6 +24,7 @@ import LLMSettings from './LLMSettings';
 import TeachingStyleSettings from './TeachingStyleSettings';
 import QualityRatingSettings from './QualityRatingSettings';
 import ResearchSettings from './ResearchSettings';
+import ExportTemplates from './ExportTemplates';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -158,6 +160,7 @@ const Settings = () => {
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'research', label: 'Research', icon: Search },
+    { id: 'export', label: 'Export', icon: Download },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
@@ -961,6 +964,8 @@ const Settings = () => {
           {activeTab === 'quality-rating' && <QualityRatingSettings />}
 
           {activeTab === 'research' && <ResearchSettings />}
+
+          {activeTab === 'export' && <ExportTemplates />}
 
           {activeTab === 'plugins' && (
             <PluginsTab

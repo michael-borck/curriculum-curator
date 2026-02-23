@@ -23,6 +23,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.content import Content
 from app.models.unit import Unit
 from app.models.weekly_material import WeeklyMaterial
@@ -30,6 +31,26 @@ from app.models.weekly_topic import WeeklyTopic
 from app.services.unit_export_data import HTML_TEMPLATE, mermaid_head
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_template_path(
+    user_id: str, fmt: "ExportFormat", prefs: dict[str, Any] | None
+) -> Path | None:
+    """Resolve the default template file path for a user and format, or None."""
+    if not prefs:
+        return None
+    et = prefs.get("export_templates")
+    if not et:
+        return None
+    defaults: dict[str, str | None] = et.get("defaults", {})
+    fmt_key = fmt.value  # "pptx" or "docx"
+    template_id = defaults.get(fmt_key)
+    if not template_id:
+        return None
+    path = Path(settings.TEMPLATE_UPLOAD_DIR) / user_id / f"{template_id}.{fmt_key}"
+    if path.is_file():
+        return path
+    return None
 
 
 class ExportFormat(str, Enum):
@@ -161,6 +182,7 @@ class ExportService:
         fmt: ExportFormat,
         title: str | None = None,
         author: str | None = None,
+        reference_doc: Path | None = None,
     ) -> tuple[BytesIO, str, str]:
         """
         Export a single content item to the specified format.
@@ -193,6 +215,7 @@ class ExportService:
             fmt=fmt,
             title=doc_title,
             author=author,
+            reference_doc=reference_doc,
         )
 
         slug = self._slugify(doc_title)
@@ -209,6 +232,7 @@ class ExportService:
         fmt: ExportFormat,
         title: str | None = None,
         author: str | None = None,
+        reference_doc: Path | None = None,
     ) -> tuple[BytesIO, str, str]:
         """
         Export a single weekly material to the specified format.
@@ -252,6 +276,7 @@ class ExportService:
                 fmt=fmt,
                 title=doc_title,
                 author=author,
+                reference_doc=reference_doc,
             )
 
         slug = self._slugify(doc_title)
@@ -267,6 +292,7 @@ class ExportService:
         db: Session,
         fmt: ExportFormat,
         author: str | None = None,
+        reference_doc: Path | None = None,
     ) -> tuple[BytesIO, str]:
         """
         Export all weekly materials for a unit as a ZIP archive.
@@ -338,6 +364,7 @@ class ExportService:
                         fmt=fmt,
                         title=doc_title,
                         author=author,
+                        reference_doc=reference_doc,
                     )
                     data = buf.read()
 
@@ -356,6 +383,7 @@ class ExportService:
         fmt: ExportFormat,
         title: str | None = None,
         author: str | None = None,
+        reference_doc: Path | None = None,
     ) -> tuple[BytesIO, str, str]:
         """
         Export an entire unit (all contents, ordered by week and order_index)
@@ -421,6 +449,7 @@ class ExportService:
             fmt=fmt,
             title=doc_title,
             author=author,
+            reference_doc=reference_doc,
         )
 
         slug = self._slugify(doc_title)
@@ -436,6 +465,7 @@ class ExportService:
         fmt: ExportFormat,
         title: str | None = None,
         author: str | None = None,
+        reference_doc: Path | None = None,
     ) -> BytesIO:
         """
         Convert markdown to the target format using Pandoc (+ Typst for PDF).
@@ -451,7 +481,9 @@ class ExportService:
 
             if fmt == ExportFormat.PDF:
                 return self._convert_pdf(input_file, temp_dir, title, author)
-            return self._convert_pandoc(input_file, temp_dir, fmt, title, author)
+            return self._convert_pandoc(
+                input_file, temp_dir, fmt, title, author, reference_doc
+            )
         finally:
             # Clean up temp dir
             shutil.rmtree(temp_dir, ignore_errors=True)
@@ -463,6 +495,7 @@ class ExportService:
         fmt: ExportFormat,
         title: str | None,
         author: str | None,
+        reference_doc: Path | None = None,
     ) -> BytesIO:
         """Convert using Pandoc directly (HTML, DOCX, PPTX)."""
         ext = FORMAT_EXTENSIONS[fmt]
@@ -480,6 +513,10 @@ class ExportService:
             cmd.extend(["--metadata", f"title={title}"])
         if author:
             cmd.extend(["--metadata", f"author={author}"])
+
+        # Apply user reference document template for PPTX/DOCX
+        if reference_doc and fmt in (ExportFormat.PPTX, ExportFormat.DOCX):
+            cmd.extend(["--reference-doc", str(reference_doc)])
 
         # Format-specific options
         if fmt == ExportFormat.HTML:

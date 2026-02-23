@@ -9,9 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_user_unit
+from app.api.deps import get_current_active_user, get_db, get_user_unit
 from app.schemas.unit import UnitResponse
-from app.services.export_service import ExportFormat, export_service
+from app.schemas.user import UserResponse
+from app.services.export_service import (
+    ExportFormat,
+    export_service,
+    get_user_template_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +27,19 @@ router = APIRouter()
 async def export_material(
     material_id: str,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
     fmt: ExportFormat = Query(ExportFormat.HTML, alias="format"),
 ) -> StreamingResponse:
     """Export a single material as HTML, PDF, DOCX, or PPTX."""
+    reference_doc = get_user_template_path(
+        current_user.id, fmt, current_user.teaching_preferences
+    )
     try:
         buf, filename, media_type = await export_service.export_material(
             material_id=material_id,
             db=db,
             fmt=fmt,
+            reference_doc=reference_doc,
         )
     except ValueError as e:
         raise HTTPException(
@@ -58,14 +68,19 @@ async def export_material(
 async def export_materials_zip(
     unit: Annotated[UnitResponse, Depends(get_user_unit)],
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
     fmt: ExportFormat = Query(ExportFormat.HTML, alias="format"),
 ) -> StreamingResponse:
     """Export all materials for a unit as a ZIP archive organised by week."""
+    reference_doc = get_user_template_path(
+        current_user.id, fmt, current_user.teaching_preferences
+    )
     try:
         buf, filename = await export_service.export_materials_zip(
             unit_id=unit.id,
             db=db,
             fmt=fmt,
+            reference_doc=reference_doc,
         )
     except ValueError as e:
         raise HTTPException(
