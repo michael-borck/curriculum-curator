@@ -136,24 +136,26 @@
 
 ## Scenario 8 — Package Import (ZIP, IMSCC, SCORM)
 
-**Covers:** 6.5, 9.2, 9.7, 9.8
+**Covers:** 6.5, 9.2, 9.7, 9.8, 9.9
 
 - [ ] 1. Prepare or obtain an .imscc file (exported from a Moodle/Canvas course, or from Scenario 9).
 - [ ] 2. Import the .imscc file. Verify the system creates a unit with the imported structure (topics, materials, assessments).
 - [ ] 3. If the package contained QTI quiz data, verify quiz questions are imported as structured `QuizQuestion` rows (question text, options, correct answers, points).
 - [ ] 4. Verify imported content is editable — open a material and make changes.
-- [ ] 5. Import a SCORM 1.2 package. Verify the system creates a unit from it.
-- [ ] 6. Upload a ZIP file containing multiple documents. Verify batch analysis detects the files and allows import.
+- [ ] 5. Import an .imscc or SCORM package originally exported from Canvas or Moodle. Verify the importer detects the source LMS and uses its terminology to correctly classify materials vs assessments (e.g. Canvas "Assignments" → assessments).
+- [ ] 6. Import a SCORM 1.2 package. Verify the system creates a unit from it.
+- [ ] 7. Upload a ZIP file containing multiple documents. Verify batch analysis detects the files and allows import.
 
 ---
 
 ## Scenario 9 — Export (HTML, SCORM, IMSCC, Document, QTI)
 
-**Covers:** 9.1, 9.3–9.6, 9.11, 9.12
+**Covers:** 9.1, 9.3–9.6, 9.10–9.12
 
 - [ ] 1. In a unit with materials, assessments, and quiz questions (from Scenario 2 or 5), go to **Export**.
-- [ ] 2. Export as **IMS Common Cartridge** (.imscc). Download and verify the file is valid (non-zero size, correct extension).
-- [ ] 3. Export as **SCORM 1.2** package. Download and verify.
+- [ ] 2. In the export menu, verify the **Target LMS** dropdown is visible with options: Generic, Canvas, Moodle, Blackboard, Brightspace.
+- [ ] 3. Select **Canvas** as the target LMS. Export as **IMS Common Cartridge** (.imscc). Download and verify the file is valid.
+- [ ] 4. Export as **SCORM 1.2** package with a different target LMS (e.g. Moodle). Download and verify.
 - [ ] 4. Export as **standalone HTML**. Open the HTML file in a browser — verify content renders with inline styles.
 - [ ] 5. Export as **PDF**. Verify the document contains unit content with proper formatting.
 - [ ] 6. Export as **DOCX**. Open in a word processor — verify content and structure.
@@ -236,7 +238,7 @@
 | 6. Import | 6.1–6.7 | 7, 8 |
 | 7. Quality | 7.1–7.8 | 3, 10 |
 | 8. Analytics | 8.1–8.5 | 10 |
-| 9. Export | 9.1–9.8, 9.11–9.12 | 8, 9 |
+| 9. Export & LMS | 9.1–9.12 | 8, 9 |
 | 10. Auth & Settings | 10.1–10.7 | 1 |
 | 12. Research | 12.1–12.4 | 11 |
 | 13. Version Control | 13.1–13.4 | 12 |
@@ -250,7 +252,6 @@
 |----------|--------|
 | 11. Administration | Separate admin role — test independently |
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
-| 9.9, 9.10 | P4 Planned — LMS terminology mapping, target LMS export |
 | 15.5, 15.6 | Cut from scope |
 
 *Last updated: 2026-02-23*
