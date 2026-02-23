@@ -36,6 +36,18 @@ export interface UnitModule {
   duration?: string;
 }
 
+export interface UnitFeatures {
+  graduateCapabilities?: boolean | undefined;
+  aolMapping?: boolean | undefined;
+  sdgMapping?: boolean | undefined;
+}
+
+export interface UnitMetadata {
+  features?: UnitFeatures | undefined;
+  quick_create?: boolean | undefined;
+  [key: string]: unknown;
+}
+
 export interface Unit {
   id: string;
   title: string;
@@ -51,7 +63,7 @@ export interface Unit {
   creditPoints: number;
   prerequisites?: string;
   learningHours?: number;
-  unitMetadata?: any;
+  unitMetadata?: UnitMetadata | undefined;
   generationContext?: string;
   ownerId: string;
   createdById: string;

@@ -14,6 +14,7 @@ import {
   Brain,
   ChevronDown,
   Star,
+  Settings,
 } from 'lucide-react';
 import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
 import api from '../services/api';
@@ -33,6 +34,7 @@ import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
 import { QualityDashboard } from '../components/UnitStructure/QualityDashboard';
+import UnitSettings from '../components/UnitStructure/UnitSettings';
 import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
@@ -48,7 +50,8 @@ type TabType =
   | 'outcomes'
   | 'assessments'
   | 'analytics'
-  | 'quality';
+  | 'quality'
+  | 'settings';
 
 const UnitPage = () => {
   const { unitId } = useParams<{ unitId: string }>();
@@ -365,6 +368,11 @@ const UnitPage = () => {
       label: 'Quality',
       icon: <Star className='w-4 h-4' />,
     },
+    {
+      id: 'settings' as TabType,
+      label: 'Settings',
+      icon: <Settings className='w-4 h-4' />,
+    },
   ];
 
   if (loading) {
@@ -385,6 +393,11 @@ const UnitPage = () => {
 
   const durationWeeks = unit.durationWeeks || 12;
   const topicLabel = unit.topicLabel || 'Week';
+
+  const features = unit.unitMetadata?.features ?? {};
+  const showGradCaps = features.graduateCapabilities ?? true;
+  const showAolMapping = features.aolMapping ?? true;
+  const showSdgMapping = features.sdgMapping ?? true;
 
   return (
     <div className='min-h-full'>
@@ -601,14 +614,16 @@ const UnitPage = () => {
                       Quick Scaffold
                     </Button>
                   )}
-                  <Button
-                    variant='secondary'
-                    size='sm'
-                    onClick={() => setShowOutcomeMap(true)}
-                  >
-                    <GitBranch className='w-4 h-4 mr-1' />
-                    View Map
-                  </Button>
+                  {showGradCaps && (
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      onClick={() => setShowOutcomeMap(true)}
+                    >
+                      <GitBranch className='w-4 h-4 mr-1' />
+                      View Map
+                    </Button>
+                  )}
                   {canScaffold && (
                     <Button
                       variant={showPlanner ? 'primary' : 'secondary'}
@@ -649,14 +664,18 @@ const UnitPage = () => {
               )}
 
               {/* Accreditation Mapping Panels */}
-              <div className='mb-6 space-y-4'>
-                <GraduateCapabilitiesPanel
-                  unitId={unitId!}
-                  onViewMap={() => setShowOutcomeMap(true)}
-                />
-                <AoLMappingPanel unitId={unitId!} />
-                <SDGMappingPanel unitId={unitId!} />
-              </div>
+              {(showGradCaps || showAolMapping || showSdgMapping) && (
+                <div className='mb-6 space-y-4'>
+                  {showGradCaps && (
+                    <GraduateCapabilitiesPanel
+                      unitId={unitId!}
+                      onViewMap={() => setShowOutcomeMap(true)}
+                    />
+                  )}
+                  {showAolMapping && <AoLMappingPanel unitId={unitId!} />}
+                  {showSdgMapping && <SDGMappingPanel unitId={unitId!} />}
+                </div>
+              )}
 
               {/* Week Accordion */}
               <WeekAccordion
@@ -699,6 +718,10 @@ const UnitPage = () => {
               durationWeeks={durationWeeks}
               topicLabel={topicLabel}
             />
+          )}
+
+          {activeTab === 'settings' && (
+            <UnitSettings unit={unit} onSave={updated => setUnit(updated)} />
           )}
         </div>
 

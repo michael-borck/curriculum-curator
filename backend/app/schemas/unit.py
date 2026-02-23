@@ -77,6 +77,10 @@ class UnitUpdate(CamelModel):
     difficulty_level: DifficultyLevel | None = None
     duration_weeks: int | None = Field(None, ge=1, le=52)
     topic_label: str | None = Field(None, min_length=1, max_length=50)
+    credit_points: int | None = Field(None, ge=0, le=500)
+    prerequisites: str | None = None
+    learning_hours: int | None = Field(None, ge=0, le=10000)
+    unit_metadata: dict[str, Any] | None = None
 
 
 class UnitResponse(CamelModel):
@@ -94,6 +98,9 @@ class UnitResponse(CamelModel):
     semester: str | None = None
     duration_weeks: int
     topic_label: str = "Week"
+    credit_points: int = 6
+    prerequisites: str | None = None
+    learning_hours: int | None = None
     unit_metadata: dict[str, Any] | None = None
     created_at: datetime | str
     updated_at: datetime | str | None = None
