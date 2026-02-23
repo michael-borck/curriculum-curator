@@ -112,6 +112,12 @@ export const deleteUnit = (
 ): Promise<ApiResponse> =>
   api.delete(`/units/${id}`, { params: { permanent } });
 
+export const deleteWeek = (
+  unitId: string,
+  weekNumber: number
+): Promise<ApiResponse<Unit>> =>
+  api.delete(`/units/${unitId}/weeks/${weekNumber}`);
+
 export const restoreUnit = (id: string): Promise<ApiResponse<Unit>> =>
   api.post(`/units/${id}/restore`);
 

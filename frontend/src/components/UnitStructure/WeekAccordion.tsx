@@ -12,11 +12,13 @@ import {
   Video,
   FileText,
   Edit,
+  Trash2,
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import {
   MaterialResponse,
   MaterialType,
+  MaterialCategory,
   WeekQualityScore,
 } from '../../types/unitStructure';
 import StarRating from '../shared/StarRating';
@@ -29,6 +31,8 @@ interface WeekAccordionProps {
   expandedWeek: number | null;
   onWeekToggle: (weekNumber: number) => void;
   onAddMaterial: (weekNumber: number) => void;
+  onAddWeek?: (() => void) | undefined;
+  onDeleteWeek?: ((weekNumber: number) => void) | undefined;
 }
 
 interface WeekData {
@@ -61,6 +65,47 @@ const materialTypeColors: Record<MaterialType, string> = {
   [MaterialType.OTHER]: 'bg-gray-100 text-gray-700',
 };
 
+const CATEGORY_ORDER: MaterialCategory[] = [
+  MaterialCategory.PRE_CLASS,
+  MaterialCategory.IN_CLASS,
+  MaterialCategory.POST_CLASS,
+  MaterialCategory.RESOURCES,
+];
+
+const CATEGORY_LABELS: Record<MaterialCategory, string> = {
+  [MaterialCategory.PRE_CLASS]: 'Pre-class',
+  [MaterialCategory.IN_CLASS]: 'In-class',
+  [MaterialCategory.POST_CLASS]: 'Post-class',
+  [MaterialCategory.RESOURCES]: 'Resources',
+  [MaterialCategory.GENERAL]: 'General',
+};
+
+const CATEGORY_COLORS: Record<MaterialCategory, string> = {
+  [MaterialCategory.PRE_CLASS]: 'text-amber-700 bg-amber-50 border-amber-200',
+  [MaterialCategory.IN_CLASS]: 'text-blue-700 bg-blue-50 border-blue-200',
+  [MaterialCategory.POST_CLASS]: 'text-green-700 bg-green-50 border-green-200',
+  [MaterialCategory.RESOURCES]: 'text-gray-600 bg-gray-50 border-gray-200',
+  [MaterialCategory.GENERAL]: 'text-gray-600 bg-gray-50 border-gray-200',
+};
+
+function groupByCategory(materials: MaterialResponse[]) {
+  const general: MaterialResponse[] = [];
+  const grouped = new Map<MaterialCategory, MaterialResponse[]>();
+
+  for (const m of materials) {
+    const cat = m.category;
+    if (!cat || cat === MaterialCategory.GENERAL) {
+      general.push(m);
+    } else {
+      const list = grouped.get(cat) || [];
+      list.push(m);
+      grouped.set(cat, list);
+    }
+  }
+
+  return { general, grouped };
+}
+
 export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   unitId,
   durationWeeks,
@@ -68,6 +113,8 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   expandedWeek,
   onWeekToggle,
   onAddMaterial,
+  onAddWeek,
+  onDeleteWeek,
 }) => {
   const navigate = useNavigate();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
@@ -156,6 +203,88 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     navigate(`/units/${unitId}/materials/${materialId}`);
   };
 
+  const handleDeleteWeekClick = (
+    e: React.MouseEvent,
+    weekNumber: number,
+    hasContent: boolean
+  ) => {
+    e.stopPropagation();
+    if (!onDeleteWeek) return;
+
+    if (hasContent) {
+      const confirmed = window.confirm(
+        `${topicLabel} ${weekNumber} has materials that will be permanently deleted. Continue?`
+      );
+      if (!confirmed) return;
+    }
+
+    onDeleteWeek(weekNumber);
+  };
+
+  const renderMaterialRow = (material: MaterialResponse) => (
+    <div
+      key={material.id}
+      className='flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer group'
+      onClick={() => handleMaterialClick(material.id)}
+    >
+      <div className='flex items-center gap-3'>
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${materialTypeColors[material.type]}`}
+        >
+          {materialTypeIcons[material.type]}
+          {material.type}
+        </span>
+        <span className='font-medium text-gray-900'>{material.title}</span>
+        {material.durationMinutes && (
+          <span className='text-sm text-gray-500 flex items-center gap-1'>
+            <Clock className='w-3 h-3' />
+            {material.durationMinutes}min
+          </span>
+        )}
+      </div>
+      <button
+        className='p-1.5 text-gray-400 hover:text-purple-600 opacity-0 group-hover:opacity-100 transition'
+        onClick={e => {
+          e.stopPropagation();
+          handleMaterialClick(material.id);
+        }}
+      >
+        <Edit className='w-4 h-4' />
+      </button>
+    </div>
+  );
+
+  const renderCategorizedMaterials = (materials: MaterialResponse[]) => {
+    const { general, grouped } = groupByCategory(materials);
+    const hasCategories = grouped.size > 0;
+
+    if (!hasCategories) {
+      // No categorized materials — render flat list
+      return materials.map(renderMaterialRow);
+    }
+
+    return (
+      <>
+        {/* Ungrouped (general) materials at the top */}
+        {general.map(renderMaterialRow)}
+
+        {/* Categorized sections */}
+        {CATEGORY_ORDER.filter(cat => grouped.has(cat)).map(cat => (
+          <div key={cat} className='mt-1'>
+            <div
+              className={`text-xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-t-md border-b ${CATEGORY_COLORS[cat]}`}
+            >
+              {CATEGORY_LABELS[cat]}
+            </div>
+            <div className='space-y-1 pt-1'>
+              {grouped.get(cat)!.map(renderMaterialRow)}
+            </div>
+          </div>
+        ))}
+      </>
+    );
+  };
+
   if (!allMaterialsLoaded) {
     return (
       <div className='space-y-2'>
@@ -190,13 +319,15 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
               }`}
             >
               {/* Week Header */}
-              <button
-                onClick={() => onWeekToggle(weekNumber)}
-                className={`w-full flex items-center justify-between p-4 text-left transition ${
+              <div
+                className={`flex items-center justify-between p-4 transition ${
                   isExpanded ? 'bg-purple-50' : 'hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center gap-3'>
+                <button
+                  onClick={() => onWeekToggle(weekNumber)}
+                  className='flex items-center gap-3 flex-1 text-left'
+                >
                   {isExpanded ? (
                     <ChevronDown className='w-5 h-5 text-gray-500' />
                   ) : (
@@ -223,7 +354,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                       ))}
                     </div>
                   )}
-                </div>
+                </button>
 
                 <div className='flex items-center gap-4'>
                   {/* Week quality star */}
@@ -253,8 +384,21 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                       ? 'No content'
                       : `${summary.count} material${summary.count !== 1 ? 's' : ''}`}
                   </span>
+
+                  {/* Delete week button */}
+                  {onDeleteWeek && durationWeeks > 1 && (
+                    <button
+                      onClick={e =>
+                        handleDeleteWeekClick(e, weekNumber, !isEmpty)
+                      }
+                      className='p-1 text-gray-300 hover:text-red-500 transition'
+                      title={`Delete ${topicLabel} ${weekNumber}`}
+                    >
+                      <Trash2 className='w-4 h-4' />
+                    </button>
+                  )}
                 </div>
-              </button>
+              </div>
 
               {/* Expanded Content */}
               {isExpanded && (
@@ -274,40 +418,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                     </div>
                   ) : (
                     <div className='space-y-2'>
-                      {weekData?.materials.map(material => (
-                        <div
-                          key={material.id}
-                          className='flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer group'
-                          onClick={() => handleMaterialClick(material.id)}
-                        >
-                          <div className='flex items-center gap-3'>
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${materialTypeColors[material.type]}`}
-                            >
-                              {materialTypeIcons[material.type]}
-                              {material.type}
-                            </span>
-                            <span className='font-medium text-gray-900'>
-                              {material.title}
-                            </span>
-                            {material.durationMinutes && (
-                              <span className='text-sm text-gray-500 flex items-center gap-1'>
-                                <Clock className='w-3 h-3' />
-                                {material.durationMinutes}min
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            className='p-1.5 text-gray-400 hover:text-purple-600 opacity-0 group-hover:opacity-100 transition'
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleMaterialClick(material.id);
-                            }}
-                          >
-                            <Edit className='w-4 h-4' />
-                          </button>
-                        </div>
-                      ))}
+                      {renderCategorizedMaterials(weekData?.materials ?? [])}
 
                       {/* Add more materials button */}
                       <button
@@ -324,6 +435,17 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
             </div>
           );
         }
+      )}
+
+      {/* Add Week button */}
+      {onAddWeek && (
+        <button
+          onClick={onAddWeek}
+          className='w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition'
+        >
+          <Plus className='w-4 h-4' />
+          Add {topicLabel}
+        </button>
       )}
     </div>
   );

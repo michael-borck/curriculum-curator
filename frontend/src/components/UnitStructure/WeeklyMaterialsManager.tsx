@@ -51,6 +51,7 @@ import {
   MaterialUpdate,
   MaterialType,
   MaterialStatus,
+  MaterialCategory,
   WeekMaterials,
 } from '../../types/unitStructure';
 import {
@@ -72,6 +73,7 @@ interface WeeklyMaterialsManagerProps {
 interface MaterialFormData {
   title: string;
   type: MaterialType;
+  category: MaterialCategory;
   description: string;
   durationMinutes: number;
   status: MaterialStatus;
@@ -79,6 +81,14 @@ interface MaterialFormData {
   useAI: boolean;
   overrideStyle: PedagogyType | null;
 }
+
+const CATEGORY_OPTIONS: { value: MaterialCategory; label: string }[] = [
+  { value: MaterialCategory.GENERAL, label: 'General' },
+  { value: MaterialCategory.PRE_CLASS, label: 'Pre-class' },
+  { value: MaterialCategory.IN_CLASS, label: 'In-class' },
+  { value: MaterialCategory.POST_CLASS, label: 'Post-class' },
+  { value: MaterialCategory.RESOURCES, label: 'Resources' },
+];
 
 const QualityBadge: React.FC<{ score: number }> = ({ score }) => {
   let grade: string;
@@ -379,6 +389,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   const [formData, setFormData] = useState<MaterialFormData>({
     title: '',
     type: MaterialType.LECTURE,
+    category: MaterialCategory.GENERAL,
     description: '',
     durationMinutes: 60,
     status: MaterialStatus.DRAFT,
@@ -422,6 +433,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         const updateData: MaterialUpdate = {
           title: formData.title,
           type: formData.type,
+          category: formData.category,
           ...(formData.description && { description: formData.description }),
           ...(formData.durationMinutes && {
             durationMinutes: formData.durationMinutes,
@@ -436,6 +448,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
           weekNumber,
           title: formData.title,
           type: formData.type,
+          category: formData.category,
           ...(formData.description && { description: formData.description }),
           ...(formData.durationMinutes && {
             durationMinutes: formData.durationMinutes,
@@ -464,6 +477,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     setFormData({
       title: material.title,
       type: material.type,
+      category: material.category || MaterialCategory.GENERAL,
       description: material.description || '',
       durationMinutes: material.durationMinutes || 60,
       status: material.status,
@@ -519,6 +533,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     setFormData({
       title: '',
       type: MaterialType.LECTURE,
+      category: MaterialCategory.GENERAL,
       description: '',
       durationMinutes: 60,
       status: MaterialStatus.DRAFT,
@@ -691,6 +706,28 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   min='0'
                 />
               </div>
+            </div>
+
+            <div>
+              <label className='block text-sm font-medium text-gray-700'>
+                Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value as MaterialCategory,
+                  })
+                }
+                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+              >
+                {CATEGORY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

@@ -35,6 +35,16 @@ class MaterialType(str, Enum):
     DISCUSSION = "discussion"
 
 
+class MaterialCategory(str, Enum):
+    """Content category within a week"""
+
+    PRE_CLASS = "pre_class"
+    IN_CLASS = "in_class"
+    POST_CLASS = "post_class"
+    RESOURCES = "resources"
+    GENERAL = "general"
+
+
 class MaterialStatus(str, Enum):
     """Material completion status"""
 
@@ -71,6 +81,9 @@ class WeeklyMaterial(Base):
     )
 
     # Organization
+    category: Mapped[str] = mapped_column(
+        String(20), default=MaterialCategory.GENERAL.value
+    )
     order_index: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(
         String(20), default=MaterialStatus.DRAFT.value, index=True

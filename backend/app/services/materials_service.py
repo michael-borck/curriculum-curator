@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.local_learning_outcome import LocalLearningOutcome
 from app.models.mappings import material_ulo_mappings
+from app.models.unit import Unit
 from app.models.weekly_material import MaterialStatus, WeeklyMaterial
+from app.models.weekly_topic import WeeklyTopic
 from app.schemas.learning_outcomes import LLOCreate
 from app.schemas.materials import (
     MaterialCreate,
@@ -80,6 +82,7 @@ class MaterialsService:
                 duration_minutes=material_data.duration_minutes,
                 file_path=material_data.file_path,
                 material_metadata=material_data.material_metadata,
+                category=material_data.category,
                 order_index=material_data.order_index or next_order,
                 status=material_data.status,
             )
@@ -374,6 +377,91 @@ class MaterialsService:
 
         logger.info(f"Added local outcome to material {material_id}")
         return llo
+
+    async def delete_week(
+        self,
+        db: Session,
+        unit_id: str,
+        week_number: int,
+    ) -> Unit:
+        """Delete a week: remove its materials/topics and shift subsequent weeks down."""
+        unit = db.query(Unit).filter(Unit.id == unit_id).first()
+        if not unit:
+            raise ValueError(f"Unit {unit_id} not found")
+
+        if unit.duration_weeks is None or unit.duration_weeks < 1:
+            raise ValueError("Unit has no weeks to delete")
+
+        if week_number < 1 or week_number > unit.duration_weeks:
+            raise ValueError(f"Week {week_number} is out of range (1-{unit.duration_weeks})")
+
+        # Delete all materials for this week (cascades to local outcomes via ORM)
+        materials = (
+            db.query(WeeklyMaterial)
+            .filter(
+                and_(
+                    WeeklyMaterial.unit_id == unit_id,
+                    WeeklyMaterial.week_number == week_number,
+                )
+            )
+            .all()
+        )
+        for m in materials:
+            db.delete(m)
+
+        # Delete weekly topics for this week
+        topics = (
+            db.query(WeeklyTopic)
+            .filter(
+                and_(
+                    WeeklyTopic.unit_id == unit_id,
+                    WeeklyTopic.week_number == week_number,
+                )
+            )
+            .all()
+        )
+        for t in topics:
+            db.delete(t)
+
+        # Shift subsequent materials down by 1
+        subsequent_materials = (
+            db.query(WeeklyMaterial)
+            .filter(
+                and_(
+                    WeeklyMaterial.unit_id == unit_id,
+                    WeeklyMaterial.week_number > week_number,
+                )
+            )
+            .all()
+        )
+        for m in subsequent_materials:
+            m.week_number -= 1
+
+        # Shift subsequent topics down by 1
+        subsequent_topics = (
+            db.query(WeeklyTopic)
+            .filter(
+                and_(
+                    WeeklyTopic.unit_id == unit_id,
+                    WeeklyTopic.week_number > week_number,
+                )
+            )
+            .all()
+        )
+        for t in subsequent_topics:
+            t.week_number -= 1
+
+        # Decrement duration_weeks
+        unit.duration_weeks -= 1
+
+        db.commit()
+        db.refresh(unit)
+
+        logger.info(
+            f"Deleted week {week_number} from unit {unit_id}, "
+            f"new duration: {unit.duration_weeks} weeks"
+        )
+        return unit
 
     async def get_week_summary(
         self,

@@ -21,6 +21,7 @@ class MaterialBase(CamelModel):
     duration_minutes: int | None = Field(
         None, ge=0, description="Estimated duration in minutes"
     )
+    category: str = Field(default="general", description="Content category (pre_class, in_class, post_class, resources, general)")
     order_index: int = Field(default=0, ge=0, description="Display order within week")
     status: str = Field(default="draft", description="Material status")
 
@@ -46,6 +47,7 @@ class MaterialUpdate(CamelModel):
     duration_minutes: int | None = Field(None, ge=0)
     file_path: str | None = Field(None, max_length=500)
     material_metadata: dict[str, Any] | None = None
+    category: str | None = None
     order_index: int | None = Field(None, ge=0)
     status: str | None = None
 

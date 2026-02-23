@@ -21,6 +21,14 @@ export enum MaterialStatus {
   ARCHIVED = 'archived',
 }
 
+export enum MaterialCategory {
+  PRE_CLASS = 'pre_class',
+  IN_CLASS = 'in_class',
+  POST_CLASS = 'post_class',
+  RESOURCES = 'resources',
+  GENERAL = 'general',
+}
+
 export enum AssessmentType {
   FORMATIVE = 'formative',
   SUMMATIVE = 'summative',
@@ -102,6 +110,7 @@ export interface MaterialCreate {
   type: MaterialType;
   description?: string;
   durationMinutes?: number;
+  category?: MaterialCategory;
   filePath?: string;
   materialMetadata?: Record<string, any>;
   orderIndex?: number;
@@ -114,6 +123,7 @@ export interface MaterialUpdate {
   type?: MaterialType;
   description?: string;
   durationMinutes?: number;
+  category?: MaterialCategory;
   filePath?: string;
   materialMetadata?: Record<string, any>;
   orderIndex?: number;
@@ -128,6 +138,7 @@ export interface MaterialResponse {
   type: MaterialType;
   description?: string;
   durationMinutes?: number;
+  category: MaterialCategory;
   filePath?: string;
   materialMetadata?: Record<string, any>;
   qualityScore?: number | undefined;

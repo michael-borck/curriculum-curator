@@ -28,6 +28,7 @@ from app.schemas.unit import (
 )
 from app.schemas.user import UserResponse
 from app.services.git_content_service import get_git_service
+from app.services.materials_service import materials_service
 
 logger = logging.getLogger(__name__)
 
@@ -400,3 +401,36 @@ async def duplicate_unit(
         )
 
     return new_unit
+
+
+@router.delete("/{unit_id}/weeks/{week_number}", response_model=UnitResponse)
+async def delete_week(
+    unit_id: str,
+    week_number: int,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+):
+    """
+    Delete a week from a unit.
+
+    Removes all materials and topics for the given week,
+    shifts subsequent weeks down by 1, and decrements duration_weeks.
+    """
+    existing_unit = unit_repo.get_unit_by_id(db, unit_id)
+
+    if not existing_unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
+        )
+
+    if existing_unit.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
+        )
+
+    try:
+        return await materials_service.delete_week(db, unit_id, week_number)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e

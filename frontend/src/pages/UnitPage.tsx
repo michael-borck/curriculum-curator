@@ -16,7 +16,12 @@ import {
   Star,
   Settings,
 } from 'lucide-react';
-import { getUnit, deleteUnit as deleteUnitApi } from '../services/api';
+import {
+  getUnit,
+  updateUnit,
+  deleteUnit as deleteUnitApi,
+  deleteWeek as deleteWeekApi,
+} from '../services/api';
 import api from '../services/api';
 import {
   downloadExport,
@@ -127,6 +132,37 @@ const UnitPage = () => {
   const handleAddMaterial = (weekNumber: number) => {
     // Navigate to content creator with week pre-selected
     navigate(`/content/create?unitId=${unitId}&week=${weekNumber}`);
+  };
+
+  const handleAddWeek = async () => {
+    if (!unitId || !unit) return;
+    try {
+      await updateUnit(unitId, {
+        durationWeeks: (unit.durationWeeks || 12) + 1,
+      });
+      await fetchUnit();
+      toast.success(`${unit.topicLabel || 'Week'} added`);
+    } catch {
+      toast.error('Failed to add week');
+    }
+  };
+
+  const handleDeleteWeek = async (weekNumber: number) => {
+    if (!unitId) return;
+    try {
+      await deleteWeekApi(unitId, weekNumber);
+      // Collapse if we were viewing the deleted week
+      if (expandedWeek === weekNumber) {
+        setExpandedWeek(null);
+      } else if (expandedWeek && expandedWeek > weekNumber) {
+        // Shift expanded week down since weeks shifted
+        setExpandedWeek(expandedWeek - 1);
+      }
+      await fetchUnit();
+      toast.success(`${unit?.topicLabel || 'Week'} ${weekNumber} deleted`);
+    } catch {
+      toast.error('Failed to delete week');
+    }
   };
 
   const fetchUnit = useCallback(async () => {
@@ -685,6 +721,8 @@ const UnitPage = () => {
                 expandedWeek={expandedWeek}
                 onWeekToggle={handleWeekToggle}
                 onAddMaterial={handleAddMaterial}
+                onAddWeek={handleAddWeek}
+                onDeleteWeek={handleDeleteWeek}
               />
 
               {/* Learning Outcome Map Modal */}
