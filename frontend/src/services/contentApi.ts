@@ -7,6 +7,19 @@
 import api from './api';
 import type { Content } from '../types';
 
+// ─── Export Types ────────────────────────────────────────────────────────────
+
+export interface ExportAvailability {
+  pandoc: boolean;
+  pandocVersion: string | null;
+  typst: boolean;
+  typstVersion: string | null;
+  pdfAvailable: boolean;
+  htmlAvailable: boolean;
+  docxAvailable: boolean;
+  pptxAvailable: boolean;
+}
+
 // ─── Version History Types ───────────────────────────────────────────────────
 
 export interface ContentVersion {
@@ -119,5 +132,25 @@ export const contentApi = {
     return api.post<Content>(`/units/${unitId}/content/${contentId}/revert`, {
       commit,
     });
+  },
+
+  // ─── Export ─────────────────────────────────────────────────────────────────
+
+  /** Check which export formats the backend can produce (Pandoc/Typst installed). */
+  exportAvailability() {
+    return api.get<ExportAvailability>('/export/availability');
+  },
+
+  /** Render a content item to a document format and return the blob. */
+  exportDocumentBlob(
+    contentId: string,
+    format: 'pdf' | 'html' | 'docx' | 'pptx',
+    title?: string | undefined
+  ) {
+    return api.post<Blob>(
+      `/content/${contentId}/export/document`,
+      { format, title },
+      { responseType: 'blob' }
+    );
   },
 };

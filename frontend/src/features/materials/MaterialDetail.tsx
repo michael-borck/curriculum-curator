@@ -4,6 +4,7 @@ import {
   FileText,
   Edit,
   Download,
+  Eye,
   Clock,
   Calendar,
   Loader2,
@@ -13,10 +14,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { contentApi } from '../../services/contentApi';
+import type { ExportAvailability } from '../../services/contentApi';
 import VersionHistory from './VersionHistory';
+import DocumentPreviewModal from './DocumentPreviewModal';
 import UnifiedEditor from '../../components/Editor/UnifiedEditor';
 import type { Content } from '../../types';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
+import { useModal } from '../../hooks';
 
 const MaterialDetail: React.FC = () => {
   const { unitId, contentId } = useParams<{
@@ -35,6 +39,9 @@ const MaterialDetail: React.FC = () => {
   const [editedBody, setEditedBody] = useState('');
   const [editedTitle, setEditedTitle] = useState('');
   const [saving, setSaving] = useState(false);
+  const previewModal = useModal();
+  const [exportAvailability, setExportAvailability] =
+    useState<ExportAvailability | null>(null);
 
   const fetchContent = useCallback(async () => {
     if (!unitId || !contentId) return;
@@ -54,6 +61,15 @@ const MaterialDetail: React.FC = () => {
   useEffect(() => {
     fetchContent();
   }, [fetchContent]);
+
+  useEffect(() => {
+    contentApi
+      .exportAvailability()
+      .then(({ data }) => setExportAvailability(data))
+      .catch(() => {
+        /* export unavailable — button stays hidden */
+      });
+  }, []);
 
   const handleSave = async () => {
     if (!content || !unitId || !contentId) return;
@@ -231,6 +247,17 @@ const MaterialDetail: React.FC = () => {
                   <Edit className='h-4 w-4 mr-2' />
                   Edit
                 </button>
+                {exportAvailability &&
+                  (exportAvailability.pdfAvailable ||
+                    exportAvailability.htmlAvailable) && (
+                    <button
+                      onClick={previewModal.open}
+                      className='px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center'
+                    >
+                      <Eye className='h-4 w-4 mr-2' />
+                      Preview
+                    </button>
+                  )}
                 <button
                   onClick={handleExport}
                   className='px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center'
@@ -290,6 +317,17 @@ const MaterialDetail: React.FC = () => {
           unitId={unitId}
           contentId={contentId}
           onVersionRestore={handleVersionRestore}
+        />
+      )}
+
+      {/* Document Preview Modal */}
+      {exportAvailability && contentId && (
+        <DocumentPreviewModal
+          isOpen={previewModal.isOpen}
+          onClose={previewModal.close}
+          contentId={contentId}
+          contentTitle={content.title}
+          availability={exportAvailability}
         />
       )}
 
