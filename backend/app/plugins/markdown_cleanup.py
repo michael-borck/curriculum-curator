@@ -39,7 +39,9 @@ class MarkdownCleanup(RemediatorPlugin):
         content = re.sub(r"[\u200b\u200c\u200d\ufeff]", "", content)
 
         if content != original:
-            changes.append("Replaced smart quotes, special dashes, and invisible characters")
+            changes.append(
+                "Replaced smart quotes, special dashes, and invisible characters"
+            )
 
         # Excessive blank lines (3+ newlines -> 2)
         new_content = re.sub(r"\n{3,}", "\n\n", content)
@@ -100,7 +102,7 @@ class MarkdownCleanup(RemediatorPlugin):
             # Fix "-item" (dash without space)
             match = re.match(r"^(\s*)-(\S)", line)
             if match:
-                lines[i] = f"{match.group(1)}- {match.group(2)}{line[match.end():]}"
+                lines[i] = f"{match.group(1)}- {match.group(2)}{line[match.end() :]}"
                 changes.append(f"Added missing space after list dash at line {i + 1}")
                 continue
 
@@ -155,7 +157,9 @@ class MarkdownCleanup(RemediatorPlugin):
                 match = re.match(r"^#{1,6}", lines[idx])
                 if match:
                     lines[idx] = "#" * new_level + lines[idx][match.end() :]
-                    changes.append(f"Fixed heading level skip at line {idx + 1} (H{level} -> H{new_level})")
+                    changes.append(
+                        f"Fixed heading level skip at line {idx + 1} (H{level} -> H{new_level})"
+                    )
                     prev_level = new_level
                     continue
             prev_level = level
@@ -214,7 +218,9 @@ class MarkdownCleanup(RemediatorPlugin):
                     or re.match(r"^[-*+]\s|^\d+[.)]\s", next_stripped)
                 ):
                     result.append("")
-                    changes.append(f"Added blank line after block element at line {i + 1}")
+                    changes.append(
+                        f"Added blank line after block element at line {i + 1}"
+                    )
 
             prev_was_list = is_list_item
 
@@ -249,7 +255,9 @@ class MarkdownCleanup(RemediatorPlugin):
             if len(indented_block) >= 2:
                 lang = detect_language(indented_block)
                 result.append(f"```{lang}")
-                result.extend(bl[4:] if bl.startswith("    ") else bl for bl in indented_block)
+                result.extend(
+                    bl[4:] if bl.startswith("    ") else bl for bl in indented_block
+                )
                 result.append("```")
                 changes.append(
                     f"Wrapped {len(indented_block)} indented lines in a code block"
@@ -270,7 +278,9 @@ class MarkdownCleanup(RemediatorPlugin):
                 continue
 
             # Check for 4+ space indent (not a list item)
-            if re.match(r"^    \S", line) and not re.match(r"^\s*[-*+]\s|^\s*\d+[.)]\s", line):
+            if re.match(r"^    \S", line) and not re.match(
+                r"^\s*[-*+]\s|^\s*\d+[.)]\s", line
+            ):
                 indented_block.append(line)
             else:
                 flush_indented()
@@ -289,7 +299,9 @@ class MarkdownCleanup(RemediatorPlugin):
 
         new_content = re.sub(r"\]\s+\(", "](", content)
         if new_content != content:
-            changes.append("Fixed broken markdown links (removed space between ] and ()")
+            changes.append(
+                "Fixed broken markdown links (removed space between ] and ()"
+            )
             content = new_content
 
         return content, changes

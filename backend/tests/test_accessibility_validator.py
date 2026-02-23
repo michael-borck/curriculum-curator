@@ -20,7 +20,9 @@ class TestImageChecks:
     """WCAG 1.1.1 — Non-text Content."""
 
     @pytest.mark.asyncio
-    async def test_md_image_missing_alt(self, validator: AccessibilityValidator) -> None:
+    async def test_md_image_missing_alt(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate("![](photo.jpg)", {})
         assert not result.success
         assert any("empty alt text" in i for i in result.data["issues"])
@@ -31,7 +33,9 @@ class TestImageChecks:
         assert any("insufficient alt text" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_md_image_generic_alt(self, validator: AccessibilityValidator) -> None:
+    async def test_md_image_generic_alt(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate("![image](photo.jpg)", {})
         assert any("generic alt text" in i for i in result.data["issues"])
 
@@ -43,18 +47,26 @@ class TestImageChecks:
         assert not any("alt text" in i.lower() for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_image_missing_alt_attr(self, validator: AccessibilityValidator) -> None:
+    async def test_html_image_missing_alt_attr(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate('<p><img src="photo.jpg"></p>', {})
         assert any("missing the alt attribute" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_image_empty_alt(self, validator: AccessibilityValidator) -> None:
+    async def test_html_image_empty_alt(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate('<p><img src="photo.jpg" alt=""></p>', {})
         assert any("empty alt text" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_image_generic_alt(self, validator: AccessibilityValidator) -> None:
-        result = await validator.validate('<p><img src="photo.jpg" alt="picture"></p>', {})
+    async def test_html_image_generic_alt(
+        self, validator: AccessibilityValidator
+    ) -> None:
+        result = await validator.validate(
+            '<p><img src="photo.jpg" alt="picture"></p>', {}
+        )
         assert any("generic alt text" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
@@ -110,7 +122,9 @@ class TestHeadingChecks:
         assert len(heading_issues) == 0
 
     @pytest.mark.asyncio
-    async def test_html_all_caps_heading(self, validator: AccessibilityValidator) -> None:
+    async def test_html_all_caps_heading(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate("<h1>IMPORTANT HEADING</h1>", {})
         assert any("all caps" in i for i in result.data["issues"])
 
@@ -127,17 +141,27 @@ class TestLinkChecks:
         assert any("has no text" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_md_generic_link_text(self, validator: AccessibilityValidator) -> None:
-        result = await validator.validate("# Title\n\n[click here](https://example.com)", {})
+    async def test_md_generic_link_text(
+        self, validator: AccessibilityValidator
+    ) -> None:
+        result = await validator.validate(
+            "# Title\n\n[click here](https://example.com)", {}
+        )
         assert any("non-descriptive" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_empty_link_text(self, validator: AccessibilityValidator) -> None:
-        result = await validator.validate('<h1>Title</h1><a href="https://example.com"></a>', {})
+    async def test_html_empty_link_text(
+        self, validator: AccessibilityValidator
+    ) -> None:
+        result = await validator.validate(
+            '<h1>Title</h1><a href="https://example.com"></a>', {}
+        )
         assert any("has no text" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_generic_link_text(self, validator: AccessibilityValidator) -> None:
+    async def test_html_generic_link_text(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate(
             '<h1>Title</h1><a href="https://example.com">click here</a>', {}
         )
@@ -146,7 +170,8 @@ class TestLinkChecks:
     @pytest.mark.asyncio
     async def test_html_good_link_text(self, validator: AccessibilityValidator) -> None:
         result = await validator.validate(
-            '<h1>Title</h1><a href="https://example.com">Visit the course portal</a>', {}
+            '<h1>Title</h1><a href="https://example.com">Visit the course portal</a>',
+            {},
         )
         assert not any("link" in i.lower() for i in result.data["issues"])
 
@@ -158,13 +183,17 @@ class TestTableChecks:
     """WCAG 1.3.1 — Tables need headers."""
 
     @pytest.mark.asyncio
-    async def test_html_table_no_headers(self, validator: AccessibilityValidator) -> None:
+    async def test_html_table_no_headers(
+        self, validator: AccessibilityValidator
+    ) -> None:
         table = "<h1>Title</h1><table><tr><td>A</td><td>B</td></tr></table>"
         result = await validator.validate(table, {})
         assert any("missing header" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_html_table_with_headers(self, validator: AccessibilityValidator) -> None:
+    async def test_html_table_with_headers(
+        self, validator: AccessibilityValidator
+    ) -> None:
         table = "<h1>Title</h1><table><thead><tr><th>Name</th><th>Score</th></tr></thead><tbody><tr><td>Alice</td><td>95</td></tr></tbody></table>"
         result = await validator.validate(table, {})
         assert not any("header" in i.lower() for i in result.data["issues"])
@@ -192,7 +221,7 @@ class TestMediaChecks:
     @pytest.mark.asyncio
     async def test_video_with_track(self, validator: AccessibilityValidator) -> None:
         content = (
-            '<h1>Lecture</h1>'
+            "<h1>Lecture</h1>"
             '<video src="lecture.mp4" controls>'
             '<track kind="captions" src="captions.vtt">'
             "</video>"
@@ -203,8 +232,8 @@ class TestMediaChecks:
     @pytest.mark.asyncio
     async def test_youtube_no_title(self, validator: AccessibilityValidator) -> None:
         content = (
-            '<h1>Lecture</h1>'
-            '<div data-youtube-video>'
+            "<h1>Lecture</h1>"
+            "<div data-youtube-video>"
             '<iframe src="https://www.youtube-nocookie.com/embed/abc123" '
             'width="640" height="360"></iframe>'
             "</div>"
@@ -215,8 +244,8 @@ class TestMediaChecks:
     @pytest.mark.asyncio
     async def test_youtube_with_title(self, validator: AccessibilityValidator) -> None:
         content = (
-            '<h1>Lecture</h1>'
-            '<div data-youtube-video>'
+            "<h1>Lecture</h1>"
+            "<div data-youtube-video>"
             '<iframe src="https://www.youtube-nocookie.com/embed/abc123" '
             'title="Introduction to Python" width="640" height="360"></iframe>'
             "</div>"
@@ -225,16 +254,17 @@ class TestMediaChecks:
         assert not any("title attribute" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_mermaid_no_alternative(self, validator: AccessibilityValidator) -> None:
-        content = (
-            "<h1>Architecture</h1>"
-            '<pre class="mermaid">graph TD\n  A --> B</pre>'
-        )
+    async def test_mermaid_no_alternative(
+        self, validator: AccessibilityValidator
+    ) -> None:
+        content = '<h1>Architecture</h1><pre class="mermaid">graph TD\n  A --> B</pre>'
         result = await validator.validate(content, {})
         assert any("Mermaid" in i for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_no_media_in_markdown(self, validator: AccessibilityValidator) -> None:
+    async def test_no_media_in_markdown(
+        self, validator: AccessibilityValidator
+    ) -> None:
         """Media checks only run on HTML content."""
         result = await validator.validate("# Title\n\nSome text.", {})
         assert not any("captions" in i or "Mermaid" in i for i in result.data["issues"])
@@ -250,8 +280,12 @@ class TestColorAndLanguage:
         assert any("color" in i.lower() for i in result.data["issues"])
 
     @pytest.mark.asyncio
-    async def test_color_reference_html(self, validator: AccessibilityValidator) -> None:
-        result = await validator.validate("<h1>Title</h1><p>Click the red button.</p>", {})
+    async def test_color_reference_html(
+        self, validator: AccessibilityValidator
+    ) -> None:
+        result = await validator.validate(
+            "<h1>Title</h1><p>Click the red button.</p>", {}
+        )
         assert any("color" in i.lower() for i in result.data["issues"])
 
     @pytest.mark.asyncio
@@ -267,14 +301,16 @@ class TestColorAndLanguage:
 class TestScoring:
     @pytest.mark.asyncio
     async def test_perfect_score(self, validator: AccessibilityValidator) -> None:
-        content = '<h1>Welcome</h1><h2>Section</h2><p>Good content here.</p>'
+        content = "<h1>Welcome</h1><h2>Section</h2><p>Good content here.</p>"
         result = await validator.validate(content, {})
         assert result.success
         assert result.data["score"] == 100
         assert result.data["severity"] == "pass"
 
     @pytest.mark.asyncio
-    async def test_checks_performed_includes_media(self, validator: AccessibilityValidator) -> None:
+    async def test_checks_performed_includes_media(
+        self, validator: AccessibilityValidator
+    ) -> None:
         result = await validator.validate("<h1>Title</h1>", {})
         assert "media_alternatives" in result.data["checks_performed"]
 

@@ -166,9 +166,7 @@ class TestIMSCCExportWithTargetLms:
         # Default uses unit.topic_label ("Week")
         assert any("Week 1" in t for t in titles)
 
-    def test_canvas_labels(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_canvas_labels(self, test_db: Session, populated_unit: Unit) -> None:
         service = IMSCCExportService()
         buf, _ = service.export_unit(
             str(populated_unit.id), test_db, target_lms=TargetLMS.CANVAS
@@ -179,9 +177,7 @@ class TestIMSCCExportWithTargetLms:
         assert any("Module 1" in t for t in titles)
         assert "Overview" not in titles
 
-    def test_moodle_labels(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_moodle_labels(self, test_db: Session, populated_unit: Unit) -> None:
         service = IMSCCExportService()
         buf, _ = service.export_unit(
             str(populated_unit.id), test_db, target_lms=TargetLMS.MOODLE
@@ -191,9 +187,7 @@ class TestIMSCCExportWithTargetLms:
         assert "Activities" in titles
         assert any("Topic 1" in t for t in titles)
 
-    def test_blackboard_labels(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_blackboard_labels(self, test_db: Session, populated_unit: Unit) -> None:
         service = IMSCCExportService()
         buf, _ = service.export_unit(
             str(populated_unit.id), test_db, target_lms=TargetLMS.BLACKBOARD
@@ -245,9 +239,7 @@ class TestSCORMExportWithTargetLms:
         assert "Overview" in titles
         assert "Assessments" in titles
 
-    def test_canvas_labels(
-        self, test_db: Session, populated_unit: Unit
-    ) -> None:
+    def test_canvas_labels(self, test_db: Session, populated_unit: Unit) -> None:
         service = SCORMExportService()
         buf, _ = service.export_unit(
             str(populated_unit.id), test_db, target_lms=TargetLMS.CANVAS

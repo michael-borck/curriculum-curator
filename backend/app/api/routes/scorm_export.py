@@ -26,9 +26,7 @@ async def export_unit_scorm(
     target_lms: Annotated[TargetLMS, Query()] = TargetLMS.GENERIC,
 ) -> StreamingResponse:
     """Export a unit as a SCORM 1.2 (.zip) package."""
-    buf, filename = scorm_export_service.export_unit(
-        unit.id, db, target_lms=target_lms
-    )
+    buf, filename = scorm_export_service.export_unit(unit.id, db, target_lms=target_lms)
 
     return StreamingResponse(
         buf,

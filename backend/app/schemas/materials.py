@@ -21,7 +21,10 @@ class MaterialBase(CamelModel):
     duration_minutes: int | None = Field(
         None, ge=0, description="Estimated duration in minutes"
     )
-    category: str = Field(default="general", description="Content category (pre_class, in_class, post_class, resources, general)")
+    category: str = Field(
+        default="general",
+        description="Content category (pre_class, in_class, post_class, resources, general)",
+    )
     order_index: int = Field(default=0, ge=0, description="Display order within week")
     status: str = Field(default="draft", description="Material status")
 
@@ -141,7 +144,9 @@ class MaterialHistory(CamelModel):
 class ApplyStructureRequest(CamelModel):
     """Request to apply week structure across all empty weeks"""
 
-    source_week: int = Field(default=1, ge=1, le=52, description="Source week to copy structure from")
+    source_week: int = Field(
+        default=1, ge=1, le=52, description="Source week to copy structure from"
+    )
     mode: str = Field(..., description="Copy mode: 'stubs' or 'categories'")
 
 

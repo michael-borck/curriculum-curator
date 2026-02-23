@@ -749,7 +749,9 @@ class PackageImportService:
             topic_count += 1
 
             for child_title, href, rtype in children:
-                kind, category = classify_item(child_title, rtype, source_lms=source_lms)
+                kind, category = classify_item(
+                    child_title, rtype, source_lms=source_lms
+                )
 
                 # Read HTML content if available
                 body_html = ""

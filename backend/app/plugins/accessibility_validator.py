@@ -75,7 +75,7 @@ class AccessibilityValidator(ValidatorPlugin):
             if not alt_match:
                 issues.append(f"Image '{src}' is missing the alt attribute")
                 suggestions.append(
-                    f"Add an alt attribute to <img src=\"{src}\"> with a meaningful description"
+                    f'Add an alt attribute to <img src="{src}"> with a meaningful description'
                 )
             else:
                 self._evaluate_alt_text(alt, src, issues, suggestions)
@@ -123,7 +123,9 @@ class AccessibilityValidator(ValidatorPlugin):
 
         if not headings:
             issues.append("No headings found in content")
-            suggestions.append("Add headings to structure your content for screen readers")
+            suggestions.append(
+                "Add headings to structure your content for screen readers"
+            )
             return issues, suggestions
 
         levels = [h[0] for h in headings]
@@ -225,7 +227,11 @@ class AccessibilityValidator(ValidatorPlugin):
                 table_lines = [i for i, line in enumerate(lines) if "|" in line]
                 for i in range(len(table_lines) - 1):
                     if table_lines[i + 1] == table_lines[i] + 1:
-                        sep = lines[table_lines[i + 1]] if table_lines[i + 1] < len(lines) else ""
+                        sep = (
+                            lines[table_lines[i + 1]]
+                            if table_lines[i + 1] < len(lines)
+                            else ""
+                        )
                         if not re.match(r"^\|?\s*:?-+:?\s*\|", sep):
                             issues.append("Table may be missing header row")
                             suggestions.append(
@@ -283,7 +289,9 @@ class AccessibilityValidator(ValidatorPlugin):
         )
         instruction_pattern = (
             r"(click|press|select|choose|see|look at|refer to|find)\s+the\s+"
-            + r"\b(" + color_words + r")\b"
+            + r"\b("
+            + color_words
+            + r")\b"
         )
 
         if re.search(instruction_pattern, plain, re.IGNORECASE):
@@ -311,7 +319,9 @@ class AccessibilityValidator(ValidatorPlugin):
             word_count = len(sentence.split())
             if word_count > 30:
                 preview = sentence.strip()[:50]
-                issues.append(f"Very long sentence ({word_count} words): '{preview}...'")
+                issues.append(
+                    f"Very long sentence ({word_count} words): '{preview}...'"
+                )
                 suggestions.append(
                     "Break long sentences into shorter ones for better readability"
                 )
@@ -337,32 +347,29 @@ class AccessibilityValidator(ValidatorPlugin):
             if not re.search(r"<track\b", tag.group(), re.IGNORECASE):
                 issues.append("Video element is missing captions (<track>)")
                 suggestions.append(
-                    "Add a <track kind=\"captions\"> element or provide a text transcript"
+                    'Add a <track kind="captions"> element or provide a text transcript'
                 )
 
         # Self-closing <video> tags (TipTap renders these as void elements)
         for tag in re.finditer(r"<video\b[^>]*/?>", content, re.IGNORECASE):
-            if (
-                "</video>" not in content[tag.start() : tag.start() + 200]
-                and "video element" not in " ".join(issues)
-            ):
+            if "</video>" not in content[
+                tag.start() : tag.start() + 200
+            ] and "video element" not in " ".join(issues):
                 issues.append("Video element is missing captions (<track>)")
                 suggestions.append(
                     "Consider providing a text transcript alongside the video"
                 )
 
         # YouTube iframes without title attribute
-        for tag in re.finditer(
-            r"<iframe\b[^>]*>", content, re.IGNORECASE
-        ):
+        for tag in re.finditer(r"<iframe\b[^>]*>", content, re.IGNORECASE):
             iframe = tag.group()
             if re.search(r"youtube", iframe, re.IGNORECASE) and not re.search(
                 r'title=["\']', iframe, re.IGNORECASE
             ):
-                    issues.append("YouTube embed is missing a title attribute")
-                    suggestions.append(
-                        "Add a title attribute to the iframe describing the video content"
-                    )
+                issues.append("YouTube embed is missing a title attribute")
+                suggestions.append(
+                    "Add a title attribute to the iframe describing the video content"
+                )
 
         # Mermaid diagrams (<pre class="mermaid">) have no text alternative
         if re.search(r'<pre\b[^>]*class=["\'][^"\']*mermaid', content, re.IGNORECASE):
@@ -406,7 +413,9 @@ class AccessibilityValidator(ValidatorPlugin):
 
             if len(all_issues) > 10:
                 severity = "critical"
-                message = f"Critical accessibility issues found ({len(all_issues)} issues)"
+                message = (
+                    f"Critical accessibility issues found ({len(all_issues)} issues)"
+                )
             elif len(all_issues) > 5:
                 severity = "major"
                 message = f"Major accessibility issues found ({len(all_issues)} issues)"

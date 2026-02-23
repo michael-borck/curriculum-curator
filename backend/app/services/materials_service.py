@@ -394,7 +394,9 @@ class MaterialsService:
             raise ValueError("Unit has no weeks to delete")
 
         if week_number < 1 or week_number > unit.duration_weeks:
-            raise ValueError(f"Week {week_number} is out of range (1-{unit.duration_weeks})")
+            raise ValueError(
+                f"Week {week_number} is out of range (1-{unit.duration_weeks})"
+            )
 
         # Delete all materials for this week (cascades to local outcomes via ORM)
         materials = (
@@ -493,7 +495,6 @@ class MaterialsService:
             "by_status": by_status,
             "is_complete": by_status.get(MaterialStatus.DRAFT, 0) == 0,
         }
-
 
     async def apply_structure(
         self,
