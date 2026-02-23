@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
   Target,
@@ -12,6 +13,7 @@ import {
 import type { LandingProps } from '../../types/index';
 
 const Landing = ({ onSignInClick }: LandingProps) => {
+  const navigate = useNavigate();
   const features = [
     {
       icon: Brain,
@@ -61,12 +63,20 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             Curriculum Curator
           </span>
         </div>
-        <button
-          onClick={onSignInClick}
-          className='bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm'
-        >
-          Sign In
-        </button>
+        <div className='flex items-center gap-4'>
+          <button
+            onClick={() => navigate('/download')}
+            className='text-gray-600 hover:text-gray-900 transition-colors font-medium text-sm'
+          >
+            Install
+          </button>
+          <button
+            onClick={onSignInClick}
+            className='bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm'
+          >
+            Sign In
+          </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -82,7 +92,7 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             units with learning outcomes, weekly materials, and assessments.
           </p>
           <button
-            onClick={onSignInClick}
+            onClick={() => navigate('/download')}
             className='bg-purple-600 text-white px-8 py-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-lg inline-flex items-center gap-2 shadow-lg shadow-purple-200'
           >
             Get Started

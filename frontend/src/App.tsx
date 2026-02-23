@@ -20,6 +20,7 @@ import ContentCreator from './features/content/ContentCreator';
 import ContentView from './features/content/ContentView';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
+import Download from './features/downloads/Download';
 import AdminDashboard from './features/admin/AdminDashboard';
 import DesignCreator from './features/designs/DesignCreator';
 import DesignList from './features/designs/DesignList';
@@ -236,11 +237,19 @@ function App() {
   return (
     <Router>
       <Toaster position='top-right' />
-      {showLogin ? (
-        <Login onBackToLanding={() => setShowLogin(false)} />
-      ) : (
-        <Landing onSignInClick={() => setShowLogin(true)} />
-      )}
+      <Routes>
+        <Route path='/download' element={<Download />} />
+        <Route
+          path='*'
+          element={
+            showLogin ? (
+              <Login onBackToLanding={() => setShowLogin(false)} />
+            ) : (
+              <Landing onSignInClick={() => setShowLogin(true)} />
+            )
+          }
+        />
+      </Routes>
     </Router>
   );
 }
