@@ -45,6 +45,14 @@ No matter how you deploy, Curriculum Curator never phones home:
 
 **Note**: This application uses Australian university terminology where a **Unit** is an individual subject (e.g., "Programming 101") and a **Course** is a degree program.
 
+### Why This Exists
+
+> *This is a curriculum design tool that happens to produce content, not a content tool that happens to know about curriculum.*
+
+LMS platforms deliver content well but don't help you design it. PowerPoint and Word create content but know nothing about learning outcomes or pedagogy. Alignment tools map ULOs to assessments but don't produce anything deliverable. Curriculum Curator bridges that gap — learning design decisions (ULOs, Bloom's levels, pedagogy, accreditation) flow directly into AI-assisted content production, and the result exports to your LMS via IMS Common Cartridge.
+
+Nobody else connects learning design to content production with AI assistance in one tool. For the full positioning, see [docs/POSITIONING.md](docs/POSITIONING.md).
+
 ## Key Features
 
 ### Content Creation & Structuring
@@ -221,6 +229,7 @@ LOCAL_MODE=true
 ## Documentation
 
 - [DeepWiki - Interactive Knowledge Base](https://deepwiki.com/michael-borck/curriculum-curator)
+- [Product Positioning](docs/POSITIONING.md)
 - [Getting Started](docs/guides/getting-started.md)
 - [Docker VPS Deployment](docs/guides/docker-vps-deployment.md)
 - [Teaching Styles Guide](docs/guides/teaching-styles.md)

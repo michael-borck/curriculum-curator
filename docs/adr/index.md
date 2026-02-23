@@ -65,6 +65,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [051](051-llm-token-cost-tracking.md) | LLM Token Usage and Cost Tracking | Accepted |
 | [052](052-unit-level-feature-toggles.md) | Unit-Level Feature Toggles via Metadata | Accepted |
 | [053](053-material-content-categories.md) | Material Content Categories | Accepted |
+| [054](054-import-provenance-round-trip-fidelity.md) | Import Provenance for Round-Trip Fidelity | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -85,6 +86,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-041: Image Storage in Git](041-image-storage-in-git.md) - Binary images stored alongside content in per-unit Git repos
 - [ADR-042: IMSCC/SCORM Import](042-package-import-round-trip.md) - Dual-mode import with round-trip detection and LMS heuristics
 - [ADR-043: In-Memory Import Task Store](043-in-memory-import-task-store.md) - Process-local background task tracking for package imports
+- [ADR-054: Import Provenance for Round-Trip Fidelity](054-import-provenance-round-trip-fidelity.md) - Store CC identifiers and mappings on Unit for lossless re-export
 - [ADR-044: Quality Scoring Algorithm](044-quality-scoring-algorithm.md) - Six-dimension weighted scoring with Shannon entropy and CV
 
 ### AI & Prompt Engineering
