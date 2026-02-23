@@ -31,6 +31,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import {
   createUnit as createUnitApi,
+  updateUnit as updateUnitApi,
   deleteUnit as deleteUnitApi,
   duplicateUnit as duplicateUnitApi,
   getArchivedUnits as getArchivedUnitsApi,
@@ -91,6 +92,59 @@ const difficultyOptions = [
   { value: 'advanced', label: 'Advanced' },
 ];
 
+interface StructurePreset {
+  id: string;
+  label: string;
+  topicLabel: string | null;
+  duration: number | null;
+  accreditationDefaults: boolean;
+}
+
+const STRUCTURE_PRESETS: StructurePreset[] = [
+  {
+    id: 'semester',
+    label: 'Semester',
+    topicLabel: 'Week',
+    duration: 12,
+    accreditationDefaults: true,
+  },
+  {
+    id: 'trimester',
+    label: 'Trimester',
+    topicLabel: 'Week',
+    duration: 10,
+    accreditationDefaults: true,
+  },
+  {
+    id: 'intensive',
+    label: 'Intensive',
+    topicLabel: 'Day',
+    duration: 5,
+    accreditationDefaults: false,
+  },
+  {
+    id: 'workshop',
+    label: 'Workshop',
+    topicLabel: 'Session',
+    duration: 4,
+    accreditationDefaults: false,
+  },
+  {
+    id: 'self-paced',
+    label: 'Self-paced',
+    topicLabel: 'Module',
+    duration: 6,
+    accreditationDefaults: false,
+  },
+  {
+    id: 'custom',
+    label: 'Custom',
+    topicLabel: null,
+    duration: null,
+    accreditationDefaults: true,
+  },
+];
+
 const contentTypeCards: { value: string; label: string; icon: LucideIcon }[] = [
   { value: 'lecture', label: 'Lecture', icon: GraduationCap },
   { value: 'worksheet', label: 'Worksheet', icon: FileText },
@@ -114,6 +168,7 @@ const DashboardPage = () => {
     useUnitsStore();
 
   const [newUnit, setNewUnit] = useState<UnitFormData>(initialFormData);
+  const [selectedPreset, setSelectedPreset] = useState('semester');
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -285,6 +340,17 @@ const DashboardPage = () => {
     fetchUnits();
   }, [fetchUnits]);
 
+  const handlePresetClick = (preset: StructurePreset) => {
+    setSelectedPreset(preset.id);
+    if (preset.id !== 'custom') {
+      setNewUnit(prev => ({
+        ...prev,
+        durationWeeks: preset.duration!,
+        topicLabel: preset.topicLabel!,
+      }));
+    }
+  };
+
   const doCreateUnit = async (): Promise<string | null> => {
     setError(null);
 
@@ -304,9 +370,27 @@ const DashboardPage = () => {
       const response = await createUnitApi(unitData);
       toast.success('Unit created successfully');
       createModal.close();
+
+      const createdId = response.data.id as string;
+      const activePreset = STRUCTURE_PRESETS.find(p => p.id === selectedPreset);
+      if (activePreset && !activePreset.accreditationDefaults) {
+        // Fire-and-forget: disable accreditation toggles for non-formal presets
+        updateUnitApi(createdId, {
+          unitMetadata: {
+            features: {
+              graduateCapabilities: false,
+              aolMapping: false,
+              sdgMapping: false,
+            },
+          },
+        }).catch(() => {
+          // Silently ignore — user can toggle manually in Settings
+        });
+      }
+
       resetForm();
       addUnit(response.data);
-      return response.data.id as string;
+      return createdId;
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err);
       setError(errorMessage);
@@ -369,6 +453,7 @@ const DashboardPage = () => {
 
   const resetForm = () => {
     setNewUnit(initialFormData);
+    setSelectedPreset('semester');
     setError(null);
   };
 
@@ -863,24 +948,52 @@ const DashboardPage = () => {
             placeholder='Brief description of the unit...'
           />
 
-          <FormInput
-            label={`Duration (${newUnit.topicLabel.toLowerCase()}s)`}
-            type='number'
-            value={newUnit.durationWeeks}
-            onChange={e =>
-              updateField('durationWeeks', parseInt(e.target.value))
-            }
-            min={1}
-            max={52}
-          />
-
-          <FormInput
-            label='Period Label'
-            type='text'
-            value={newUnit.topicLabel}
-            onChange={e => updateField('topicLabel', e.target.value)}
-            placeholder='e.g. Week, Module, Session'
-          />
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-2'>
+              Structure
+            </label>
+            <div className='flex flex-wrap gap-2'>
+              {STRUCTURE_PRESETS.map(preset => (
+                <button
+                  key={preset.id}
+                  type='button'
+                  onClick={() => handlePresetClick(preset)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
+                    selectedPreset === preset.id
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            {selectedPreset === 'custom' ? (
+              <div className='grid grid-cols-2 gap-3 mt-3'>
+                <FormInput
+                  label='Duration'
+                  type='number'
+                  value={newUnit.durationWeeks}
+                  onChange={e =>
+                    updateField('durationWeeks', parseInt(e.target.value))
+                  }
+                  min={1}
+                  max={52}
+                />
+                <FormInput
+                  label='Topic Label'
+                  type='text'
+                  value={newUnit.topicLabel}
+                  onChange={e => updateField('topicLabel', e.target.value)}
+                  placeholder='e.g. Week, Module, Session'
+                />
+              </div>
+            ) : (
+              <p className='text-sm text-gray-500 mt-2'>
+                {newUnit.durationWeeks} {newUnit.topicLabel.toLowerCase()}s
+              </p>
+            )}
+          </div>
 
           <FormSelect
             label='Pedagogy Type'
