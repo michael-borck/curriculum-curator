@@ -578,7 +578,7 @@ def _create_content(
     client: TestClient,
     unit_id: str,
     title: str = "Lecture Notes",
-    content_type: str = "lecture",
+    content_type: str = "slides",
     body: str = "# Initial content",
     week_number: int = 1,
 ) -> dict[str, Any]:

@@ -1,5 +1,5 @@
 """
-Content model for unit materials (lectures, worksheets, etc.)
+Content model for unit materials (slides, worksheets, etc.)
 """
 
 import uuid
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.common import GUID
+from app.models.enums import ContentType
 
 if TYPE_CHECKING:
     from app.models.content_version import ContentVersion
@@ -22,6 +23,9 @@ if TYPE_CHECKING:
     from app.models.unit import Unit
     from app.models.validation_result import ValidationResult
 
+# Re-export for backwards compatibility
+__all__ = ["Content", "ContentCategory", "ContentStatus", "ContentType"]
+
 
 class ContentCategory(str, Enum):
     """Content category for flipped classroom model"""
@@ -30,31 +34,6 @@ class ContentCategory(str, Enum):
     IN_CLASS = "in_class"  # During class activities
     POST_CLASS = "post_class"  # After class reflection/practice
     GENERAL = "general"  # Not categorized
-
-
-class ContentType(str, Enum):
-    """Content type enumeration"""
-
-    SYLLABUS = "syllabus"
-    SCHEDULE = "schedule"
-    LECTURE = "lecture"
-    MODULE = "module"
-    WORKSHEET = "worksheet"
-    FAQ = "faq"
-    QUIZ = "quiz"
-    SHORT_ANSWER = "short_answer"
-    MATCHING = "matching"
-    CASE_STUDY = "case_study"
-    INTERACTIVE = "interactive"
-    RESOURCE = (
-        "resource"  # Renamed from READING - includes articles, videos, websites, etc.
-    )
-    ASSIGNMENT = "assignment"
-    PROJECT = "project"
-    ASSESSMENT = "assessment"
-    VIDEO = "video"  # Explicit video content
-    PODCAST = "podcast"  # Audio content
-    TUTORIAL = "tutorial"  # Step-by-step guides
 
 
 class ContentStatus(str, Enum):
@@ -187,11 +166,7 @@ class Content(Base):
     @property
     def is_quiz(self) -> bool:
         """Check if content is a quiz type"""
-        return str(self.type) in [
-            ContentType.QUIZ.value,
-            ContentType.SHORT_ANSWER.value,
-            ContentType.MATCHING.value,
-        ]
+        return str(self.type) == ContentType.QUIZ.value
 
     @property
     def has_children(self) -> bool:

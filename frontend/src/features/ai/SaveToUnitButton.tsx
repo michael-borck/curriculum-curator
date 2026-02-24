@@ -16,13 +16,13 @@ interface SaveToUnitButtonProps {
 
 const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string }[] = [
   { value: 'notes', label: 'Notes' },
-  { value: 'lecture', label: 'Lecture' },
+  { value: 'slides', label: 'Slides' },
   { value: 'activity', label: 'Activity' },
   { value: 'worksheet', label: 'Worksheet' },
   { value: 'quiz', label: 'Quiz' },
   { value: 'resource', label: 'Resource' },
-  { value: 'tutorial', label: 'Tutorial' },
-  { value: 'faq', label: 'FAQ' },
+  { value: 'handout', label: 'Handout' },
+  { value: 'reading', label: 'Reading' },
 ];
 
 function extractTitle(content: string): string {

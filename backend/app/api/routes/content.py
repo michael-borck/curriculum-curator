@@ -130,7 +130,7 @@ async def upload_content(
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
     file: UploadFile = File(...),
     week_number: int | None = None,
-    content_type: ContentType = ContentType.LECTURE,
+    content_type: ContentType = ContentType.SLIDES,
     content_category: str = "general",
 ):
     """

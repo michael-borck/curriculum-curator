@@ -8,9 +8,9 @@ import {
   Presentation,
   Users,
   FlaskConical,
-  Book,
-  Video,
+  BookOpen,
   FileText,
+  MessageSquare,
   Edit,
   Trash2,
   Copy,
@@ -19,7 +19,7 @@ import {
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import {
   MaterialResponse,
-  MaterialType,
+  SessionFormat,
   MaterialCategory,
   WeekQualityScore,
 } from '../../types/unitStructure';
@@ -46,26 +46,24 @@ interface WeekData {
   isLoaded: boolean;
 }
 
-const materialTypeIcons: Record<MaterialType, React.ReactElement> = {
-  [MaterialType.LECTURE]: <Presentation className='w-4 h-4' />,
-  [MaterialType.TUTORIAL]: <Users className='w-4 h-4' />,
-  [MaterialType.LAB]: <FlaskConical className='w-4 h-4' />,
-  [MaterialType.WORKSHOP]: <Users className='w-4 h-4' />,
-  [MaterialType.READING]: <Book className='w-4 h-4' />,
-  [MaterialType.VIDEO]: <Video className='w-4 h-4' />,
-  [MaterialType.ASSIGNMENT]: <FileText className='w-4 h-4' />,
-  [MaterialType.OTHER]: <FileText className='w-4 h-4' />,
+const sessionFormatIcons: Record<SessionFormat, React.ReactElement> = {
+  [SessionFormat.LECTURE]: <Presentation className='w-4 h-4' />,
+  [SessionFormat.TUTORIAL]: <Users className='w-4 h-4' />,
+  [SessionFormat.LAB]: <FlaskConical className='w-4 h-4' />,
+  [SessionFormat.WORKSHOP]: <Users className='w-4 h-4' />,
+  [SessionFormat.SEMINAR]: <MessageSquare className='w-4 h-4' />,
+  [SessionFormat.INDEPENDENT]: <BookOpen className='w-4 h-4' />,
+  [SessionFormat.OTHER]: <FileText className='w-4 h-4' />,
 };
 
-const materialTypeColors: Record<MaterialType, string> = {
-  [MaterialType.LECTURE]: 'bg-blue-100 text-blue-700',
-  [MaterialType.TUTORIAL]: 'bg-green-100 text-green-700',
-  [MaterialType.LAB]: 'bg-purple-100 text-purple-700',
-  [MaterialType.WORKSHOP]: 'bg-yellow-100 text-yellow-700',
-  [MaterialType.READING]: 'bg-gray-100 text-gray-700',
-  [MaterialType.VIDEO]: 'bg-red-100 text-red-700',
-  [MaterialType.ASSIGNMENT]: 'bg-indigo-100 text-indigo-700',
-  [MaterialType.OTHER]: 'bg-gray-100 text-gray-700',
+const sessionFormatColors: Record<SessionFormat, string> = {
+  [SessionFormat.LECTURE]: 'bg-blue-100 text-blue-700',
+  [SessionFormat.TUTORIAL]: 'bg-green-100 text-green-700',
+  [SessionFormat.LAB]: 'bg-purple-100 text-purple-700',
+  [SessionFormat.WORKSHOP]: 'bg-yellow-100 text-yellow-700',
+  [SessionFormat.SEMINAR]: 'bg-teal-100 text-teal-700',
+  [SessionFormat.INDEPENDENT]: 'bg-orange-100 text-orange-700',
+  [SessionFormat.OTHER]: 'bg-gray-100 text-gray-700',
 };
 
 const CATEGORY_ORDER: MaterialCategory[] = [
@@ -193,7 +191,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
       return { count: 0, types: [], duration: 0 };
     }
 
-    const typeCounts = new Map<MaterialType, number>();
+    const typeCounts = new Map<SessionFormat, number>();
     weekData.materials.forEach(m => {
       typeCounts.set(m.type, (typeCounts.get(m.type) || 0) + 1);
     });
@@ -235,9 +233,9 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     >
       <div className='flex items-center gap-3'>
         <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${materialTypeColors[material.type]}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sessionFormatColors[material.type]}`}
         >
-          {materialTypeIcons[material.type]}
+          {sessionFormatIcons[material.type]}
           {material.type}
         </span>
         <span className='font-medium text-gray-900'>{material.title}</span>
@@ -351,10 +349,10 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                       {summary.types.slice(0, 4).map(([type, count]) => (
                         <span
                           key={type}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${materialTypeColors[type]}`}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${sessionFormatColors[type]}`}
                           title={`${count} ${type}${count > 1 ? 's' : ''}`}
                         >
-                          {materialTypeIcons[type]}
+                          {sessionFormatIcons[type]}
                           {count > 1 && <span>{count}</span>}
                         </span>
                       ))}

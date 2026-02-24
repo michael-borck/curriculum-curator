@@ -69,7 +69,7 @@ class FileImportService:
     def __init__(self):
         # Extended content types with more patterns
         self.content_patterns = {
-            "lecture": [
+            "slides": [
                 r"lecture\s*\d+",
                 r"chapter\s*\d+",
                 r"module\s*\d+",
@@ -80,6 +80,12 @@ class FileImportService:
                 r"overview:",
                 r"today we will",
                 r"in this lecture",
+                r"presentation",
+                r"slides?",
+                r"slide\s*\d+",
+                r"agenda:",
+                r"outline:",
+                r"summary slide",
             ],
             "quiz": [
                 r"quiz\s*\d*",
@@ -124,7 +130,7 @@ class FileImportService:
                 r"discussion questions?",
                 r"real-world example",
             ],
-            "interactive": [
+            "activity": [
                 r"interactive",
                 r"simulation",
                 r"game",
@@ -136,14 +142,6 @@ class FileImportService:
                 r"javascript:",
                 r"onclick",
             ],
-            "presentation": [
-                r"presentation",
-                r"slides?",
-                r"slide\s*\d+",
-                r"agenda:",
-                r"outline:",
-                r"summary slide",
-            ],
             "reading": [
                 r"reading",
                 r"article",
@@ -153,7 +151,7 @@ class FileImportService:
                 r"references:",
                 r"bibliography",
             ],
-            "video_script": [
+            "video": [
                 r"video",
                 r"transcript",
                 r"narration",
@@ -167,7 +165,7 @@ class FileImportService:
 
         # Content type metadata
         self.content_type_info = {
-            "lecture": {"name": "Lecture", "icon": "📚", "default_duration": 45},
+            "slides": {"name": "Slides", "icon": "📚", "default_duration": 45},
             "quiz": {"name": "Quiz/Assessment", "icon": "📝", "default_duration": 30},
             "worksheet": {
                 "name": "Worksheet/Exercise",
@@ -176,14 +174,9 @@ class FileImportService:
             },
             "lab": {"name": "Lab/Practical", "icon": "🔬", "default_duration": 90},
             "case_study": {"name": "Case Study", "icon": "💼", "default_duration": 45},
-            "interactive": {
-                "name": "Interactive Content",
+            "activity": {
+                "name": "Activity",
                 "icon": "🎮",
-                "default_duration": 30,
-            },
-            "presentation": {
-                "name": "Presentation",
-                "icon": "🎯",
                 "default_duration": 30,
             },
             "reading": {
@@ -191,10 +184,15 @@ class FileImportService:
                 "icon": "📖",
                 "default_duration": 20,
             },
-            "video_script": {
+            "video": {
                 "name": "Video/Media",
                 "icon": "🎥",
                 "default_duration": 15,
+            },
+            "notes": {
+                "name": "Notes",
+                "icon": "📝",
+                "default_duration": 20,
             },
             "general": {
                 "name": "General Content",
@@ -545,7 +543,7 @@ class FileImportService:
         """Get content-type specific suggestions."""
 
         type_handlers = {
-            "lecture": self._get_lecture_suggestions,
+            "slides": self._get_slides_suggestions,
             "quiz": self._get_quiz_suggestions,
             "worksheet": self._get_worksheet_suggestions,
             "lab": self._get_lab_suggestions,
@@ -557,8 +555,8 @@ class FileImportService:
 
         return []
 
-    def _get_lecture_suggestions(self, content: str, content_lower: str) -> list[str]:
-        """Get lecture-specific suggestions."""
+    def _get_slides_suggestions(self, content: str, content_lower: str) -> list[str]:
+        """Get slides/lecture-specific suggestions."""
         suggestions = []
 
         if "example" not in content_lower:
@@ -627,7 +625,7 @@ class FileImportService:
 
         # Required elements based on content type
         required_elements = {
-            "lecture": {
+            "slides": {
                 "learning_objectives": [
                     "objective",
                     "goal",
@@ -665,7 +663,7 @@ class FileImportService:
             },
         }
 
-        elements = required_elements.get(content_type, required_elements["lecture"])
+        elements = required_elements.get(content_type, required_elements["slides"])
 
         for element_name, keywords in elements.items():
             found = any(keyword in content_lower for keyword in keywords)
@@ -820,7 +818,7 @@ class FileImportService:
 
         # Different reading/completion speeds for different content types
         speeds = {
-            "lecture": 150,  # words per minute reading
+            "slides": 150,  # words per minute reading
             "quiz": 50,  # includes thinking time
             "worksheet": 75,  # includes problem solving
             "lab": 30,  # includes hands-on work
@@ -1017,7 +1015,7 @@ class FileImportService:
         folder_patterns = {
             "week": [r"week[_\s]*(\d+)", r"w[_\s]*(\d+)"],
             "module": [r"module[_\s]*(\d+)", r"chapter[_\s]*(\d+)"],
-            "lecture": [r"lecture", r"slides", r"presentation"],
+            "slides": [r"lecture", r"slides", r"presentation"],
             "worksheet": [r"worksheet", r"exercise", r"practice", r"problem"],
             "quiz": [r"quiz", r"test", r"exam", r"assessment"],
             "reading": [r"reading", r"article", r"paper", r"textbook"],
@@ -1184,7 +1182,7 @@ class FileImportService:
     ) -> list[dict[str, Any]]:
         """Generate suggested content structure from files grouped by week."""
         suggested_structure = []
-        content_types = ["lecture", "worksheet", "reading"]
+        content_types = ["slides", "worksheet", "reading"]
 
         for week_num, files in sorted(files_by_week.items()):
             # Count file types

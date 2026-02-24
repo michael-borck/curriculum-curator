@@ -13,13 +13,13 @@ from app.models import (
     AssessmentPlan,
     Content,
     ContentCategory,
-    ContentType,
     Unit,
     UnitLearningOutcome,
     UnitOutline,
     User,
     WeeklyTopic,
 )
+from app.models.enums import ContentType
 from app.services.document_analyzer_service import (
     document_analyzer_service,
 )
@@ -351,7 +351,7 @@ async def create_unit_structure_from_pdf(
 async def create_content_from_pdf(
     unit_id: str,
     file: UploadFile = File(...),
-    content_type: ContentType = ContentType.LECTURE,
+    content_type: ContentType = ContentType.SLIDES,
     content_category: ContentCategory = ContentCategory.GENERAL,
     week_number: int | None = None,
     db: Session = Depends(deps.get_db),
@@ -554,25 +554,14 @@ async def get_import_suggestions(
     )
     existing_types = [ct[0] for ct in content_types]
 
-    if ContentType.SYLLABUS.value not in existing_types:
+    if ContentType.RESOURCE.value not in existing_types:
         suggestions.append(
             {
                 "priority": "high",
                 "type": "content",
-                "subtype": "syllabus",
-                "title": "Create Syllabus",
-                "description": "No syllabus found. This is essential for students.",
-            }
-        )
-
-    if ContentType.SCHEDULE.value not in existing_types:
-        suggestions.append(
-            {
-                "priority": "medium",
-                "type": "content",
-                "subtype": "schedule",
-                "title": "Create Schedule",
-                "description": "No schedule found. Students need to know weekly topics.",
+                "subtype": "resource",
+                "title": "Create Syllabus / Resource",
+                "description": "No resource content found. Consider adding a syllabus or reference document.",
             }
         )
 

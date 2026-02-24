@@ -22,11 +22,11 @@ import {
   Trash2,
   Clock,
   FileText,
-  Video,
-  Book,
+  BookOpen,
   Users,
   FlaskConical,
   Presentation,
+  MessageSquare,
   Copy,
   Clipboard,
   GripVertical,
@@ -49,7 +49,7 @@ import {
   MaterialResponse,
   MaterialCreate,
   MaterialUpdate,
-  MaterialType,
+  SessionFormat,
   MaterialStatus,
   MaterialCategory,
   WeekMaterials,
@@ -72,7 +72,7 @@ interface WeeklyMaterialsManagerProps {
 
 interface MaterialFormData {
   title: string;
-  type: MaterialType;
+  type: SessionFormat;
   category: MaterialCategory;
   description: string;
   durationMinutes: number;
@@ -118,26 +118,24 @@ const QualityBadge: React.FC<{ score: number }> = ({ score }) => {
   );
 };
 
-const materialTypeIcons: Record<MaterialType, React.ReactElement> = {
-  [MaterialType.LECTURE]: <Presentation className='w-4 h-4' />,
-  [MaterialType.TUTORIAL]: <Users className='w-4 h-4' />,
-  [MaterialType.LAB]: <FlaskConical className='w-4 h-4' />,
-  [MaterialType.WORKSHOP]: <Users className='w-4 h-4' />,
-  [MaterialType.READING]: <Book className='w-4 h-4' />,
-  [MaterialType.VIDEO]: <Video className='w-4 h-4' />,
-  [MaterialType.ASSIGNMENT]: <FileText className='w-4 h-4' />,
-  [MaterialType.OTHER]: <FileText className='w-4 h-4' />,
+const sessionFormatIcons: Record<SessionFormat, React.ReactElement> = {
+  [SessionFormat.LECTURE]: <Presentation className='w-4 h-4' />,
+  [SessionFormat.TUTORIAL]: <Users className='w-4 h-4' />,
+  [SessionFormat.LAB]: <FlaskConical className='w-4 h-4' />,
+  [SessionFormat.WORKSHOP]: <Users className='w-4 h-4' />,
+  [SessionFormat.SEMINAR]: <MessageSquare className='w-4 h-4' />,
+  [SessionFormat.INDEPENDENT]: <BookOpen className='w-4 h-4' />,
+  [SessionFormat.OTHER]: <FileText className='w-4 h-4' />,
 };
 
-const materialTypeColors: Record<MaterialType, string> = {
-  [MaterialType.LECTURE]: 'bg-blue-100 text-blue-800',
-  [MaterialType.TUTORIAL]: 'bg-green-100 text-green-800',
-  [MaterialType.LAB]: 'bg-purple-100 text-purple-800',
-  [MaterialType.WORKSHOP]: 'bg-yellow-100 text-yellow-800',
-  [MaterialType.READING]: 'bg-gray-100 text-gray-800',
-  [MaterialType.VIDEO]: 'bg-red-100 text-red-800',
-  [MaterialType.ASSIGNMENT]: 'bg-indigo-100 text-indigo-800',
-  [MaterialType.OTHER]: 'bg-gray-100 text-gray-800',
+const sessionFormatColors: Record<SessionFormat, string> = {
+  [SessionFormat.LECTURE]: 'bg-blue-100 text-blue-800',
+  [SessionFormat.TUTORIAL]: 'bg-green-100 text-green-800',
+  [SessionFormat.LAB]: 'bg-purple-100 text-purple-800',
+  [SessionFormat.WORKSHOP]: 'bg-yellow-100 text-yellow-800',
+  [SessionFormat.SEMINAR]: 'bg-teal-100 text-teal-800',
+  [SessionFormat.INDEPENDENT]: 'bg-orange-100 text-orange-800',
+  [SessionFormat.OTHER]: 'bg-gray-100 text-gray-800',
 };
 
 const exportFormats = [
@@ -241,9 +239,9 @@ const SortableMaterialItem: React.FC<{
           <div className='flex-1'>
             <div className='flex items-center space-x-2'>
               <span
-                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${materialTypeColors[material.type]}`}
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${sessionFormatColors[material.type]}`}
               >
-                {materialTypeIcons[material.type]}
+                {sessionFormatIcons[material.type]}
                 <span className='ml-1'>{material.type}</span>
               </span>
 
@@ -388,7 +386,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     useState<MaterialResponse | null>(null);
   const [formData, setFormData] = useState<MaterialFormData>({
     title: '',
-    type: MaterialType.LECTURE,
+    type: SessionFormat.LECTURE,
     category: MaterialCategory.GENERAL,
     description: '',
     durationMinutes: 60,
@@ -532,7 +530,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     setEditingMaterial(null);
     setFormData({
       title: '',
-      type: MaterialType.LECTURE,
+      type: SessionFormat.LECTURE,
       category: MaterialCategory.GENERAL,
       description: '',
       durationMinutes: 60,
@@ -554,13 +552,13 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       const style = formData.overrideStyle || globalStyle;
       // Map material type to content type for API
       const contentType =
-        formData.type === MaterialType.LECTURE
-          ? 'lecture'
-          : formData.type === MaterialType.ASSIGNMENT
+        formData.type === SessionFormat.LECTURE
+          ? 'slides'
+          : formData.type === SessionFormat.OTHER
             ? 'assignment'
-            : formData.type === MaterialType.LAB
-              ? 'project'
-              : 'lecture';
+            : formData.type === SessionFormat.LAB
+              ? 'activity'
+              : 'slides';
 
       const response = await generateContent(
         contentType,
@@ -676,12 +674,12 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   onChange={e =>
                     setFormData({
                       ...formData,
-                      type: e.target.value as MaterialType,
+                      type: e.target.value as SessionFormat,
                     })
                   }
                   className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
                 >
-                  {Object.values(MaterialType).map(type => (
+                  {Object.values(SessionFormat).map(type => (
                     <option key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1)}
                     </option>

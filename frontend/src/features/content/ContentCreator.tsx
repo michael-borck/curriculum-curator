@@ -145,7 +145,7 @@ const ContentCreator = () => {
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
-  const [contentType, setContentType] = useState<string>(type || 'lecture');
+  const [contentType, setContentType] = useState<string>(type || 'slides');
   const [units, setUnits] = useState<Unit[]>([]);
   const [pedagogy, setPedagogy] = useState<PedagogyType>('inquiry-based');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -234,7 +234,7 @@ const ContentCreator = () => {
 
     try {
       await generateContentStream(
-        (type as ContentType) || 'lecture',
+        (type as ContentType) || 'slides',
         pedagogy,
         topic,
         chunk => {
@@ -318,7 +318,7 @@ const ContentCreator = () => {
         // Create new content
         await createContent(selectedUnitId, {
           title: title.trim(),
-          contentType: contentType || 'lecture',
+          contentType: contentType || 'slides',
           body: content,
         });
         toast.success('Content saved successfully!');

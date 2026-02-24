@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.material import Material
 from app.plugins.base import PluginResult
 from app.plugins.plugin_manager import PluginConfig, plugin_manager
 from app.schemas.plugins import (
@@ -142,12 +141,7 @@ async def validate_content(
     overall_score = sum(scores) / len(scores) if scores else 100.0
     rounded_score = round(overall_score, 2)
 
-    # Persist quality score to material if requested
-    if material_id:
-        material = db.query(Material).filter(Material.id == material_id).first()
-        if material:
-            material.quality_score = round(overall_score)
-            db.commit()
+    # quality_score persistence removed (Material model deleted)
 
     return PluginValidateResponse(
         results=results,

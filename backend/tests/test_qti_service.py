@@ -18,7 +18,8 @@ import zipfile
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from app.models.content import Content, ContentType
+from app.models.content import Content
+from app.models.enums import ContentType
 from app.models.quiz_question import QuestionType, QuizQuestion
 from app.services.qti_service import (
     qti_exporter,

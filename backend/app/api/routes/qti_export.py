@@ -10,7 +10,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_user_unit
-from app.models.content import Content, ContentType
+from app.models.content import Content
+from app.models.enums import ContentType
 from app.models.quiz_question import QuizQuestion
 from app.schemas.unit import UnitResponse
 from app.services.qti_service import qti_exporter

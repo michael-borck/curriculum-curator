@@ -7,8 +7,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.models.enums import SessionFormat
 from app.schemas.base import CamelModel
 from app.schemas.learning_outcomes import LLOResponse, ULOResponse
+
+VALID_SESSION_FORMATS = {f.value for f in SessionFormat}
 
 
 class MaterialBase(CamelModel):
@@ -16,7 +19,7 @@ class MaterialBase(CamelModel):
 
     week_number: int = Field(..., ge=1, le=52, description="Week number")
     title: str = Field(..., min_length=1, max_length=500, description="Material title")
-    type: str = Field(..., description="Material type (lecture, handout, quiz, etc.)")
+    type: str = Field(..., description="Session format (lecture, tutorial, lab, etc.)")
     description: str | None = Field(None, description="Material description")
     duration_minutes: int | None = Field(
         None, ge=0, description="Estimated duration in minutes"

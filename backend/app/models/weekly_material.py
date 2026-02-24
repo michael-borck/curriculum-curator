@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.common import GUID
+from app.models.enums import SessionFormat
 
 if TYPE_CHECKING:
     from app.models.assessment import Assessment
@@ -19,20 +20,8 @@ if TYPE_CHECKING:
     from app.models.local_learning_outcome import LocalLearningOutcome
     from app.models.unit import Unit
 
-
-class MaterialType(str, Enum):
-    """Types of learning materials"""
-
-    LECTURE = "lecture"
-    HANDOUT = "handout"
-    QUIZ = "quiz"
-    CASE_STUDY = "case_study"
-    RESOURCE = "resource"
-    NOTES = "notes"
-    VIDEO = "video"
-    READING = "reading"
-    ACTIVITY = "activity"
-    DISCUSSION = "discussion"
+# Re-export for backwards compatibility
+__all__ = ["MaterialCategory", "MaterialStatus", "SessionFormat", "WeeklyMaterial"]
 
 
 class MaterialCategory(str, Enum):
@@ -70,7 +59,7 @@ class WeeklyMaterial(Base):
 
     # Material details
     title: Mapped[str] = mapped_column(String(500))
-    type: Mapped[str] = mapped_column(String(50), index=True)  # MaterialType enum
+    type: Mapped[str] = mapped_column(String(50), index=True)  # SessionFormat enum
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Content and metadata

@@ -18,7 +18,8 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
-from app.models.content import Content, ContentType
+from app.models.content import Content
+from app.models.enums import ContentType
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit

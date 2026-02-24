@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar
 
-from app.models import BloomLevel, ContentCategory, ContentType, OutcomeType
+from app.models import BloomLevel, ContentCategory, OutcomeType
+from app.models.enums import ContentType
 from app.services.pdf_parser_service import ExtractedDocument
 
 
@@ -842,18 +843,10 @@ class DocumentAnalyzerService:
         if analysis.document_type == DocumentType.UNIT_OUTLINE:
             suggestions.append(
                 {
-                    "type": ContentType.SYLLABUS.value,
+                    "type": ContentType.RESOURCE.value,
                     "title": "Course Syllabus",
                     "category": ContentCategory.GENERAL.value,
                     "reason": "Unit outline detected - syllabus needed",
-                }
-            )
-            suggestions.append(
-                {
-                    "type": ContentType.SCHEDULE.value,
-                    "title": "Weekly Schedule",
-                    "category": ContentCategory.GENERAL.value,
-                    "reason": "Create detailed weekly schedule from outline",
                 }
             )
 
@@ -861,7 +854,7 @@ class DocumentAnalyzerService:
         for weekly in analysis.weekly_content:
             suggestions.append(
                 {
-                    "type": ContentType.LECTURE.value,
+                    "type": ContentType.SLIDES.value,
                     "title": f"Week {weekly.week_number}: {weekly.topic}",
                     "week_number": weekly.week_number,
                     "category": ContentCategory.PRE_CLASS.value,

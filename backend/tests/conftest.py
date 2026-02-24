@@ -35,7 +35,8 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment, AssessmentType
-from app.models.content import Content, ContentType
+from app.models.content import Content
+from app.models.enums import ContentType
 from app.models.learning_design import DesignStatus, LearningDesign
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.quiz_question import QuestionType, QuizQuestion

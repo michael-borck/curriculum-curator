@@ -30,7 +30,7 @@ export interface User {
 export interface UnitModule {
   id: number | string;
   title: string;
-  type: 'lecture' | 'assignment' | 'project' | 'quiz';
+  type: 'slides' | 'assignment' | 'quiz' | 'activity';
   completed: boolean;
   description?: string;
   duration?: string;
@@ -81,26 +81,18 @@ export interface Unit {
 
 // Content related types
 export type ContentType =
-  | 'syllabus'
-  | 'schedule'
-  | 'lecture'
-  | 'module'
-  | 'worksheet'
-  | 'faq'
-  | 'quiz'
-  | 'short_answer'
-  | 'matching'
-  | 'case_study'
-  | 'interactive'
-  | 'resource' // Renamed from 'reading'
-  | 'assignment'
-  | 'project'
-  | 'assessment'
-  | 'video'
-  | 'podcast'
-  | 'tutorial'
+  | 'slides'
   | 'notes'
-  | 'activity';
+  | 'worksheet'
+  | 'handout'
+  | 'quiz'
+  | 'case_study'
+  | 'reading'
+  | 'video'
+  | 'discussion'
+  | 'activity'
+  | 'assignment'
+  | 'resource';
 export type PedagogyType =
   | 'inquiry-based'
   | 'project-based'

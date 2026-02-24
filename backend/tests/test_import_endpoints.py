@@ -31,7 +31,7 @@ class TestImportEndpoints:
         mock_process_file.return_value = {
             "success": True,
             "content": "Test content from file",
-            "content_type": "lecture",
+            "content_type": "slides",
             "content_type_confidence": 0.8,
             "word_count": 100,
             "sections": [],
@@ -51,7 +51,7 @@ class TestImportEndpoints:
             files=files,
             params={
                 "week_number": 1,
-                "content_type": "lecture",
+                "content_type": "slides",
                 "content_category": "general",
             },
         )
@@ -59,7 +59,7 @@ class TestImportEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["content_id"] == fake_content_id
-        assert data["content_type"] == "lecture"
+        assert data["content_type"] == "slides"
         assert data["content_type_confidence"] == 0.8
         assert data["wordCount"] == 100
 
@@ -103,7 +103,7 @@ class TestImportEndpoints:
         mock_process_file.return_value = {
             "success": True,
             "content": "Test content",
-            "content_type": "lecture",
+            "content_type": "slides",
             "content_type_confidence": 0.8,
             "word_count": 100,
             "sections": [],
@@ -181,8 +181,8 @@ class TestImportEndpoints:
                         "path": "Week_01/Lecture_01.pdf",
                         "folder": "Week_01",
                         "week_number": 1,
-                        "detected_type": "lecture",
-                        "processed_type": "lecture",
+                        "detected_type": "slides",
+                        "processed_type": "slides",
                         "confidence": 0.9,
                         "word_count": 1500,
                         "size": 10240,
@@ -193,10 +193,10 @@ class TestImportEndpoints:
                 {
                     "week": 1,
                     "total_files": 1,
-                    "file_types": {"lecture": 1},
+                    "file_types": {"slides": 1},
                     "suggested_content": [
                         {
-                            "type": "lecture",
+                            "type": "slides",
                             "count": 1,
                             "description": "1 lecture(s) for Week 1",
                         }

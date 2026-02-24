@@ -66,6 +66,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [052](052-unit-level-feature-toggles.md) | Unit-Level Feature Toggles via Metadata | Accepted |
 | [053](053-material-content-categories.md) | Material Content Categories | Accepted |
 | [054](054-import-provenance-round-trip-fidelity.md) | Import Provenance for Round-Trip Fidelity | Accepted |
+| [055](055-pedagogical-framework-alignment-architecture.md) | Pedagogical Framework and Alignment Architecture | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation

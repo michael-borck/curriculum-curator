@@ -10,23 +10,8 @@ from enum import Enum
 
 from pydantic import Field
 
+from app.models.enums import ContentType
 from app.schemas.base import CamelModel
-
-
-class ContentType(str, Enum):
-    """Content type enumeration"""
-
-    LECTURE = "lecture"
-    WORKSHEET = "worksheet"
-    QUIZ = "quiz"
-    CASE_STUDY = "case_study"
-    READING = "reading"
-    ASSIGNMENT = "assignment"
-    PROJECT = "project"
-    ASSESSMENT = "assessment"
-    NOTES = "notes"
-    VIDEO = "video"
-    ACTIVITY = "activity"
 
 
 class ContentStatus(str, Enum):

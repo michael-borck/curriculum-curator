@@ -389,6 +389,20 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
             </div>
             <button
               onClick={() => {
+                navigate('/guide/learning-design');
+                setMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-2 text-left transition ${
+                isActive('/guide/learning-design')
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <BookOpen className='w-5 h-5 flex-shrink-0' />
+              <span>Design Guide</span>
+            </button>
+            <button
+              onClick={() => {
                 navigate('/research');
                 setMobileSidebarOpen(false);
               }}

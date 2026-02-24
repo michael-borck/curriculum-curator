@@ -4,14 +4,13 @@
 
 // ============= Enums =============
 
-export enum MaterialType {
+export enum SessionFormat {
   LECTURE = 'lecture',
   TUTORIAL = 'tutorial',
   LAB = 'lab',
   WORKSHOP = 'workshop',
-  READING = 'reading',
-  VIDEO = 'video',
-  ASSIGNMENT = 'assignment',
+  SEMINAR = 'seminar',
+  INDEPENDENT = 'independent',
   OTHER = 'other',
 }
 
@@ -107,7 +106,7 @@ export interface ALOResponse {
 export interface MaterialCreate {
   weekNumber: number;
   title: string;
-  type: MaterialType;
+  type: SessionFormat;
   description?: string;
   durationMinutes?: number;
   category?: MaterialCategory;
@@ -120,7 +119,7 @@ export interface MaterialCreate {
 export interface MaterialUpdate {
   weekNumber?: number;
   title?: string;
-  type?: MaterialType;
+  type?: SessionFormat;
   description?: string;
   durationMinutes?: number;
   category?: MaterialCategory;
@@ -135,7 +134,7 @@ export interface MaterialResponse {
   unitId: string;
   weekNumber: number;
   title: string;
-  type: MaterialType;
+  type: SessionFormat;
   description?: string;
   durationMinutes?: number;
   category: MaterialCategory;
@@ -343,7 +342,7 @@ export interface BatchQualityScores {
 
 export interface MaterialFilter {
   weekNumber?: number;
-  type?: MaterialType;
+  type?: SessionFormat;
   status?: MaterialStatus;
   search?: string;
 }

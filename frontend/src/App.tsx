@@ -32,6 +32,7 @@ import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
 import AboutPage from './pages/AboutPage';
+import LearningDesignGuide from './pages/LearningDesignGuide';
 import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
@@ -222,7 +223,11 @@ function App() {
               element={<DesignCreator />}
             />
 
-            {/* About */}
+            {/* Guide & About */}
+            <Route
+              path='/guide/learning-design'
+              element={<LearningDesignGuide />}
+            />
             <Route path='/about' element={<AboutPage />} />
 
             {/* Catch-all redirect */}

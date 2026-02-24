@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from app.models.content import Content
     from app.models.learning_design import LearningDesign
     from app.models.learning_outcome import UnitLearningOutcome
-    from app.models.material import Material
     from app.models.research_source import ResearchSource
     from app.models.task_list import TaskList
     from app.models.unit_outline import UnitOutline
@@ -145,9 +144,6 @@ class Unit(Base):
         back_populates="unit", cascade="all, delete-orphan"
     )
     workflow_chat_sessions: Mapped[list["WorkflowChatSession"]] = relationship(
-        back_populates="unit", cascade="all, delete-orphan"
-    )
-    materials: Mapped[list["Material"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
     unit_outline: Mapped["UnitOutline | None"] = relationship(

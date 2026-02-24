@@ -31,7 +31,8 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
-from app.models.content import Content, ContentType
+from app.models.content import Content
+from app.models.enums import ContentType
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit
@@ -58,17 +59,14 @@ _MAT_TYPE_RE = re.compile(r"^([a-z_]+?)_")
 # Regex to guess a unit code pattern like "ICT100", "COMP2010"
 UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
 
-VALID_MATERIAL_TYPES = {
+VALID_SESSION_FORMATS = {
     "lecture",
-    "handout",
-    "quiz",
-    "case_study",
-    "resource",
-    "notes",
-    "video",
-    "reading",
-    "activity",
-    "discussion",
+    "tutorial",
+    "lab",
+    "workshop",
+    "seminar",
+    "independent",
+    "other",
 }
 
 # Keywords that indicate an assessment item (case-insensitive match on title)
@@ -1300,7 +1298,7 @@ class PackageImportService:
         match = _MAT_TYPE_RE.match(name)
         if match:
             candidate = match.group(1)
-            if candidate in VALID_MATERIAL_TYPES:
+            if candidate in VALID_SESSION_FORMATS:
                 return candidate
         return "resource"
 
