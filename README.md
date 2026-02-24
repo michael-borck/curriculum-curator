@@ -74,6 +74,7 @@ Nobody else connects learning design to content production with AI assistance in
 - **Graduate Capabilities**: Curtin GC1-GC6 mapping to ULOs
 - **Assurance of Learning (AoL)**: AACSB competency mapping
 - **UN SDG Mapping**: Sustainable Development Goals alignment
+- **Custom Alignment Frameworks**: Define your own frameworks (PLOs, ABET, graduate attributes) with presets and map ULOs to them
 - **Learning Outcome Map**: Visual hierarchy from ULOs through weekly materials and assessments
 
 ### Export & Interoperability
@@ -88,6 +89,7 @@ Once your content is ready, export it to wherever you deliver:
 - **Git-backed Content**: Per-unit version history via Git repositories
 - **Analytics Dashboard**: Bloom's coverage, assessment distribution, weekly workload visualisation
 - **Quality Dashboard**: 6-dimension quality scoring with star ratings, per-week breakdown, and AI-powered improvement suggestions
+- **UDL Inclusivity Scoring**: Measures representation diversity, engagement variety, action & expression options, and content accessibility per-week and per-unit — based on CAST's Universal Design for Learning framework
 
 ## Tech Stack
 
@@ -172,7 +174,7 @@ curriculum-curator/
 │       ├── stores/          # Zustand state management
 │       └── hooks/           # Custom React hooks
 ├── docs/                    # Documentation and ADRs
-│   └── adr/                 # Architecture Decision Records (34 ADRs)
+│   └── adr/                 # Architecture Decision Records (57 ADRs)
 ├── Dockerfile               # Single-container build
 └── docker-compose.yml       # Production deployment
 ```
