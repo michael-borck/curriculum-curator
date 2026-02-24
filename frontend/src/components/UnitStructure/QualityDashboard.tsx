@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { analyticsApi } from '../../services/unitStructureApi';
 import type { QualityScore, WeekQualityScore } from '../../types/unitStructure';
+import type { QualityMetricVisibility } from '../../types';
 import StarRating from '../shared/StarRating';
 import { useAILevel } from '../../hooks/useAILevel';
 import toast from 'react-hot-toast';
@@ -22,6 +23,7 @@ interface QualityDashboardProps {
   unitId: string;
   durationWeeks?: number;
   topicLabel?: string | undefined;
+  visibleDimensions?: QualityMetricVisibility | undefined;
 }
 
 interface Recommendation {
@@ -92,8 +94,17 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
   unitId,
   durationWeeks = 12,
   topicLabel = 'Week',
+  visibleDimensions,
 }) => {
   const { canGenerate } = useAILevel();
+
+  // Determine which dimensions are visible (default all true)
+  const isVisible = (dim: string): boolean => {
+    if (!visibleDimensions) return true;
+    return visibleDimensions[dim as keyof QualityMetricVisibility] !== false;
+  };
+  const visibleDims = Object.keys(dimensionLabels).filter(isVisible);
+
   const [quality, setQuality] = useState<QualityScore | null>(null);
   const [weeklyQuality, setWeeklyQuality] = useState<WeekQualityScore[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -153,6 +164,31 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
       setLlmLoading(false);
     }
   };
+
+  // All dimensions disabled — info banner
+  if (visibleDims.length === 0) {
+    return (
+      <div className='bg-blue-50 border border-blue-200 rounded-lg p-6 flex items-start gap-3'>
+        <Info className='w-5 h-5 text-blue-500 mt-0.5 shrink-0' />
+        <div>
+          <p className='text-sm text-blue-800'>
+            No quality metrics are enabled for this unit.
+          </p>
+          <button
+            onClick={() => {
+              const settingsTab = document.querySelector(
+                '[data-tab="settings"]'
+              ) as HTMLElement | null;
+              settingsTab?.click();
+            }}
+            className='text-sm text-blue-600 hover:text-blue-800 underline mt-1 inline-flex items-center gap-1'
+          >
+            Enable metrics in Settings
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -214,27 +250,29 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
           Quality Dimensions
         </h3>
         <div className='space-y-4'>
-          {Object.entries(dimensionLabels).map(([key, { label, icon }]) => {
-            const score =
-              quality.subScores[key as keyof typeof quality.subScores] ?? 0;
-            return (
-              <div key={key}>
-                <div className='flex items-center justify-between text-sm mb-1'>
-                  <div className='flex items-center gap-2 text-gray-700'>
-                    {icon}
-                    <span>{label}</span>
+          {Object.entries(dimensionLabels)
+            .filter(([key]) => isVisible(key))
+            .map(([key, { label, icon }]) => {
+              const score =
+                quality.subScores[key as keyof typeof quality.subScores] ?? 0;
+              return (
+                <div key={key}>
+                  <div className='flex items-center justify-between text-sm mb-1'>
+                    <div className='flex items-center gap-2 text-gray-700'>
+                      {icon}
+                      <span>{label}</span>
+                    </div>
+                    <span className='font-medium'>{score.toFixed(0)}%</span>
                   </div>
-                  <span className='font-medium'>{score.toFixed(0)}%</span>
+                  <div className='w-full bg-gray-100 rounded-full h-2.5'>
+                    <div
+                      className={`h-2.5 rounded-full transition-all ${getBarColor(score)}`}
+                      style={{ width: `${Math.min(score, 100)}%` }}
+                    />
+                  </div>
                 </div>
-                <div className='w-full bg-gray-100 rounded-full h-2.5'>
-                  <div
-                    className={`h-2.5 rounded-full transition-all ${getBarColor(score)}`}
-                    style={{ width: `${Math.min(score, 100)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 

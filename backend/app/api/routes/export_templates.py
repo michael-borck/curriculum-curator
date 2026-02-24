@@ -9,7 +9,7 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from pydantic import BaseModel
@@ -17,8 +17,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_active_user, get_db
 from app.core.config import settings
-from app.models.user import User
 from app.schemas.user import UserResponse
+from app.services.template_storage import (
+    get_export_templates,
+    save_export_templates,
+    user_templates_dir,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,40 +40,6 @@ class TemplateInfo(BaseModel):
 class TemplateListResponse(BaseModel):
     templates: list[TemplateInfo]
     defaults: dict[str, str | None]
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _user_templates_dir(user_id: str) -> Path:
-    base = Path(settings.TEMPLATE_UPLOAD_DIR)
-    return base / user_id
-
-
-def _get_export_templates(prefs: dict[str, Any] | None) -> dict[str, Any]:
-    """Extract the export_templates section from teaching_preferences."""
-    if not prefs:
-        return {"templates": [], "defaults": {"pptx": None, "docx": None}}
-    return prefs.get(
-        "export_templates",
-        {"templates": [], "defaults": {"pptx": None, "docx": None}},
-    )
-
-
-def _save_export_templates(
-    db: Session, user_id: str, prefs: dict[str, Any] | None, et: dict[str, Any]
-) -> None:
-    """Persist the export_templates section back into teaching_preferences."""
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        return
-    new_prefs = dict(prefs) if prefs else {}
-    new_prefs["export_templates"] = et
-    user.teaching_preferences = new_prefs
-    user.updated_at = datetime.now(tz=UTC)
-    db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +80,7 @@ async def upload_template(
 
     # Save to disk
     template_id = str(uuid.uuid4())
-    user_dir = _user_templates_dir(current_user.id)
+    user_dir = user_templates_dir(current_user.id)
     user_dir.mkdir(parents=True, exist_ok=True)
     dest = user_dir / f"{template_id}{ext}"
     dest.write_bytes(data)
@@ -119,7 +89,7 @@ async def upload_template(
     now = datetime.now(tz=UTC).isoformat()
 
     # Update teaching_preferences metadata
-    et = _get_export_templates(current_user.teaching_preferences)
+    et = get_export_templates(current_user.teaching_preferences)
     templates: list[dict[str, str]] = et.get("templates", [])
     defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
 
@@ -137,7 +107,7 @@ async def upload_template(
 
     et["templates"] = templates
     et["defaults"] = defaults
-    _save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
+    save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
 
     return TemplateInfo(
         id=template_id,
@@ -153,7 +123,7 @@ async def list_templates(
     current_user: Annotated[UserResponse, Depends(get_current_active_user)],
 ) -> TemplateListResponse:
     """List all uploaded templates for the current user."""
-    et = _get_export_templates(current_user.teaching_preferences)
+    et = get_export_templates(current_user.teaching_preferences)
     templates = et.get("templates", [])
     defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
 
@@ -178,7 +148,7 @@ async def delete_template(
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     """Delete an uploaded template."""
-    et = _get_export_templates(current_user.teaching_preferences)
+    et = get_export_templates(current_user.teaching_preferences)
     templates: list[dict[str, str]] = et.get("templates", [])
     defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
 
@@ -190,7 +160,7 @@ async def delete_template(
 
     # Remove file from disk
     fmt = target["format"]
-    file_path = _user_templates_dir(current_user.id) / f"{template_id}.{fmt}"
+    file_path = user_templates_dir(current_user.id) / f"{template_id}.{fmt}"
     if file_path.exists():
         file_path.unlink()
 
@@ -201,7 +171,7 @@ async def delete_template(
 
     et["templates"] = templates
     et["defaults"] = defaults
-    _save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
+    save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
 
 
 @router.put("/{template_id}/default", response_model=TemplateInfo)
@@ -211,7 +181,7 @@ async def set_default_template(
     db: Annotated[Session, Depends(get_db)],
 ) -> TemplateInfo:
     """Set a template as the default for its format."""
-    et = _get_export_templates(current_user.teaching_preferences)
+    et = get_export_templates(current_user.teaching_preferences)
     templates: list[dict[str, str]] = et.get("templates", [])
     defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
 
@@ -223,7 +193,7 @@ async def set_default_template(
 
     defaults[target["format"]] = template_id
     et["defaults"] = defaults
-    _save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
+    save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
 
     return TemplateInfo(
         id=target["id"],

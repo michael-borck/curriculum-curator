@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { updateUnit } from '../../services/api';
 import { FormInput, FormSelect, FormTextarea, Button } from '../ui';
 import toast from 'react-hot-toast';
-import type { Unit, UnitFeatures } from '../../types';
+import type {
+  Unit,
+  UnitFeatures,
+  QualityMetricVisibility,
+  UDLMetricVisibility,
+} from '../../types';
 
 interface UnitSettingsProps {
   unit: Unit;
@@ -14,6 +19,14 @@ const semesterOptions = [
   { value: 'semester_2', label: 'Semester 2 (Jul-Nov)' },
   { value: 'summer', label: 'Summer (Nov-Feb)' },
   { value: 'winter', label: 'Winter (Jun-Jul)' },
+];
+
+const targetLevelOptions = [
+  { value: 'elementary', label: 'Elementary' },
+  { value: 'middle_school', label: 'Middle School' },
+  { value: 'high_school', label: 'High School' },
+  { value: 'university', label: 'University' },
+  { value: 'postgraduate', label: 'Postgraduate' },
 ];
 
 interface ToggleSwitchProps {
@@ -79,20 +92,81 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
     existingFeatures.customFrameworks ?? true
   );
 
+  // Quality metric visibility
+  const existingQualityMetrics = existingFeatures.qualityMetrics ?? {};
+  const [qCompleteness, setQCompleteness] = useState(
+    existingQualityMetrics.completeness ?? true
+  );
+  const [qContentQuality, setQContentQuality] = useState(
+    existingQualityMetrics.contentQuality ?? true
+  );
+  const [qUloAlignment, setQUloAlignment] = useState(
+    existingQualityMetrics.uloAlignment ?? true
+  );
+  const [qWorkloadBalance, setQWorkloadBalance] = useState(
+    existingQualityMetrics.workloadBalance ?? true
+  );
+  const [qMaterialDiversity, setQMaterialDiversity] = useState(
+    existingQualityMetrics.materialDiversity ?? true
+  );
+  const [qAssessmentDistribution, setQAssessmentDistribution] = useState(
+    existingQualityMetrics.assessmentDistribution ?? true
+  );
+
+  // UDL metric visibility
+  const existingUdlMetrics = existingFeatures.udlMetrics ?? {};
+  const [udlRepresentation, setUdlRepresentation] = useState(
+    existingUdlMetrics.representation ?? true
+  );
+  const [udlEngagement, setUdlEngagement] = useState(
+    existingUdlMetrics.engagement ?? true
+  );
+  const [udlExpression, setUdlExpression] = useState(
+    existingUdlMetrics.expression ?? true
+  );
+  const [udlAccessibility, setUdlAccessibility] = useState(
+    existingUdlMetrics.accessibility ?? true
+  );
+
+  // Target audience level for readability scoring
+  const existingTargetLevel =
+    (unit.unitMetadata?.targetAudienceLevel as string | undefined) ??
+    'university';
+  const [targetLevel, setTargetLevel] = useState(existingTargetLevel);
+
   const handleSave = async () => {
     setSaving(true);
     try {
+      const qualityMetrics: QualityMetricVisibility = {
+        completeness: qCompleteness,
+        contentQuality: qContentQuality,
+        uloAlignment: qUloAlignment,
+        workloadBalance: qWorkloadBalance,
+        materialDiversity: qMaterialDiversity,
+        assessmentDistribution: qAssessmentDistribution,
+      };
+
+      const udlMetrics: UDLMetricVisibility = {
+        representation: udlRepresentation,
+        engagement: udlEngagement,
+        expression: udlExpression,
+        accessibility: udlAccessibility,
+      };
+
       const features: UnitFeatures = {
         graduateCapabilities: gradCaps,
         aolMapping: aolMapping,
         sdgMapping: sdgMapping,
         customFrameworks: customFrameworks,
+        qualityMetrics,
+        udlMetrics,
       };
 
       // Merge features into existing unitMetadata to preserve other keys
       const mergedMetadata = {
         ...(unit.unitMetadata ?? {}),
         features,
+        targetAudienceLevel: targetLevel,
       };
 
       const payload: Partial<Unit> = {
@@ -201,6 +275,102 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
             description='UN Sustainable Development Goals alignment'
             checked={sdgMapping}
             onChange={setSdgMapping}
+          />
+        </div>
+      </div>
+
+      {/* Quality & UDL Metrics */}
+      <div className='mb-8'>
+        <h3 className='text-lg font-semibold text-gray-900 mb-1'>
+          Quality & UDL Metrics
+        </h3>
+        <p className='text-sm text-gray-500 mb-4'>
+          Choose which quality and UDL dimensions are visible on the Quality
+          tab. Hidden metrics are still calculated but not displayed.
+        </p>
+
+        {/* Structural Quality */}
+        <h4 className='text-sm font-semibold text-gray-700 mb-2 mt-4'>
+          Structural Quality Dimensions
+        </h4>
+        <div className='divide-y divide-gray-100'>
+          <ToggleSwitch
+            label='Completeness'
+            description='Week coverage and material descriptions'
+            checked={qCompleteness}
+            onChange={setQCompleteness}
+          />
+          <ToggleSwitch
+            label='Content Quality'
+            description='Average plugin quality score across materials'
+            checked={qContentQuality}
+            onChange={setQContentQuality}
+          />
+          <ToggleSwitch
+            label='ULO Alignment'
+            description='How well materials and assessments cover learning outcomes'
+            checked={qUloAlignment}
+            onChange={setQUloAlignment}
+          />
+          <ToggleSwitch
+            label='Workload Balance'
+            description='Evenness of weekly workload distribution'
+            checked={qWorkloadBalance}
+            onChange={setQWorkloadBalance}
+          />
+          <ToggleSwitch
+            label='Material Diversity'
+            description='Variety of session formats used'
+            checked={qMaterialDiversity}
+            onChange={setQMaterialDiversity}
+          />
+          <ToggleSwitch
+            label='Assessment Distribution'
+            description='Spread of assessments across the semester'
+            checked={qAssessmentDistribution}
+            onChange={setQAssessmentDistribution}
+          />
+        </div>
+
+        {/* UDL Inclusivity */}
+        <h4 className='text-sm font-semibold text-gray-700 mb-2 mt-6'>
+          UDL Inclusivity Dimensions
+        </h4>
+        <div className='divide-y divide-gray-100'>
+          <ToggleSwitch
+            label='Representation'
+            description='Multiple means of representation (content categories, format variety)'
+            checked={udlRepresentation}
+            onChange={setUdlRepresentation}
+          />
+          <ToggleSwitch
+            label='Engagement'
+            description='Multiple means of engagement (interactive vs passive activities)'
+            checked={udlEngagement}
+            onChange={setUdlEngagement}
+          />
+          <ToggleSwitch
+            label='Action & Expression'
+            description='Multiple means of action and expression (assessment diversity)'
+            checked={udlExpression}
+            onChange={setUdlExpression}
+          />
+          <ToggleSwitch
+            label='Accessibility'
+            description='Readability and WCAG compliance of content'
+            checked={udlAccessibility}
+            onChange={setUdlAccessibility}
+          />
+        </div>
+
+        {/* Target Audience Level */}
+        <div className='mt-6'>
+          <FormSelect
+            label='Target Audience Level'
+            options={targetLevelOptions}
+            value={targetLevel}
+            onChange={e => setTargetLevel(e.target.value)}
+            hint='Contextualises readability scoring for the intended audience'
           />
         </div>
       </div>

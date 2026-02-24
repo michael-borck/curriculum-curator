@@ -31,7 +31,8 @@
 | 1.8 | As a **Creator**, I want to choose from structure presets (lecture-heavy, seminar, practical, etc.) when creating a unit so I get a sensible starting layout without manual setup. | P1 | **Done** — preset selector in Create Unit modal |
 | 1.9 | As a **Creator**, I want a streamlined Create Unit form that only asks essential fields upfront, with a "Create and Import" shortcut to jump straight into importing materials. | P1 | **Done** — slim form + "Create and Import" button |
 | 1.10 | As a **Creator**, I want to customise the time-period label for my unit (Week, Module, Topic, etc.) so the UI matches my institution's terminology. | P1 | **Done** — configurable `topicLabel` on unit |
-| 1.11 | As a **Creator**, I want a Settings tab on my unit page where I can edit academic details (year, semester, delivery mode, credit points) and toggle optional features (accreditation mappings, SDGs, AoL) per unit. | P1 | **Done** — UnitSettings component with feature toggles stored in `unit_metadata.features` |
+| 1.11 | As a **Creator**, I want a Settings tab on my unit page where I can edit academic details (year, semester, delivery mode, credit points) and toggle optional features (accreditation mappings, SDGs, AoL, quality/UDL metrics) per unit. | P1 | **Done** — UnitSettings component with feature toggles stored in `unit_metadata.features` |
+| 1.12 | As a **Creator**, I want to define custom alignment frameworks (e.g. PLOs, ABET criteria, graduate attributes) with named items, and map my ULOs to them, so I can demonstrate alignment to any accreditation or institutional standard. | P1 | **Done** — `CustomAlignmentFramework` model, presets (PLO, Graduate Attributes, ABET, AQF), CRUD API, mapping UI on UnitPage |
 
 ## 2. Learning Outcomes
 
@@ -101,6 +102,7 @@
 | 6.5 | As an **Enhancer**, I want batch import of multiple files at once (or ZIP upload). | P2 | **Done** — ZIP analysis and import |
 | 6.6 | As an **Enhancer**, I want to import a PowerPoint and have it converted to editable content (text extracted, slides become sections). | P3 | **Done** — text + image extraction via `python-pptx`, images stored in content repo |
 | 6.7 | As an **Enhancer**, I want imported content to go straight into the normal editing flow so I can refine it immediately. | P2 | **Done** — import flow redirects to editing |
+| 6.8 | As an **Enhancer**, I want to extract the theme (colours, fonts, layouts) from an imported PPTX and save it as an export template, so future PPTX exports use my existing branding. | P2 | **Done** — opt-in checkbox on Import Materials; strips content slides, keeps masters/layouts/theme (ADR-056) |
 
 ## 7. Content Validation & Quality
 
@@ -114,6 +116,8 @@
 | 7.6 | As a **Curator**, I want unit validation that flags errors (missing ULOs, weights != 100%, no materials). | P1 | **Done** — `analytics_service.validate_unit` |
 | 7.7 | As a **Curator**, I want recommendations for improving a unit (AI-generated suggestions). | P1 | **Done** — `analytics_service.get_recommendations` |
 | 7.8 | As a **Curator**, I want automatic markdown cleanup (fix copy-paste artefacts, heading hierarchy, list formatting, code block detection) so pasted or LLM-generated content is well-structured. | P3 | **Done** — `markdown_cleanup` remediator plugin, available via Auto-fix All |
+| 7.9 | As a **Curator**, I want a UDL (Universal Design for Learning) inclusivity score that measures representation diversity, engagement variety, action & expression options, and content accessibility — per-week and per-unit — so I can identify which weeks need more inclusive design. | P2 | **Done** — `udl_service` with Shannon entropy scoring, 4 dimensions, star ratings, rule-based suggestions (ADR-057) |
+| 7.10 | As a **Curator**, I want to toggle visibility of individual quality and UDL metric dimensions in Unit Settings, so I only see the metrics relevant to my context. | P1 | **Done** — `QualityMetricVisibility` and `UDLMetricVisibility` in `unit_metadata.features`; toggles in UnitSettings |
 
 ## 8. Analytics & Reporting
 
@@ -230,7 +234,7 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~107 |
+| **Done** | ~111 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -247,4 +251,4 @@
 | 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-02-24*

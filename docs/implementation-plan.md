@@ -120,15 +120,21 @@
 
 ---
 
-## Phase 4: Polish & LMS Integration
+## Phase 4: Polish & LMS Integration — COMPLETE
 
-**Goal:** Accessibility tooling and direct LMS API integration.
+**Goal:** Accessibility tooling, LMS integration, quality metrics, and curriculum design flexibility.
+
+**Status:** All stories done including several unplanned additions (UDL scoring, custom frameworks, PPTX template extraction).
 
 | Task | Stories | Status |
 |------|---------|--------|
 | **Accessibility checking** | 7.3 | Done — `accessibility_validator` plugin handles markdown + HTML (alt text, headings, links, tables, color refs, video captions, Mermaid diagrams) |
-| **LMS terminology mapping** | 9.9 | Planned |
-| **Target LMS export** | 9.10 | Planned |
+| **LMS terminology mapping** | 9.9 | Done — `lms_terminology.py` with 5 LMS platforms; keyword sets used by package import classifier |
+| **Target LMS export** | 9.10 | Done — `target_lms` query param on IMSCC/SCORM export routes; LMS dropdown in export menu |
+| **UDL inclusivity scoring** | 7.9 | Done — Shannon entropy-based 4-dimension scoring with per-week/per-unit breakdown (ADR-057) |
+| **Quality/UDL metric toggles** | 7.10 | Done — per-dimension visibility toggles in Unit Settings |
+| **Custom alignment frameworks** | 1.12 | Done — user-defined frameworks with presets (PLO, ABET, AQF), ULO mapping |
+| **PPTX template extraction** | 6.8 | Done — opt-in during import; strips content, keeps theme (ADR-056) |
 
 **Cut from this phase:** 15.5 (AI image generation) and 15.6 (stock image search) — outside core scope.
 
@@ -160,4 +166,4 @@ These are explicitly out of scope to keep focus:
 | Electron + external tools for desktop | Accept "install these tools" friction for Pandoc/Typst/Ollama in exchange for shipping sooner. Docker remains the zero-friction option. |
 | AI assistance levels | ADR-032. Lecturers choose their comfort level: none, refine only, or full creation. Respects educator autonomy. |
 
-*Last updated: 2026-02-23 (7.3 done)*
+*Last updated: 2026-02-24 (Phase 4 complete)*

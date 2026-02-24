@@ -43,6 +43,7 @@ import AddFrameworkDialog from '../components/UnitStructure/AddFrameworkDialog';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
 import { QualityDashboard } from '../components/UnitStructure/QualityDashboard';
+import { UDLDashboard } from '../components/UnitStructure/UDLDashboard';
 import UnitSettings from '../components/UnitStructure/UnitSettings';
 import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
@@ -816,11 +817,20 @@ const UnitPage = () => {
           )}
 
           {activeTab === 'quality' && (
-            <QualityDashboard
-              unitId={unitId!}
-              durationWeeks={durationWeeks}
-              topicLabel={topicLabel}
-            />
+            <div className='space-y-8'>
+              <QualityDashboard
+                unitId={unitId!}
+                durationWeeks={durationWeeks}
+                topicLabel={topicLabel}
+                visibleDimensions={unit.unitMetadata?.features?.qualityMetrics}
+              />
+              <UDLDashboard
+                unitId={unitId!}
+                durationWeeks={durationWeeks}
+                topicLabel={topicLabel}
+                visibleDimensions={unit.unitMetadata?.features?.udlMetrics}
+              />
+            </div>
           )}
 
           {activeTab === 'settings' && (

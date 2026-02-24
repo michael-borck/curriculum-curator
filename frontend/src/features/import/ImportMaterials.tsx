@@ -133,6 +133,11 @@ const ImportMaterials = () => {
     description: '',
   });
 
+  // PPTX template extraction state
+  const [extractTemplate, setExtractTemplate] = useState(false);
+  const [templateExtracted, setTemplateExtracted] = useState(false);
+  const [extractingTemplate, setExtractingTemplate] = useState(false);
+
   // Suggested unit details from ZIP analysis
   const [suggestedUnitDetails, setSuggestedUnitDetails] = useState<{
     title?: string | undefined;
@@ -378,6 +383,29 @@ const ImportMaterials = () => {
     }
 
     setBatchEnhancing(false);
+  };
+
+  const hasPptxFiles = files.some(
+    f =>
+      f.name.toLowerCase().endsWith('.pptx') ||
+      f.type ===
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  );
+
+  const extractTemplateFromPptx = async (file: File) => {
+    setExtractingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await api.post('/content/import/pptx/extract-template', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setTemplateExtracted(true);
+    } catch (error) {
+      console.error('Template extraction failed:', error);
+    } finally {
+      setExtractingTemplate(false);
+    }
   };
 
   const toggleWeekAssignment = (
@@ -631,6 +659,15 @@ const ImportMaterials = () => {
           },
         ]);
       }
+
+      // Extract PPTX template if the option is enabled
+      if (
+        extractTemplate &&
+        actualFile.name.toLowerCase().endsWith('.pptx') &&
+        !templateExtracted
+      ) {
+        await extractTemplateFromPptx(actualFile);
+      }
     } catch (error: unknown) {
       console.error('Upload error:', error);
       const err = error as {
@@ -730,6 +767,22 @@ const ImportMaterials = () => {
           }
         }
       });
+
+      // Extract template from first successful PPTX in the batch
+      if (extractTemplate && !templateExtracted) {
+        const pptxFile = filesToUpload.find(
+          f =>
+            f.file &&
+            f.name.toLowerCase().endsWith('.pptx') &&
+            response.data.results.some(
+              (r: { filename: string; success: boolean }) =>
+                r.filename === f.name && r.success
+            )
+        );
+        if (pptxFile?.file) {
+          await extractTemplateFromPptx(pptxFile.file);
+        }
+      }
     } catch (error: unknown) {
       // Mark all as error
       console.error('Batch upload error:', error);
@@ -1738,6 +1791,32 @@ const ImportMaterials = () => {
             />
             <span>Generate learning designs from imported materials</span>
           </label>
+
+          {hasPptxFiles && (
+            <label className='flex items-start'>
+              <input
+                type='checkbox'
+                checked={extractTemplate}
+                onChange={e => setExtractTemplate(e.target.checked)}
+                className='mr-3 mt-1 h-4 w-4 text-blue-600 rounded border-gray-300'
+              />
+              <div>
+                <span className='flex items-center'>
+                  Save PPTX theme as export template
+                  {extractingTemplate && (
+                    <Loader2 className='h-4 w-4 ml-2 animate-spin text-blue-600' />
+                  )}
+                  {templateExtracted && (
+                    <CheckCircle className='h-4 w-4 ml-2 text-green-600' />
+                  )}
+                </span>
+                <p className='text-sm text-gray-500 mt-0.5'>
+                  Strips content and keeps the look &amp; feel (colours, fonts,
+                  layouts) for future exports
+                </p>
+              </div>
+            </label>
+          )}
         </div>
       </div>
     </div>

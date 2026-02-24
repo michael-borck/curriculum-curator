@@ -338,6 +338,45 @@ export interface BatchQualityScores {
   scores: Record<string, number>;
 }
 
+// ============= UDL (Universal Design for Learning) =============
+
+export interface UDLSubScores {
+  representation: number;
+  engagement: number;
+  expression: number;
+  accessibility: number;
+}
+
+export interface UDLWeekScore {
+  weekNumber: number;
+  hasContent: boolean;
+  subScores: UDLSubScores;
+  starRating: number;
+}
+
+export interface UDLUnitScore {
+  unitId: string;
+  overallScore: number;
+  starRating: number;
+  subScores: UDLSubScores;
+  assessmentFormatDiversity: number;
+  grade: string;
+  calculatedAt: string;
+}
+
+export interface UDLSuggestion {
+  dimension: string;
+  priority: string;
+  issue: string;
+  suggestion: string;
+}
+
+export interface UDLSuggestionsResponse {
+  unitId: string;
+  suggestions: UDLSuggestion[];
+  generatedAt: string;
+}
+
 // ============= Filters =============
 
 export interface MaterialFilter {

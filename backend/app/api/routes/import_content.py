@@ -2,13 +2,20 @@
 API routes for importing and analyzing course content from PDFs
 """
 
+import logging
 import uuid
 import zipfile
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.api.deps import get_current_active_user, get_db
+from app.api.routes.export_templates import TemplateInfo
+from app.core.config import settings
 from app.models import (
     AssessmentPlan,
     Content,
@@ -20,11 +27,19 @@ from app.models import (
     WeeklyTopic,
 )
 from app.models.enums import ContentType
+from app.schemas.user import UserResponse
 from app.services.document_analyzer_service import (
     document_analyzer_service,
 )
 from app.services.file_import_service import file_import_service
 from app.services.pdf_parser_service import ExtractionMethod, pdf_parser_service
+from app.services.template_storage import (
+    get_export_templates,
+    save_export_templates,
+    user_templates_dir,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -662,3 +677,83 @@ async def import_zip(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing ZIP file: {e!s}",
         )
+
+
+@router.post(
+    "/import/pptx/extract-template",
+    response_model=TemplateInfo,
+    status_code=status.HTTP_201_CREATED,
+)
+async def extract_template_from_pptx(
+    file: UploadFile = File(...),
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)] = None,  # type: ignore[assignment]
+    db: Annotated[Session, Depends(get_db)] = None,  # type: ignore[assignment]
+) -> TemplateInfo:
+    """Extract a PPTX export template from an imported file.
+
+    Strips all content slides, keeping slide masters, layouts, theme, colours
+    and fonts.  The resulting file is stored as an export template so future
+    PPTX exports use the same branding.
+    """
+    filename = file.filename or ""
+    if not filename.lower().endswith(".pptx"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PPTX files are supported",
+        )
+
+    contents = await file.read()
+    if len(contents) > settings.TEMPLATE_MAX_SIZE:
+        max_mb = settings.TEMPLATE_MAX_SIZE / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size is {max_mb:.0f} MB.",
+        )
+
+    # Strip content slides, keeping theme/masters/layouts
+    try:
+        stripped = file_import_service.strip_pptx_to_template(contents)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error stripping PPTX template: {e!s}",
+        )
+
+    # Save to disk
+    template_id = str(uuid.uuid4())
+    dest_dir = user_templates_dir(current_user.id)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / f"{template_id}.pptx"
+    dest.write_bytes(stripped)
+
+    now = datetime.now(tz=UTC).isoformat()
+
+    # Update teaching_preferences metadata
+    et = get_export_templates(current_user.teaching_preferences)
+    templates: list[dict[str, str]] = et.get("templates", [])
+    defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
+
+    display_name = Path(filename).stem + " (extracted theme)"
+    entry = {
+        "id": template_id,
+        "filename": display_name,
+        "format": "pptx",
+        "uploaded_at": now,
+    }
+    templates.append(entry)
+
+    # Auto-set as default PPTX template if none exists
+    if not defaults.get("pptx"):
+        defaults["pptx"] = template_id
+
+    et["templates"] = templates
+    et["defaults"] = defaults
+    save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
+
+    return TemplateInfo(
+        id=template_id,
+        filename=display_name,
+        format="pptx",
+        uploaded_at=now,
+        is_default=defaults.get("pptx") == template_id,
+    )

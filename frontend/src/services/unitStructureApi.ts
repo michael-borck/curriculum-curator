@@ -37,6 +37,11 @@ import {
   WeekQualityScore,
   BatchQualityScores,
 
+  // UDL
+  UDLUnitScore,
+  UDLWeekScore,
+  UDLSuggestionsResponse,
+
   // Accreditation
   GraduateCapabilityMapping,
   GraduateCapabilityMappingCreate,
@@ -465,6 +470,41 @@ export const analyticsApi = {
 
   getUnitStatistics: async (unitId: string): Promise<any> => {
     const response = await api.get(`/analytics/units/${unitId}/statistics`);
+    return response.data;
+  },
+
+  // UDL endpoints
+  getUDLScore: async (
+    unitId: string,
+    totalWeeks = 12,
+    targetLevel = 'university'
+  ): Promise<UDLUnitScore> => {
+    const response = await api.get(`/analytics/units/${unitId}/udl-score`, {
+      params: { total_weeks: totalWeeks, target_level: targetLevel },
+    });
+    return response.data;
+  },
+
+  getUDLWeekly: async (
+    unitId: string,
+    totalWeeks = 12,
+    targetLevel = 'university'
+  ): Promise<UDLWeekScore[]> => {
+    const response = await api.get(`/analytics/units/${unitId}/udl-weekly`, {
+      params: { total_weeks: totalWeeks, target_level: targetLevel },
+    });
+    return response.data;
+  },
+
+  getUDLSuggestions: async (
+    unitId: string,
+    totalWeeks = 12,
+    targetLevel = 'university'
+  ): Promise<UDLSuggestionsResponse> => {
+    const response = await api.get(
+      `/analytics/units/${unitId}/udl-suggestions`,
+      { params: { total_weeks: totalWeeks, target_level: targetLevel } }
+    );
     return response.data;
   },
 };

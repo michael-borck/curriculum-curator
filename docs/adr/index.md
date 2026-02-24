@@ -67,6 +67,8 @@ An Architecture Decision Record captures an important architectural decision mad
 | [053](053-material-content-categories.md) | Material Content Categories | Accepted |
 | [054](054-import-provenance-round-trip-fidelity.md) | Import Provenance for Round-Trip Fidelity | Accepted |
 | [055](055-pedagogical-framework-alignment-architecture.md) | Pedagogical Framework and Alignment Architecture | Accepted |
+| [056](056-pptx-template-extraction-on-import.md) | PPTX Template Extraction on Import | Accepted |
+| [057](057-udl-inclusivity-scoring-model.md) | UDL Inclusivity Scoring Model | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -88,6 +90,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-042: IMSCC/SCORM Import](042-package-import-round-trip.md) - Dual-mode import with round-trip detection and LMS heuristics
 - [ADR-043: In-Memory Import Task Store](043-in-memory-import-task-store.md) - Process-local background task tracking for package imports
 - [ADR-054: Import Provenance for Round-Trip Fidelity](054-import-provenance-round-trip-fidelity.md) - Store CC identifiers and mappings on Unit for lossless re-export
+- [ADR-056: PPTX Template Extraction on Import](056-pptx-template-extraction-on-import.md) - Strip content slides on import, keep theme for export templates
 - [ADR-044: Quality Scoring Algorithm](044-quality-scoring-algorithm.md) - Six-dimension weighted scoring with Shannon entropy and CV
 
 ### AI & Prompt Engineering
@@ -106,6 +109,8 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-040: Ambient Context](040-ambient-context-pattern.md) - Best guess + human override for working context
 - [ADR-052: Unit-Level Feature Toggles](052-unit-level-feature-toggles.md) - Per-unit opt-in/out of panels via `unit_metadata.features`
 - [ADR-053: Material Content Categories](053-material-content-categories.md) - Pre-class/In-class/Post-class/Resources learning phase grouping
+- [ADR-055: Pedagogical Framework](055-pedagogical-framework-alignment-architecture.md) - Five-layer pedagogical framework tying all learning design features together
+- [ADR-057: UDL Inclusivity Scoring](057-udl-inclusivity-scoring-model.md) - Shannon entropy-based scoring across 4 UDL dimensions with rule-based suggestions
 
 ### Frontend Architecture
 - [ADR-048: TipTap Custom Extensions](048-tiptap-custom-extensions.md) - Mermaid, YouTube, Video nodes with portable HTML serialisation

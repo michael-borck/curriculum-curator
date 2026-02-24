@@ -120,7 +120,7 @@
 
 ## Scenario 7 — File Import & Enhance
 
-**Covers:** 6.1–6.4, 6.6, 6.7, 1.4
+**Covers:** 6.1–6.4, 6.6, 6.7, 6.8, 1.4
 
 - [ ] 1. Navigate to **Import** for a unit.
 - [ ] 2. Upload a PDF file (e.g. an existing unit outline or lecture notes).
@@ -131,6 +131,10 @@
 - [ ] 7. Click **Enhance with AI** on an imported material. Verify the content improves (better formatting, added examples) while preserving the original meaning.
 - [ ] 8. Upload a PPTX file. Verify text and images are extracted and converted to editable content.
 - [ ] 9. Upload a DOCX file. Verify it is parsed into materials.
+- [ ] 10. Upload a branded PPTX (with custom theme/colours). In **Import Options**, tick **"Save PPTX theme as export template"**. Import.
+- [ ] 11. Verify a green checkmark appears next to the template checkbox after import completes.
+- [ ] 12. Navigate to **Settings > Export**. Verify the extracted template appears in the template list (filename ends with "(extracted theme)").
+- [ ] 13. Import a PPTX *without* the template checkbox ticked. Verify no new template is created.
 
 ---
 
@@ -166,9 +170,9 @@
 
 ---
 
-## Scenario 10 — Quality Validation & Analytics
+## Scenario 10 — Quality Validation, UDL & Analytics
 
-**Covers:** 7.1–7.3, 7.5–7.8, 8.1–8.5
+**Covers:** 7.1–7.3, 7.5–7.10, 8.1–8.5
 
 - [ ] 1. Open a unit with several weeks of materials. Navigate to the **Analytics** or **Dashboard** view.
 - [ ] 2. Verify the **unit overview** shows counts: ULOs, materials, assessments, total assessment weight.
@@ -181,6 +185,14 @@
 - [ ] 9. Verify **accessibility checks** run (alt text, heading structure, link text, table headers). Confirm any WCAG issues are reported.
 - [ ] 10. If issues are found, click **Auto-fix All** (markdown cleanup). Verify the content improves.
 - [ ] 11. Export unit data as **JSON or CSV**. Verify the download contains structured unit data.
+- [ ] 12. Navigate to the **Quality** tab. Verify the **Quality Dashboard** shows an overall score (A–F) and a 6-dimension breakdown (Completeness, Content Quality, ULO Alignment, Workload Balance, Material Diversity, Assessment Distribution).
+- [ ] 13. Verify **per-week quality scores** are displayed in a grid.
+- [ ] 14. Click **"Get AI Recommendations"**. Verify AI-generated improvement suggestions appear (with model attribution).
+- [ ] 15. On the same tab, verify the **UDL Dashboard** is visible alongside the Quality Dashboard.
+- [ ] 16. Verify UDL shows an overall star rating and 4 sub-scores: Representation, Engagement, Action & Expression, Accessibility.
+- [ ] 17. Verify **per-week UDL scores** are displayed.
+- [ ] 18. Verify **UDL improvement suggestions** are shown (e.g. "Week 3 relies solely on passive formats").
+- [ ] 19. For a unit with no materials, verify UDL and Quality dashboards show a sensible empty state (not errors).
 
 ---
 
@@ -214,15 +226,36 @@
 
 ## Scenario 13 — Unit Settings & Feature Toggles
 
-**Covers:** 1.11
+**Covers:** 1.11, 1.12, 7.10
 
 - [ ] 1. Open a unit. Navigate to the **Settings** tab.
 - [ ] 2. Verify academic details are editable (year, semester, delivery mode, credit points).
 - [ ] 3. Change the delivery mode (e.g. "On-campus" → "Hybrid"). Save. Verify it persists after page reload.
-- [ ] 4. Find the **feature toggles** section. Verify toggles exist for Graduate Capabilities, AoL Mapping, and SDG Mapping.
+- [ ] 4. Find the **Alignment & Accreditation** toggles. Verify toggles exist for Graduate Capabilities, AoL Mapping, SDG Mapping, and Custom Frameworks.
 - [ ] 5. Disable **SDG Mapping**. Return to the **Structure** tab. Verify the SDG panel is hidden.
 - [ ] 6. Re-enable SDG Mapping in Settings. Return to Structure — verify the panel is back.
-- [ ] 7. Disable all three accreditation toggles. Verify all mapping panels disappear from the Structure tab.
+- [ ] 7. Disable all accreditation toggles. Verify all mapping panels disappear from the Structure tab.
+- [ ] 8. Find the **Quality Metrics** toggles. Verify 6 dimensions can be toggled individually (Completeness, Content Quality, ULO Alignment, Workload Balance, Material Diversity, Assessment Distribution).
+- [ ] 9. Disable **Workload Balance**. Navigate to the Quality tab. Verify the Workload Balance dimension is hidden from the dashboard.
+- [ ] 10. Find the **UDL Metrics** toggles. Verify 4 dimensions can be toggled (Representation, Engagement, Action & Expression, Accessibility).
+- [ ] 11. Disable **Accessibility**. Navigate to the Quality tab. Verify the UDL Dashboard hides the Accessibility dimension.
+- [ ] 12. Re-enable all toggles. Verify all dimensions reappear.
+- [ ] 13. Set **Target Audience Level** to "High School". Verify UDL accessibility scores adjust (readability expectations change).
+
+---
+
+## Scenario 14 — Custom Alignment Frameworks
+
+**Covers:** 1.12
+
+- [ ] 1. Open a unit. Navigate to **Settings**. Enable **Custom Frameworks** if not already on.
+- [ ] 2. Return to the **Structure** tab. Verify a Custom Frameworks panel is visible.
+- [ ] 3. Click **Add Framework**. Select a preset (e.g. "Program Learning Outcomes"). Verify it pre-fills with default items.
+- [ ] 4. Edit an item name. Add a new item. Delete an item. Save the framework.
+- [ ] 5. Verify the framework appears with its items listed.
+- [ ] 6. Map a ULO to one or more framework items. Verify the mapping saves.
+- [ ] 7. Create a second framework (e.g. "ABET Criteria") from presets. Verify both frameworks display.
+- [ ] 8. Delete a framework. Verify it disappears and ULO mappings to it are removed.
 
 ---
 
@@ -230,13 +263,13 @@
 
 | Category | Stories | Scenarios |
 |----------|---------|-----------|
-| 1. Unit Setup | 1.1–1.11 | 2, 5, 7, 13 |
+| 1. Unit Setup | 1.1–1.12 | 2, 5, 7, 13, 14 |
 | 2. Learning Outcomes | 2.1–2.8 | 3, 4, 5 |
 | 3. Weekly Materials | 3.1–3.12 | 4 |
 | 4. Assessments | 4.1–4.6 | 3 |
 | 5. AI Content | 5.1–5.11 | 5 |
-| 6. Import | 6.1–6.7 | 7, 8 |
-| 7. Quality | 7.1–7.8 | 3, 10 |
+| 6. Import | 6.1–6.8 | 7, 8 |
+| 7. Quality | 7.1–7.10 | 3, 10, 13 |
 | 8. Analytics | 8.1–8.5 | 10 |
 | 9. Export & LMS | 9.1–9.12 | 8, 9 |
 | 10. Auth & Settings | 10.1–10.7 | 1 |
@@ -254,4 +287,4 @@
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
 | 15.5, 15.6 | Cut from scope |
 
-*Last updated: 2026-02-23*
+*Last updated: 2026-02-24*

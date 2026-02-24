@@ -20,7 +20,9 @@ from app.schemas.analytics import (
     WeeklyWorkload,
     WeekQualityScore,
 )
+from app.schemas.udl import UDLSuggestionsResponse, UDLUnitScore, UDLWeekScore
 from app.services.analytics_service import analytics_service
+from app.services.udl_service import udl_service
 
 router = APIRouter()
 
@@ -195,6 +197,63 @@ async def validate_unit(
         db=db,
         unit_id=unit_id,
         strict_mode=strict,
+    )
+
+
+@router.get("/units/{unit_id}/udl-score", response_model=UDLUnitScore)
+async def get_udl_score(
+    unit_id: UUID,
+    total_weeks: int = Query(12, ge=1, le=52),
+    target_level: str = Query("university"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Calculate UDL inclusivity score for a unit"""
+    return await udl_service.calculate_unit_udl(
+        db=db,
+        unit_id=unit_id,
+        total_weeks=total_weeks,
+        target_level=target_level,
+    )
+
+
+@router.get(
+    "/units/{unit_id}/udl-weekly",
+    response_model=list[UDLWeekScore],
+)
+async def get_udl_weekly(
+    unit_id: UUID,
+    total_weeks: int = Query(12, ge=1, le=52),
+    target_level: str = Query("university"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get per-week UDL breakdown"""
+    return await udl_service.calculate_weekly_udl(
+        db=db,
+        unit_id=unit_id,
+        total_weeks=total_weeks,
+        target_level=target_level,
+    )
+
+
+@router.get(
+    "/units/{unit_id}/udl-suggestions",
+    response_model=UDLSuggestionsResponse,
+)
+async def get_udl_suggestions(
+    unit_id: UUID,
+    total_weeks: int = Query(12, ge=1, le=52),
+    target_level: str = Query("university"),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get UDL improvement suggestions"""
+    return await udl_service.get_udl_suggestions(
+        db=db,
+        unit_id=unit_id,
+        total_weeks=total_weeks,
+        target_level=target_level,
     )
 
 

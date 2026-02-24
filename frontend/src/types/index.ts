@@ -36,11 +36,29 @@ export interface UnitModule {
   duration?: string;
 }
 
+export interface QualityMetricVisibility {
+  completeness?: boolean | undefined;
+  contentQuality?: boolean | undefined;
+  uloAlignment?: boolean | undefined;
+  workloadBalance?: boolean | undefined;
+  materialDiversity?: boolean | undefined;
+  assessmentDistribution?: boolean | undefined;
+}
+
+export interface UDLMetricVisibility {
+  representation?: boolean | undefined;
+  engagement?: boolean | undefined;
+  expression?: boolean | undefined;
+  accessibility?: boolean | undefined;
+}
+
 export interface UnitFeatures {
   graduateCapabilities?: boolean | undefined;
   aolMapping?: boolean | undefined;
   sdgMapping?: boolean | undefined;
   customFrameworks?: boolean | undefined;
+  qualityMetrics?: QualityMetricVisibility | undefined;
+  udlMetrics?: UDLMetricVisibility | undefined;
 }
 
 export interface UnitMetadata {

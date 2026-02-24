@@ -1213,5 +1213,38 @@ class FileImportService:
         return suggested_structure
 
 
+    def strip_pptx_to_template(self, file_content: bytes) -> bytes:
+        """Strip all content slides from a PPTX, keeping masters, layouts, and theme.
+
+        This produces a minimal reference document suitable for use with
+        Pandoc's ``--reference-doc`` flag.
+
+        Returns:
+            The bytes of the stripped PPTX file.
+
+        Raises:
+            ValueError: If python-pptx is not installed.
+        """
+        if not has_pptx:
+            raise ValueError("PPTX processing not available. Install python-pptx.")
+
+        from lxml import etree  # noqa: PLC0415  # pyright: ignore[reportAttributeAccessIssue]
+
+        prs = Presentation(io.BytesIO(file_content))
+
+        # Delete all slides in reverse order so indices stay valid.
+        slide_id_list = prs.slides._sldIdLst  # pyright: ignore[reportAttributeAccessIssue]
+        ns_r = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+        for slide_id in list(reversed(slide_id_list)):
+            rel_id = slide_id.get(etree.QName(ns_r, "id"))  # type: ignore[arg-type]
+            if rel_id is not None:
+                prs.part.drop_rel(rel_id)
+            slide_id_list.remove(slide_id)
+
+        out = io.BytesIO()
+        prs.save(out)
+        return out.getvalue()
+
+
 # Create singleton instance
 file_import_service = FileImportService()
