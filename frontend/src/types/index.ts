@@ -40,6 +40,7 @@ export interface UnitFeatures {
   graduateCapabilities?: boolean | undefined;
   aolMapping?: boolean | undefined;
   sdgMapping?: boolean | undefined;
+  customFrameworks?: boolean | undefined;
 }
 
 export interface UnitMetadata {

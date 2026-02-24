@@ -493,3 +493,97 @@ export interface SDGMappingSummary {
   totalSdgs: number;
   mappings: SDGMapping[];
 }
+
+// ============= Custom Alignment Frameworks =============
+
+export type FrameworkPresetType =
+  | 'plo'
+  | 'grit'
+  | 'ethics'
+  | 'indigenous'
+  | 'vision';
+
+export interface FrameworkItem {
+  id: string;
+  frameworkId: string;
+  code: string;
+  description: string;
+  isAiSuggested: boolean;
+  notes?: string;
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrameworkItemCreate {
+  code: string;
+  description: string;
+  isAiSuggested?: boolean;
+  notes?: string;
+  orderIndex?: number;
+}
+
+export interface FrameworkItemUpdate {
+  code?: string;
+  description?: string;
+  notes?: string;
+  orderIndex?: number;
+}
+
+export interface CustomAlignmentFramework {
+  id: string;
+  unitId: string;
+  name: string;
+  description?: string;
+  presetType?: FrameworkPresetType;
+  iconHint?: string;
+  colorHint?: string;
+  orderIndex: number;
+  items: FrameworkItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FrameworkCreate {
+  name: string;
+  description?: string | undefined;
+  presetType?: FrameworkPresetType | undefined;
+  iconHint?: string | undefined;
+  colorHint?: string | undefined;
+  orderIndex?: number | undefined;
+  items?: FrameworkItemCreate[] | undefined;
+}
+
+export interface FrameworkUpdate {
+  name?: string;
+  description?: string;
+  iconHint?: string;
+  colorHint?: string;
+  orderIndex?: number;
+}
+
+export interface FrameworkSummary {
+  unitId: string;
+  frameworkCount: number;
+  frameworks: CustomAlignmentFramework[];
+}
+
+export interface ULOFrameworkItemMapping {
+  id: string;
+  uloId: string;
+  itemId: string;
+  isAiSuggested: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ULOItemMappingCreate {
+  itemId: string;
+  isAiSuggested?: boolean;
+  notes?: string;
+}
+
+export interface BulkULOItemMappingCreate {
+  mappings: ULOItemMappingCreate[];
+}

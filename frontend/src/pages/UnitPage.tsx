@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Star,
   Settings,
+  Plus,
 } from 'lucide-react';
 import {
   getUnit,
@@ -23,7 +24,7 @@ import {
   deleteWeek as deleteWeekApi,
 } from '../services/api';
 import api from '../services/api';
-import { materialsApi } from '../services/unitStructureApi';
+import { materialsApi, accreditationApi } from '../services/unitStructureApi';
 import {
   downloadExport,
   downloadMaterialsExport,
@@ -37,6 +38,8 @@ import LearningOutcomeMap from '../components/UnitStructure/LearningOutcomeMap';
 import GraduateCapabilitiesPanel from '../components/UnitStructure/GraduateCapabilitiesPanel';
 import AoLMappingPanel from '../components/UnitStructure/AoLMappingPanel';
 import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
+import CustomFrameworkPanel from '../components/UnitStructure/CustomFrameworkPanel';
+import AddFrameworkDialog from '../components/UnitStructure/AddFrameworkDialog';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
 import { QualityDashboard } from '../components/UnitStructure/QualityDashboard';
@@ -44,6 +47,7 @@ import UnitSettings from '../components/UnitStructure/UnitSettings';
 import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
 import type { Unit } from '../types';
+import type { CustomAlignmentFramework } from '../types/unitStructure';
 import { LoadingState, Button, Modal, Alert } from '../components/ui';
 import { useAILevel } from '../hooks/useAILevel';
 import { useUnitDesign } from '../hooks/useUnitDesign';
@@ -81,6 +85,8 @@ const UnitPage = () => {
   const [unitULOs, setUnitULOs] = useState<
     Array<{ code: string; description: string }>
   >([]);
+  const [frameworks, setFrameworks] = useState<CustomAlignmentFramework[]>([]);
+  const [showAddFramework, setShowAddFramework] = useState(false);
   const { isAIDisabled, canScaffold } = useAILevel();
   const { designId, hasDesign } = useUnitDesign(unitId);
 
@@ -232,6 +238,19 @@ const UnitPage = () => {
         /* non-critical */
       });
   }, [unitId]);
+
+  // Load custom frameworks when outcomes tab is active
+  const customFrameworksEnabled =
+    unit?.unitMetadata?.features?.customFrameworks ?? true;
+  useEffect(() => {
+    if (!unitId || activeTab !== 'outcomes' || !customFrameworksEnabled) return;
+    accreditationApi
+      .getUnitFrameworks(unitId)
+      .then(summary => setFrameworks(summary.frameworks))
+      .catch(() => {
+        /* non-critical */
+      });
+  }, [unitId, activeTab, customFrameworksEnabled]);
 
   // Reset AI sidebar when AI is disabled
   useEffect(() => {
@@ -404,7 +423,7 @@ const UnitPage = () => {
     },
     {
       id: 'outcomes' as TabType,
-      label: 'Learning Outcomes',
+      label: 'Outcomes & Alignment',
       icon: <Target className='w-4 h-4' />,
     },
     {
@@ -452,6 +471,7 @@ const UnitPage = () => {
   const showGradCaps = features.graduateCapabilities ?? true;
   const showAolMapping = features.aolMapping ?? true;
   const showSdgMapping = features.sdgMapping ?? true;
+  const showCustomFrameworks = features.customFrameworks ?? true;
 
   return (
     <div className='min-h-full'>
@@ -717,20 +737,6 @@ const UnitPage = () => {
                 </div>
               )}
 
-              {/* Accreditation Mapping Panels */}
-              {(showGradCaps || showAolMapping || showSdgMapping) && (
-                <div className='mb-6 space-y-4'>
-                  {showGradCaps && (
-                    <GraduateCapabilitiesPanel
-                      unitId={unitId!}
-                      onViewMap={() => setShowOutcomeMap(true)}
-                    />
-                  )}
-                  {showAolMapping && <AoLMappingPanel unitId={unitId!} />}
-                  {showSdgMapping && <SDGMappingPanel unitId={unitId!} />}
-                </div>
-              )}
-
               {/* Week Accordion */}
               <WeekAccordion
                 unitId={unitId!}
@@ -743,18 +749,58 @@ const UnitPage = () => {
                 onDeleteWeek={handleDeleteWeek}
                 onApplyStructure={handleApplyStructure}
               />
-
-              {/* Learning Outcome Map Modal */}
-              <LearningOutcomeMap
-                unitId={unitId!}
-                isOpen={showOutcomeMap}
-                onClose={() => setShowOutcomeMap(false)}
-                topicLabel={topicLabel}
-              />
             </div>
           )}
 
-          {activeTab === 'outcomes' && <ULOManager unitId={unitId!} />}
+          {activeTab === 'outcomes' && (
+            <div className='space-y-6'>
+              <ULOManager unitId={unitId!} />
+              {showCustomFrameworks && (
+                <>
+                  {frameworks.map(fw => (
+                    <CustomFrameworkPanel
+                      key={fw.id}
+                      unitId={unitId!}
+                      framework={fw}
+                      onDelete={() =>
+                        setFrameworks(prev => prev.filter(f => f.id !== fw.id))
+                      }
+                      onUpdate={updated =>
+                        setFrameworks(prev =>
+                          prev.map(f => (f.id === updated.id ? updated : f))
+                        )
+                      }
+                    />
+                  ))}
+                  <button
+                    onClick={() => setShowAddFramework(true)}
+                    className='w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm font-medium text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition flex items-center justify-center gap-2'
+                  >
+                    <Plus className='w-4 h-4' />
+                    Add Alignment Framework
+                  </button>
+                  {showAddFramework && (
+                    <AddFrameworkDialog
+                      unitId={unitId!}
+                      onCreated={fw => {
+                        setFrameworks(prev => [...prev, fw]);
+                        setShowAddFramework(false);
+                      }}
+                      onClose={() => setShowAddFramework(false)}
+                    />
+                  )}
+                </>
+              )}
+              {showGradCaps && (
+                <GraduateCapabilitiesPanel
+                  unitId={unitId!}
+                  onViewMap={() => setShowOutcomeMap(true)}
+                />
+              )}
+              {showAolMapping && <AoLMappingPanel unitId={unitId!} />}
+              {showSdgMapping && <SDGMappingPanel unitId={unitId!} />}
+            </div>
+          )}
 
           {activeTab === 'assessments' && (
             <AssessmentsManager unitId={unitId!} />
@@ -798,6 +844,14 @@ const UnitPage = () => {
           </div>
         )}
       </div>
+
+      {/* Learning Outcome Map Modal (accessible from outcomes tab) */}
+      <LearningOutcomeMap
+        unitId={unitId!}
+        isOpen={showOutcomeMap}
+        onClose={() => setShowOutcomeMap(false)}
+        topicLabel={topicLabel}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal

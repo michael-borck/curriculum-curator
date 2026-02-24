@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from app.models.chat import ChatSession
     from app.models.chat_session import WorkflowChatSession
     from app.models.content import Content
+    from app.models.custom_alignment_framework import CustomAlignmentFramework
     from app.models.learning_design import LearningDesign
     from app.models.learning_outcome import UnitLearningOutcome
     from app.models.research_source import ResearchSource
@@ -171,6 +172,9 @@ class Unit(Base):
         back_populates="unit", cascade="all, delete-orphan"
     )
     sdg_mappings: Mapped[list["UnitSDGMapping"]] = relationship(
+        back_populates="unit", cascade="all, delete-orphan"
+    )
+    custom_frameworks: Mapped[list["CustomAlignmentFramework"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
 

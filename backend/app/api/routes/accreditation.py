@@ -1,5 +1,5 @@
 """
-API endpoints for accreditation mappings (Graduate Capabilities and AoL)
+API endpoints for accreditation mappings (Graduate Capabilities, AoL, SDGs, PLOs)
 """
 
 from typing import Any
@@ -14,6 +14,11 @@ from app.models.accreditation_mappings import (
     ULOGraduateCapabilityMapping,
     UnitAoLMapping,
     UnitSDGMapping,
+)
+from app.models.custom_alignment_framework import (
+    CustomAlignmentFramework,
+    FrameworkItem,
+    ULOFrameworkItemMapping,
 )
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.unit import Unit
@@ -30,6 +35,17 @@ from app.schemas.accreditation import (
     SDGMappingCreate,
     SDGMappingResponse,
     SDGMappingSummary,
+)
+from app.schemas.custom_framework import (
+    BulkULOItemMappingCreate,
+    FrameworkCreate,
+    FrameworkItemCreate,
+    FrameworkItemResponse,
+    FrameworkItemUpdate,
+    FrameworkResponse,
+    FrameworkSummary,
+    FrameworkUpdate,
+    ULOItemMappingResponse,
 )
 
 router = APIRouter()
@@ -604,6 +620,452 @@ async def remove_unit_sdg_mapping(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mapping not found",
+        )
+
+    db.delete(existing)
+    db.commit()
+
+    return {"message": "Mapping removed successfully"}
+
+
+# ============= Custom Alignment Frameworks =============
+
+
+def _framework_response(fw: CustomAlignmentFramework) -> FrameworkResponse:
+    """Helper to build a FrameworkResponse from a model instance."""
+    return FrameworkResponse(
+        id=str(fw.id),
+        unit_id=str(fw.unit_id),
+        name=fw.name,
+        description=fw.description,
+        preset_type=fw.preset_type,
+        icon_hint=fw.icon_hint,
+        color_hint=fw.color_hint,
+        order_index=fw.order_index,
+        items=[
+            FrameworkItemResponse(
+                id=str(item.id),
+                framework_id=str(item.framework_id),
+                code=item.code,
+                description=item.description,
+                is_ai_suggested=item.is_ai_suggested,
+                notes=item.notes,
+                order_index=item.order_index,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+            for item in sorted(fw.items, key=lambda i: i.order_index)
+        ],
+        created_at=fw.created_at,
+        updated_at=fw.updated_at,
+    )
+
+
+@router.get(
+    "/units/{unit_id}/frameworks",
+    response_model=FrameworkSummary,
+)
+async def get_unit_frameworks(
+    unit_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get all custom alignment frameworks for a unit"""
+    unit = db.execute(select(Unit).where(Unit.id == str(unit_id))).scalar_one_or_none()
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
+        )
+
+    frameworks = (
+        db.execute(
+            select(CustomAlignmentFramework)
+            .where(CustomAlignmentFramework.unit_id == str(unit_id))
+            .order_by(CustomAlignmentFramework.order_index)
+        )
+        .scalars()
+        .all()
+    )
+
+    return FrameworkSummary(
+        unit_id=str(unit_id),
+        framework_count=len(frameworks),
+        frameworks=[_framework_response(fw) for fw in frameworks],
+    )
+
+
+@router.post(
+    "/units/{unit_id}/frameworks",
+    response_model=FrameworkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_framework(
+    unit_id: UUID,
+    data: FrameworkCreate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Create a custom alignment framework with optional initial items"""
+    unit = db.execute(select(Unit).where(Unit.id == str(unit_id))).scalar_one_or_none()
+    if not unit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found"
+        )
+
+    fw = CustomAlignmentFramework(
+        unit_id=str(unit_id),
+        name=data.name,
+        description=data.description,
+        preset_type=data.preset_type,
+        icon_hint=data.icon_hint,
+        color_hint=data.color_hint,
+        order_index=data.order_index,
+    )
+    db.add(fw)
+    db.flush()  # Get ID for items
+
+    for i, item_data in enumerate(data.items):
+        item = FrameworkItem(
+            framework_id=str(fw.id),
+            code=item_data.code,
+            description=item_data.description,
+            is_ai_suggested=item_data.is_ai_suggested,
+            notes=item_data.notes,
+            order_index=item_data.order_index if item_data.order_index else i,
+        )
+        db.add(item)
+
+    db.commit()
+    db.refresh(fw)
+
+    return _framework_response(fw)
+
+
+@router.put(
+    "/units/{unit_id}/frameworks/{framework_id}",
+    response_model=FrameworkResponse,
+)
+async def update_framework(
+    unit_id: UUID,
+    framework_id: UUID,
+    data: FrameworkUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Update a framework's metadata"""
+    fw = db.execute(
+        select(CustomAlignmentFramework).where(
+            CustomAlignmentFramework.id == str(framework_id),
+            CustomAlignmentFramework.unit_id == str(unit_id),
+        )
+    ).scalar_one_or_none()
+
+    if not fw:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Framework not found"
+        )
+
+    if data.name is not None:
+        fw.name = data.name
+    if data.description is not None:
+        fw.description = data.description
+    if data.icon_hint is not None:
+        fw.icon_hint = data.icon_hint
+    if data.color_hint is not None:
+        fw.color_hint = data.color_hint
+    if data.order_index is not None:
+        fw.order_index = data.order_index
+
+    db.commit()
+    db.refresh(fw)
+
+    return _framework_response(fw)
+
+
+@router.delete("/units/{unit_id}/frameworks/{framework_id}")
+async def delete_framework(
+    unit_id: UUID,
+    framework_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Delete a framework (cascades to items and mappings)"""
+    fw = db.execute(
+        select(CustomAlignmentFramework).where(
+            CustomAlignmentFramework.id == str(framework_id),
+            CustomAlignmentFramework.unit_id == str(unit_id),
+        )
+    ).scalar_one_or_none()
+
+    if not fw:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Framework not found"
+        )
+
+    db.delete(fw)
+    db.commit()
+
+    return {"message": "Framework deleted successfully"}
+
+
+# ============= Framework Items =============
+
+
+@router.post(
+    "/units/{unit_id}/frameworks/{framework_id}/items",
+    response_model=FrameworkItemResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_framework_item(
+    unit_id: UUID,
+    framework_id: UUID,
+    data: FrameworkItemCreate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Add an item to a framework"""
+    fw = db.execute(
+        select(CustomAlignmentFramework).where(
+            CustomAlignmentFramework.id == str(framework_id),
+            CustomAlignmentFramework.unit_id == str(unit_id),
+        )
+    ).scalar_one_or_none()
+
+    if not fw:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Framework not found"
+        )
+
+    item = FrameworkItem(
+        framework_id=str(framework_id),
+        code=data.code,
+        description=data.description,
+        is_ai_suggested=data.is_ai_suggested,
+        notes=data.notes,
+        order_index=data.order_index,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+
+    return FrameworkItemResponse(
+        id=str(item.id),
+        framework_id=str(item.framework_id),
+        code=item.code,
+        description=item.description,
+        is_ai_suggested=item.is_ai_suggested,
+        notes=item.notes,
+        order_index=item.order_index,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
+@router.put(
+    "/units/{unit_id}/frameworks/{framework_id}/items/{item_id}",
+    response_model=FrameworkItemResponse,
+)
+async def update_framework_item(
+    unit_id: UUID,
+    framework_id: UUID,
+    item_id: UUID,
+    data: FrameworkItemUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Update a framework item"""
+    item = db.execute(
+        select(FrameworkItem)
+        .join(CustomAlignmentFramework)
+        .where(
+            FrameworkItem.id == str(item_id),
+            FrameworkItem.framework_id == str(framework_id),
+            CustomAlignmentFramework.unit_id == str(unit_id),
+        )
+    ).scalar_one_or_none()
+
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+        )
+
+    if data.code is not None:
+        item.code = data.code
+    if data.description is not None:
+        item.description = data.description
+    if data.notes is not None:
+        item.notes = data.notes
+    if data.order_index is not None:
+        item.order_index = data.order_index
+
+    db.commit()
+    db.refresh(item)
+
+    return FrameworkItemResponse(
+        id=str(item.id),
+        framework_id=str(item.framework_id),
+        code=item.code,
+        description=item.description,
+        is_ai_suggested=item.is_ai_suggested,
+        notes=item.notes,
+        order_index=item.order_index,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
+@router.delete("/units/{unit_id}/frameworks/{framework_id}/items/{item_id}")
+async def delete_framework_item(
+    unit_id: UUID,
+    framework_id: UUID,
+    item_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Delete a framework item (cascades to mappings)"""
+    item = db.execute(
+        select(FrameworkItem)
+        .join(CustomAlignmentFramework)
+        .where(
+            FrameworkItem.id == str(item_id),
+            FrameworkItem.framework_id == str(framework_id),
+            CustomAlignmentFramework.unit_id == str(unit_id),
+        )
+    ).scalar_one_or_none()
+
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+        )
+
+    db.delete(item)
+    db.commit()
+
+    return {"message": "Item deleted successfully"}
+
+
+# ============= ULO→Framework Item Mappings =============
+
+
+@router.get(
+    "/ulos/{ulo_id}/framework-mappings",
+    response_model=list[ULOItemMappingResponse],
+)
+async def get_ulo_framework_mappings(
+    ulo_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Get all framework item mappings for a ULO"""
+    ulo = db.execute(
+        select(UnitLearningOutcome).where(UnitLearningOutcome.id == str(ulo_id))
+    ).scalar_one_or_none()
+
+    if not ulo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="ULO not found"
+        )
+
+    mappings = (
+        db.execute(
+            select(ULOFrameworkItemMapping).where(
+                ULOFrameworkItemMapping.ulo_id == str(ulo_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    return [
+        ULOItemMappingResponse(
+            id=str(m.id),
+            ulo_id=str(m.ulo_id),
+            item_id=str(m.item_id),
+            is_ai_suggested=m.is_ai_suggested,
+            notes=m.notes,
+            created_at=m.created_at,
+            updated_at=m.updated_at,
+        )
+        for m in mappings
+    ]
+
+
+@router.put(
+    "/ulos/{ulo_id}/framework-mappings",
+    response_model=list[ULOItemMappingResponse],
+)
+async def update_ulo_framework_mappings(
+    ulo_id: UUID,
+    bulk_data: BulkULOItemMappingCreate,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Replace all framework item mappings for a ULO"""
+    ulo = db.execute(
+        select(UnitLearningOutcome).where(UnitLearningOutcome.id == str(ulo_id))
+    ).scalar_one_or_none()
+
+    if not ulo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="ULO not found"
+        )
+
+    # Delete existing mappings
+    db.execute(
+        delete(ULOFrameworkItemMapping).where(
+            ULOFrameworkItemMapping.ulo_id == str(ulo_id)
+        )
+    )
+
+    # Create new mappings
+    new_mappings = []
+    for mapping_data in bulk_data.mappings:
+        mapping = ULOFrameworkItemMapping(
+            ulo_id=str(ulo_id),
+            item_id=mapping_data.item_id,
+            is_ai_suggested=mapping_data.is_ai_suggested,
+            notes=mapping_data.notes,
+        )
+        db.add(mapping)
+        new_mappings.append(mapping)
+
+    db.commit()
+
+    for m in new_mappings:
+        db.refresh(m)
+
+    return [
+        ULOItemMappingResponse(
+            id=str(m.id),
+            ulo_id=str(m.ulo_id),
+            item_id=str(m.item_id),
+            is_ai_suggested=m.is_ai_suggested,
+            notes=m.notes,
+            created_at=m.created_at,
+            updated_at=m.updated_at,
+        )
+        for m in new_mappings
+    ]
+
+
+@router.delete("/ulos/{ulo_id}/framework-mappings/{item_id}")
+async def remove_ulo_framework_mapping(
+    ulo_id: UUID,
+    item_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> Any:
+    """Remove a single ULO→framework item mapping"""
+    existing = db.execute(
+        select(ULOFrameworkItemMapping).where(
+            ULOFrameworkItemMapping.ulo_id == str(ulo_id),
+            ULOFrameworkItemMapping.item_id == str(item_id),
+        )
+    ).scalar_one_or_none()
+
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Mapping not found"
         )
 
     db.delete(existing)

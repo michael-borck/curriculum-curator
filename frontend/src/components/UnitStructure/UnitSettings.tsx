@@ -75,6 +75,9 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
   const [sdgMapping, setSdgMapping] = useState(
     existingFeatures.sdgMapping ?? true
   );
+  const [customFrameworks, setCustomFrameworks] = useState(
+    existingFeatures.customFrameworks ?? true
+  );
 
   const handleSave = async () => {
     setSaving(true);
@@ -83,6 +86,7 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
         graduateCapabilities: gradCaps,
         aolMapping: aolMapping,
         sdgMapping: sdgMapping,
+        customFrameworks: customFrameworks,
       };
 
       // Merge features into existing unitMetadata to preserve other keys
@@ -164,16 +168,22 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
         </div>
       </div>
 
-      {/* Accreditation Panels */}
+      {/* Alignment & Accreditation */}
       <div className='mb-8'>
         <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-          Accreditation Panels
+          Alignment & Accreditation
         </h3>
         <p className='text-sm text-gray-500 mb-4'>
-          Toggle which accreditation mapping panels are shown on the Structure
-          tab. Disable panels that are not relevant for this unit type.
+          Toggle which alignment and accreditation panels appear on the Outcomes
+          tab. Disable panels not relevant for this unit.
         </p>
         <div className='divide-y divide-gray-100'>
+          <ToggleSwitch
+            label='Custom Alignment Frameworks'
+            description='Create custom frameworks (PLOs, GRIT, ethics, etc.) and map ULOs to them'
+            checked={customFrameworks}
+            onChange={setCustomFrameworks}
+          />
           <ToggleSwitch
             label='Graduate Capabilities'
             description='Map unit outcomes to institutional graduate capabilities'

@@ -25,6 +25,11 @@ from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .common import GUID
 from .content import Content, ContentCategory, ContentStatus
 from .content_version import ContentVersion
+from .custom_alignment_framework import (
+    CustomAlignmentFramework,
+    FrameworkItem,
+    ULOFrameworkItemMapping,
+)
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 from .enums import ContentType, SessionFormat
@@ -74,6 +79,10 @@ __all__ = [
     "AoLLevel",
     "ULOGraduateCapabilityMapping",
     "UnitAoLMapping",
+    # Custom Alignment Frameworks
+    "CustomAlignmentFramework",
+    "FrameworkItem",
+    "ULOFrameworkItemMapping",
     # Authentication
     "EmailVerification",
     "EmailWhitelist",

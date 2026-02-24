@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.accreditation_mappings import ULOGraduateCapabilityMapping
     from app.models.assessment import Assessment
     from app.models.content import Content
+    from app.models.custom_alignment_framework import ULOFrameworkItemMapping
     from app.models.unit import Unit
     from app.models.unit_outline import UnitOutline
     from app.models.user import User
@@ -141,6 +142,11 @@ class UnitLearningOutcome(Base):
     # Graduate Capability mappings
     graduate_capability_mappings: Mapped[list["ULOGraduateCapabilityMapping"]] = (
         relationship(back_populates="ulo", cascade="all, delete-orphan")
+    )
+
+    # Custom framework item mappings
+    framework_item_mappings: Mapped[list["ULOFrameworkItemMapping"]] = relationship(
+        back_populates="ulo", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

@@ -51,6 +51,17 @@ import {
   BulkSDGMappingCreate,
   SDGMappingSummary,
   SDGCode,
+
+  // Custom Alignment Frameworks
+  CustomAlignmentFramework,
+  FrameworkCreate,
+  FrameworkUpdate,
+  FrameworkSummary,
+  FrameworkItemCreate,
+  FrameworkItemUpdate,
+  FrameworkItem,
+  ULOFrameworkItemMapping,
+  BulkULOItemMappingCreate,
 } from '../types/unitStructure';
 
 // ============= Learning Outcomes API =============
@@ -576,5 +587,109 @@ export const accreditationApi = {
     sdgCode: SDGCode
   ): Promise<void> => {
     await api.delete(`/accreditation/units/${unitId}/sdg-mappings/${sdgCode}`);
+  },
+
+  // Custom Alignment Frameworks
+  getUnitFrameworks: async (unitId: string): Promise<FrameworkSummary> => {
+    const response = await api.get(`/accreditation/units/${unitId}/frameworks`);
+    return response.data;
+  },
+
+  createFramework: async (
+    unitId: string,
+    data: FrameworkCreate
+  ): Promise<CustomAlignmentFramework> => {
+    const response = await api.post(
+      `/accreditation/units/${unitId}/frameworks`,
+      data
+    );
+    return response.data;
+  },
+
+  updateFramework: async (
+    unitId: string,
+    frameworkId: string,
+    data: FrameworkUpdate
+  ): Promise<CustomAlignmentFramework> => {
+    const response = await api.put(
+      `/accreditation/units/${unitId}/frameworks/${frameworkId}`,
+      data
+    );
+    return response.data;
+  },
+
+  deleteFramework: async (
+    unitId: string,
+    frameworkId: string
+  ): Promise<void> => {
+    await api.delete(
+      `/accreditation/units/${unitId}/frameworks/${frameworkId}`
+    );
+  },
+
+  // Framework Items
+  addFrameworkItem: async (
+    unitId: string,
+    frameworkId: string,
+    data: FrameworkItemCreate
+  ): Promise<FrameworkItem> => {
+    const response = await api.post(
+      `/accreditation/units/${unitId}/frameworks/${frameworkId}/items`,
+      data
+    );
+    return response.data;
+  },
+
+  updateFrameworkItem: async (
+    unitId: string,
+    frameworkId: string,
+    itemId: string,
+    data: FrameworkItemUpdate
+  ): Promise<FrameworkItem> => {
+    const response = await api.put(
+      `/accreditation/units/${unitId}/frameworks/${frameworkId}/items/${itemId}`,
+      data
+    );
+    return response.data;
+  },
+
+  deleteFrameworkItem: async (
+    unitId: string,
+    frameworkId: string,
+    itemId: string
+  ): Promise<void> => {
+    await api.delete(
+      `/accreditation/units/${unitId}/frameworks/${frameworkId}/items/${itemId}`
+    );
+  },
+
+  // ULO→Framework Item Mappings
+  getULOFrameworkMappings: async (
+    uloId: string
+  ): Promise<ULOFrameworkItemMapping[]> => {
+    const response = await api.get(
+      `/accreditation/ulos/${uloId}/framework-mappings`
+    );
+    return response.data;
+  },
+
+  updateULOFrameworkMappings: async (
+    uloId: string,
+    data: BulkULOItemMappingCreate
+  ): Promise<ULOFrameworkItemMapping[]> => {
+    const response = await api.put(
+      `/accreditation/ulos/${uloId}/framework-mappings`,
+      data
+    );
+    return response.data;
+  },
+
+  removeULOFrameworkMapping: async (
+    uloId: string,
+    itemId: string
+  ): Promise<void> => {
+    await api.delete(
+      `/accreditation/ulos/${uloId}/framework-mappings/${itemId}`
+    );
   },
 };
