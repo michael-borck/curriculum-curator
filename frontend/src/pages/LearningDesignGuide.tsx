@@ -14,8 +14,6 @@ import {
   ArrowRight,
   GraduationCap,
   Eye,
-  Ear,
-  Hand,
   PenTool,
   CheckCircle2,
 } from 'lucide-react';
@@ -1079,32 +1077,87 @@ const LearningDesignGuide = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center'>
-        <p className='text-sm text-gray-500 mb-3'>
-          This guide is based on established educational research. For the
-          architectural decisions behind these features, see the{' '}
-          <Link
-            to='/about'
-            className='text-purple-600 hover:text-purple-700 underline'
-          >
-            About page
-          </Link>
-          .
-        </p>
-        <div className='flex items-center justify-center gap-4 text-xs text-gray-400'>
-          <span className='flex items-center gap-1'>
-            <Eye className='w-3 h-3' />
-            Biggs &amp; Tang (2011)
-          </span>
-          <span className='flex items-center gap-1'>
-            <Ear className='w-3 h-3' />
-            CAST UDL Guidelines (2018)
-          </span>
-          <span className='flex items-center gap-1'>
-            <Hand className='w-3 h-3' />
-            Anderson &amp; Krathwohl (2001)
-          </span>
+      {/* Further Reading */}
+      <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+        <div className='flex items-center gap-2 mb-4'>
+          <BookOpen className='w-5 h-5 text-gray-500' />
+          <h3 className='font-semibold text-gray-900'>Further Reading</h3>
+        </div>
+        <ul className='space-y-3 text-sm text-gray-600 mb-6'>
+          <li>
+            Biggs, J. &amp; Tang, C. (2011).{' '}
+            <em>Teaching for quality learning at university</em> (4th ed.).
+            Maidenhead: Open University Press.
+          </li>
+          <li>
+            Anderson, L. W. &amp; Krathwohl, D. R. (Eds.) (2001).{' '}
+            <a
+              href='https://www.uky.edu/~rsand1/china2018/texts/Anderson-Krathwohl%20-%20A%20taxonomy%20for%20learning%20teaching%20and%20assessing.pdf'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-purple-600 hover:text-purple-700 underline'
+            >
+              A taxonomy for learning, teaching, and assessing: A revision of
+              Bloom&apos;s taxonomy of educational objectives
+            </a>
+            . New York: Longman.
+          </li>
+          <li>
+            CAST (2018).{' '}
+            <a
+              href='https://udlguidelines.cast.org/'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-purple-600 hover:text-purple-700 underline'
+            >
+              Universal Design for Learning Guidelines version 2.2
+            </a>
+            . Wakefield, MA: CAST.
+          </li>
+          <li>
+            Fink, L. D. (2013).{' '}
+            <em>
+              Creating significant learning experiences: An integrated approach
+              to designing college courses
+            </em>{' '}
+            (2nd ed.). San Francisco: Jossey-Bass.
+          </li>
+          <li>
+            Wiggins, G. &amp; McTighe, J. (2005).{' '}
+            <em>Understanding by design</em> (2nd ed.). Alexandria, VA: ASCD.
+          </li>
+          <li>
+            Boud, D. &amp; Falchikov, N. (2006). Aligning assessment with
+            long-term learning.{' '}
+            <em>Assessment &amp; Evaluation in Higher Education</em>, 31(4),
+            399&ndash;413.
+          </li>
+          <li>
+            TEQSA (2017).{' '}
+            <a
+              href='https://www.teqsa.gov.au/guides-resources/resources/guidance-notes/guidance-note-course-design-including-learning-outcomes-and-assessment'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-purple-600 hover:text-purple-700 underline'
+            >
+              Guidance note: Course design, including learning outcomes and
+              assessment
+            </a>
+            . Melbourne: Tertiary Education Quality and Standards Agency.
+          </li>
+        </ul>
+
+        <div className='border-t border-gray-100 pt-4 text-center'>
+          <p className='text-sm text-gray-500'>
+            For assessment-specific guidance including rubric design, see the{' '}
+            <Link
+              to='/guide/assessment-design'
+              className='text-purple-600 hover:text-purple-700 underline'
+            >
+              Assessment Design Guide
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

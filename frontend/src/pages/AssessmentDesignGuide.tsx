@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   ArrowRight,
   AlertTriangle,
+  BookOpen,
 } from 'lucide-react';
 
 // ── Collapsible section ────────────────────────────────────
@@ -68,7 +69,7 @@ const Section = ({
 
 const ALL_SECTIONS = [
   'principles',
-  'two-lane',
+  'spectrum',
   'stress-test',
   'criteria',
   'analytic',
@@ -112,8 +113,8 @@ const AssessmentDesignGuide = () => {
         </div>
         <p className='text-amber-100 text-lg max-w-2xl'>
           Practical guidance for designing assessments and rubrics in an
-          AI-enabled world. Covers integrity-by-design principles, the two-lane
-          approach, and all four rubric formats.
+          AI-enabled world. Covers integrity-by-design principles, the AI
+          integration spectrum, and all four rubric formats.
         </p>
         <div className='mt-4 flex gap-3'>
           <button
@@ -137,7 +138,7 @@ const AssessmentDesignGuide = () => {
         <div className='flex flex-wrap gap-2'>
           {[
             { id: 'principles', label: 'Six Principles' },
-            { id: 'two-lane', label: 'Two-Lane Approach' },
+            { id: 'spectrum', label: 'AI Spectrum' },
             { id: 'stress-test', label: 'Stress-Testing' },
             { id: 'criteria', label: 'AI Criteria' },
             { id: 'analytic', label: 'Analytic Rubric' },
@@ -201,8 +202,8 @@ const AssessmentDesignGuide = () => {
                 },
                 {
                   num: 2,
-                  title: 'Two-Lane Approach',
-                  desc: 'Offer both restricted-AI and AI-enabled pathways for the same assessment type. Let the learning outcomes determine which lane is appropriate.',
+                  title: 'AI Integration Spectrum',
+                  desc: 'Position each assessment along a spectrum from AI-restricted to AI-integrated. Let the learning outcomes determine where on the spectrum each task sits.',
                   color: 'bg-orange-50 border-orange-200 text-orange-900',
                 },
                 {
@@ -255,21 +256,21 @@ const AssessmentDesignGuide = () => {
           </Section>
         </div>
 
-        {/* ── Two-Lane Approach ──────────────────────── */}
-        <div id='section-two-lane'>
+        {/* ── AI Integration Spectrum ─────────────────── */}
+        <div id='section-spectrum'>
           <Section
-            id='two-lane'
-            title='Two-Lane Approach by Assessment Type'
+            id='spectrum'
+            title='AI Integration Spectrum by Assessment Type'
             icon={<GitFork className='w-5 h-5 text-orange-600' />}
             color='bg-orange-100'
             expanded={expanded}
             toggle={toggle}
           >
             <p className='text-gray-600 mb-4'>
-              For each common assessment type, consider both a restricted-AI
-              lane (where AI is limited or prohibited) and an AI-enabled lane
-              (where AI use is expected and assessed). The right lane depends on
-              your learning outcomes.
+              Each assessment sits somewhere on a spectrum from AI-restricted
+              (where AI use is limited or prohibited) to AI-integrated (where AI
+              use is expected and assessed). Learning outcomes should determine
+              the appropriate position on this spectrum.
             </p>
 
             <div className='overflow-x-auto mb-6'>
@@ -280,10 +281,10 @@ const AssessmentDesignGuide = () => {
                       Assessment Type
                     </th>
                     <th className='border border-gray-200 px-3 py-2 text-left font-semibold text-red-700'>
-                      Restricted-AI Lane
+                      AI-Restricted
                     </th>
                     <th className='border border-gray-200 px-3 py-2 text-left font-semibold text-green-700'>
-                      AI-Enabled Lane
+                      AI-Integrated
                     </th>
                   </tr>
                 </thead>
@@ -343,11 +344,11 @@ const AssessmentDesignGuide = () => {
 
             <div className='bg-orange-50 border border-orange-200 rounded-lg p-4'>
               <p className='text-sm text-orange-800'>
-                <strong>Combining lanes:</strong> Many effective assessment
-                designs blend both lanes. For example, an AI-assisted report
-                (enabled lane) coupled with an in-class oral defence (restricted
-                lane) verifies both the quality of the output and the
-                student&apos;s understanding of it.
+                <strong>Blending modes:</strong> Many effective assessment
+                designs combine positions on the spectrum. For example, an
+                AI-assisted report (integrated mode) coupled with an in-class
+                oral defence (restricted mode) verifies both the quality of the
+                output and the student&apos;s understanding of it.
               </p>
             </div>
           </Section>
@@ -1125,24 +1126,73 @@ const AssessmentDesignGuide = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center'>
-        <p className='text-sm text-gray-500 mb-3'>
-          For foundational curriculum design concepts, see the{' '}
-          <Link
-            to='/guide/learning-design'
-            className='text-amber-600 hover:text-amber-700 underline'
-          >
-            Learning Design Guide
-          </Link>
-          .
-        </p>
-        <p className='text-xs text-gray-400'>
-          Content adapted from research on designing assessment in AI-enabled
-          learning environments. Principles draw on the work of the{' '}
-          <em>Tertiary Education Quality and Standards Agency</em> (TEQSA) and
-          contemporary higher education assessment literature.
-        </p>
+      {/* Further Reading */}
+      <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
+        <div className='flex items-center gap-2 mb-4'>
+          <BookOpen className='w-5 h-5 text-gray-500' />
+          <h3 className='font-semibold text-gray-900'>Further Reading</h3>
+        </div>
+        <ul className='space-y-3 text-sm text-gray-600 mb-6'>
+          <li>
+            UNESCO (2023).{' '}
+            <a
+              href='https://unesdoc.unesco.org/ark:/48223/pf0000386693'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-amber-600 hover:text-amber-700 underline'
+            >
+              Guidance for generative AI in education and research
+            </a>
+            . Paris: UNESCO.
+          </li>
+          <li>
+            UNESCO (2024).{' '}
+            <a
+              href='https://unesdoc.unesco.org/ark:/48223/pf0000391104'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-amber-600 hover:text-amber-700 underline'
+            >
+              AI competency frameworks for teachers and for school students
+            </a>
+            . Paris: UNESCO.
+          </li>
+          <li>
+            Bearman, M., Ryan, J. &amp; Ajjawi, R. (2023). Discourses of
+            artificial intelligence in higher education.{' '}
+            <em>Higher Education</em>, 86, 1227&ndash;1246.
+          </li>
+          <li>
+            TEQSA (2023).{' '}
+            <a
+              href='https://www.teqsa.gov.au/guides-resources/higher-education-good-practice-hub/assessment-reform-age-artificial-intelligence'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-amber-600 hover:text-amber-700 underline'
+            >
+              Assessment reform for the age of artificial intelligence
+            </a>
+            . Melbourne: Tertiary Education Quality and Standards Agency.
+          </li>
+          <li>
+            Lodge, J. M., Howard, S., Bearman, M. et al. (2024). Assessment
+            reform for the age of artificial intelligence.{' '}
+            <em>Assessment &amp; Evaluation in Higher Education</em>, 49(8).
+          </li>
+        </ul>
+
+        <div className='border-t border-gray-100 pt-4 text-center'>
+          <p className='text-sm text-gray-500 mb-2'>
+            For foundational curriculum design concepts, see the{' '}
+            <Link
+              to='/guide/learning-design'
+              className='text-amber-600 hover:text-amber-700 underline'
+            >
+              Learning Design Guide
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );
