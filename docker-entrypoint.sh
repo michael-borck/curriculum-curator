@@ -20,11 +20,11 @@ done
 
 echo "Data directories ready"
 
-# Run database migrations (as appuser so the DB file has correct ownership)
-echo "Running database migrations..."
+# Initialize database (creates tables if they don't exist, idempotent)
+echo "Initializing database..."
 cd /app/backend
-gosu appuser .venv/bin/alembic upgrade head
-echo "Migrations complete"
+gosu appuser .venv/bin/python init_db.py
+echo "Database ready"
 
 # Drop to non-root user and execute the CMD
 echo "Starting application..."
