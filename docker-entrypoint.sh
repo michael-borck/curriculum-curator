@@ -20,10 +20,15 @@ done
 
 echo "Data directories ready"
 
-# Initialize database (creates tables if they don't exist, idempotent)
+# Initialize database schema (tables only, no sample data)
 echo "Initializing database..."
 cd /app/backend
-gosu appuser .venv/bin/python init_db.py
+gosu appuser .venv/bin/python -c "
+from app.core.database import Base, engine
+from app.models import *  # register all models
+Base.metadata.create_all(bind=engine)
+print('Tables ready')
+"
 echo "Database ready"
 
 # Drop to non-root user and execute the CMD
