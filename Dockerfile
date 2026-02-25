@@ -54,7 +54,7 @@ RUN uv venv .venv && \
 RUN if [ ! -f .env ]; then \
     echo "# Auto-generated for Docker environment" > .env && \
     echo "SECRET_KEY=docker-dev-secret-key-$(date +%s | sha256sum | head -c 32)" >> .env && \
-    echo "DATABASE_URL=sqlite:///./data/curriculum_curator.db" >> .env && \
+    echo "DATABASE_URL=sqlite:////app/backend/data/curriculum_curator.db" >> .env && \
     echo "ALGORITHM=HS256" >> .env && \
     echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env && \
     echo "DEBUG=true" >> .env && \

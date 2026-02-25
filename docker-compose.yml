@@ -19,7 +19,7 @@ services:
       - ./data/content_repos:/app/backend/content_repos
     environment:
       # Database
-      - DATABASE_URL=sqlite:///./data/curriculum_curator.db
+      - DATABASE_URL=sqlite:////app/backend/data/curriculum_curator.db
       
       # Security (CHANGE THESE IN PRODUCTION!)
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
