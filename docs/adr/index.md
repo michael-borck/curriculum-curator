@@ -69,6 +69,8 @@ An Architecture Decision Record captures an important architectural decision mad
 | [055](055-pedagogical-framework-alignment-architecture.md) | Pedagogical Framework and Alignment Architecture | Accepted |
 | [056](056-pptx-template-extraction-on-import.md) | PPTX Template Extraction on Import | Accepted |
 | [057](057-udl-inclusivity-scoring-model.md) | UDL Inclusivity Scoring Model | Accepted |
+| [058](058-prompt-template-library.md) | Prompt Template Library | Accepted |
+| [059](059-week-aware-ai-context-and-source-grounding.md) | Week-Aware AI Context & Source Grounding | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
@@ -97,6 +99,8 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-045: Structured LLM Output with Retry](045-structured-llm-output-retry.md) - Multi-attempt JSON extraction with temperature decay and error feedback
 - [ADR-046: Jinja2 Prompt Templates](046-jinja2-prompt-templates.md) - Two-layer template system with AST variable extraction and DB persistence
 - [ADR-051: LLM Token/Cost Tracking](051-llm-token-cost-tracking.md) - Dual-model tracking: per-generation history + aggregated usage stats
+- [ADR-058: Prompt Template Library](058-prompt-template-library.md) - Three-tier prompt template system (system/custom/public) with variable rendering
+- [ADR-059: Week-Aware AI Context & Source Grounding](059-week-aware-ai-context-and-source-grounding.md) - Weekly topic enrichment and source material injection for grounded AI generation
 
 ### Domain Model & User Experience
 - [ADR-004: Teaching Philosophy System](004-teaching-philosophy-system.md) - Personalization framework
