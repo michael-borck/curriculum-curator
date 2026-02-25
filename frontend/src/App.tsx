@@ -33,6 +33,7 @@ import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
 import AboutPage from './pages/AboutPage';
 import LearningDesignGuide from './pages/LearningDesignGuide';
+import AssessmentDesignGuide from './pages/AssessmentDesignGuide';
 import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
@@ -227,6 +228,10 @@ function App() {
             <Route
               path='/guide/learning-design'
               element={<LearningDesignGuide />}
+            />
+            <Route
+              path='/guide/assessment-design'
+              element={<AssessmentDesignGuide />}
             />
             <Route path='/about' element={<AboutPage />} />
 

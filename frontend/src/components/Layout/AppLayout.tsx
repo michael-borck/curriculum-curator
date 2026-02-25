@@ -18,6 +18,7 @@ import {
   Home,
   Star,
   Search,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useUnitsStore } from '../../stores/unitsStore';
@@ -492,6 +493,20 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                         >
                           <BookOpen className='w-4 h-4' />
                           <span>Design Guide</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/guide/assessment-design');
+                            setUserMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition ${
+                            isActive('/guide/assessment-design')
+                              ? 'text-purple-600'
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          <ClipboardList className='w-4 h-4' />
+                          <span>Assessment Guide</span>
                         </button>
                         <button
                           onClick={() => {

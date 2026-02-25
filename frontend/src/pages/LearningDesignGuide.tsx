@@ -731,7 +731,15 @@ const LearningDesignGuide = () => {
                 <strong>In the app:</strong> The Assessments tab lets you create
                 formative and summative tasks, set weights, link them to ULOs,
                 and define rubric criteria. The quality score checks alignment
-                and weight totals automatically.
+                and weight totals automatically. For deeper coverage of rubric
+                design and AI-era assessment strategies, see the{' '}
+                <Link
+                  to='/guide/assessment-design'
+                  className='text-purple-600 hover:text-purple-700 underline'
+                >
+                  Assessment Design Guide
+                </Link>
+                .
               </p>
             </div>
           </Section>
