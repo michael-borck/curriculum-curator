@@ -1227,7 +1227,7 @@ class FileImportService:
         if not has_pptx:
             raise ValueError("PPTX processing not available. Install python-pptx.")
 
-        from lxml import (
+        from lxml import (  # noqa: PLC0415
             etree,  # pyright: ignore[reportAttributeAccessIssue]
         )
 
@@ -1244,6 +1244,45 @@ class FileImportService:
 
         out = io.BytesIO()
         prs.save(out)
+        return out.getvalue()
+
+    def strip_docx_to_template(self, file_content: bytes) -> bytes:
+        """Strip all body content from a DOCX, keeping styles, headers/footers, and page layout.
+
+        This produces a minimal reference document suitable for use with
+        Pandoc's ``--reference-doc`` flag.
+
+        Returns:
+            The bytes of the stripped DOCX file.
+
+        Raises:
+            ValueError: If python-docx is not installed.
+        """
+        if not has_docx:
+            raise ValueError("DOCX processing not available. Install python-docx.")
+
+        from lxml import (  # noqa: PLC0415
+            etree,  # pyright: ignore[reportAttributeAccessIssue]
+        )
+
+        doc = Document(io.BytesIO(file_content))
+
+        # Remove all paragraphs from the body (keep section properties which
+        # control page layout, margins, headers/footers references).
+        body = doc.element.body
+
+        # Collect elements to remove (paragraphs and tables)
+        to_remove = []
+        for child in body:
+            tag = etree.QName(child.tag).localname if isinstance(child.tag, str) else ""
+            if tag in ("p", "tbl", "sdt"):
+                to_remove.append(child)
+
+        for el in to_remove:
+            body.remove(el)
+
+        out = io.BytesIO()
+        doc.save(out)
         return out.getvalue()
 
 

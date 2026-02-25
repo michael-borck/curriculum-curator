@@ -757,3 +757,79 @@ async def extract_template_from_pptx(
         uploaded_at=now,
         is_default=defaults.get("pptx") == template_id,
     )
+
+
+@router.post(
+    "/import/docx/extract-template",
+    response_model=TemplateInfo,
+    status_code=status.HTTP_201_CREATED,
+)
+async def extract_template_from_docx(
+    file: UploadFile = File(...),
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)] = None,  # type: ignore[assignment]
+    db: Annotated[Session, Depends(get_db)] = None,  # type: ignore[assignment]
+) -> TemplateInfo:
+    """Extract a DOCX export template from an imported file.
+
+    Strips all body content (paragraphs, tables), keeping styles,
+    headers/footers, and page layout.  The resulting file is stored as an
+    export template so future DOCX exports use the same branding.
+    """
+    filename = file.filename or ""
+    if not filename.lower().endswith(".docx"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only DOCX files are supported",
+        )
+
+    contents = await file.read()
+    if len(contents) > settings.TEMPLATE_MAX_SIZE:
+        max_mb = settings.TEMPLATE_MAX_SIZE / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size is {max_mb:.0f} MB.",
+        )
+
+    try:
+        stripped = file_import_service.strip_docx_to_template(contents)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error stripping DOCX template: {e!s}",
+        )
+
+    template_id = str(uuid.uuid4())
+    dest_dir = user_templates_dir(current_user.id)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / f"{template_id}.docx"
+    dest.write_bytes(stripped)
+
+    now = datetime.now(tz=UTC).isoformat()
+
+    et = get_export_templates(current_user.teaching_preferences)
+    templates: list[dict[str, str]] = et.get("templates", [])
+    defaults: dict[str, str | None] = et.get("defaults", {"pptx": None, "docx": None})
+
+    display_name = Path(filename).stem + " (extracted style)"
+    entry = {
+        "id": template_id,
+        "filename": display_name,
+        "format": "docx",
+        "uploaded_at": now,
+    }
+    templates.append(entry)
+
+    if not defaults.get("docx"):
+        defaults["docx"] = template_id
+
+    et["templates"] = templates
+    et["defaults"] = defaults
+    save_export_templates(db, current_user.id, current_user.teaching_preferences, et)
+
+    return TemplateInfo(
+        id=template_id,
+        filename=display_name,
+        format="docx",
+        uploaded_at=now,
+        is_default=defaults.get("docx") == template_id,
+    )
