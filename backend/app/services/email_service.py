@@ -1,15 +1,16 @@
 """
-Email service using Brevo (formerly SendinBlue) via fastapi-mail
+Email service using raw smtplib for maximum compatibility.
 """
 
 import secrets
 import smtplib
 import string
 import traceback
-from pathlib import Path
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formataddr
 from typing import Protocol
 
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from jinja2 import Template
 
 from app.core.config import settings
@@ -34,12 +35,6 @@ class EmailService:
     def __init__(self):
         """Initialize email service with flexible provider configuration"""
         self.smtp_config = self._load_smtp_config()
-        self.fast_mail = None
-        self.template_dir = str(Path(__file__).parent / "../templates/email")
-
-        # Initialize FastMail if not in dev mode
-        if self.smtp_config.provider != EmailProvider.DEV_MODE:
-            self._initialize_fastmail()
 
     def _load_smtp_config(self) -> SMTPConfig:
         """Load SMTP configuration from environment variables"""
@@ -97,31 +92,35 @@ class EmailService:
 
         return config
 
-    def _initialize_fastmail(self):
-        """Initialize FastMail with current configuration"""
-        try:
-            smtp_settings = self.smtp_config.get_smtp_settings()
+    def _send_raw(
+        self, *, subject: str, recipient: str, html_body: str, text_body: str
+    ) -> bool:
+        """Send an email using raw smtplib for maximum deliverability."""
+        smtp_settings = self.smtp_config.get_smtp_settings()
 
-            self.config = ConnectionConfig(
-                MAIL_USERNAME=smtp_settings["username"],
-                MAIL_PASSWORD=smtp_settings["password"],
-                MAIL_FROM=self.smtp_config.from_email,
-                MAIL_FROM_NAME=self.smtp_config.from_name,
-                MAIL_PORT=smtp_settings["port"],
-                MAIL_SERVER=smtp_settings["host"],
-                MAIL_STARTTLS=smtp_settings["use_tls"],
-                MAIL_SSL_TLS=smtp_settings["use_ssl"],
-                USE_CREDENTIALS=bool(smtp_settings["username"]),
-                VALIDATE_CERTS=self.smtp_config.validate_certs,
-                TEMPLATE_FOLDER=Path(self.template_dir),
-            )
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = formataddr(
+            (self.smtp_config.from_name, self.smtp_config.from_email)
+        )
+        msg["To"] = recipient
 
-            self.fast_mail = FastMail(self.config)
+        msg.attach(MIMEText(text_body, "plain"))
+        msg.attach(MIMEText(html_body, "html"))
 
-        except Exception as e:
-            print(f"❌ Failed to initialize email service: {e}")
-            self.smtp_config.provider = EmailProvider.DEV_MODE
-            self.smtp_config.dev_mode = True
+        if smtp_settings["use_ssl"]:
+            server = smtplib.SMTP_SSL(smtp_settings["host"], smtp_settings["port"])
+        else:
+            server = smtplib.SMTP(smtp_settings["host"], smtp_settings["port"])
+            if smtp_settings["use_tls"]:
+                server.starttls()
+
+        if smtp_settings["username"] and smtp_settings["password"]:
+            server.login(smtp_settings["username"], smtp_settings["password"])
+
+        server.send_message(msg)
+        server.quit()
+        return True
 
     @staticmethod
     def generate_verification_code(length: int = 6) -> str:
@@ -302,7 +301,6 @@ class EmailService:
                 expiry_minutes=expires_minutes,
             )
 
-            # Plain text version for email clients that don't support HTML
             text_body = f"""
 Welcome to {settings.APP_NAME}!
 
@@ -321,28 +319,22 @@ The {settings.APP_NAME} Team
             """.strip()
 
             # Override recipient in test mode
-            recipients = (
-                [self.smtp_config.test_recipient]
+            recipient = (
+                self.smtp_config.test_recipient
                 if self.smtp_config.test_recipient
-                else [user.email]
+                else user.email
             )
 
-            message = MessageSchema(
+            self._send_raw(
                 subject=f"Welcome to {settings.APP_NAME} - Verify Your Email",
-                recipients=recipients,  # type: ignore[arg-type]
-                body=html_body,
-                alternative_body=text_body,
-                subtype=MessageType.html,
+                recipient=recipient,
+                html_body=html_body,
+                text_body=text_body,
             )
-
-            if self.fast_mail:
-                await self.fast_mail.send_message(message)
-                print(
-                    f"✅ Verification email sent to {recipients[0]} via {self.smtp_config.provider.value}"
-                )
-                return True
-            print("❌ Email service not initialized. Check configuration.")
-            return False
+            print(
+                f"✅ Verification email sent to {recipient} via {self.smtp_config.provider.value}"
+            )
+            return True
 
         except Exception as e:
             print(f"❌ Failed to send verification email to {user.email}: {e}")
@@ -409,7 +401,6 @@ The {settings.APP_NAME} Team
                 expiry_minutes=expires_minutes,
             )
 
-            # Plain text version
             text_body = f"""
 Password Reset Request - {settings.APP_NAME}
 
@@ -428,28 +419,22 @@ The {settings.APP_NAME} Security Team
             """.strip()
 
             # Override recipient in test mode
-            recipients = (
-                [self.smtp_config.test_recipient]
+            recipient = (
+                self.smtp_config.test_recipient
                 if self.smtp_config.test_recipient
-                else [user.email]
+                else user.email
             )
 
-            message = MessageSchema(
+            self._send_raw(
                 subject=f"Password Reset - {settings.APP_NAME}",
-                recipients=recipients,  # type: ignore[arg-type]
-                body=html_body,
-                alternative_body=text_body,
-                subtype=MessageType.html,
+                recipient=recipient,
+                html_body=html_body,
+                text_body=text_body,
             )
-
-            if self.fast_mail:
-                await self.fast_mail.send_message(message)
-                print(
-                    f"✅ Password reset email sent to {recipients[0]} via {self.smtp_config.provider.value}"
-                )
-                return True
-            print("❌ Email service not initialized. Check configuration.")
-            return False
+            print(
+                f"✅ Password reset email sent to {recipient} via {self.smtp_config.provider.value}"
+            )
+            return True
 
         except Exception as e:
             print(f"❌ Failed to send password reset email to {user.email}: {e}")
@@ -465,7 +450,7 @@ The {settings.APP_NAME} Security Team
             print("\n🎉 [DEV MODE] Welcome Email")
             print(f"To: {user.email}")
             print(f"Name: {user.name}")
-            print(f"Subject: 🎉 Account Activated - Welcome to {settings.APP_NAME}!")
+            print(f"Subject: Account Activated - Welcome to {settings.APP_NAME}!")
             print(f"Provider: {self.smtp_config.provider.value}\n")
             return True
 
@@ -488,7 +473,7 @@ The {settings.APP_NAME} Security Team
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🎉 Account Activated!</h1>
+                        <h1>Account Activated!</h1>
                         <p>Welcome to {{ app_name }}</p>
                     </div>
                     <div class="content">
@@ -531,28 +516,22 @@ The {settings.APP_NAME} Team
             """.strip()
 
             # Override recipient in test mode
-            recipients = (
-                [self.smtp_config.test_recipient]
+            recipient = (
+                self.smtp_config.test_recipient
                 if self.smtp_config.test_recipient
-                else [user.email]
+                else user.email
             )
 
-            message = MessageSchema(
-                subject=f"🎉 Account Activated - Welcome to {settings.APP_NAME}!",
-                recipients=recipients,  # type: ignore[arg-type]
-                body=html_body,
-                alternative_body=text_body,
-                subtype=MessageType.html,
+            self._send_raw(
+                subject=f"Account Activated - Welcome to {settings.APP_NAME}!",
+                recipient=recipient,
+                html_body=html_body,
+                text_body=text_body,
             )
-
-            if self.fast_mail:
-                await self.fast_mail.send_message(message)
-                print(
-                    f"✅ Welcome email sent to {recipients[0]} via {self.smtp_config.provider.value}"
-                )
-                return True
-            print("❌ Email service not initialized. Check configuration.")
-            return False
+            print(
+                f"✅ Welcome email sent to {recipient} via {self.smtp_config.provider.value}"
+            )
+            return True
 
         except Exception as e:
             print(f"❌ Failed to send welcome email to {user.email}: {e}")

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # Database
-    DATABASE_URL: str = "sqlite:///./curriculum_curator.db"
+    DATABASE_URL: str = "sqlite:///./data/curriculum_curator.db"
 
     # Email - General
     EMAIL_WHITELIST: list[str] = []

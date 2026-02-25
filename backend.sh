@@ -168,7 +168,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # Database
-DATABASE_URL=sqlite:///./curriculum_curator.db
+DATABASE_URL=sqlite:///./data/curriculum_curator.db
 
 # API Keys
 # Note: API keys can be set here OR as environment variables

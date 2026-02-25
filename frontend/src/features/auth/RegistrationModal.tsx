@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckCircle } from 'lucide-react';
-import { register } from '../../services/api';
+import api, { register } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 import EmailVerificationForm from './EmailVerificationForm';
 import { Modal, Alert, Button, FormInput } from '../../components/ui';
 
@@ -44,6 +45,7 @@ const RegistrationModal = ({
   const [showVerification, setShowVerification] = useState(false);
   const [isFirstUser, setIsFirstUser] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const login = useAuthStore(state => state.login);
 
   if (!isOpen) return null;
 
@@ -104,7 +106,21 @@ const RegistrationModal = ({
         response.data?.message?.includes('admin privileges')
       ) {
         setIsFirstUser(true);
-        window.setTimeout(() => {
+        // Auto-login the first user after a brief delay
+        window.setTimeout(async () => {
+          try {
+            const loginResponse = await api.post('/auth/login', {
+              email: formData.email,
+              password: formData.password,
+            });
+            if (loginResponse.status === 200) {
+              const { access_token, user } = loginResponse.data;
+              localStorage.setItem('token', access_token);
+              login(user);
+            }
+          } catch {
+            // Login failed — user can log in manually
+          }
           onSuccess?.();
           onClose();
         }, 2000);

@@ -217,7 +217,7 @@ Create `.env` in the backend directory:
 ```env
 # Security
 SECRET_KEY=your-secret-key
-DATABASE_URL=sqlite:///./curriculum_curator.db
+DATABASE_URL=sqlite:///./data/curriculum_curator.db
 
 # LLM API Keys (all optional — configure in-app or use Ollama)
 OPENAI_API_KEY=sk-...

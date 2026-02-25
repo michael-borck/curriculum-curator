@@ -168,7 +168,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # Database
-DATABASE_URL=sqlite:///./curriculum_curator.db
+DATABASE_URL=sqlite:///./data/curriculum_curator.db
 
 # LLM API Keys
 OPENAI_API_KEY=sk-...
@@ -301,7 +301,7 @@ uv sync                    # Creates .venv and installs all deps (including ruff
 - Safe to drop/recreate database, modify schemas, break backwards compatibility
 - NO need for migrations, deprecation warnings, or backwards-compatible changes
 - When making breaking changes: just reset the database and start clean
-- Reset command: `rm backend/curriculum_curator.db && python backend/init_db.py`
+- Reset command: `rm backend/data/curriculum_curator.db && python backend/init_db.py`
 
 SQLAlchemy models are not implemented yet. When implementing:
 - Define models in `backend/app/models/`
