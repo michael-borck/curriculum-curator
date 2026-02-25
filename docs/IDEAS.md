@@ -57,6 +57,34 @@ domain objects, with zero FastAPI dependency.
 
 ---
 
+## Analytics
+
+### Auto-snapshot cleanup policy
+
+Daily auto-snapshots will accumulate over time. Consider adding a cleanup
+policy to thin out old auto-snapshots — e.g., keep daily for the last 30 days,
+then only weekly, then only monthly. Manual (labelled) snapshots would never
+be auto-deleted.
+
+**Key questions:**
+- What retention windows make sense? (30 days daily, 6 months weekly, forever monthly?)
+- Should this be a background task or run lazily when new snapshots are created?
+- User-configurable retention, or just sensible defaults?
+
+**Related:** `AnalyticsSnapshot` model, `snapshot_service.maybe_auto_snapshot()`
+
+---
+
+### Trend charts / sparklines
+
+Add visual trend lines showing how quality and UDL scores have changed over
+time, using the snapshot history. Could be sparklines on the dashboard or a
+dedicated trends view.
+
+**Related:** `SnapshotCompare.tsx`, snapshot API endpoints
+
+---
+
 ## Template
 
 Use this structure for new entries:

@@ -16,6 +16,7 @@ import { analyticsApi } from '../../services/unitStructureApi';
 import type { QualityScore, WeekQualityScore } from '../../types/unitStructure';
 import type { QualityMetricVisibility } from '../../types';
 import StarRating from '../shared/StarRating';
+import SnapshotCompare from './SnapshotCompare';
 import { useAILevel } from '../../hooks/useAILevel';
 import toast from 'react-hot-toast';
 
@@ -406,6 +407,9 @@ export const QualityDashboard: React.FC<QualityDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Score History & Comparison */}
+      <SnapshotCompare unitId={unitId} />
     </div>
   );
 };

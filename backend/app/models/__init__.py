@@ -13,6 +13,7 @@ from .accreditation_mappings import (
     ULOGraduateCapabilityMapping,
     UnitAoLMapping,
 )
+from .analytics_snapshot import AnalyticsSnapshot
 from .assessment import (
     Assessment,
     AssessmentCategory,
@@ -72,6 +73,8 @@ from .weekly_topic import WeeklyTopic, WeekType
 
 # ruff: noqa: RUF022
 __all__ = [
+    # Analytics snapshots
+    "AnalyticsSnapshot",
     # Common types
     "GUID",
     # Accreditation mappings
