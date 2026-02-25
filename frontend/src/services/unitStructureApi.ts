@@ -36,11 +36,17 @@ import {
   QualityScore,
   WeekQualityScore,
   BatchQualityScores,
+  BatchDashboardMetricsResponse,
 
   // UDL
   UDLUnitScore,
   UDLWeekScore,
   UDLSuggestionsResponse,
+
+  // Snapshots
+  SnapshotListItem,
+  SnapshotResponse,
+  SnapshotComparison,
 
   // Accreditation
   GraduateCapabilityMapping,
@@ -461,6 +467,16 @@ export const analyticsApi = {
     return response.data;
   },
 
+  getBatchDashboardMetrics: async (
+    unitIds: string[]
+  ): Promise<BatchDashboardMetricsResponse> => {
+    const response = await api.post(
+      `/analytics/units/batch-dashboard-metrics`,
+      { unit_ids: unitIds }
+    );
+    return response.data;
+  },
+
   validateUnit: async (unitId: string, strict = false): Promise<any> => {
     const response = await api.get(`/analytics/units/${unitId}/validation`, {
       params: { strict },
@@ -504,6 +520,48 @@ export const analyticsApi = {
     const response = await api.get(
       `/analytics/units/${unitId}/udl-suggestions`,
       { params: { total_weeks: totalWeeks, target_level: targetLevel } }
+    );
+    return response.data;
+  },
+
+  // Snapshot endpoints
+  listSnapshots: async (unitId: string): Promise<SnapshotListItem[]> => {
+    const response = await api.get(`/analytics/units/${unitId}/snapshots`);
+    return response.data;
+  },
+
+  createSnapshot: async (
+    unitId: string,
+    label?: string
+  ): Promise<SnapshotResponse> => {
+    const response = await api.post(`/analytics/units/${unitId}/snapshots`, {
+      label,
+    });
+    return response.data;
+  },
+
+  getSnapshot: async (
+    unitId: string,
+    snapshotId: string
+  ): Promise<SnapshotResponse> => {
+    const response = await api.get(
+      `/analytics/units/${unitId}/snapshots/${snapshotId}`
+    );
+    return response.data;
+  },
+
+  deleteSnapshot: async (unitId: string, snapshotId: string): Promise<void> => {
+    await api.delete(`/analytics/units/${unitId}/snapshots/${snapshotId}`);
+  },
+
+  compareSnapshots: async (
+    unitId: string,
+    aId: string,
+    bId: string
+  ): Promise<SnapshotComparison> => {
+    const response = await api.get(
+      `/analytics/units/${unitId}/snapshots/compare`,
+      { params: { a: aId, b: bId } }
     );
     return response.data;
   },

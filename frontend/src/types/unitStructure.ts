@@ -338,6 +338,16 @@ export interface BatchQualityScores {
   scores: Record<string, number>;
 }
 
+export interface DashboardMetrics {
+  qualityStars: number;
+  udlStars: number;
+  weeksWithContent: number;
+}
+
+export interface BatchDashboardMetricsResponse {
+  metrics: Record<string, DashboardMetrics>;
+}
+
 // ============= UDL (Universal Design for Learning) =============
 
 export interface UDLSubScores {
@@ -375,6 +385,57 @@ export interface UDLSuggestionsResponse {
   unitId: string;
   suggestions: UDLSuggestion[];
   generatedAt: string;
+}
+
+// ============= Analytics Snapshots =============
+
+export interface SnapshotCreate {
+  label?: string;
+}
+
+export interface SnapshotResponse {
+  id: string;
+  unitId: string;
+  label?: string;
+  isAuto: boolean;
+  qualityOverall: number;
+  qualityStarRating: number;
+  qualityGrade: string;
+  qualitySubScores: Record<string, number>;
+  udlOverall: number;
+  udlStarRating: number;
+  udlGrade: string;
+  udlSubScores: Record<string, number>;
+  materialCount: number;
+  assessmentCount: number;
+  uloCount: number;
+  weeksWithContent: number;
+  createdById?: string;
+  createdAt: string;
+}
+
+export interface SnapshotListItem {
+  id: string;
+  label?: string;
+  isAuto: boolean;
+  qualityOverall: number;
+  qualityStarRating: number;
+  qualityGrade: string;
+  udlOverall: number;
+  udlStarRating: number;
+  udlGrade: string;
+  createdAt: string;
+}
+
+export interface SnapshotComparison {
+  a: SnapshotResponse;
+  b: SnapshotResponse;
+  delta: {
+    qualityOverall: number;
+    udlOverall: number;
+    qualitySubScores: Record<string, number>;
+    udlSubScores: Record<string, number>;
+  };
 }
 
 // ============= Filters =============

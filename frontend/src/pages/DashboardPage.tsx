@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -27,6 +33,7 @@ import {
   Upload,
   Copy,
   Download,
+  ArrowUpDown,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -51,8 +58,30 @@ import {
   FormSelect,
 } from '../components/ui';
 import { useModal } from '../hooks';
+import { analyticsApi } from '../services/unitStructureApi';
+import StarRating from '../components/shared/StarRating';
+import type { DashboardMetrics } from '../types/unitStructure';
 
 import toast from 'react-hot-toast';
+
+type SortKey =
+  | 'name-asc'
+  | 'name-desc'
+  | 'quality-desc'
+  | 'udl-desc'
+  | 'completion-desc'
+  | 'updated-desc';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'name-asc', label: 'Name (A \u2192 Z)' },
+  { value: 'name-desc', label: 'Name (Z \u2192 A)' },
+  { value: 'quality-desc', label: 'Quality (highest)' },
+  { value: 'udl-desc', label: 'UDL (highest)' },
+  { value: 'completion-desc', label: 'Completion (most)' },
+  { value: 'updated-desc', label: 'Recently updated' },
+];
+
+const SORT_STORAGE_KEY = 'dashboard-sort-key';
 
 interface UnitFormData {
   title: string;
@@ -193,6 +222,14 @@ const DashboardPage = () => {
   >([]);
   const [archivedLoading, setArchivedLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  // Dashboard metrics & sorting
+  const [metrics, setMetrics] = useState<Record<string, DashboardMetrics>>({});
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>(
+    () =>
+      (localStorage.getItem(SORT_STORAGE_KEY) as SortKey | null) || 'name-asc'
+  );
 
   // Quick action state
   const [cloningId, setCloningId] = useState<string | null>(null);
@@ -339,6 +376,98 @@ const DashboardPage = () => {
   useEffect(() => {
     fetchUnits();
   }, [fetchUnits]);
+
+  // Fetch dashboard metrics when units load
+  const fetchMetrics = useCallback(async (unitIds: string[]) => {
+    if (unitIds.length === 0) return;
+    try {
+      setMetricsLoading(true);
+      const response = await analyticsApi.getBatchDashboardMetrics(unitIds);
+      setMetrics(prev => ({ ...prev, ...response.metrics }));
+    } catch {
+      // Metrics are non-critical — fail silently
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (units.length > 0) {
+      fetchMetrics(units.map(u => u.id));
+    }
+  }, [units, fetchMetrics]);
+
+  // Fetch archived metrics when expanded
+  useEffect(() => {
+    if (showArchived && archivedUnits.length > 0) {
+      const archivedIds = archivedUnits
+        .map(u => u.id)
+        .filter(id => !(id in metrics));
+      if (archivedIds.length > 0) {
+        fetchMetrics(archivedIds);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchived, archivedUnits]);
+
+  // Persist sort key
+  const handleSortChange = (key: SortKey) => {
+    setSortKey(key);
+    localStorage.setItem(SORT_STORAGE_KEY, key);
+  };
+
+  // Sort comparator
+  const sortUnits = useCallback(
+    <
+      T extends {
+        id: string;
+        title?: string;
+        code?: string;
+        updatedAt?: string;
+      },
+    >(
+      list: T[]
+    ): T[] => {
+      return [...list].sort((a, b) => {
+        const ma = metrics[a.id];
+        const mb = metrics[b.id];
+        switch (sortKey) {
+          case 'name-asc':
+            return (a.title || a.code || '').localeCompare(
+              b.title || b.code || ''
+            );
+          case 'name-desc':
+            return (b.title || b.code || '').localeCompare(
+              a.title || a.code || ''
+            );
+          case 'quality-desc':
+            return (mb?.qualityStars ?? 0) - (ma?.qualityStars ?? 0);
+          case 'udl-desc':
+            return (mb?.udlStars ?? 0) - (ma?.udlStars ?? 0);
+          case 'completion-desc':
+            return (mb?.weeksWithContent ?? 0) - (ma?.weeksWithContent ?? 0);
+          case 'updated-desc':
+            return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+          default:
+            return 0;
+        }
+      });
+    },
+    [sortKey, metrics]
+  );
+
+  const sortedRegularUnits = useMemo(
+    () => sortUnits(regularUnits),
+    [regularUnits, sortUnits]
+  );
+  const sortedQuickUnits = useMemo(
+    () => sortUnits(quickUnits),
+    [quickUnits, sortUnits]
+  );
+  const sortedArchivedUnits = useMemo(
+    () => sortUnits(archivedUnits),
+    [archivedUnits, sortUnits]
+  );
 
   const handlePresetClick = (preset: StructurePreset) => {
     setSelectedPreset(preset.id);
@@ -510,6 +639,62 @@ const DashboardPage = () => {
     );
   };
 
+  const MetricsRow: React.FC<{
+    unitId: string;
+    durationWeeks?: number | undefined;
+  }> = ({ unitId, durationWeeks = 12 }) => {
+    const m = metrics[unitId];
+    if (metricsLoading && !m) {
+      return (
+        <div className='flex items-center gap-4 mt-1.5'>
+          <div className='h-3.5 w-24 bg-gray-100 rounded animate-pulse' />
+          <div className='h-3.5 w-24 bg-gray-100 rounded animate-pulse' />
+          <div className='h-3.5 w-20 bg-gray-100 rounded animate-pulse' />
+        </div>
+      );
+    }
+    if (!m) return null;
+    const hasContent =
+      m.qualityStars > 0 || m.udlStars > 0 || m.weeksWithContent > 0;
+    if (!hasContent) {
+      return (
+        <div className='flex items-center gap-4 mt-1.5 text-xs text-gray-400'>
+          <span>No content yet</span>
+        </div>
+      );
+    }
+    const completionPct =
+      durationWeeks > 0
+        ? Math.min(100, Math.round((m.weeksWithContent / durationWeeks) * 100))
+        : 0;
+    return (
+      <div className='flex items-center gap-4 mt-1.5 text-xs text-gray-500'>
+        <span className='flex items-center gap-1' title='Quality'>
+          <StarRating rating={m.qualityStars} size='sm' />
+          <span className='text-gray-400'>Quality</span>
+        </span>
+        <span className='flex items-center gap-1' title='UDL'>
+          <StarRating rating={m.udlStars} size='sm' />
+          <span className='text-gray-400'>UDL</span>
+        </span>
+        <span
+          className='flex items-center gap-1.5'
+          title={`${m.weeksWithContent}/${durationWeeks} weeks with content`}
+        >
+          <span>
+            {m.weeksWithContent}/{durationWeeks}
+          </span>
+          <div className='w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden'>
+            <div
+              className='h-full bg-purple-500 rounded-full transition-all'
+              style={{ width: `${completionPct}%` }}
+            />
+          </div>
+        </span>
+      </div>
+    );
+  };
+
   if (loading) {
     return <LoadingState message='Loading units...' />;
   }
@@ -593,6 +778,26 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      {/* Sort Control */}
+      {(regularUnits.length > 0 || quickUnits.length > 0) && (
+        <div className='flex items-center justify-end mb-3'>
+          <div className='flex items-center gap-1.5 text-sm text-gray-500'>
+            <ArrowUpDown className='w-3.5 h-3.5' />
+            <select
+              value={sortKey}
+              onChange={e => handleSortChange(e.target.value as SortKey)}
+              className='text-sm border-none bg-transparent text-gray-600 cursor-pointer focus:ring-0 pr-6'
+            >
+              {SORT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Units List */}
       {regularUnits.length === 0 && quickUnits.length === 0 ? (
         <EmptyState
@@ -629,7 +834,7 @@ const DashboardPage = () => {
                 </h2>
               </div>
               <div className='divide-y divide-gray-200'>
-                {regularUnits.map(unit => (
+                {sortedRegularUnits.map(unit => (
                   <div
                     key={unit.id}
                     className='px-6 py-4 hover:bg-gray-50 cursor-pointer transition flex items-center justify-between'
@@ -661,6 +866,10 @@ const DashboardPage = () => {
                           </span>
                         )}
                       </div>
+                      <MetricsRow
+                        unitId={unit.id}
+                        durationWeeks={unit.durationWeeks}
+                      />
                     </div>
                     <div className='flex items-center gap-1 ml-4'>
                       <button
@@ -805,7 +1014,7 @@ const DashboardPage = () => {
               {showQuickContent && (
                 <div className='mt-3 bg-white rounded-lg border border-gray-200 shadow-sm'>
                   <div className='divide-y divide-gray-200'>
-                    {quickUnits.map(unit => (
+                    {sortedQuickUnits.map(unit => (
                       <div
                         key={unit.id}
                         className='px-6 py-3 hover:bg-gray-50 cursor-pointer transition flex items-center justify-between'
@@ -818,6 +1027,10 @@ const DashboardPage = () => {
                           <p className='text-xs text-gray-500 mt-0.5'>
                             {new Date(unit.createdAt).toLocaleDateString()}
                           </p>
+                          <MetricsRow
+                            unitId={unit.id}
+                            durationWeeks={unit.durationWeeks}
+                          />
                         </div>
                         <div className='flex items-center gap-2 ml-4'>
                           <button
@@ -870,7 +1083,7 @@ const DashboardPage = () => {
             ) : (
               <div className='bg-gray-50 rounded-lg border border-gray-200'>
                 <div className='divide-y divide-gray-200'>
-                  {archivedUnits.map(archivedUnit => (
+                  {sortedArchivedUnits.map(archivedUnit => (
                     <div
                       key={archivedUnit.id}
                       className='px-6 py-3 flex items-center justify-between opacity-70'
@@ -887,6 +1100,10 @@ const DashboardPage = () => {
                         <p className='text-sm text-gray-500 truncate'>
                           {archivedUnit.title}
                         </p>
+                        <MetricsRow
+                          unitId={archivedUnit.id}
+                          durationWeeks={archivedUnit.durationWeeks}
+                        />
                       </div>
                       <Button
                         variant='secondary'

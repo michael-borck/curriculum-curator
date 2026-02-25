@@ -18,6 +18,7 @@ from app.models.learning_outcome import (
     UnitLearningOutcome,
 )
 from app.models.weekly_material import MaterialStatus, WeeklyMaterial
+from app.services.udl_service import udl_service
 
 logger = logging.getLogger(__name__)
 
@@ -742,6 +743,48 @@ class AnalyticsService:
             except Exception:
                 logger.warning("Failed to calculate quality for unit %s", uid)
                 result[str(uid)] = 0.0
+        return result
+
+    async def calculate_batch_dashboard_metrics(
+        self,
+        db: Session,
+        unit_ids: list[UUID],
+    ) -> dict[str, dict[str, Any]]:
+        """Calculate dashboard metrics (quality, UDL, completion) for multiple units."""
+        result: dict[str, dict[str, Any]] = {}
+        for uid in unit_ids:
+            try:
+                # Quality stars
+                quality = await self.calculate_quality_score(db, uid)
+                quality_stars: float = quality["star_rating"]
+
+                # UDL stars
+                udl = await udl_service.calculate_unit_udl(db, uid)
+                udl_stars: float = udl["star_rating"]
+
+                # Weeks with content
+                weeks_with_content: int = (
+                    db.query(
+                        func.count(func.distinct(WeeklyMaterial.week_number))
+                    )
+                    .filter(WeeklyMaterial.unit_id == uid)
+                    .scalar()
+                ) or 0
+
+                result[str(uid)] = {
+                    "quality_stars": quality_stars,
+                    "udl_stars": udl_stars,
+                    "weeks_with_content": weeks_with_content,
+                }
+            except Exception:
+                logger.warning(
+                    "Failed to calculate dashboard metrics for unit %s", uid
+                )
+                result[str(uid)] = {
+                    "quality_stars": 0.0,
+                    "udl_stars": 0.0,
+                    "weeks_with_content": 0,
+                }
         return result
 
     async def validate_unit(

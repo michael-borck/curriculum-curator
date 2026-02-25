@@ -103,6 +103,20 @@ class BatchQualityResponse(CamelModel):
     scores: dict[str, float]
 
 
+class DashboardMetrics(CamelModel):
+    """Per-unit dashboard metrics"""
+
+    quality_stars: float = Field(ge=0, le=5)
+    udl_stars: float = Field(ge=0, le=5)
+    weeks_with_content: int
+
+
+class BatchDashboardMetricsResponse(CamelModel):
+    """Response for batch dashboard metrics"""
+
+    metrics: dict[str, DashboardMetrics]
+
+
 class ValidationResult(CamelModel):
     """Unit validation result"""
 
@@ -151,3 +165,58 @@ class ExportData(BaseModel):
     csv_ready: bool | None = None
     pdf_ready: bool | None = None
     notice: str | None = None
+
+
+# ============= Snapshot Schemas =============
+
+
+class SnapshotCreate(CamelModel):
+    """Request body for creating a manual snapshot"""
+
+    label: str | None = None
+
+
+class SnapshotResponse(CamelModel):
+    """Full snapshot response"""
+
+    id: str
+    unit_id: str
+    label: str | None = None
+    is_auto: bool
+    quality_overall: float
+    quality_star_rating: float
+    quality_grade: str
+    quality_sub_scores: dict[str, float]
+    udl_overall: float
+    udl_star_rating: float
+    udl_grade: str
+    udl_sub_scores: dict[str, float]
+    material_count: int
+    assessment_count: int
+    ulo_count: int
+    weeks_with_content: int
+    created_by_id: str | None = None
+    created_at: str
+
+
+class SnapshotListItem(CamelModel):
+    """Abbreviated snapshot for list views"""
+
+    id: str
+    label: str | None = None
+    is_auto: bool
+    quality_overall: float
+    quality_star_rating: float
+    quality_grade: str
+    udl_overall: float
+    udl_star_rating: float
+    udl_grade: str
+    created_at: str
+
+
+class SnapshotComparison(CamelModel):
+    """Comparison result between two snapshots"""
+
+    a: SnapshotResponse
+    b: SnapshotResponse
+    delta: dict[str, Any]
