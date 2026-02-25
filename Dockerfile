@@ -1,6 +1,11 @@
 # One Dockerfile for everything - build frontend, serve with backend
 FROM python:3.11-slim
 
+# OCI labels for GHCR metadata
+LABEL org.opencontainers.image.source="https://github.com/michael-borck/curriculum-curator"
+LABEL org.opencontainers.image.description="Curriculum Curator - AI-powered curriculum design tool"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Install Node.js 20, system deps, and document export tools (Pandoc + Typst)
 RUN apt-get update && apt-get install -y \
     curl \
@@ -90,5 +95,5 @@ EXPOSE 8000
 # Use entrypoint script to fix permissions then drop to appuser
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Run backend with reload to pick up changes
-CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Run backend (no --reload in production; use volume mounts + restart for dev)
+CMD [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,3 +1,6 @@
+# Local development compose — builds from source.
+# For VPS/production deployment using pre-built GHCR image, see deploy/docker-compose.yml
+
 services:
   app:
     build: .

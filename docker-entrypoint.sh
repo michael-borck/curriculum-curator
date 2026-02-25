@@ -4,11 +4,11 @@ set -e
 # Docker entrypoint script for Curriculum Curator
 # This ensures data directories exist and have correct permissions
 
-echo "🚀 Starting Curriculum Curator..."
+echo "Starting Curriculum Curator..."
 
 # Ensure data directories exist with correct permissions
-echo "📁 Checking data directories..."
-for dir in /app/backend/data /app/backend/uploads /app/backend/logs /app/backend/content_repo /app/backend/content_repos; do
+echo "Checking data directories..."
+for dir in /app/backend/data /app/backend/uploads /app/backend/logs /app/backend/content_repo /app/backend/content_repos /app/backend/user_templates; do
     if [ ! -d "$dir" ]; then
         echo "   Creating $dir"
         mkdir -p "$dir"
@@ -18,8 +18,14 @@ for dir in /app/backend/data /app/backend/uploads /app/backend/logs /app/backend
     chown -R appuser:appuser "$dir"
 done
 
-echo "✅ Data directories ready"
+echo "Data directories ready"
+
+# Run database migrations (as appuser so the DB file has correct ownership)
+echo "Running database migrations..."
+cd /app/backend
+gosu appuser .venv/bin/alembic upgrade head
+echo "Migrations complete"
 
 # Drop to non-root user and execute the CMD
-echo "👤 Switching to appuser and starting application..."
+echo "Starting application..."
 exec gosu appuser "$@"
