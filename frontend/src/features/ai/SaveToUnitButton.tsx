@@ -67,7 +67,7 @@ const SaveToUnitButton = ({
         contentType,
         body: messageContent,
       });
-      toast.success('Content saved to unit');
+      toast.success('Content saved');
       modal.close();
     } catch {
       toast.error('Failed to save content');
@@ -97,7 +97,7 @@ const SaveToUnitButton = ({
       await fetchUnits();
       await saveToUnit(newUnitId);
     } catch {
-      toast.error('Failed to create unit');
+      toast.error('Failed to create learning program');
     } finally {
       setCreatingUnit(false);
     }
@@ -116,7 +116,8 @@ const SaveToUnitButton = ({
           ) : (
             <Save className='h-3 w-3' />
           )}
-          Save to {effectiveUnitTitle ?? 'Unit'}
+          Save to{' '}
+          {effectiveUnitTitle ?? (ctx.activeUnitLabel || 'Learning Program')}
         </button>
         <select
           value={contentType}
@@ -134,21 +135,21 @@ const SaveToUnitButton = ({
       <Modal
         isOpen={modal.isOpen}
         onClose={modal.close}
-        title='Save to Unit'
+        title={`Save to ${ctx.activeUnitLabel || 'Learning Program'}`}
         size='sm'
       >
         <div className='space-y-4'>
           {/* Select existing unit */}
           <div>
             <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Select a unit
+              Select a learning program
             </label>
             <select
               value={selectedUnitId}
               onChange={e => setSelectedUnitId(e.target.value)}
               className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             >
-              <option value=''>Choose a unit...</option>
+              <option value=''>Choose...</option>
               {units.map(unit => (
                 <option key={unit.id} value={unit.id}>
                   {unit.code ? `${unit.code} - ` : ''}
@@ -182,14 +183,14 @@ const SaveToUnitButton = ({
           {/* Quick create new unit */}
           <div>
             <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Quick-create a new unit
+              Quick-create a new learning program
             </label>
             <input
               type='text'
               value={quickCreateTitle}
               onChange={e => setQuickCreateTitle(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleQuickCreate()}
-              placeholder='Unit title...'
+              placeholder='Title...'
               className='w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             />
             <button
@@ -202,7 +203,7 @@ const SaveToUnitButton = ({
               ) : (
                 <Plus className='h-4 w-4' />
               )}
-              Create Unit & Save
+              Create & Save
             </button>
           </div>
         </div>

@@ -37,7 +37,7 @@ import AssessmentDesignGuide from './pages/AssessmentDesignGuide';
 import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
-import TeachingStyleOnboarding from './components/onboarding/TeachingStyleOnboarding';
+import WelcomeOnboarding from './components/onboarding/WelcomeOnboarding';
 
 // Store
 import { useAuthStore } from './stores/authStore';
@@ -75,22 +75,21 @@ function App() {
   }, [initializeAuth]);
 
   const [showLogin, setShowLogin] = useState(false);
-  const [showTeachingStyleOnboarding, setShowTeachingStyleOnboarding] =
-    useState(false);
+  const [showWelcomeOnboarding, setShowWelcomeOnboarding] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
-  // Check if we should show teaching style onboarding
+  // Check if we should show welcome onboarding
   useEffect(() => {
     if (
       isAuthenticated &&
       user &&
-      !user.teachingPhilosophy &&
+      !user.educationSector &&
       !teachingStyleIsSet &&
       !onboardingDismissed
     ) {
       // Small delay to let the app load first
       const timer = window.setTimeout(() => {
-        setShowTeachingStyleOnboarding(true);
+        setShowWelcomeOnboarding(true);
       }, 500);
       return () => window.clearTimeout(timer);
     }
@@ -134,11 +133,11 @@ function App() {
     return (
       <Router>
         <Toaster position='top-right' />
-        {showTeachingStyleOnboarding && (
-          <TeachingStyleOnboarding
-            onComplete={() => setShowTeachingStyleOnboarding(false)}
+        {showWelcomeOnboarding && (
+          <WelcomeOnboarding
+            onComplete={() => setShowWelcomeOnboarding(false)}
             onSkip={() => {
-              setShowTeachingStyleOnboarding(false);
+              setShowWelcomeOnboarding(false);
               setOnboardingDismissed(true);
             }}
           />

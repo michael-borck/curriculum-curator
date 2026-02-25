@@ -99,6 +99,7 @@ class Unit(Base):
     )
     duration_weeks: Mapped[int] = mapped_column(Integer, default=12)
     topic_label: Mapped[str] = mapped_column(String(50), default="Week")
+    unit_label: Mapped[str] = mapped_column(String(50), default="Learning Program")
 
     # Ownership and access control
     owner_id: Mapped[str] = mapped_column(GUID(), ForeignKey("users.id"), index=True)

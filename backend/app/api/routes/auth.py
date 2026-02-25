@@ -580,6 +580,7 @@ async def update_profile(
         "department",
         "teaching_philosophy",
         "language_preference",
+        "education_sector",
     ):
         value = getattr(profile_data, field_name)
         if value is not None:

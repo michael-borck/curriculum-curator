@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { updateUnit } from '../../services/api';
 import { FormInput, FormSelect, FormTextarea, Button } from '../ui';
 import toast from 'react-hot-toast';
@@ -8,6 +8,8 @@ import type {
   QualityMetricVisibility,
   UDLMetricVisibility,
 } from '../../types';
+import { useAuthStore } from '../../stores/authStore';
+import { getSectorProfile } from '../../constants/sectorProfiles';
 
 interface UnitSettingsProps {
   unit: Unit;
@@ -71,6 +73,12 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 );
 
 const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
+  const { user } = useAuthStore();
+  const sector = useMemo(
+    () => getSectorProfile(user?.educationSector),
+    [user?.educationSector]
+  );
+
   const [year, setYear] = useState(unit.year);
   const [semester, setSemester] = useState(unit.semester);
   const [creditPoints, setCreditPoints] = useState(unit.creditPoints);
@@ -196,31 +204,37 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
           Academic Details
         </h3>
         <div className='space-y-4'>
-          <div className='grid grid-cols-2 gap-4'>
-            <FormInput
-              label='Year'
-              type='number'
-              min={2020}
-              max={2100}
-              value={year}
-              onChange={e => setYear(parseInt(e.target.value, 10))}
-            />
-            <FormSelect
-              label='Semester'
-              options={semesterOptions}
-              value={semester}
-              onChange={e => setSemester(e.target.value)}
-            />
-          </div>
-          <div className='grid grid-cols-2 gap-4'>
-            <FormInput
-              label='Credit Points'
-              type='number'
-              min={0}
-              max={500}
-              value={creditPoints}
-              onChange={e => setCreditPoints(parseInt(e.target.value, 10))}
-            />
+          {sector.showSemester && (
+            <div className='grid grid-cols-2 gap-4'>
+              <FormInput
+                label='Year'
+                type='number'
+                min={2020}
+                max={2100}
+                value={year}
+                onChange={e => setYear(parseInt(e.target.value, 10))}
+              />
+              <FormSelect
+                label='Semester'
+                options={semesterOptions}
+                value={semester}
+                onChange={e => setSemester(e.target.value)}
+              />
+            </div>
+          )}
+          <div
+            className={`grid ${sector.showCreditPoints ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}
+          >
+            {sector.showCreditPoints && (
+              <FormInput
+                label='Credit Points'
+                type='number'
+                min={0}
+                max={500}
+                value={creditPoints}
+                onChange={e => setCreditPoints(parseInt(e.target.value, 10))}
+              />
+            )}
             <FormInput
               label='Learning Hours'
               type='number'
@@ -243,41 +257,43 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
       </div>
 
       {/* Alignment & Accreditation */}
-      <div className='mb-8'>
-        <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-          Alignment & Accreditation
-        </h3>
-        <p className='text-sm text-gray-500 mb-4'>
-          Toggle which alignment and accreditation panels appear on the Outcomes
-          tab. Disable panels not relevant for this unit.
-        </p>
-        <div className='divide-y divide-gray-100'>
-          <ToggleSwitch
-            label='Custom Alignment Frameworks'
-            description='Create custom frameworks (PLOs, GRIT, ethics, etc.) and map ULOs to them'
-            checked={customFrameworks}
-            onChange={setCustomFrameworks}
-          />
-          <ToggleSwitch
-            label='Graduate Capabilities'
-            description='Map unit outcomes to institutional graduate capabilities'
-            checked={gradCaps}
-            onChange={setGradCaps}
-          />
-          <ToggleSwitch
-            label='AoL Mapping'
-            description='Assurance of Learning mapping for AACSB/EQUIS accreditation'
-            checked={aolMapping}
-            onChange={setAolMapping}
-          />
-          <ToggleSwitch
-            label='SDG Mapping'
-            description='UN Sustainable Development Goals alignment'
-            checked={sdgMapping}
-            onChange={setSdgMapping}
-          />
+      {sector.showAccreditation && (
+        <div className='mb-8'>
+          <h3 className='text-lg font-semibold text-gray-900 mb-1'>
+            Alignment & Accreditation
+          </h3>
+          <p className='text-sm text-gray-500 mb-4'>
+            Toggle which alignment and accreditation panels appear on the
+            Outcomes tab. Disable panels not relevant for this unit.
+          </p>
+          <div className='divide-y divide-gray-100'>
+            <ToggleSwitch
+              label='Custom Alignment Frameworks'
+              description='Create custom frameworks (PLOs, GRIT, ethics, etc.) and map ULOs to them'
+              checked={customFrameworks}
+              onChange={setCustomFrameworks}
+            />
+            <ToggleSwitch
+              label='Graduate Capabilities'
+              description='Map unit outcomes to institutional graduate capabilities'
+              checked={gradCaps}
+              onChange={setGradCaps}
+            />
+            <ToggleSwitch
+              label='AoL Mapping'
+              description='Assurance of Learning mapping for AACSB/EQUIS accreditation'
+              checked={aolMapping}
+              onChange={setAolMapping}
+            />
+            <ToggleSwitch
+              label='SDG Mapping'
+              description='UN Sustainable Development Goals alignment'
+              checked={sdgMapping}
+              onChange={setSdgMapping}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quality & UDL Metrics */}
       <div className='mb-8'>

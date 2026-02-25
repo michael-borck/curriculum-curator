@@ -13,6 +13,7 @@ export interface User {
   name: string;
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
   teachingPhilosophy?: string;
+  educationSector?: string | undefined;
   languagePreference?: string;
   teachingPreferences?: {
     aiAssistLevel?: AIAssistLevel;
@@ -79,6 +80,7 @@ export interface Unit {
   difficultyLevel: string;
   durationWeeks: number;
   topicLabel: string;
+  unitLabel: string;
   creditPoints: number;
   prerequisites?: string;
   learningHours?: number;

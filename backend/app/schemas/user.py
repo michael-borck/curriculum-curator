@@ -47,6 +47,7 @@ class ProfileUpdateRequest(CamelModel):
     department: str | None = None
     teaching_philosophy: str | None = None
     language_preference: str | None = None
+    education_sector: str | None = None
     teaching_preferences: dict[str, Any] | None = None
 
 
@@ -60,6 +61,7 @@ class UserResponse(UserBase):
     institution: str | None = None
     department: str | None = None
     teaching_philosophy: str | None = None
+    education_sector: str | None = None
     teaching_preferences: dict[str, Any] | None = None
     created_at: datetime | str
 

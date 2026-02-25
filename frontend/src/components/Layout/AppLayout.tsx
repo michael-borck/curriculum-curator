@@ -198,19 +198,19 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
             }`}
           >
             <Home className='w-5 h-5 flex-shrink-0' />
-            <span>Dashboard</span>
+            <span>Portfolio</span>
           </button>
 
           {/* Units Section */}
           <div className='mt-6 px-4'>
             <div className='flex items-center justify-between mb-2'>
               <span className='text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                My Units
+                My Learning Programs
               </span>
               <button
                 onClick={() => navigate('/units/new')}
                 className='p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded'
-                title='Create New Unit'
+                title='Create New Learning Program'
               >
                 <Plus className='w-4 h-4' />
               </button>
@@ -223,7 +223,7 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
               <div className='px-4 py-2 text-gray-500 text-sm'>Loading...</div>
             ) : units.length === 0 ? (
               <div className='px-4 py-2 text-gray-500 text-sm'>
-                No units yet
+                No learning programs yet
               </div>
             ) : (
               units.map(unit => (

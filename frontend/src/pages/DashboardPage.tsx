@@ -47,6 +47,8 @@ import {
 } from '../services/api';
 import { downloadExport } from '../utils/downloadExport';
 import { useUnitsStore } from '../stores/unitsStore';
+import { useAuthStore } from '../stores/authStore';
+import { getSectorProfile } from '../constants/sectorProfiles';
 import {
   Modal,
   Alert,
@@ -91,17 +93,24 @@ interface UnitFormData {
   difficultyLevel: string;
   durationWeeks: number;
   topicLabel: string;
+  unitLabel: string;
 }
 
-const initialFormData: UnitFormData = {
-  title: '',
-  code: '',
-  description: '',
-  pedagogyType: 'inquiry-based',
-  difficultyLevel: 'intermediate',
-  durationWeeks: 12,
-  topicLabel: 'Week',
-};
+function makeInitialFormData(
+  sectorId?: string | null | undefined
+): UnitFormData {
+  const profile = getSectorProfile(sectorId);
+  return {
+    title: '',
+    code: '',
+    description: '',
+    pedagogyType: 'inquiry-based',
+    difficultyLevel: 'intermediate',
+    durationWeeks: profile.duration,
+    topicLabel: profile.topicLabel,
+    unitLabel: profile.unitLabel,
+  };
+}
 
 const pedagogyOptions = [
   { value: 'inquiry-based', label: 'Inquiry Based' },
@@ -125,6 +134,7 @@ interface StructurePreset {
   id: string;
   label: string;
   topicLabel: string | null;
+  unitLabel: string | null;
   duration: number | null;
   accreditationDefaults: boolean;
   tooltip: string;
@@ -135,6 +145,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     id: 'semester',
     label: 'Semester',
     topicLabel: 'Week',
+    unitLabel: 'Unit',
     duration: 12,
     accreditationDefaults: true,
     tooltip: 'Standard 12-week university semester',
@@ -143,14 +154,25 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     id: 'trimester',
     label: 'Trimester',
     topicLabel: 'Week',
+    unitLabel: 'Unit',
     duration: 10,
     accreditationDefaults: true,
     tooltip: '10-week trimester format',
   },
   {
+    id: 'term',
+    label: 'Term',
+    topicLabel: 'Lesson',
+    unitLabel: 'Subject',
+    duration: 10,
+    accreditationDefaults: false,
+    tooltip: 'Standard 10-week school term',
+  },
+  {
     id: 'intensive',
     label: 'Intensive',
     topicLabel: 'Day',
+    unitLabel: 'Program',
     duration: 5,
     accreditationDefaults: false,
     tooltip: 'Short block delivery over 5 days',
@@ -159,6 +181,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     id: 'workshop',
     label: 'Workshop',
     topicLabel: 'Session',
+    unitLabel: 'Workshop',
     duration: 4,
     accreditationDefaults: false,
     tooltip: '4 focused practical sessions',
@@ -167,6 +190,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     id: 'self-paced',
     label: 'Self-paced',
     topicLabel: 'Module',
+    unitLabel: 'Program',
     duration: 6,
     accreditationDefaults: false,
     tooltip: '6 self-study modules, no fixed schedule',
@@ -175,6 +199,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     id: 'custom',
     label: 'Custom',
     topicLabel: null,
+    unitLabel: null,
     duration: null,
     accreditationDefaults: true,
     tooltip: 'Set your own duration and labels',
@@ -203,8 +228,22 @@ const DashboardPage = () => {
   const { units, loading, fetchUnits, addUnit, removeUnit, invalidate } =
     useUnitsStore();
 
-  const [newUnit, setNewUnit] = useState<UnitFormData>(initialFormData);
-  const [selectedPreset, setSelectedPreset] = useState('semester');
+  const { user } = useAuthStore();
+  const sectorProfile = useMemo(
+    () => getSectorProfile(user?.educationSector),
+    [user?.educationSector]
+  );
+  const filteredPresets = useMemo(
+    () => STRUCTURE_PRESETS.filter(p => sectorProfile.presets.includes(p.id)),
+    [sectorProfile]
+  );
+
+  const [newUnit, setNewUnit] = useState<UnitFormData>(() =>
+    makeInitialFormData(user?.educationSector)
+  );
+  const [selectedPreset, setSelectedPreset] = useState(() =>
+    filteredPresets.length > 0 ? filteredPresets[0].id : 'semester'
+  );
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -483,6 +522,7 @@ const DashboardPage = () => {
         ...prev,
         durationWeeks: preset.duration!,
         topicLabel: preset.topicLabel!,
+        unitLabel: preset.unitLabel!,
       }));
     }
   };
@@ -504,12 +544,17 @@ const DashboardPage = () => {
       };
 
       const response = await createUnitApi(unitData);
-      toast.success('Unit created successfully');
+      toast.success(
+        `${newUnit.unitLabel || 'Learning Program'} created successfully`
+      );
       createModal.close();
 
       const createdId = response.data.id as string;
       const activePreset = STRUCTURE_PRESETS.find(p => p.id === selectedPreset);
-      if (activePreset && !activePreset.accreditationDefaults) {
+      const disableAccreditation =
+        (activePreset && !activePreset.accreditationDefaults) ||
+        !sectorProfile.showAccreditation;
+      if (disableAccreditation) {
         // Fire-and-forget: disable accreditation toggles for non-formal presets
         updateUnitApi(createdId, {
           unitMetadata: {
@@ -588,8 +633,10 @@ const DashboardPage = () => {
   };
 
   const resetForm = () => {
-    setNewUnit(initialFormData);
-    setSelectedPreset('semester');
+    setNewUnit(makeInitialFormData(user?.educationSector));
+    setSelectedPreset(
+      filteredPresets.length > 0 ? filteredPresets[0].id : 'semester'
+    );
     setError(null);
   };
 
@@ -606,16 +653,16 @@ const DashboardPage = () => {
       : 'this unit';
 
     const confirmed = window.confirm(
-      `Remove ${unitName} from the dashboard?\n\n` +
+      `Remove ${unitName} from the portfolio?\n\n` +
         'All data and version history will be preserved. ' +
-        'You can restore it later from the archived units section.'
+        'You can restore it later from the archived section.'
     );
 
     if (confirmed) {
       try {
         await deleteUnitApi(unitId, false);
         removeUnit(unitId);
-        toast.success('Unit removed from dashboard');
+        toast.success('Removed from portfolio');
       } catch {
         toast.error('Failed to remove unit');
       }
@@ -711,9 +758,9 @@ const DashboardPage = () => {
       {/* Header */}
       <div className='flex justify-between items-start mb-8'>
         <div>
-          <h1 className='text-3xl font-bold text-gray-900'>Dashboard</h1>
+          <h1 className='text-3xl font-bold text-gray-900'>Portfolio</h1>
           <p className='text-gray-600 mt-2'>
-            Manage your units and curriculum content
+            Manage your learning programs and curriculum content
           </p>
         </div>
         <div className='flex items-center gap-3'>
@@ -730,7 +777,7 @@ const DashboardPage = () => {
           </Button>
           <Button onClick={openCreateModal}>
             <Plus className='h-5 w-5 mr-2' />
-            New Unit
+            New Learning Program
           </Button>
         </div>
       </div>
@@ -756,7 +803,7 @@ const DashboardPage = () => {
             <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <p className='text-sm text-gray-500'>Total Units</p>
+                  <p className='text-sm text-gray-500'>Total Programs</p>
                   <p className='text-2xl font-bold text-gray-900'>
                     {units.length}
                   </p>
@@ -848,25 +895,25 @@ const DashboardPage = () => {
       {regularUnits.length === 0 && quickUnits.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title='No Units Yet'
-          description='Create your first unit to start building your curriculum. Each unit represents a subject you teach for a semester.'
-          actionLabel='Create Your First Unit'
+          title='No Learning Programs Yet'
+          description='Create your first learning program to start building your curriculum. Choose a preset that matches your teaching context.'
+          actionLabel='Create Your First Learning Program'
           onAction={openCreateModal}
           tips={[
             {
-              title: 'Start with unit basics',
+              title: 'Start with the basics',
               description:
-                'Add your unit code, title, and duration. You can refine details later.',
+                'Add a code, title, and duration. You can refine details later.',
             },
             {
               title: 'Build your schedule',
               description:
-                'Once created, structure your weeks with topics, learning outcomes, and materials.',
+                'Once created, structure your content with topics, learning outcomes, and materials.',
             },
             {
               title: 'Create content',
               description:
-                'Write, import, research, or generate materials for each week aligned with your teaching style.',
+                'Write, import, research, or generate materials aligned with your teaching style.',
             },
           ]}
         />
@@ -876,7 +923,7 @@ const DashboardPage = () => {
             <div className='bg-white rounded-lg shadow-sm border border-gray-200'>
               <div className='px-6 py-4 border-b border-gray-200'>
                 <h2 className='text-lg font-semibold text-gray-900'>
-                  My Units
+                  My Learning Programs
                 </h2>
               </div>
               <div className='divide-y divide-gray-200'>
@@ -1029,7 +1076,7 @@ const DashboardPage = () => {
                       <button
                         onClick={e => deleteUnit(unit.id, e)}
                         className='p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition'
-                        title='Remove from Dashboard'
+                        title='Remove from Portfolio'
                       >
                         <Trash2 className='h-4 w-4' />
                       </button>
@@ -1173,7 +1220,7 @@ const DashboardPage = () => {
       <Modal
         isOpen={createModal.isOpen}
         onClose={createModal.close}
-        title='Create New Unit'
+        title={`Create New ${newUnit.unitLabel || 'Learning Program'}`}
         size='lg'
       >
         {error && (
@@ -1188,7 +1235,7 @@ const DashboardPage = () => {
 
         <div className='space-y-4'>
           <FormInput
-            label='Unit Title'
+            label={`${newUnit.unitLabel || 'Learning Program'} Title`}
             required
             value={newUnit.title}
             onChange={e => updateField('title', e.target.value)}
@@ -1196,11 +1243,11 @@ const DashboardPage = () => {
           />
 
           <FormInput
-            label='Unit Code'
+            label={sectorProfile.codeLabel}
             required
             value={newUnit.code}
             onChange={e => updateField('code', e.target.value)}
-            placeholder='e.g., CS101'
+            placeholder={sectorProfile.codePlaceholder}
           />
 
           <FormTextarea
@@ -1216,7 +1263,7 @@ const DashboardPage = () => {
               Structure
             </label>
             <div className='flex flex-wrap gap-2'>
-              {STRUCTURE_PRESETS.map(preset => (
+              {filteredPresets.map(preset => (
                 <button
                   key={preset.id}
                   type='button'
@@ -1233,7 +1280,7 @@ const DashboardPage = () => {
               ))}
             </div>
             {selectedPreset === 'custom' ? (
-              <div className='grid grid-cols-2 gap-3 mt-3'>
+              <div className='grid grid-cols-3 gap-3 mt-3'>
                 <FormInput
                   label='Duration'
                   type='number'
@@ -1250,6 +1297,13 @@ const DashboardPage = () => {
                   value={newUnit.topicLabel}
                   onChange={e => updateField('topicLabel', e.target.value)}
                   placeholder='e.g. Week, Module, Session'
+                />
+                <FormInput
+                  label='Label'
+                  type='text'
+                  value={newUnit.unitLabel}
+                  onChange={e => updateField('unitLabel', e.target.value)}
+                  placeholder='e.g. Unit, Workshop, Program'
                 />
               </div>
             ) : (
@@ -1287,7 +1341,7 @@ const DashboardPage = () => {
             Create and Import
           </Button>
           <Button onClick={handleCreate} loading={creating}>
-            Create Unit
+            Create {newUnit.unitLabel || 'Learning Program'}
           </Button>
         </div>
       </Modal>

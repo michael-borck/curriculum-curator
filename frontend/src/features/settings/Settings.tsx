@@ -22,6 +22,8 @@ import { getPlugins, updatePluginConfig } from '../../services/api';
 import type { PluginInfo } from '../../services/api';
 import LLMSettings from './LLMSettings';
 import TeachingStyleSettings from './TeachingStyleSettings';
+import { SECTOR_PROFILES } from '../../constants/sectorProfiles';
+import type { SectorId } from '../../constants/sectorProfiles';
 import QualityRatingSettings from './QualityRatingSettings';
 import ResearchSettings from './ResearchSettings';
 import ExportTemplates from './ExportTemplates';
@@ -38,6 +40,7 @@ const Settings = () => {
     institution: '',
     department: '',
     bio: '',
+    educationSector: user?.educationSector || '',
   });
 
   const [preferences, setPreferences] = useState({
@@ -102,6 +105,16 @@ const Settings = () => {
     try {
       setSaving(true);
       await api.patch('/auth/profile', profileData);
+      // Update auth store so the rest of the app reflects changes immediately
+      if (user) {
+        useAuthStore.setState({
+          user: {
+            ...user,
+            name: profileData.name,
+            educationSector: profileData.educationSector || undefined,
+          },
+        });
+      }
       setSaved(true);
       window.setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -276,6 +289,32 @@ const Settings = () => {
                       placeholder='e.g., Computer Science'
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>
+                    Education Sector
+                  </label>
+                  <select
+                    value={profileData.educationSector}
+                    onChange={e =>
+                      setProfileData({
+                        ...profileData,
+                        educationSector: e.target.value,
+                      })
+                    }
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                  >
+                    <option value=''>Not set</option>
+                    {(Object.keys(SECTOR_PROFILES) as SectorId[]).map(id => (
+                      <option key={id} value={id}>
+                        {SECTOR_PROFILES[id].label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className='text-xs text-gray-500 mt-1'>
+                    Controls default labels and presets for new units
+                  </p>
                 </div>
 
                 <div>

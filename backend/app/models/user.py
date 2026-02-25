@@ -72,6 +72,7 @@ class User(Base):
         String(50), default=TeachingPhilosophy.MIXED_APPROACH.value
     )
     language_preference: Mapped[str] = mapped_column(String(10), default="en-AU")
+    education_sector: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # JSON fields for flexible configuration
     teaching_preferences: Mapped[dict[str, Any] | None] = mapped_column(

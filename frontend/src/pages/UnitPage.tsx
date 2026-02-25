@@ -215,6 +215,7 @@ const UnitPage = () => {
         title: unit.title,
         code: unit.code,
         topicLabel: unit.topicLabel,
+        unitLabel: unit.unitLabel,
       });
     }
   }, [unit]);
@@ -271,7 +272,7 @@ const UnitPage = () => {
     try {
       setDeleting(true);
       await deleteUnitApi(unitId, false);
-      toast.success('Unit removed from dashboard');
+      toast.success('Removed from portfolio');
       navigate('/');
     } catch (err) {
       toast.error('Failed to remove unit');
@@ -462,7 +463,7 @@ const UnitPage = () => {
         <Alert variant='error'>{error || 'Unit not found'}</Alert>
         <Button className='mt-4' onClick={() => navigate('/')}>
           <ArrowLeft className='w-4 h-4 mr-2' />
-          Back to Dashboard
+          Back to Portfolio
         </Button>
       </div>
     );
@@ -897,11 +898,11 @@ const UnitPage = () => {
           {/* Option A: Soft Delete (primary, safe) */}
           <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
             <p className='text-sm font-medium text-blue-900'>
-              Remove from Dashboard
+              Remove from Portfolio
             </p>
             <p className='text-sm text-blue-700 mt-1'>
-              Hides this unit from the dashboard. All data and version history
-              is preserved. You can restore it later from the archived units
+              Hides this from the portfolio. All data and version history is
+              preserved. You can restore it later from the archived units
               section.
             </p>
             <div className='mt-3'>
@@ -910,7 +911,7 @@ const UnitPage = () => {
                 loading={deleting && !showPermanentDelete}
                 className='bg-blue-600 hover:bg-blue-700'
               >
-                Remove from Dashboard
+                Remove from Portfolio
               </Button>
             </div>
           </div>

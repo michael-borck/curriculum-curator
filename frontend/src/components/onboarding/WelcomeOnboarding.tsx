@@ -12,12 +12,31 @@ import {
   Puzzle,
   FlaskRoundIcon as Flask,
   CheckCircle,
+  School,
+  Wrench,
+  GraduationCap,
+  Building2,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTeachingStyleStore } from '../../stores/teachingStyleStore';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import type { PedagogyType } from '../../types';
+import {
+  SECTOR_PROFILES,
+  getSectorProfile,
+} from '../../constants/sectorProfiles';
+import type { SectorId } from '../../constants/sectorProfiles';
+import type { LucideIcon } from 'lucide-react';
+
+const sectorCards: { id: SectorId; icon: LucideIcon }[] = [
+  { id: 'k12', icon: School },
+  { id: 'vet', icon: Wrench },
+  { id: 'higher_ed', icon: GraduationCap },
+  { id: 'corporate', icon: Building2 },
+  { id: 'other', icon: MoreHorizontal },
+];
 
 const teachingStyles = [
   {
@@ -138,20 +157,18 @@ const questions = [
   },
 ];
 
-type Mode = 'CHOICE' | 'QUIZ' | 'SELECT';
+type Step = 'SECTOR' | 'STYLE_CHOICE' | 'QUIZ' | 'SELECT';
 
-interface TeachingStyleOnboardingProps {
+interface WelcomeOnboardingProps {
   onComplete: () => void;
   onSkip: () => void;
 }
 
-const TeachingStyleOnboarding = ({
-  onComplete,
-  onSkip,
-}: TeachingStyleOnboardingProps) => {
+const WelcomeOnboarding = ({ onComplete, onSkip }: WelcomeOnboardingProps) => {
   const { user } = useAuthStore();
   const { setGlobalStyle } = useTeachingStyleStore();
-  const [mode, setMode] = useState<Mode>('CHOICE');
+  const [step, setStep] = useState<Step>('SECTOR');
+  const [selectedSector, setSelectedSector] = useState<SectorId>('higher_ed');
   const [selectedStyle, setSelectedStyle] =
     useState<PedagogyType>('inquiry-based');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -165,7 +182,6 @@ const TeachingStyleOnboarding = ({
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
-      // Calculate and save
       const styleCounts: Record<string, number> = {};
       Object.values(newAnswers).forEach(style => {
         styleCounts[style] = (styleCounts[style] || 0) + 1;
@@ -175,39 +191,45 @@ const TeachingStyleOnboarding = ({
         ([, count]) => count === maxCount
       )?.[0] as PedagogyType;
 
-      saveTeachingStyle(recommended || 'inquiry-based');
+      saveProfile(recommended || 'inquiry-based');
     }
   };
 
-  const saveTeachingStyle = async (style: PedagogyType) => {
+  const saveProfile = async (style: PedagogyType) => {
     try {
       setSaving(true);
       await api.patch('/auth/profile', {
+        educationSector: selectedSector,
         teachingPhilosophy: style,
       });
       setGlobalStyle(style);
       if (user) {
         useAuthStore.setState({
-          user: { ...user, teachingPhilosophy: style },
+          user: {
+            ...user,
+            educationSector: selectedSector,
+            teachingPhilosophy: style,
+          },
         });
       }
+      const sectorProfile = getSectorProfile(selectedSector);
       toast.success(
-        `Teaching style set to ${teachingStyles.find(s => s.id === style)?.name}!`
+        `Welcome! Set up as ${sectorProfile.label} with ${teachingStyles.find(s => s.id === style)?.name} style.`
       );
       onComplete();
     } catch (error) {
-      console.error('Error saving teaching style:', error);
-      toast.error('Failed to save teaching style');
+      console.error('Error saving profile:', error);
+      toast.error('Failed to save profile');
     } finally {
       setSaving(false);
     }
   };
 
-  // Choice screen
-  if (mode === 'CHOICE') {
+  // Step 1: Sector selection
+  if (step === 'SECTOR') {
     return (
       <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
-        <div className='bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 relative animate-in fade-in zoom-in duration-300'>
+        <div className='bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative animate-in fade-in zoom-in duration-300'>
           <button
             onClick={onSkip}
             className='absolute top-4 right-4 text-gray-400 hover:text-gray-600'
@@ -223,14 +245,94 @@ const TeachingStyleOnboarding = ({
               Welcome to Curriculum Curator!
             </h2>
             <p className='text-gray-600'>
-              Let&apos;s personalise your experience. Your teaching style helps
-              our AI generate content that matches your pedagogical approach.
+              What education sector do you work in? This helps us set sensible
+              defaults for labels, structure, and features.
+            </p>
+          </div>
+
+          <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6'>
+            {sectorCards.map(({ id, icon: Icon }) => {
+              const profile = SECTOR_PROFILES[id];
+              const isSelected = selectedSector === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedSector(id)}
+                  className={`text-left p-4 border-2 rounded-xl transition-all ${
+                    isSelected
+                      ? 'ring-2 ring-purple-500 border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                  }`}
+                >
+                  <div className='flex items-center gap-3 mb-1'>
+                    <div
+                      className={`p-2 rounded-lg ${isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                    >
+                      <Icon className='h-5 w-5' />
+                    </div>
+                    <span className='font-medium text-gray-900 text-sm'>
+                      {profile.label}
+                    </span>
+                    {isSelected && (
+                      <CheckCircle className='h-4 w-4 text-purple-500 ml-auto' />
+                    )}
+                  </div>
+                  <p className='text-xs text-gray-500 ml-12'>
+                    {profile.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className='flex justify-between items-center'>
+            <button
+              onClick={onSkip}
+              className='text-sm text-gray-400 hover:text-gray-600'
+            >
+              Skip for now
+            </button>
+            <button
+              onClick={() => setStep('STYLE_CHOICE')}
+              className='px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2'
+            >
+              Continue
+              <ArrowRight className='w-4 h-4' />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2a: Teaching style choice (quiz or select)
+  if (step === 'STYLE_CHOICE') {
+    return (
+      <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'>
+        <div className='bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 relative animate-in fade-in zoom-in duration-300'>
+          <button
+            onClick={onSkip}
+            className='absolute top-4 right-4 text-gray-400 hover:text-gray-600'
+          >
+            <X className='w-5 h-5' />
+          </button>
+
+          <div className='text-center mb-8'>
+            <div className='inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4'>
+              <Sparkles className='w-8 h-8 text-purple-600' />
+            </div>
+            <h2 className='text-2xl font-bold text-gray-900 mb-2'>
+              Your Teaching Style
+            </h2>
+            <p className='text-gray-600'>
+              Your teaching style helps our AI generate content that matches
+              your pedagogical approach.
             </p>
           </div>
 
           <div className='space-y-4'>
             <button
-              onClick={() => setMode('QUIZ')}
+              onClick={() => setStep('QUIZ')}
               className='w-full p-5 text-left border-2 border-purple-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all group'
             >
               <div className='flex items-center gap-4'>
@@ -250,7 +352,7 @@ const TeachingStyleOnboarding = ({
             </button>
 
             <button
-              onClick={() => setMode('SELECT')}
+              onClick={() => setStep('SELECT')}
               className='w-full p-5 text-left border-2 border-gray-200 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all group'
             >
               <div className='flex items-center gap-4'>
@@ -270,19 +372,27 @@ const TeachingStyleOnboarding = ({
             </button>
           </div>
 
-          <button
-            onClick={onSkip}
-            className='w-full mt-6 text-sm text-gray-400 hover:text-gray-600'
-          >
-            Skip for now - I&apos;ll set this later
-          </button>
+          <div className='flex justify-between items-center mt-6'>
+            <button
+              onClick={() => setStep('SECTOR')}
+              className='text-sm text-gray-500 hover:text-gray-700'
+            >
+              Back
+            </button>
+            <button
+              onClick={onSkip}
+              className='text-sm text-gray-400 hover:text-gray-600'
+            >
+              Skip for now
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Quiz mode
-  if (mode === 'QUIZ') {
+  // Step 2b: Quiz mode
+  if (step === 'QUIZ') {
     const question = questions[currentQuestion];
 
     return (
@@ -295,7 +405,7 @@ const TeachingStyleOnboarding = ({
               </span>
               <button
                 onClick={() => {
-                  setMode('CHOICE');
+                  setStep('STYLE_CHOICE');
                   setCurrentQuestion(0);
                   setAnswers({});
                 }}
@@ -349,7 +459,7 @@ const TeachingStyleOnboarding = ({
     );
   }
 
-  // Manual selection mode
+  // Step 2c: Manual selection mode
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto'>
       <div className='bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 relative my-8 animate-in fade-in duration-200'>
@@ -358,7 +468,7 @@ const TeachingStyleOnboarding = ({
             Select Your Teaching Style
           </h2>
           <button
-            onClick={() => setMode('CHOICE')}
+            onClick={() => setStep('STYLE_CHOICE')}
             className='text-sm text-gray-400 hover:text-gray-600'
           >
             Back
@@ -405,7 +515,7 @@ const TeachingStyleOnboarding = ({
             Skip for now
           </button>
           <button
-            onClick={() => saveTeachingStyle(selectedStyle)}
+            onClick={() => saveProfile(selectedStyle)}
             disabled={saving}
             className='px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50'
           >
@@ -417,4 +527,4 @@ const TeachingStyleOnboarding = ({
   );
 };
 
-export default TeachingStyleOnboarding;
+export default WelcomeOnboarding;

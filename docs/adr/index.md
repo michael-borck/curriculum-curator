@@ -72,7 +72,9 @@ An Architecture Decision Record captures an important architectural decision mad
 | [058](058-prompt-template-library.md) | Prompt Template Library | Accepted |
 | [059](059-week-aware-ai-context-and-source-grounding.md) | Week-Aware AI Context & Source Grounding | Accepted |
 | [060](060-analytics-snapshot-storage.md) | Analytics Snapshot Storage | Accepted |
-| [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
+| [061](061-transparent-import-reporting.md) | Transparent Import Reporting (No Silent Drops) | Accepted |
+| [062](062-education-sector-profiles.md) | Education Sector Profiles | Accepted |
+| [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Accepted |
 
 ### Foundation
 - [ADR-001: Record Architecture Decisions](001-record-architecture-decisions.md) - Why we use ADRs

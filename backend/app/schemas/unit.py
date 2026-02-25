@@ -62,6 +62,7 @@ class UnitCreate(CamelModel):
     difficulty_level: DifficultyLevel = DifficultyLevel.INTERMEDIATE
     duration_weeks: int = Field(12, ge=1, le=52)
     topic_label: str = Field("Week", min_length=1, max_length=50)
+    unit_label: str = Field("Learning Program", min_length=1, max_length=50)
 
 
 class UnitUpdate(CamelModel):
@@ -77,6 +78,7 @@ class UnitUpdate(CamelModel):
     difficulty_level: DifficultyLevel | None = None
     duration_weeks: int | None = Field(None, ge=1, le=52)
     topic_label: str | None = Field(None, min_length=1, max_length=50)
+    unit_label: str | None = Field(None, min_length=1, max_length=50)
     credit_points: int | None = Field(None, ge=0, le=500)
     prerequisites: str | None = None
     learning_hours: int | None = Field(None, ge=0, le=10000)
@@ -98,6 +100,7 @@ class UnitResponse(CamelModel):
     semester: str | None = None
     duration_weeks: int
     topic_label: str = "Week"
+    unit_label: str = "Learning Program"
     credit_points: int = 6
     prerequisites: str | None = None
     learning_hours: int | None = None
