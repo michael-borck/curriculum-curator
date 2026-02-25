@@ -127,6 +127,7 @@ interface StructurePreset {
   topicLabel: string | null;
   duration: number | null;
   accreditationDefaults: boolean;
+  tooltip: string;
 }
 
 const STRUCTURE_PRESETS: StructurePreset[] = [
@@ -136,6 +137,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: 'Week',
     duration: 12,
     accreditationDefaults: true,
+    tooltip: 'Standard 12-week university semester',
   },
   {
     id: 'trimester',
@@ -143,6 +145,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: 'Week',
     duration: 10,
     accreditationDefaults: true,
+    tooltip: '10-week trimester format',
   },
   {
     id: 'intensive',
@@ -150,6 +153,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: 'Day',
     duration: 5,
     accreditationDefaults: false,
+    tooltip: 'Short block delivery over 5 days',
   },
   {
     id: 'workshop',
@@ -157,6 +161,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: 'Session',
     duration: 4,
     accreditationDefaults: false,
+    tooltip: '4 focused practical sessions',
   },
   {
     id: 'self-paced',
@@ -164,6 +169,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: 'Module',
     duration: 6,
     accreditationDefaults: false,
+    tooltip: '6 self-study modules, no fixed schedule',
   },
   {
     id: 'custom',
@@ -171,6 +177,7 @@ const STRUCTURE_PRESETS: StructurePreset[] = [
     topicLabel: null,
     duration: null,
     accreditationDefaults: true,
+    tooltip: 'Set your own duration and labels',
   },
 ];
 
@@ -1175,6 +1182,7 @@ const DashboardPage = () => {
                   key={preset.id}
                   type='button'
                   onClick={() => handlePresetClick(preset)}
+                  title={preset.tooltip}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${
                     selectedPreset === preset.id
                       ? 'bg-purple-600 text-white'
