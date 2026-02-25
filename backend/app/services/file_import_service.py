@@ -1212,7 +1212,6 @@ class FileImportService:
 
         return suggested_structure
 
-
     def strip_pptx_to_template(self, file_content: bytes) -> bytes:
         """Strip all content slides from a PPTX, keeping masters, layouts, and theme.
 
@@ -1228,7 +1227,9 @@ class FileImportService:
         if not has_pptx:
             raise ValueError("PPTX processing not available. Install python-pptx.")
 
-        from lxml import etree  # noqa: PLC0415  # pyright: ignore[reportAttributeAccessIssue]
+        from lxml import (
+            etree,  # pyright: ignore[reportAttributeAccessIssue]
+        )
 
         prs = Presentation(io.BytesIO(file_content))
 

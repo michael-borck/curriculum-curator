@@ -52,6 +52,7 @@ from .mappings import (
     material_ulo_mappings,
 )
 from .password_reset import PasswordReset
+from .prompt_template import PromptTemplate, TemplateStatus, TemplateType
 from .quiz_question import QuestionType, QuizQuestion
 from .research_source import CitationStyle, ContentCitation, ResearchSource, SourceType
 from .security_log import SecurityEventType, SecurityLog
@@ -160,6 +161,10 @@ __all__ = [
     "material_ulo_mappings",
     "assessment_ulo_mappings",
     "assessment_material_links",
+    # Prompt Templates
+    "PromptTemplate",
+    "TemplateType",
+    "TemplateStatus",
     # Research sources and citations
     "ResearchSource",
     "ContentCitation",

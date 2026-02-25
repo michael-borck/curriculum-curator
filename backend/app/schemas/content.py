@@ -151,6 +151,9 @@ class ContentGenerationRequest(CamelModel):
         default=None, description="Per-week pedagogy override"
     )
     week_number: int | None = Field(default=None, description="Week number for context")
+    source_material_ids: list[str] | None = Field(
+        default=None, description="IDs of existing materials to use as source context"
+    )
 
 
 class ContentEnhanceRequest(CamelModel):

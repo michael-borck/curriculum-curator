@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import User
 from app.models.system_settings import SystemSettings
+from app.models.weekly_material import WeeklyMaterial
+from app.models.weekly_topic import WeeklyTopic
 from app.schemas.ai import (
     FillGapRequest,
     FillGapResponse,
@@ -56,6 +58,59 @@ router = APIRouter()
 
 
 # =============================================================================
+# Helpers
+# =============================================================================
+
+
+def _enrich_with_week_context(
+    db: Session, unit_id: str, week_number: int, topic: str
+) -> str:
+    """Prepend weekly topic title and existing material names to the prompt."""
+    weekly_topic = (
+        db.query(WeeklyTopic)
+        .filter(
+            WeeklyTopic.unit_id == unit_id,
+            WeeklyTopic.week_number == week_number,
+        )
+        .first()
+    )
+    weekly_materials = (
+        db.query(WeeklyMaterial)
+        .filter(
+            WeeklyMaterial.unit_id == unit_id,
+            WeeklyMaterial.week_number == week_number,
+        )
+        .all()
+    )
+    parts: list[str] = []
+    if weekly_topic and weekly_topic.title:
+        parts.append(f"Week {week_number} Topic: {weekly_topic.title}")
+    if weekly_materials:
+        titles = [m.title for m in weekly_materials if m.title]
+        if titles:
+            parts.append(f"Existing materials for this week: {', '.join(titles)}")
+    if parts:
+        return "\n".join(parts) + "\n\n" + topic
+    return topic
+
+
+def _inject_source_materials(db: Session, material_ids: list[str], topic: str) -> str:
+    """Fetch material descriptions and inject as a source context block."""
+    source_materials = (
+        db.query(WeeklyMaterial).filter(WeeklyMaterial.id.in_(material_ids[:5])).all()
+    )
+    if not source_materials:
+        return topic
+    source_block = "=== SOURCE MATERIALS ===\n"
+    for mat in source_materials:
+        source_block += f"\n--- {mat.title} ---\n"
+        if mat.description:
+            source_block += f"{mat.description}\n"
+    source_block += "=== END SOURCE MATERIALS ===\n\n"
+    return source_block + topic
+
+
+# =============================================================================
 # Content Generation
 # =============================================================================
 
@@ -79,6 +134,16 @@ async def generate_content(
 
         if design_ctx:
             topic = f"{design_ctx}\n\n{topic}"
+
+        # Enrich with weekly context when week_number is provided
+        if request.week_number and request.unit_id:
+            topic = _enrich_with_week_context(
+                db, request.unit_id, request.week_number, topic
+            )
+
+        # Inject source materials when provided
+        if request.source_material_ids:
+            topic = _inject_source_materials(db, request.source_material_ids, topic)
 
         # Use pedagogy override or design-aware pedagogy
         pedagogy = request.pedagogy_override or request.pedagogy_style

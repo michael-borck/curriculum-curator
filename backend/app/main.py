@@ -139,6 +139,20 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
 
+        # Seed system prompt templates
+        from app.services.seed_prompt_templates import (  # noqa: PLC0415
+            seed_system_templates,
+        )
+
+        db = SessionLocal()
+        try:
+            seed_system_templates(db)
+            logger.info("✅ Prompt templates seeded")
+        except Exception:
+            logger.exception("Failed to seed prompt templates")
+        finally:
+            db.close()
+
         # LOCAL_MODE: seed the default local user and Ollama config
         if settings.LOCAL_MODE:
             _seed_local_user()
@@ -479,6 +493,17 @@ try:
     app.include_router(package_import.router, prefix="/api", tags=["package-import"])
 except ImportError as e:
     logger.warning(f"Failed to load package_import routes: {e}")
+
+try:
+    from app.api.routes import prompt_templates
+
+    app.include_router(
+        prompt_templates.router,
+        prefix="/api/prompt-templates",
+        tags=["prompt-templates"],
+    )
+except ImportError as e:
+    logger.warning(f"Failed to load prompt_templates routes: {e}")
 
 try:
     from app.api.routes import export_templates

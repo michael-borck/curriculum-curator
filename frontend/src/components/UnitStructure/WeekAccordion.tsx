@@ -15,6 +15,7 @@ import {
   Trash2,
   Copy,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import {
@@ -36,6 +37,7 @@ interface WeekAccordionProps {
   onAddWeek?: (() => void) | undefined;
   onDeleteWeek?: ((weekNumber: number) => void) | undefined;
   onApplyStructure?: ((mode: 'stubs' | 'categories') => void) | undefined;
+  onOpenAI?: ((weekNumber: number) => void) | undefined;
 }
 
 interface WeekData {
@@ -117,6 +119,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   onAddWeek,
   onDeleteWeek,
   onApplyStructure,
+  onOpenAI,
 }) => {
   const navigate = useNavigate();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
@@ -388,6 +391,20 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                       ? 'No content'
                       : `${summary.count} material${summary.count !== 1 ? 's' : ''}`}
                   </span>
+
+                  {/* Create with AI button */}
+                  {onOpenAI && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        onOpenAI(weekNumber);
+                      }}
+                      className='p-1 text-gray-300 hover:text-purple-500 transition'
+                      title={`Create with AI for ${topicLabel} ${weekNumber}`}
+                    >
+                      <Sparkles className='w-4 h-4' />
+                    </button>
+                  )}
 
                   {/* Delete week button */}
                   {onDeleteWeek && durationWeeks > 1 && (

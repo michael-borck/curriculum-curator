@@ -1,20 +1,28 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Brain,
   Send,
   Loader2,
   Sparkles,
   FileText,
-  PlusCircle,
-  Edit,
-  HelpCircle,
   AlertCircle,
   CheckCircle,
   X,
+  ChevronDown,
+  ChevronRight,
+  Check,
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
+import {
+  promptTemplateApi,
+  type PromptTemplate,
+  type PromptTemplateDetail,
+  type TemplateVariable,
+} from '../../services/promptTemplateApi';
+import { materialsApi } from '../../services/unitStructureApi';
+import type { MaterialResponse } from '../../types/unitStructure';
 import SaveToUnitButton from './SaveToUnitButton';
 
 interface Message {
@@ -37,6 +45,13 @@ interface AIAssistantProps {
   onClose?: () => void;
 }
 
+function renderTemplate(content: string, vars: Record<string, string>): string {
+  return content.replace(
+    /\{\{\s*(\w+)\s*\}\}/g,
+    (_, key: string) => vars[key] ?? `[${key}]`
+  );
+}
+
 const AIAssistant = ({
   unitId,
   unitTitle,
@@ -52,6 +67,7 @@ const AIAssistant = ({
   const effectiveUnitULOs =
     unitULOs ?? (ctx.activeULOs.length > 0 ? ctx.activeULOs : undefined);
   const effectiveDesignId = designId ?? ctx.activeDesignId ?? undefined;
+  const effectiveWeek = ctx.activeWeek;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
@@ -74,10 +90,47 @@ const AIAssistant = ({
     model?: string;
   } | null>(null);
 
+  // DB-driven prompt templates
+  const [templates, setTemplates] = useState<PromptTemplate[]>([]);
+  const [activeTemplate, setActiveTemplate] =
+    useState<PromptTemplateDetail | null>(null);
+  const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
+
+  // Source material selection
+  const [weekMaterials, setWeekMaterials] = useState<MaterialResponse[]>([]);
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+  const [showSources, setShowSources] = useState(false);
+
+  // Load prompt templates
+  useEffect(() => {
+    promptTemplateApi
+      .list()
+      .then(setTemplates)
+      .catch(() => {
+        /* non-critical */
+      });
+  }, []);
+
+  // Load week materials for source selection
+  useEffect(() => {
+    if (!effectiveUnitId || !effectiveWeek) {
+      setWeekMaterials([]);
+      setSelectedSourceIds([]);
+      return;
+    }
+    materialsApi
+      .getMaterialsByWeek(effectiveUnitId, effectiveWeek)
+      .then(data => setWeekMaterials(data.materials))
+      .catch(() => setWeekMaterials([]));
+  }, [effectiveUnitId, effectiveWeek]);
+
   // Build unit-context prefix for prompts
-  const buildContextPrefix = () => {
+  const buildContextPrefix = useCallback(() => {
     if (!effectiveUnitTitle) return '';
     let prefix = `[Unit Context] Unit: "${effectiveUnitTitle}"`;
+    if (effectiveWeek) {
+      prefix += ` | Current Week: ${effectiveWeek}`;
+    }
     if (effectiveUnitULOs?.length) {
       prefix +=
         '\nLearning Outcomes:\n' +
@@ -85,10 +138,10 @@ const AIAssistant = ({
     }
     prefix += '\n\n';
     return prefix;
-  };
+  }, [effectiveUnitTitle, effectiveWeek, effectiveUnitULOs]);
 
-  // Quick-action suggestions — contextual when unit is set
-  const suggestions = effectiveUnitTitle
+  // Fallback suggestions when no templates loaded
+  const fallbackSuggestions = effectiveUnitTitle
     ? [
         `Generate a lecture outline for ${effectiveUnitTitle}`,
         `Create a quiz covering the learning outcomes`,
@@ -147,6 +200,7 @@ const AIAssistant = ({
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setActiveTemplate(null);
     setLoading(true);
 
     try {
@@ -157,6 +211,9 @@ const AIAssistant = ({
         stream: false,
         unitId: effectiveUnitId,
         designId: effectiveDesignId,
+        weekNumber: effectiveWeek ?? undefined,
+        sourceMaterialIds:
+          selectedSourceIds.length > 0 ? selectedSourceIds : undefined,
       });
 
       setMessages(prev => [
@@ -185,6 +242,265 @@ const AIAssistant = ({
     }
   };
 
+  const handleTemplateClick = async (template: PromptTemplate) => {
+    const hasVars =
+      template.variables && template.variables.some(v => !v.default);
+
+    if (!hasVars) {
+      // No unfilled variables — fetch full template and send immediately
+      try {
+        const full = await promptTemplateApi.get(template.id);
+        const defaults: Record<string, string> = {};
+        for (const v of full.variables ?? []) {
+          defaults[v.name] = v.default ?? '';
+        }
+        const rendered = renderTemplate(full.templateContent, defaults);
+        promptTemplateApi.incrementUsage(template.id).catch(() => {});
+        sendMessage(rendered);
+      } catch {
+        /* fallback: just send the name */
+        sendMessage(template.name);
+      }
+    } else {
+      // Has variables — show inline form
+      try {
+        const full = await promptTemplateApi.get(template.id);
+        setActiveTemplate(full);
+        // Pre-fill from context where possible
+        const prefilled: Record<string, string> = {};
+        for (const v of full.variables ?? []) {
+          if (v.name === 'unit_level') {
+            prefilled[v.name] = v.default ?? 'undergraduate';
+          } else if (v.name === 'unit_code' && ctx.activeUnitCode) {
+            prefilled[v.name] = ctx.activeUnitCode;
+          } else {
+            prefilled[v.name] = v.default ?? '';
+          }
+        }
+        setTemplateVars(prefilled);
+      } catch {
+        /* non-critical */
+      }
+    }
+  };
+
+  const handleTemplateSubmit = () => {
+    if (!activeTemplate) return;
+    const rendered = renderTemplate(
+      activeTemplate.templateContent,
+      templateVars
+    );
+    promptTemplateApi.incrementUsage(activeTemplate.id).catch(() => {});
+    setActiveTemplate(null);
+    setTemplateVars({});
+    sendMessage(rendered);
+  };
+
+  const toggleSource = (id: string) => {
+    setSelectedSourceIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  // ─── Template Variable Form ───────────────────────────────────────────────
+
+  const renderTemplateForm = () => {
+    if (!activeTemplate) return null;
+
+    return (
+      <div className='mx-3 mb-2 p-3 bg-purple-50 border border-purple-200 rounded-lg'>
+        <div className='flex items-center justify-between mb-2'>
+          <span className='text-sm font-medium text-purple-900'>
+            {activeTemplate.name}
+          </span>
+          <button
+            onClick={() => setActiveTemplate(null)}
+            className='p-0.5 text-purple-400 hover:text-purple-600'
+          >
+            <X className='h-3.5 w-3.5' />
+          </button>
+        </div>
+        <div className='space-y-2'>
+          {(activeTemplate.variables ?? []).map((v: TemplateVariable) => (
+            <div key={v.name}>
+              <label className='block text-xs font-medium text-purple-700 mb-0.5'>
+                {v.label}
+              </label>
+              {v.name === 'content' ||
+              v.name === 'rubric_content' ||
+              v.name === 'submission_content' ? (
+                <textarea
+                  value={templateVars[v.name] ?? ''}
+                  onChange={e =>
+                    setTemplateVars(prev => ({
+                      ...prev,
+                      [v.name]: e.target.value,
+                    }))
+                  }
+                  rows={3}
+                  className='w-full px-2 py-1 text-sm border border-purple-200 rounded focus:ring-1 focus:ring-purple-400 resize-y'
+                  placeholder={v.label}
+                />
+              ) : (
+                <input
+                  type='text'
+                  value={templateVars[v.name] ?? ''}
+                  onChange={e =>
+                    setTemplateVars(prev => ({
+                      ...prev,
+                      [v.name]: e.target.value,
+                    }))
+                  }
+                  className='w-full px-2 py-1 text-sm border border-purple-200 rounded focus:ring-1 focus:ring-purple-400'
+                  placeholder={v.label}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handleTemplateSubmit}
+          className='mt-2 w-full px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-1'
+        >
+          <Send className='h-3.5 w-3.5' />
+          Generate
+        </button>
+      </div>
+    );
+  };
+
+  // ─── Source Material Picker ─────────────────────────────────────────────
+
+  const renderSourcePicker = () => {
+    if (!effectiveUnitId || !effectiveWeek || weekMaterials.length === 0)
+      return null;
+
+    return (
+      <div className='mx-3 mb-2'>
+        <button
+          onClick={() => setShowSources(!showSources)}
+          className='flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700'
+        >
+          {showSources ? (
+            <ChevronDown className='h-3 w-3' />
+          ) : (
+            <ChevronRight className='h-3 w-3' />
+          )}
+          Source Materials
+          {selectedSourceIds.length > 0 && (
+            <span className='ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs'>
+              {selectedSourceIds.length}
+            </span>
+          )}
+        </button>
+        {showSources && (
+          <div className='mt-1 space-y-1 max-h-32 overflow-y-auto'>
+            {weekMaterials.map(m => (
+              <label
+                key={m.id}
+                className='flex items-center gap-2 px-2 py-1 text-xs rounded hover:bg-gray-50 cursor-pointer'
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${
+                    selectedSourceIds.includes(m.id)
+                      ? 'bg-purple-600 border-purple-600'
+                      : 'border-gray-300'
+                  }`}
+                  onClick={() => toggleSource(m.id)}
+                >
+                  {selectedSourceIds.includes(m.id) && (
+                    <Check className='h-2.5 w-2.5 text-white' />
+                  )}
+                </div>
+                <span
+                  className='text-gray-700 truncate'
+                  onClick={() => toggleSource(m.id)}
+                >
+                  {m.title}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Quick Actions (DB-driven or fallback) ──────────────────────────────
+
+  const renderQuickActions = (limit: number, compact: boolean) => {
+    if (templates.length > 0) {
+      return templates.slice(0, limit).map(t => (
+        <button
+          key={t.id}
+          onClick={() => handleTemplateClick(t)}
+          className={
+            compact
+              ? 'px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 truncate max-w-full'
+              : 'px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200'
+          }
+          title={t.description ?? t.name}
+        >
+          {compact && t.name.length > 30 ? t.name.slice(0, 30) + '...' : t.name}
+        </button>
+      ));
+    }
+
+    // Fallback hardcoded suggestions
+    const items = fallbackSuggestions.slice(0, limit);
+    return items.map((s, i) => (
+      <button
+        key={i}
+        onClick={() => sendMessage(s)}
+        className={
+          compact
+            ? 'px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 truncate max-w-full'
+            : 'px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200'
+        }
+        title={s}
+      >
+        {compact && s.length > 30 ? s.slice(0, 30) + '...' : s}
+      </button>
+    ));
+  };
+
+  // ─── Sidebar Quick Actions (DB-driven) ──────────────────────────────────
+
+  const renderSidebarActions = () => {
+    if (templates.length > 0) {
+      return templates.slice(0, 6).map(t => (
+        <button
+          key={t.id}
+          onClick={() => handleTemplateClick(t)}
+          className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
+        >
+          <FileText className='h-4 w-4 mr-2 text-purple-600 shrink-0' />
+          <span className='truncate'>{t.name}</span>
+        </button>
+      ));
+    }
+
+    // Fallback
+    return (
+      <>
+        <button
+          onClick={() => sendMessage('Generate a lecture outline')}
+          className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
+        >
+          <FileText className='h-4 w-4 mr-2 text-blue-600' />
+          Generate Lecture
+        </button>
+        <button
+          onClick={() => sendMessage('Create a quiz')}
+          className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
+        >
+          <FileText className='h-4 w-4 mr-2 text-green-600' />
+          Create Quiz
+        </button>
+      </>
+    );
+  };
+
   // ─── Embedded / Sidebar Layout ─────────────────────────────────────────────
 
   if (embedded) {
@@ -195,6 +511,11 @@ const AIAssistant = ({
           <div className='flex items-center gap-2'>
             <Brain className='h-5 w-5 text-purple-600' />
             <span className='font-semibold text-sm'>AI Assistant</span>
+            {effectiveWeek && (
+              <span className='text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded'>
+                Week {effectiveWeek}
+              </span>
+            )}
           </div>
           {onClose && (
             <button onClick={onClose} className='p-1 rounded hover:bg-gray-100'>
@@ -238,18 +559,15 @@ const AIAssistant = ({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Template Variable Form */}
+        {renderTemplateForm()}
+
+        {/* Source Material Picker */}
+        {renderSourcePicker()}
+
         {/* Quick Actions */}
         <div className='px-3 py-2 border-t border-gray-100 flex flex-wrap gap-1'>
-          {suggestions.slice(0, 3).map((s, i) => (
-            <button
-              key={i}
-              onClick={() => sendMessage(s)}
-              className='px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 truncate max-w-full'
-              title={s}
-            >
-              {s.length > 35 ? s.slice(0, 35) + '...' : s}
-            </button>
-          ))}
+          {renderQuickActions(3, true)}
         </div>
 
         {/* Input */}
@@ -293,7 +611,7 @@ const AIAssistant = ({
               <h2 className='text-lg font-semibold'>AI Teaching Assistant</h2>
               <p className='text-sm text-gray-600'>
                 {effectiveUnitTitle
-                  ? `Context: ${effectiveUnitTitle}`
+                  ? `Context: ${effectiveUnitTitle}${effectiveWeek ? ` — Week ${effectiveWeek}` : ''}`
                   : 'Powered by advanced pedagogy models'}
               </p>
             </div>
@@ -345,6 +663,131 @@ const AIAssistant = ({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Template Variable Form (full-page) */}
+        {activeTemplate && (
+          <div className='mx-4 mb-2 p-4 bg-purple-50 border border-purple-200 rounded-lg'>
+            <div className='flex items-center justify-between mb-3'>
+              <span className='font-medium text-purple-900'>
+                {activeTemplate.name}
+              </span>
+              <button
+                onClick={() => setActiveTemplate(null)}
+                className='p-1 text-purple-400 hover:text-purple-600'
+              >
+                <X className='h-4 w-4' />
+              </button>
+            </div>
+            <div className='grid grid-cols-2 gap-3'>
+              {(activeTemplate.variables ?? []).map((v: TemplateVariable) => (
+                <div
+                  key={v.name}
+                  className={
+                    v.name === 'content' ||
+                    v.name === 'rubric_content' ||
+                    v.name === 'submission_content'
+                      ? 'col-span-2'
+                      : ''
+                  }
+                >
+                  <label className='block text-xs font-medium text-purple-700 mb-1'>
+                    {v.label}
+                  </label>
+                  {v.name === 'content' ||
+                  v.name === 'rubric_content' ||
+                  v.name === 'submission_content' ? (
+                    <textarea
+                      value={templateVars[v.name] ?? ''}
+                      onChange={e =>
+                        setTemplateVars(prev => ({
+                          ...prev,
+                          [v.name]: e.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className='w-full px-3 py-2 text-sm border border-purple-200 rounded-lg focus:ring-1 focus:ring-purple-400 resize-y'
+                      placeholder={v.label}
+                    />
+                  ) : (
+                    <input
+                      type='text'
+                      value={templateVars[v.name] ?? ''}
+                      onChange={e =>
+                        setTemplateVars(prev => ({
+                          ...prev,
+                          [v.name]: e.target.value,
+                        }))
+                      }
+                      className='w-full px-3 py-2 text-sm border border-purple-200 rounded-lg focus:ring-1 focus:ring-purple-400'
+                      placeholder={v.label}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleTemplateSubmit}
+              className='mt-3 px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-1'
+            >
+              <Send className='h-4 w-4' />
+              Generate
+            </button>
+          </div>
+        )}
+
+        {/* Source Material Picker (full-page) */}
+        {effectiveUnitId &&
+          effectiveWeek &&
+          weekMaterials.length > 0 &&
+          !embedded && (
+            <div className='mx-4 mb-2'>
+              <button
+                onClick={() => setShowSources(!showSources)}
+                className='flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700'
+              >
+                {showSources ? (
+                  <ChevronDown className='h-4 w-4' />
+                ) : (
+                  <ChevronRight className='h-4 w-4' />
+                )}
+                Source Materials (Week {effectiveWeek})
+                {selectedSourceIds.length > 0 && (
+                  <span className='ml-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs'>
+                    {selectedSourceIds.length} selected
+                  </span>
+                )}
+              </button>
+              {showSources && (
+                <div className='mt-2 space-y-1 max-h-40 overflow-y-auto pl-6'>
+                  {weekMaterials.map(m => (
+                    <label
+                      key={m.id}
+                      className='flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-50 cursor-pointer'
+                    >
+                      <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          selectedSourceIds.includes(m.id)
+                            ? 'bg-purple-600 border-purple-600'
+                            : 'border-gray-300'
+                        }`}
+                        onClick={() => toggleSource(m.id)}
+                      >
+                        {selectedSourceIds.includes(m.id) && (
+                          <Check className='h-3 w-3 text-white' />
+                        )}
+                      </div>
+                      <span
+                        className='text-gray-700'
+                        onClick={() => toggleSource(m.id)}
+                      >
+                        {m.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
         {/* Input Area */}
         <div className='p-4 border-t border-gray-200'>
           <div className='flex space-x-2'>
@@ -368,15 +811,7 @@ const AIAssistant = ({
 
           {/* Quick Actions */}
           <div className='mt-3 flex flex-wrap gap-2'>
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => sendMessage(suggestion)}
-                className='px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200'
-              >
-                {suggestion}
-              </button>
-            ))}
+            {renderQuickActions(4, false)}
           </div>
         </div>
       </div>
@@ -389,38 +824,7 @@ const AIAssistant = ({
             <Sparkles className='h-5 w-5 mr-2 text-yellow-500' />
             Quick Actions
           </h3>
-          <div className='space-y-2'>
-            <button
-              onClick={() => sendMessage('Generate a lecture outline')}
-              className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
-            >
-              <FileText className='h-4 w-4 mr-2 text-blue-600' />
-              Generate Lecture
-            </button>
-            <button
-              onClick={() => sendMessage('Create a quiz')}
-              className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
-            >
-              <PlusCircle className='h-4 w-4 mr-2 text-green-600' />
-              Create Quiz
-            </button>
-            <button
-              onClick={() =>
-                sendMessage('Improve the quality of existing content')
-              }
-              className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
-            >
-              <Edit className='h-4 w-4 mr-2 text-purple-600' />
-              Improve Content
-            </button>
-            <button
-              onClick={() => sendMessage('Give me teaching tips')}
-              className='w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 flex items-center'
-            >
-              <HelpCircle className='h-4 w-4 mr-2 text-orange-600' />
-              Teaching Tips
-            </button>
-          </div>
+          <div className='space-y-2'>{renderSidebarActions()}</div>
         </div>
 
         {/* Context */}
@@ -441,6 +845,12 @@ const AIAssistant = ({
                 {effectiveUnitTitle || 'None selected'}
               </span>
             </div>
+            {effectiveWeek && (
+              <div>
+                <span className='text-gray-600'>Active Week:</span>
+                <span className='ml-2 font-medium'>{effectiveWeek}</span>
+              </div>
+            )}
             {effectiveUnitULOs && effectiveUnitULOs.length > 0 && (
               <div>
                 <span className='text-gray-600'>ULOs:</span>

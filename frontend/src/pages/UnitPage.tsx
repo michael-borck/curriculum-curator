@@ -117,18 +117,21 @@ const UnitPage = () => {
   useEffect(() => {
     if (selectedWeek > 0) {
       setExpandedWeek(selectedWeek);
+      useWorkingContextStore.getState().setActiveWeek(selectedWeek);
     }
   }, [selectedWeek]);
 
   const handleWeekToggle = (weekNumber: number) => {
     if (expandedWeek === weekNumber) {
       setExpandedWeek(null);
+      useWorkingContextStore.getState().setActiveWeek(null);
       // Clear week from URL
       const params = new URLSearchParams(searchParams);
       params.delete('week');
       setSearchParams(params);
     } else {
       setExpandedWeek(weekNumber);
+      useWorkingContextStore.getState().setActiveWeek(weekNumber);
       // Update URL with week
       const params = new URLSearchParams(searchParams);
       params.set('tab', 'structure');
@@ -749,6 +752,16 @@ const UnitPage = () => {
                 onAddWeek={handleAddWeek}
                 onDeleteWeek={handleDeleteWeek}
                 onApplyStructure={handleApplyStructure}
+                onOpenAI={
+                  isAIDisabled
+                    ? undefined
+                    : (weekNumber: number) => {
+                        useWorkingContextStore
+                          .getState()
+                          .setActiveWeek(weekNumber);
+                        setShowAI(true);
+                      }
+                }
               />
             </div>
           )}
