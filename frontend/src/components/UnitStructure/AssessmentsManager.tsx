@@ -44,14 +44,18 @@ interface AssessmentFormData {
 }
 
 const categoryIcons: Record<AssessmentCategory, React.ReactElement> = {
+  [AssessmentCategory.QUIZ]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.EXAM]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.ASSIGNMENT]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.PROJECT]: <Users className='w-4 h-4' />,
+  [AssessmentCategory.DISCUSSION]: <Users className='w-4 h-4' />,
+  [AssessmentCategory.PAPER]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.PRESENTATION]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.PARTICIPATION]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.QUIZ]: <FileText className='w-4 h-4' />,
+  [AssessmentCategory.LAB]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.LAB_REPORT]: <FileText className='w-4 h-4' />,
   [AssessmentCategory.PORTFOLIO]: <FileText className='w-4 h-4' />,
+  [AssessmentCategory.PARTICIPATION]: <Users className='w-4 h-4' />,
+  [AssessmentCategory.VIVA]: <Users className='w-4 h-4' />,
   [AssessmentCategory.OTHER]: <FileText className='w-4 h-4' />,
 };
 

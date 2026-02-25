@@ -36,13 +36,16 @@ class AssessmentCategory(str, Enum):
 
     QUIZ = "quiz"
     EXAM = "exam"
+    ASSIGNMENT = "assignment"
     PROJECT = "project"
     DISCUSSION = "discussion"
     PAPER = "paper"
     PRESENTATION = "presentation"
     LAB = "lab"
+    LAB_REPORT = "lab_report"
     PORTFOLIO = "portfolio"
     PARTICIPATION = "participation"
+    VIVA = "viva"
     OTHER = "other"
 
 

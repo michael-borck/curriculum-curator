@@ -34,14 +34,18 @@ export enum AssessmentType {
 }
 
 export enum AssessmentCategory {
+  QUIZ = 'quiz',
   EXAM = 'exam',
   ASSIGNMENT = 'assignment',
   PROJECT = 'project',
+  DISCUSSION = 'discussion',
+  PAPER = 'paper',
   PRESENTATION = 'presentation',
-  PARTICIPATION = 'participation',
-  QUIZ = 'quiz',
+  LAB = 'lab',
   LAB_REPORT = 'lab_report',
   PORTFOLIO = 'portfolio',
+  PARTICIPATION = 'participation',
+  VIVA = 'viva',
   OTHER = 'other',
 }
 
