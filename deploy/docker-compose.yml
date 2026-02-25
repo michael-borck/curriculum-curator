@@ -25,18 +25,9 @@ services:
     networks:
       - caddy_default
 
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_POLL_INTERVAL=300
-      - WATCHTOWER_LABEL_ENABLE=true
-      - WATCHTOWER_CLEANUP=true
-    networks:
-      - caddy_default
+  # Watchtower is NOT included here — use a single shared Watchtower instance.
+  # The app container has the com.centurylinklabs.watchtower.enable=true label,
+  # so any label-filtered Watchtower will pick it up automatically.
 
   ollama:
     image: ollama/ollama:latest
