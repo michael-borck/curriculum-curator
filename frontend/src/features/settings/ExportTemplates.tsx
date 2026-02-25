@@ -1,30 +1,39 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Upload, Trash2, FileText, Presentation, Loader2 } from 'lucide-react';
+import {
+  Upload,
+  Trash2,
+  FileText,
+  Presentation,
+  Loader2,
+  Star,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   exportTemplateApi,
   type TemplateInfo,
 } from '../../services/exportTemplateApi';
 
-interface FormatCardProps {
+interface FormatSectionProps {
   format: string;
   label: string;
   icon: React.ReactNode;
   accept: string;
-  template: TemplateInfo | undefined;
+  templates: TemplateInfo[];
   onUpload: (file: File) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
+  onSetDefault: (id: string) => Promise<void>;
   uploading: boolean;
 }
 
-const FormatCard: React.FC<FormatCardProps> = ({
+const FormatSection: React.FC<FormatSectionProps> = ({
   format,
   label,
   icon,
   accept,
-  template,
+  templates,
   onUpload,
   onRemove,
+  onSetDefault,
   uploading,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,35 +73,14 @@ const FormatCard: React.FC<FormatCardProps> = ({
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
     >
-      <div className='flex items-center gap-2 mb-3'>
-        {icon}
-        <h3 className='font-medium text-gray-800'>{label}</h3>
-      </div>
-
-      {template ? (
-        <div className='flex items-center justify-between'>
-          <div className='min-w-0'>
-            <p className='text-sm font-medium text-gray-700 truncate'>
-              {template.filename}
-            </p>
-            <p className='text-xs text-gray-500'>
-              Uploaded{' '}
-              {new Date(template.uploadedAt).toLocaleDateString('en-AU', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          </div>
-          <button
-            onClick={() => void onRemove(template.id)}
-            className='ml-3 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition flex items-center gap-1'
-          >
-            <Trash2 className='h-3.5 w-3.5' />
-            Remove
-          </button>
+      <div className='flex items-center justify-between mb-3'>
+        <div className='flex items-center gap-2'>
+          {icon}
+          <h3 className='font-medium text-gray-800'>{label}</h3>
+          <span className='text-xs text-gray-400'>
+            {templates.length} template{templates.length !== 1 ? 's' : ''}
+          </span>
         </div>
-      ) : (
         <div>
           <input
             ref={inputRef}
@@ -102,22 +90,77 @@ const FormatCard: React.FC<FormatCardProps> = ({
             onChange={e => {
               const file = e.target.files?.[0];
               if (file) handleFile(file);
-              // Reset so re-uploading same file triggers onChange
               e.target.value = '';
             }}
           />
           <button
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
-            className='w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 disabled:opacity-50'
+            className='px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition flex items-center gap-1 disabled:opacity-50'
           >
             {uploading ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
+              <Loader2 className='h-3.5 w-3.5 animate-spin' />
             ) : (
-              <Upload className='h-4 w-4' />
+              <Upload className='h-3.5 w-3.5' />
             )}
-            {uploading ? 'Uploading...' : `Upload .${format} template`}
+            Upload
           </button>
+        </div>
+      </div>
+
+      {templates.length === 0 ? (
+        <p className='text-sm text-gray-400 py-2'>
+          No templates yet. Upload a .{format} file to use as a reference for
+          exports.
+        </p>
+      ) : (
+        <div className='space-y-2'>
+          {templates.map(t => (
+            <div
+              key={t.id}
+              className={`flex items-center justify-between py-2 px-3 rounded-md ${
+                t.isDefault ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
+              }`}
+            >
+              <div className='min-w-0 flex-1'>
+                <div className='flex items-center gap-2'>
+                  <p className='text-sm font-medium text-gray-700 truncate'>
+                    {t.filename}
+                  </p>
+                  {t.isDefault && (
+                    <span className='text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium flex-shrink-0'>
+                      Default
+                    </span>
+                  )}
+                </div>
+                <p className='text-xs text-gray-500'>
+                  {new Date(t.uploadedAt).toLocaleDateString('en-AU', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </p>
+              </div>
+              <div className='flex items-center gap-1 ml-3'>
+                {!t.isDefault && (
+                  <button
+                    onClick={() => void onSetDefault(t.id)}
+                    title='Set as default'
+                    className='p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition'
+                  >
+                    <Star className='h-3.5 w-3.5' />
+                  </button>
+                )}
+                <button
+                  onClick={() => void onRemove(t.id)}
+                  title='Remove template'
+                  className='p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition'
+                >
+                  <Trash2 className='h-3.5 w-3.5' />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -173,8 +216,21 @@ const ExportTemplates: React.FC = () => {
     [loadTemplates]
   );
 
-  const pptxTemplate = templates.find(t => t.format === 'pptx' && t.isDefault);
-  const docxTemplate = templates.find(t => t.format === 'docx' && t.isDefault);
+  const handleSetDefault = useCallback(
+    async (id: string) => {
+      try {
+        await exportTemplateApi.setDefault(id);
+        toast.success('Default template updated');
+        await loadTemplates();
+      } catch {
+        toast.error('Failed to set default template');
+      }
+    },
+    [loadTemplates]
+  );
+
+  const pptxTemplates = templates.filter(t => t.format === 'pptx');
+  const docxTemplates = templates.filter(t => t.format === 'docx');
 
   if (loading) {
     return (
@@ -189,35 +245,39 @@ const ExportTemplates: React.FC = () => {
       <h2 className='text-xl font-semibold mb-2'>Export Templates</h2>
       <p className='text-sm text-gray-600 mb-6'>
         Upload reference documents used to style PPTX and DOCX exports.
-        Templates control fonts, colours, and slide layouts.
+        Templates control fonts, colours, and layouts. The default template is
+        used automatically when exporting.
       </p>
 
       <div className='space-y-4'>
-        <FormatCard
+        <FormatSection
           format='pptx'
           label='Presentations (.pptx)'
           icon={<Presentation className='h-5 w-5 text-orange-500' />}
           accept='.pptx'
-          template={pptxTemplate}
+          templates={pptxTemplates}
           onUpload={handleUpload}
           onRemove={handleRemove}
+          onSetDefault={handleSetDefault}
           uploading={uploading}
         />
 
-        <FormatCard
+        <FormatSection
           format='docx'
           label='Documents (.docx)'
           icon={<FileText className='h-5 w-5 text-blue-500' />}
           accept='.docx'
-          template={docxTemplate}
+          templates={docxTemplates}
           onUpload={handleUpload}
           onRemove={handleRemove}
+          onSetDefault={handleSetDefault}
           uploading={uploading}
         />
       </div>
 
       <p className='text-xs text-gray-400 mt-4'>
-        Exports without a template use Pandoc defaults.
+        Exports without a template use Pandoc defaults. Templates can also be
+        extracted automatically when importing PPTX or DOCX files.
       </p>
     </div>
   );
