@@ -14,7 +14,7 @@ import {
   Trash2,
   CheckCircle,
   Clock,
-  TrendingUp,
+  Star,
   Archive,
   RotateCcw,
   ChevronDown,
@@ -736,54 +736,93 @@ const DashboardPage = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-8'>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-500'>Total Units</p>
-              <p className='text-2xl font-bold text-gray-900'>{units.length}</p>
+      {(() => {
+        const metricsWithData = Object.values(metrics).filter(
+          m => m.qualityStars > 0 || m.udlStars > 0
+        );
+        const avgQuality =
+          metricsWithData.length > 0
+            ? metricsWithData.reduce((sum, m) => sum + m.qualityStars, 0) /
+              metricsWithData.length
+            : 0;
+        const avgUdl =
+          metricsWithData.length > 0
+            ? metricsWithData.reduce((sum, m) => sum + m.udlStars, 0) /
+              metricsWithData.length
+            : 0;
+
+        return (
+          <div className='grid grid-cols-2 md:grid-cols-5 gap-4 mb-8'>
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-gray-500'>Total Units</p>
+                  <p className='text-2xl font-bold text-gray-900'>
+                    {units.length}
+                  </p>
+                </div>
+                <BookOpen className='w-8 h-8 text-purple-500' />
+              </div>
             </div>
-            <BookOpen className='w-8 h-8 text-purple-500' />
-          </div>
-        </div>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-500'>Active</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {units.filter(u => u.status === 'ACTIVE').length}
-              </p>
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-gray-500'>Active</p>
+                  <p className='text-2xl font-bold text-gray-900'>
+                    {units.filter(u => u.status === 'ACTIVE').length}
+                  </p>
+                </div>
+                <CheckCircle className='w-8 h-8 text-green-500' />
+              </div>
             </div>
-            <CheckCircle className='w-8 h-8 text-green-500' />
-          </div>
-        </div>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-500'>In Progress</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {
-                  units.filter(
-                    u => u.status === 'PLANNING' || u.status === 'draft'
-                  ).length
-                }
-              </p>
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-gray-500'>In Progress</p>
+                  <p className='text-2xl font-bold text-gray-900'>
+                    {
+                      units.filter(
+                        u => u.status === 'PLANNING' || u.status === 'draft'
+                      ).length
+                    }
+                  </p>
+                </div>
+                <Clock className='w-8 h-8 text-yellow-500' />
+              </div>
             </div>
-            <Clock className='w-8 h-8 text-yellow-500' />
-          </div>
-        </div>
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-500'>Total Credits</p>
-              <p className='text-2xl font-bold text-gray-900'>
-                {units.reduce((sum, u) => sum + (u.creditPoints || 0), 0)}
-              </p>
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-gray-500'>Avg Quality</p>
+                  <div className='mt-1'>
+                    {avgQuality > 0 ? (
+                      <StarRating rating={avgQuality} size='sm' />
+                    ) : (
+                      <span className='text-sm text-gray-400'>No data</span>
+                    )}
+                  </div>
+                </div>
+                <Star className='w-8 h-8 text-amber-500' />
+              </div>
             </div>
-            <TrendingUp className='w-8 h-8 text-blue-500' />
+            <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p className='text-sm text-gray-500'>Avg UDL</p>
+                  <div className='mt-1'>
+                    {avgUdl > 0 ? (
+                      <StarRating rating={avgUdl} size='sm' />
+                    ) : (
+                      <span className='text-sm text-gray-400'>No data</span>
+                    )}
+                  </div>
+                </div>
+                <Star className='w-8 h-8 text-teal-500' />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Sort Control */}
       {(regularUnits.length > 0 || quickUnits.length > 0) && (
