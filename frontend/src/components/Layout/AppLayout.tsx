@@ -16,15 +16,10 @@ import {
   Calendar,
   Brain,
   Home,
-  Sparkles,
   Star,
   Search,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import {
-  useTeachingStyleStore,
-  pedagogyOptions,
-} from '../../stores/teachingStyleStore';
 import { useUnitsStore } from '../../stores/unitsStore';
 import { useAILevel } from '../../hooks/useAILevel';
 import { useWorkingContextSync } from '../../hooks/useWorkingContextSync';
@@ -32,7 +27,6 @@ import { analyticsApi } from '../../services/unitStructureApi';
 import WorkingContextIndicator from './WorkingContextIndicator';
 import StarRating from '../shared/StarRating';
 import type { WeekQualityScore } from '../../types/unitStructure';
-import type { PedagogyType } from '../../types';
 
 interface AppLayoutProps {
   onLogout?: () => void;
@@ -58,14 +52,12 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout: authStoreLogout } = useAuthStore();
-  const { globalStyle, setGlobalStyle } = useTeachingStyleStore();
   const { isAIDisabled } = useAILevel();
   useWorkingContextSync();
   const logout = onLogout || authStoreLogout;
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set());
-  const [styleDropdownOpen, setStyleDropdownOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Use shared units store
@@ -389,20 +381,6 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
             </div>
             <button
               onClick={() => {
-                navigate('/guide/learning-design');
-                setMobileSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-2 text-left transition ${
-                isActive('/guide/learning-design')
-                  ? 'bg-purple-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <BookOpen className='w-5 h-5 flex-shrink-0' />
-              <span>Design Guide</span>
-            </button>
-            <button
-              onClick={() => {
                 navigate('/research');
                 setMobileSidebarOpen(false);
               }}
@@ -465,78 +443,6 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
               </div>
 
               <div className='flex items-center gap-4'>
-                {/* Teaching Style Selector */}
-                <div className='relative'>
-                  <button
-                    onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
-                    className='flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition text-sm font-medium'
-                  >
-                    <Sparkles className='w-4 h-4' />
-                    <span className='hidden sm:inline'>
-                      {pedagogyOptions.find(p => p.id === globalStyle)
-                        ?.shortName || 'Style'}
-                    </span>
-                    <ChevronDown className='w-4 h-4' />
-                  </button>
-
-                  {styleDropdownOpen && (
-                    <>
-                      <div
-                        className='fixed inset-0 z-10'
-                        onClick={() => setStyleDropdownOpen(false)}
-                      />
-                      <div className='absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20'>
-                        <div className='px-3 py-2 border-b border-gray-100'>
-                          <p className='text-xs font-semibold text-gray-500 uppercase'>
-                            Global Teaching Style
-                          </p>
-                          <p className='text-xs text-gray-400 mt-0.5'>
-                            {isAIDisabled
-                              ? 'Guides pedagogy tips'
-                              : 'Used for AI content generation'}
-                          </p>
-                        </div>
-                        <div className='max-h-80 overflow-y-auto'>
-                          {pedagogyOptions.map(option => (
-                            <button
-                              key={option.id}
-                              onClick={() => {
-                                setGlobalStyle(option.id as PedagogyType);
-                                setStyleDropdownOpen(false);
-                              }}
-                              className={`w-full px-3 py-2 text-left hover:bg-gray-50 flex items-start gap-3 ${
-                                globalStyle === option.id ? 'bg-purple-50' : ''
-                              }`}
-                            >
-                              <div
-                                className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                                  globalStyle === option.id
-                                    ? 'bg-purple-600'
-                                    : 'bg-gray-300'
-                                }`}
-                              />
-                              <div>
-                                <p
-                                  className={`text-sm font-medium ${
-                                    globalStyle === option.id
-                                      ? 'text-purple-700'
-                                      : 'text-gray-900'
-                                  }`}
-                                >
-                                  {option.name}
-                                </p>
-                                <p className='text-xs text-gray-500'>
-                                  {option.description}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
                 {/* User Menu */}
                 <div className='relative'>
                   <button
@@ -572,6 +478,20 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                         >
                           <Settings className='w-4 h-4' />
                           <span>Settings</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/guide/learning-design');
+                            setUserMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition ${
+                            isActive('/guide/learning-design')
+                              ? 'text-purple-600'
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          <BookOpen className='w-4 h-4' />
+                          <span>Design Guide</span>
                         </button>
                         <button
                           onClick={() => {
