@@ -74,6 +74,10 @@
 | 4.4 | As a **Creator**, I want to duplicate an assessment to create variations. | P1 | **Done** |
 | 4.5 | As a **Creator**, I want to reorder assessments. | P1 | **Done** |
 | 4.6 | As a **Creator**, I want to link assessments to specific materials (assessment-material links). | P1 | **Done** |
+| 4.7 | As a **Creator**, I want to attach a rubric to an assessment, choosing from 4 formats (analytic grid, single-point, holistic, checklist) so marking criteria are clear to students. | P1 | **Done** — RubricEditor with type selector, collapsible disclosure |
+| 4.8 | As a **Creator**, I want to define an analytic rubric with editable performance levels (columns) and criteria rows (with weight and per-cell descriptions) so I can spell out expectations at each quality tier. | P1 | **Done** — AnalyticEditor sub-component with add/remove rows & columns |
+| 4.9 | As a **Creator**, I want to switch a rubric's type (e.g. analytic → holistic) with a confirmation warning, so I can change my mind without accidentally losing work. | P1 | **Done** — type change triggers confirm dialog if rubric has data |
+| 4.10 | As a **Creator**, I want to see at a glance whether an assessment has a rubric (badge on the card) and a summary of its shape (e.g. "Analytic: 4 criteria, 5 levels") without expanding the editor. | P1 | **Done** — purple "Rubric" badge on AssessmentCard, summary text in collapsed disclosure |
 
 ## 5. AI-Assisted Content Creation
 
@@ -234,7 +238,7 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~111 |
+| **Done** | ~115 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -251,4 +255,4 @@
 | 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-02-24*
+*Last updated: 2026-02-25*

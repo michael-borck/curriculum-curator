@@ -3,28 +3,77 @@ Pydantic schemas for assessments
 """
 
 from datetime import date, datetime
+from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.base import CamelModel
 from app.schemas.learning_outcomes import ALOResponse, ULOResponse
 
 
+class RubricType(str, Enum):
+    """Supported rubric formats"""
+
+    ANALYTIC = "analytic"
+    SINGLE_POINT = "single_point"
+    HOLISTIC = "holistic"
+    CHECKLIST = "checklist"
+
+
+class RubricLevel(CamelModel):
+    """Column header in a rubric (performance level)"""
+
+    label: str = Field(..., min_length=1, description="Level label (e.g. Excellent)")
+    points: float | None = Field(None, description="Points for this level")
+    description: str | None = Field(
+        None, description="Level description (used by holistic rubrics)"
+    )
+
+
 class RubricCriterion(CamelModel):
-    """Schema for a rubric criterion"""
+    """Row in a rubric (criterion being assessed)"""
 
     name: str = Field(..., min_length=1, description="Criterion name")
-    description: str = Field(..., description="Criterion description")
-    points: float = Field(..., ge=0, description="Maximum points")
-    levels: list[str] = Field(default_factory=list, description="Performance levels")
+    description: str = Field(default="", description="Criterion description")
+    weight: float = Field(default=0, ge=0, description="Weight as % of total")
+    cells: list[str] = Field(
+        default_factory=list,
+        description="One description per level (same order as levels)",
+    )
 
 
 class Rubric(CamelModel):
-    """Schema for assessment rubric"""
+    """Schema for assessment rubric — covers analytic, single-point, holistic, checklist"""
 
-    criteria: list[RubricCriterion] = Field(..., min_length=1)
-    total_points: float = Field(..., ge=0)
+    type: RubricType = Field(default=RubricType.ANALYTIC, description="Rubric format")
+    levels: list[RubricLevel] = Field(
+        default_factory=list, description="Column headers"
+    )
+    criteria: list[RubricCriterion] = Field(
+        default_factory=list, description="Row definitions"
+    )
+    total_points: float = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def validate_rubric_structure(self) -> "Rubric":
+        """Validate structure based on rubric type."""
+        if self.type == RubricType.HOLISTIC:
+            if len(self.criteria) > 0:
+                raise ValueError("Holistic rubrics must not have criteria rows")
+            if len(self.levels) == 0:
+                raise ValueError("Holistic rubrics require at least one level")
+        elif len(self.criteria) > 0 and len(self.levels) > 0:
+                for i, criterion in enumerate(self.criteria):
+                    if len(criterion.cells) > 0 and len(criterion.cells) != len(
+                        self.levels
+                    ):
+                        raise ValueError(
+                            f"Criterion '{criterion.name}' (index {i}) has "
+                            f"{len(criterion.cells)} cells but there are "
+                            f"{len(self.levels)} levels"
+                        )
+        return self
 
 
 class AssessmentBase(CamelModel):
@@ -93,7 +142,7 @@ class AssessmentResponse(AssessmentBase):
 
     id: str
     unit_id: str
-    rubric: dict[str, Any] | None
+    rubric: dict[str, Any] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

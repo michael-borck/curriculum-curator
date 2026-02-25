@@ -39,9 +39,9 @@
 
 ---
 
-## Scenario 3 — ULOs, Assessments & Alignment
+## Scenario 3 — ULOs, Assessments, Rubrics & Alignment
 
-**Covers:** 2.1–2.8, 4.1–4.6, 7.4–7.6
+**Covers:** 2.1–2.8, 4.1–4.10, 7.4–7.6
 
 - [ ] 1. In the unit from Scenario 2, navigate to **Learning Outcomes**.
 - [ ] 2. Add a ULO manually: "Construct responsive web pages using HTML and CSS" at Bloom's level "Apply". Verify it saves.
@@ -55,6 +55,18 @@
 - [ ] 10. Navigate to the **Alignment** or **Analytics** view. Verify the alignment report shows ULO coverage across materials and assessments.
 - [ ] 11. Verify the **quality score** is visible (graded A–F) and any validation warnings are listed.
 - [ ] 12. Check that recommendations are shown for improving the unit.
+- [ ] 13. Edit the "Portfolio Website" assessment. Expand the **Rubric** section (collapsed by default, showing "No rubric").
+- [ ] 14. Select **Analytic** rubric type. Verify a grid appears with 4 default levels (Excellent/Good/Satisfactory/Unsatisfactory) and 1 criterion row.
+- [ ] 15. Edit the criterion name to "Design Quality". Set weight to 30. Fill in cell descriptions for each level. Add a second criterion "Code Quality" (weight 40) and a third "Documentation" (weight 30).
+- [ ] 16. Add a 5th level column (e.g. "Outstanding"). Verify all criteria rows gain an extra cell. Remove the column — verify all rows shrink back.
+- [ ] 17. Set Total Points to 100. Save the assessment. Reload the page — verify the rubric data persists (4 levels, 3 criteria, all cell text intact).
+- [ ] 18. Verify the assessment card now shows a purple **Rubric** badge.
+- [ ] 19. Collapse the Rubric section. Verify the summary reads "Analytic: 3 criteria, 4 levels".
+- [ ] 20. Edit the assessment again. Change the rubric type to **Holistic**. Verify a confirmation dialog warns about data reset. Accept.
+- [ ] 21. Verify the editor now shows level cards with label, points, and a paragraph textarea (no criteria rows). Add descriptions to each level. Save.
+- [ ] 22. Edit the "Final Exam" assessment. Add a **Checklist** rubric. Verify the editor shows simple criteria rows with a checkbox placeholder. Add 5 criteria. Save and reload — verify persistence.
+- [ ] 23. Create a new assessment "Peer Review" (formative, 0%). Add a **Single-Point** rubric. Verify the editor shows a 3-column layout: "Concerns" (read-only) | criterion name + proficient description (editable) | "Advanced" (read-only). Add 3 criteria. Save.
+- [ ] 24. On the "Peer Review" assessment, click **Remove Rubric** inside the rubric editor. Confirm. Verify the rubric is cleared and the card no longer shows a Rubric badge.
 
 ---
 
@@ -266,7 +278,7 @@
 | 1. Unit Setup | 1.1–1.12 | 2, 5, 7, 13, 14 |
 | 2. Learning Outcomes | 2.1–2.8 | 3, 4, 5 |
 | 3. Weekly Materials | 3.1–3.12 | 4 |
-| 4. Assessments | 4.1–4.6 | 3 |
+| 4. Assessments | 4.1–4.10 | 3 |
 | 5. AI Content | 5.1–5.11 | 5 |
 | 6. Import | 6.1–6.8 | 7, 8 |
 | 7. Quality | 7.1–7.10 | 3, 10, 13 |
@@ -287,4 +299,4 @@
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
 | 15.5, 15.6 | Cut from scope |
 
-*Last updated: 2026-02-24*
+*Last updated: 2026-02-25*

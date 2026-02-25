@@ -20,6 +20,8 @@ from app.schemas.assessments import (
     AssessmentUpdate,
     Rubric,
     RubricCriterion,
+    RubricLevel,
+    RubricType,
 )
 from app.schemas.learning_outcomes import ALOCreate
 from app.services.assessments_service import AssessmentsService
@@ -159,12 +161,19 @@ class TestCreateAssessment:
         self, service: AssessmentsService, test_db: Session, test_unit: Unit
     ) -> None:
         rubric = Rubric(
+            type=RubricType.ANALYTIC,
+            levels=[
+                RubricLevel(label="Fail", points=0),
+                RubricLevel(label="Pass", points=5),
+                RubricLevel(label="Credit", points=8),
+                RubricLevel(label="Distinction", points=10),
+            ],
             criteria=[
                 RubricCriterion(
                     name="Quality",
                     description="Work quality",
-                    points=10.0,
-                    levels=["Fail", "Pass", "Credit", "Distinction"],
+                    weight=100.0,
+                    cells=["Poor", "Adequate", "Good", "Excellent"],
                 )
             ],
             total_points=10.0,
@@ -174,6 +183,7 @@ class TestCreateAssessment:
 
         assert result.rubric is not None
         assert result.rubric["total_points"] == 10.0
+        assert result.rubric["type"] == "analytic"
         assert len(result.rubric["criteria"]) == 1
 
 
@@ -535,3 +545,205 @@ class TestMappingsAndOutcomes:
         assert isinstance(result, AssessmentLearningOutcome)
         assert result.description == "Demonstrate understanding of testing"
         assert result.assessment_id == assessment.id
+
+
+# ---------------------------------------------------------------------------
+# TestRubricValidation
+# ---------------------------------------------------------------------------
+
+
+class TestRubricValidation:
+    """Validate the Rubric pydantic schema for all 4 rubric types."""
+
+    def test_analytic_valid(self) -> None:
+        rubric = Rubric(
+            type=RubricType.ANALYTIC,
+            levels=[
+                RubricLevel(label="Excellent", points=4),
+                RubricLevel(label="Good", points=3),
+            ],
+            criteria=[
+                RubricCriterion(name="Analysis", description="", weight=50, cells=["A", "B"]),
+                RubricCriterion(name="Writing", description="", weight=50, cells=["C", "D"]),
+            ],
+            total_points=100,
+        )
+        assert rubric.type == RubricType.ANALYTIC
+        assert len(rubric.criteria) == 2
+
+    def test_analytic_mismatched_cells_fails(self) -> None:
+        with pytest.raises(ValueError, match="cells"):
+            Rubric(
+                type=RubricType.ANALYTIC,
+                levels=[
+                    RubricLevel(label="Excellent", points=4),
+                    RubricLevel(label="Good", points=3),
+                ],
+                criteria=[
+                    RubricCriterion(name="Analysis", description="", weight=100, cells=["A"]),
+                ],
+                total_points=100,
+            )
+
+    def test_analytic_empty_cells_ok(self) -> None:
+        """Criteria with no cells (empty list) should be allowed."""
+        rubric = Rubric(
+            type=RubricType.ANALYTIC,
+            levels=[RubricLevel(label="Good", points=3)],
+            criteria=[
+                RubricCriterion(name="Analysis", description="", weight=100, cells=[]),
+            ],
+            total_points=100,
+        )
+        assert len(rubric.criteria[0].cells) == 0
+
+    def test_holistic_valid(self) -> None:
+        rubric = Rubric(
+            type=RubricType.HOLISTIC,
+            levels=[
+                RubricLevel(label="Excellent", points=4, description="Outstanding work"),
+                RubricLevel(label="Good", points=3, description="Solid work"),
+            ],
+            criteria=[],
+            total_points=100,
+        )
+        assert rubric.type == RubricType.HOLISTIC
+        assert len(rubric.levels) == 2
+
+    def test_holistic_with_criteria_fails(self) -> None:
+        with pytest.raises(ValueError, match="must not have criteria"):
+            Rubric(
+                type=RubricType.HOLISTIC,
+                levels=[RubricLevel(label="Excellent", points=4, description="Good")],
+                criteria=[
+                    RubricCriterion(name="X", description="", weight=100, cells=[]),
+                ],
+                total_points=100,
+            )
+
+    def test_holistic_no_levels_fails(self) -> None:
+        with pytest.raises(ValueError, match="at least one level"):
+            Rubric(
+                type=RubricType.HOLISTIC,
+                levels=[],
+                criteria=[],
+                total_points=100,
+            )
+
+    def test_single_point_valid(self) -> None:
+        rubric = Rubric(
+            type=RubricType.SINGLE_POINT,
+            levels=[RubricLevel(label="Proficient", points=None)],
+            criteria=[
+                RubricCriterion(name="Analysis", description="", weight=50, cells=["Meets expectations"]),
+                RubricCriterion(name="Writing", description="", weight=50, cells=["Clear prose"]),
+            ],
+            total_points=100,
+        )
+        assert rubric.type == RubricType.SINGLE_POINT
+
+    def test_checklist_valid(self) -> None:
+        rubric = Rubric(
+            type=RubricType.CHECKLIST,
+            levels=[
+                RubricLevel(label="Met", points=1),
+                RubricLevel(label="Not Met", points=0),
+            ],
+            criteria=[
+                RubricCriterion(name="Submitted on time", description="", weight=0, cells=[]),
+                RubricCriterion(name="Includes references", description="", weight=0, cells=[]),
+            ],
+            total_points=100,
+        )
+        assert rubric.type == RubricType.CHECKLIST
+        assert len(rubric.criteria) == 2
+
+    def test_default_type_is_analytic(self) -> None:
+        """Backwards compatibility: omitting type defaults to analytic."""
+        rubric = Rubric(
+            levels=[RubricLevel(label="Good", points=3)],
+            criteria=[
+                RubricCriterion(name="X", description="", weight=100, cells=["Y"]),
+            ],
+            total_points=100,
+        )
+        assert rubric.type == RubricType.ANALYTIC
+
+
+class TestRubricCRUD:
+    """Test creating/updating assessments with each rubric type via the service."""
+
+    @pytest.mark.asyncio
+    async def test_create_with_holistic_rubric(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        rubric = Rubric(
+            type=RubricType.HOLISTIC,
+            levels=[
+                RubricLevel(label="Excellent", points=4, description="Outstanding"),
+                RubricLevel(label="Poor", points=0, description="Insufficient"),
+            ],
+            criteria=[],
+            total_points=100,
+        )
+        data = _make_create(rubric=rubric)
+        result = await service.create_assessment(test_db, _uid(test_unit.id), data)
+
+        assert result.rubric is not None
+        assert result.rubric["type"] == "holistic"
+        assert len(result.rubric["criteria"]) == 0
+        assert len(result.rubric["levels"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_create_with_checklist_rubric(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        rubric = Rubric(
+            type=RubricType.CHECKLIST,
+            levels=[
+                RubricLevel(label="Met", points=1),
+                RubricLevel(label="Not Met", points=0),
+            ],
+            criteria=[
+                RubricCriterion(name="On time", description="", weight=0, cells=[]),
+            ],
+            total_points=10,
+        )
+        data = _make_create(rubric=rubric)
+        result = await service.create_assessment(test_db, _uid(test_unit.id), data)
+
+        assert result.rubric is not None
+        assert result.rubric["type"] == "checklist"
+
+    @pytest.mark.asyncio
+    async def test_update_rubric_type(
+        self, service: AssessmentsService, test_db: Session, test_unit: Unit
+    ) -> None:
+        """Create with analytic rubric, update to holistic."""
+        rubric_v1 = Rubric(
+            type=RubricType.ANALYTIC,
+            levels=[RubricLevel(label="Good", points=3)],
+            criteria=[
+                RubricCriterion(name="X", description="", weight=100, cells=["Y"]),
+            ],
+            total_points=100,
+        )
+        data = _make_create(rubric=rubric_v1)
+        created = await service.create_assessment(test_db, _uid(test_unit.id), data)
+        assert created.rubric is not None
+        assert created.rubric["type"] == "analytic"
+
+        rubric_v2 = Rubric(
+            type=RubricType.HOLISTIC,
+            levels=[
+                RubricLevel(label="Excellent", points=4, description="Great"),
+            ],
+            criteria=[],
+            total_points=100,
+        )
+        update_data = AssessmentUpdate(rubric=rubric_v2)
+        updated = await service.update_assessment(test_db, _uid(created.id), update_data)
+
+        assert updated is not None
+        assert updated.rubric is not None
+        assert updated.rubric["type"] == "holistic"

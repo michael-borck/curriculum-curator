@@ -163,6 +163,35 @@ export interface WeekMaterials {
   materials: MaterialResponse[];
 }
 
+// ============= Rubric =============
+
+export enum RubricType {
+  ANALYTIC = 'analytic',
+  SINGLE_POINT = 'single_point',
+  HOLISTIC = 'holistic',
+  CHECKLIST = 'checklist',
+}
+
+export interface RubricLevel {
+  label: string;
+  points: number | null;
+  description?: string | undefined;
+}
+
+export interface RubricCriterion {
+  name: string;
+  description: string;
+  weight: number;
+  cells: string[];
+}
+
+export interface Rubric {
+  type: RubricType;
+  levels: RubricLevel[];
+  criteria: RubricCriterion[];
+  totalPoints: number;
+}
+
 // ============= Assessments =============
 
 export interface AssessmentCreate {
@@ -177,7 +206,7 @@ export interface AssessmentCreate {
   dueWeek?: number;
   dueDate?: string;
   duration?: number;
-  rubric?: Record<string, any>;
+  rubric?: Rubric | undefined;
   questions?: string[];
   wordCount?: number;
   groupWork?: boolean;
@@ -197,7 +226,7 @@ export interface AssessmentUpdate {
   dueWeek?: number;
   dueDate?: string;
   duration?: number;
-  rubric?: Record<string, any>;
+  rubric?: Rubric | undefined;
   questions?: string[];
   wordCount?: number;
   groupWork?: boolean;
@@ -219,7 +248,7 @@ export interface AssessmentResponse {
   dueWeek?: number;
   dueDate?: string;
   duration?: number;
-  rubric?: Record<string, any>;
+  rubric?: Rubric | undefined;
   questions?: string[];
   wordCount?: number;
   groupWork: boolean;

@@ -10,9 +10,11 @@ import {
   AlertCircle,
   CheckCircle,
   BarChart,
+  ClipboardList,
 } from 'lucide-react';
 import { assessmentsApi } from '../../services/unitStructureApi';
 import AIAssistField from './AIAssistField';
+import RubricEditor from './RubricEditor';
 import {
   AssessmentResponse,
   AssessmentCreate,
@@ -21,6 +23,7 @@ import {
   AssessmentCategory,
   AssessmentStatus,
   GradeDistribution,
+  Rubric,
 } from '../../types/unitStructure';
 import toast from 'react-hot-toast';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
@@ -41,6 +44,7 @@ interface AssessmentFormData {
   wordCount: number | undefined;
   groupWork: boolean;
   status: AssessmentStatus;
+  rubric: Rubric | undefined;
 }
 
 const categoryIcons: Record<AssessmentCategory, React.ReactElement> = {
@@ -101,6 +105,12 @@ const AssessmentCard: React.FC<{
               <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800'>
                 <Users className='w-3 h-3 mr-1' />
                 Group
+              </span>
+            )}
+            {assessment.rubric && (
+              <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800'>
+                <ClipboardList className='w-3 h-3 mr-1' />
+                Rubric
               </span>
             )}
           </div>
@@ -186,6 +196,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
     wordCount: undefined,
     groupWork: false,
     status: AssessmentStatus.DRAFT,
+    rubric: undefined,
   });
 
   useEffect(() => {
@@ -234,6 +245,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
           }),
           groupWork: formData.groupWork,
           status: formData.status,
+          rubric: formData.rubric,
         };
 
         await assessmentsApi.updateAssessment(editingAssessment.id, updateData);
@@ -257,6 +269,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
           }),
           groupWork: formData.groupWork,
           status: formData.status,
+          rubric: formData.rubric,
         };
 
         await assessmentsApi.createAssessment(unitId, createData);
@@ -289,6 +302,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
       wordCount: assessment.wordCount,
       groupWork: assessment.groupWork,
       status: assessment.status,
+      rubric: assessment.rubric,
     });
     setShowForm(true);
   };
@@ -322,6 +336,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
       wordCount: undefined,
       groupWork: false,
       status: AssessmentStatus.DRAFT,
+      rubric: undefined,
     });
   };
 
@@ -528,6 +543,13 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
                 className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
               />
             </div>
+
+            <RubricEditor
+              value={formData.rubric}
+              onChange={rubric => setFormData({ ...formData, rubric })}
+              assessmentTitle={formData.title}
+              assessmentCategory={formData.category}
+            />
 
             <div className='grid grid-cols-2 gap-4'>
               <div>

@@ -193,8 +193,13 @@ class Assessment(Base):
         return []
 
     def get_total_rubric_points(self) -> float:
-        """Calculate total points from rubric"""
+        """Get total points from rubric"""
         if self.rubric and isinstance(self.rubric, dict):
-            criteria = self.rubric.get("criteria", [])
-            return sum(c.get("points", 0) for c in criteria)
+            return float(self.rubric.get("total_points", 0))
         return 0.0
+
+    def get_rubric_type(self) -> str | None:
+        """Get rubric type (analytic, single_point, holistic, checklist)"""
+        if self.rubric and isinstance(self.rubric, dict):
+            return str(self.rubric.get("type", "analytic"))
+        return None
