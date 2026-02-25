@@ -520,6 +520,8 @@ export interface SkippedFile {
   path: string;
   filename: string;
   reason: string;
+  category: string; // "action_needed" | "not_supported" | "not_applicable"
+  contentType: string; // "image" | "video" | "audio" | "lti_tool" | "rubric" | "announcement" | "discussion" | "external_link" | "access_control" | "unknown"
 }
 
 export interface UnifiedImportPreview {
@@ -555,6 +557,7 @@ export interface ImportTaskStatus {
   unitCode: string | null;
   unitTitle: string | null;
   errors: string[];
+  skippedItems: SkippedFile[];
 }
 
 export const unifiedAnalyze = (

@@ -25,6 +25,7 @@ class ImportTask:
     unit_code: str | None = None
     unit_title: str | None = None
     errors: list[str] = field(default_factory=list)
+    skipped_items: list[dict[str, str]] = field(default_factory=list)
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 

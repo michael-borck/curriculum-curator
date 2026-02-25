@@ -16,6 +16,14 @@ import {
   FileQuestion,
   ChevronDown,
   ChevronUp,
+  Image,
+  Video,
+  Music,
+  Link,
+  MessageSquare,
+  Megaphone,
+  Puzzle,
+  Shield,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -28,6 +36,7 @@ import type {
   UnifiedImportPreview,
   ImportTaskStatus,
   FilePreviewItem,
+  SkippedFile,
 } from '../../services/api';
 
 type Phase = 'upload' | 'preview' | 'processing' | 'done' | 'failed';
@@ -57,7 +66,51 @@ const SKIP_REASON_LABELS: Record<string, string> = {
   unsupported_format: 'Unsupported format',
   too_large: 'File too large',
   corrupted: 'Corrupted',
+  image_not_imported: 'Image not imported',
+  video_url_needed: 'Video — URL needed',
+  audio_not_supported: 'Audio not supported',
+  lti_tool_not_supported: 'LTI tool not supported',
+  external_link_not_imported: 'External link not imported',
+  discussion_not_applicable: 'Discussion — not applicable',
+  announcement_not_applicable: 'Announcement — not applicable',
 };
+
+const CONTENT_TYPE_ICONS: Record<
+  string,
+  React.ComponentType<{ className?: string | undefined }>
+> = {
+  image: Image,
+  video: Video,
+  audio: Music,
+  lti_tool: Puzzle,
+  external_link: Link,
+  discussion: MessageSquare,
+  announcement: Megaphone,
+  access_control: Shield,
+  unknown: FileQuestion,
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  action_needed: 'Action needed',
+  not_supported: 'Not supported',
+  not_applicable: 'Not applicable',
+};
+
+const CATEGORY_STYLES: Record<string, string> = {
+  action_needed: 'bg-amber-50 border-amber-200 text-amber-800',
+  not_supported: 'bg-gray-50 border-gray-200 text-gray-600',
+  not_applicable: 'bg-gray-50 border-gray-100 text-gray-500',
+};
+
+function groupByCategory(files: SkippedFile[]): Record<string, SkippedFile[]> {
+  const groups: Record<string, SkippedFile[]> = {};
+  for (const f of files) {
+    const cat = f.category || 'not_supported';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(f);
+  }
+  return groups;
+}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -469,7 +522,7 @@ export default function PackageImport() {
             </table>
           </div>
 
-          {/* Skipped files */}
+          {/* Skipped files — categorised */}
           {preview.skippedFiles.length > 0 && (
             <div>
               <button
@@ -481,25 +534,10 @@ export default function PackageImport() {
                 ) : (
                   <ChevronDown className='h-4 w-4' />
                 )}
-                {preview.skippedFiles.length} skipped file
+                {preview.skippedFiles.length} skipped item
                 {preview.skippedFiles.length !== 1 ? 's' : ''}
               </button>
-              {showSkipped && (
-                <div className='mt-2 rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-1'>
-                  {preview.skippedFiles.map(sf => (
-                    <div
-                      key={sf.path}
-                      className='flex items-center gap-2 text-sm text-gray-500'
-                    >
-                      <FileQuestion className='h-4 w-4 flex-shrink-0' />
-                      <span className='truncate'>{sf.filename}</span>
-                      <span className='text-xs text-gray-400'>
-                        {SKIP_REASON_LABELS[sf.reason] ?? sf.reason}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {showSkipped && <SkippedFilesList files={preview.skippedFiles} />}
             </div>
           )}
 
@@ -609,6 +647,10 @@ export default function PackageImport() {
             </div>
           )}
 
+          {taskStatus.skippedItems.length > 0 && (
+            <SkippedFilesList files={taskStatus.skippedItems} />
+          )}
+
           <button
             onClick={() => navigate(`/units/${taskStatus.unitId}`)}
             className='w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-white font-medium hover:bg-purple-700 transition-colors'
@@ -636,6 +678,47 @@ function StatCard({
       <Icon className='h-5 w-5 text-purple-600 mx-auto mb-1' />
       <div className='text-xl font-bold text-gray-900'>{count}</div>
       <div className='text-xs text-gray-500'>{label}</div>
+    </div>
+  );
+}
+
+/** Renders skipped files grouped by category (action_needed, not_supported, not_applicable). */
+function SkippedFilesList({ files }: { files: SkippedFile[] }) {
+  const groups = groupByCategory(files);
+  const categoryOrder = ['action_needed', 'not_supported', 'not_applicable'];
+
+  return (
+    <div className='mt-2 space-y-3'>
+      {categoryOrder.map(cat => {
+        const items = groups[cat];
+        if (!items || items.length === 0) return null;
+        const style =
+          CATEGORY_STYLES[cat] ?? 'bg-gray-50 border-gray-200 text-gray-600';
+        return (
+          <div key={cat} className={`rounded-lg border p-3 ${style}`}>
+            <p className='text-sm font-medium mb-2'>
+              {CATEGORY_LABELS[cat] ?? cat} ({items.length})
+            </p>
+            <div className='space-y-1'>
+              {items.map(sf => {
+                const Icon = CONTENT_TYPE_ICONS[sf.contentType] ?? FileQuestion;
+                return (
+                  <div
+                    key={sf.path + sf.filename}
+                    className='flex items-center gap-2 text-sm'
+                  >
+                    <Icon className='h-4 w-4 flex-shrink-0' />
+                    <span className='truncate'>{sf.filename}</span>
+                    <span className='text-xs opacity-70'>
+                      {SKIP_REASON_LABELS[sf.reason] ?? sf.reason}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

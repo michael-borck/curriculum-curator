@@ -190,6 +190,7 @@ class ImportTaskStatus(BaseModel):
     unit_code: str | None
     unit_title: str | None
     errors: list[str]
+    skipped_items: list[dict[str, str]]
 
 
 @router.get("/import/unified/status/{task_id}", response_model=ImportTaskStatus)
@@ -211,4 +212,5 @@ async def unified_status(
         unit_code=task.unit_code,
         unit_title=task.unit_title,
         errors=task.errors,
+        skipped_items=task.skipped_items,
     )

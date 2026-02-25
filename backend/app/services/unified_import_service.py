@@ -50,6 +50,11 @@ logger = logging.getLogger(__name__)
 # Extensions we can extract text from
 PROCESSABLE_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".txt", ".html", ".htm"}
 
+# Media extensions for skip classification
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"}
+_VIDEO_EXTENSIONS = {".mp4", ".webm", ".mov", ".avi"}
+_AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a"}
+
 # Max individual file size (50 MB)
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
@@ -78,6 +83,27 @@ def _title_from_filename(filename: str) -> str:
     return title
 
 
+def _classify_skipped_extension(ext: str) -> tuple[str, str, str]:
+    """Return (content_type, category, reason) for a non-processable extension."""
+    if ext in _IMAGE_EXTENSIONS:
+        return "image", "action_needed", "image_not_imported"
+    if ext in _VIDEO_EXTENSIONS:
+        return "video", "action_needed", "video_url_needed"
+    if ext in _AUDIO_EXTENSIONS:
+        return "audio", "not_supported", "audio_not_supported"
+    return "unknown", "not_supported", "unsupported_format"
+
+
+# Resource type substrings that indicate LTI tools
+_LTI_TYPE_HINTS = {"imsbasiclti", "basiclti", "blti"}
+# Resource type substrings that indicate external links
+_LINK_TYPE_HINTS = {"weblink", "imswl", "wl_"}
+# Resource type substrings that indicate discussions
+_DISCUSSION_TYPE_HINTS = {"discussion", "dt_"}
+# Resource type substrings that indicate announcements
+_ANNOUNCEMENT_TYPE_HINTS = {"announcement"}
+
+
 class UnifiedImportService:
     """Coordinator that combines package + file import services."""
 
@@ -104,6 +130,9 @@ class UnifiedImportService:
         )
 
         files, skipped = self._walk_files(zf, manifest_titles, manifest_types)
+
+        # Also detect manifest-only items (LTI, discussions, etc.)
+        skipped.extend(self._collect_manifest_skipped(zf))
 
         material_count = sum(1 for f in files if f.detected_type == "material")
         assessment_count = sum(1 for f in files if f.detected_type == "assessment")
@@ -215,9 +244,14 @@ class UnifiedImportService:
 
             if ext not in PROCESSABLE_EXTENSIONS:
                 if ext:
+                    content_type, category, reason = _classify_skipped_extension(ext)
                     skipped.append(
                         SkippedFile(
-                            path=name, filename=basename, reason="unsupported_format"
+                            path=name,
+                            filename=basename,
+                            reason=reason,
+                            category=category,
+                            content_type=content_type,
                         )
                     )
                 continue
@@ -260,6 +294,62 @@ class UnifiedImportService:
             )
 
         return files, skipped
+
+    @staticmethod
+    def _collect_manifest_skipped(
+        zf: zipfile.ZipFile,
+    ) -> list[SkippedFile]:
+        """Detect LMS items in the manifest that have no importable file."""
+        if "imsmanifest.xml" not in zf.namelist():
+            return []
+
+        manifest = parse_manifest(zf)
+        skipped: list[SkippedFile] = []
+
+        for _item_title, children in manifest.top_items:
+            for child_title, href, rtype, _cat_hint in children:
+                if href:
+                    # Items with file hrefs are handled by _walk_files
+                    continue
+                if not rtype:
+                    continue
+
+                rtype_lower = rtype.lower()
+                content_type: str
+                category: str
+                reason: str
+
+                if any(h in rtype_lower for h in _LTI_TYPE_HINTS):
+                    content_type = "lti_tool"
+                    category = "not_supported"
+                    reason = "lti_tool_not_supported"
+                elif any(h in rtype_lower for h in _LINK_TYPE_HINTS):
+                    content_type = "external_link"
+                    category = "not_supported"
+                    reason = "external_link_not_imported"
+                elif any(h in rtype_lower for h in _DISCUSSION_TYPE_HINTS):
+                    content_type = "discussion"
+                    category = "not_applicable"
+                    reason = "discussion_not_applicable"
+                elif any(h in rtype_lower for h in _ANNOUNCEMENT_TYPE_HINTS):
+                    content_type = "announcement"
+                    category = "not_applicable"
+                    reason = "announcement_not_applicable"
+                else:
+                    # Unknown non-file manifest item — skip silently
+                    continue
+
+                skipped.append(
+                    SkippedFile(
+                        path=rtype,
+                        filename=child_title or rtype,
+                        reason=reason,
+                        category=category,
+                        content_type=content_type,
+                    )
+                )
+
+        return skipped
 
     # ------------------------------------------------------------------
     # Apply
@@ -341,6 +431,7 @@ class UnifiedImportService:
         try:
             preview = self.analyze(zip_bytes)
             task.total_files = preview.total_processable
+            task.skipped_items = [sf.model_dump() for sf in preview.skipped_files]
 
             if preview.is_round_trip:
                 self._import_round_trip(
