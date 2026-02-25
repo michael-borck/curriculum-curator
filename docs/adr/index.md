@@ -71,6 +71,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [057](057-udl-inclusivity-scoring-model.md) | UDL Inclusivity Scoring Model | Accepted |
 | [058](058-prompt-template-library.md) | Prompt Template Library | Accepted |
 | [059](059-week-aware-ai-context-and-source-grounding.md) | Week-Aware AI Context & Source Grounding | Accepted |
+| [060](060-analytics-snapshot-storage.md) | Analytics Snapshot Storage | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Proposed (Phase 2) |
 
 ### Foundation
