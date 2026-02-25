@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { User, AuthState } from '../types/index';
 import api from '../services/api';
 import { useTeachingStyleStore } from './teachingStyleStore';
+import { useWorkingContextStore } from './workingContextStore';
 
 interface ExtendedAuthState extends AuthState {
   isInitialized: boolean;
@@ -23,8 +24,9 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
     // In local mode, logout is a no-op (nowhere to log out to)
     if (get().isLocalMode) return;
 
-    // Clear token from localStorage
+    // Clear token and persisted context from localStorage
     localStorage.removeItem('token');
+    useWorkingContextStore.getState().clearContext();
     set({ user: null, isAuthenticated: false });
   },
 
@@ -97,6 +99,7 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
     } catch {
       // Token is invalid or expired - clear it
       localStorage.removeItem('token');
+      useWorkingContextStore.getState().clearContext();
       set({
         user: null,
         isAuthenticated: false,
