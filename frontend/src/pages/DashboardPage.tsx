@@ -813,14 +813,14 @@ const DashboardPage = () => {
                 'Add your unit code, title, and duration. You can refine details later.',
             },
             {
-              title: 'Use AI to generate schedules',
+              title: 'Build your schedule',
               description:
-                'Once created, use the Course Planner to auto-generate a 12-week teaching schedule.',
+                'Once created, structure your weeks with topics, learning outcomes, and materials.',
             },
             {
-              title: 'Create content with AI assistance',
+              title: 'Create content',
               description:
-                'Generate lectures, tutorials, and assessments aligned with your teaching style.',
+                'Write, import, research, or generate materials for each week aligned with your teaching style.',
             },
           ]}
         />
