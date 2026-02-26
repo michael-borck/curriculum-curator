@@ -855,9 +855,33 @@ Format as JSON."""
                 "output"
             ]
 
-    async def list_available_models(self, provider: str | None = None) -> list[str]:
+    async def list_available_models(
+        self,
+        provider: str | None = None,
+        api_key: str | None = None,
+        api_url: str | None = None,
+    ) -> list[str]:
         """List available models for a provider."""
-        models = {
+        # For Ollama, query the actual instance
+        if provider == "ollama":
+            try:
+                import httpx  # noqa: PLC0415
+
+                base_url = api_url or "http://localhost:11434"
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"{base_url}/api/tags", timeout=10.0
+                    )
+                    if response.status_code == 200:
+                        return [
+                            m["name"]
+                            for m in response.json().get("models", [])
+                        ]
+            except Exception:
+                pass
+            return []
+
+        static_models: dict[str, list[str]] = {
             "openai": [
                 "gpt-4",
                 "gpt-4-turbo",
@@ -870,12 +894,11 @@ Format as JSON."""
                 "claude-3-opus-20240229",
                 "claude-3-sonnet-20240229",
             ],
-            "ollama": ["ollama/llama3.2", "ollama/llama3.1", "ollama/mistral"],
             "gemini": ["gemini/gemini-pro", "gemini/gemini-pro-vision"],
         }
         if provider:
-            return models.get(provider, [])
-        return [m for provider_models in models.values() for m in provider_models]
+            return static_models.get(provider, [])
+        return [m for provider_models in static_models.values() for m in provider_models]
 
     async def test_connection(
         self,

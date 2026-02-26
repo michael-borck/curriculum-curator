@@ -104,14 +104,13 @@ const Settings = () => {
   const saveProfile = async () => {
     try {
       setSaving(true);
-      await api.patch('/auth/profile', profileData);
-      // Update auth store so the rest of the app reflects changes immediately
-      if (user) {
+      const response = await api.patch('/auth/profile', profileData);
+      // Update auth store from the API response so all fields persist
+      if (user && response.data) {
         useAuthStore.setState({
           user: {
             ...user,
-            name: profileData.name,
-            educationSector: profileData.educationSector || undefined,
+            ...response.data,
           },
         });
       }

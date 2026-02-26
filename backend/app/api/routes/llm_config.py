@@ -52,7 +52,9 @@ async def list_available_models(
 ):
     """List available models for a provider"""
     provider_str = provider.value if hasattr(provider, "value") else str(provider)
-    return await llm_service.list_available_models(provider=provider_str)
+    return await llm_service.list_available_models(
+        provider=provider_str, api_key=api_key, api_url=api_url
+    )
 
 
 @router.get("/configurations", response_model=list[LLMConfig])
