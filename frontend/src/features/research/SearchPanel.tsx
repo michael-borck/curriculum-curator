@@ -128,10 +128,21 @@ const SearchPanel = () => {
       setProposal(result);
       setStage('review');
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : 'Failed to generate proposal. Please try again.';
+      let msg = 'Failed to generate proposal. Please try again.';
+      if (
+        e &&
+        typeof e === 'object' &&
+        'response' in e &&
+        (e as Record<string, unknown>).response
+      ) {
+        const resp = (e as { response: { data?: { detail?: string } } })
+          .response;
+        if (resp.data?.detail) {
+          msg = resp.data.detail;
+        }
+      } else if (e instanceof Error) {
+        msg = e.message;
+      }
       setError(msg);
       setStage('select-action');
     } finally {

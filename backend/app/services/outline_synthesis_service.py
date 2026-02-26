@@ -42,7 +42,7 @@ class OutlineSynthesisService:
         unit_id: str | None,
         design_id: str | None,
         db: Session,
-    ) -> ScaffoldUnitResponse | None:
+    ) -> tuple[ScaffoldUnitResponse | None, str | None]:
         """Generate a unit scaffold informed by research sources.
 
         Returns ScaffoldUnitResponse (same schema as /api/ai/scaffold-unit).
@@ -95,16 +95,16 @@ Each assessment has: title, category, weight, due_week."""
 
         if error:
             logger.error("Scaffold generation failed: %s", error)
-            return None
+            return None, error
 
-        return result  # type: ignore[return-value]
+        return result, None  # type: ignore[return-value]
 
     async def propose_comparison(
         self,
         sources: list[SourceInput],
         unit_id: str,
         db: Session,
-    ) -> ComparisonProposal | None:
+    ) -> tuple[ComparisonProposal | None, str | None]:
         """Compare sources against an existing unit's structure.
 
         Identifies gaps, overlaps, and improvement suggestions.
@@ -113,7 +113,7 @@ Each assessment has: title, category, weight, due_week."""
         unit = db.query(Unit).filter(Unit.id == unit_id).first()
         if not unit:
             logger.error("Unit %s not found for comparison", unit_id)
-            return None
+            return None, "Unit not found"
 
         topics = (
             db.query(WeeklyTopic)
@@ -174,20 +174,20 @@ Use the actual week numbers and topics from the unit above."""
 
         if error:
             logger.error("Comparison generation failed: %s", error)
-            return None
+            return None, error
 
         # Ensure unit_id is set correctly
         if result:
             result.unit_id = str(unit_id)  # type: ignore[union-attr]
 
-        return result  # type: ignore[return-value]
+        return result, None  # type: ignore[return-value]
 
     async def propose_reading_list(
         self,
         sources: list[SourceInput],
         unit_id: str,
         db: Session,
-    ) -> ReadingListProposal | None:
+    ) -> tuple[ReadingListProposal | None, str | None]:
         """Match sources to unit weeks with confidence scores.
 
         Returns each source mapped to its best-fit week.
@@ -196,7 +196,7 @@ Use the actual week numbers and topics from the unit above."""
         unit = db.query(Unit).filter(Unit.id == unit_id).first()
         if not unit:
             logger.error("Unit %s not found for reading list", unit_id)
-            return None
+            return None, "Unit not found"
 
         topics = (
             db.query(WeeklyTopic)
@@ -207,7 +207,7 @@ Use the actual week numbers and topics from the unit above."""
 
         if not topics:
             logger.warning("Unit %s has no weekly topics", unit_id)
-            return None
+            return None, "Unit has no weekly topics"
 
         week_lines = "\n".join(
             f"  Week {t.week_number}: {t.topic_title}" for t in topics
@@ -244,7 +244,7 @@ Each match has: url, title, suggested_week (int or null), confidence (float), re
 
         if error:
             logger.error("Reading list generation failed: %s", error)
-            return None
+            return None, error
 
         if result:
             proposal: ReadingListProposal = result  # type: ignore[assignment]
@@ -263,7 +263,7 @@ Each match has: url, title, suggested_week (int or null), confidence (float), re
                     matched
                 )
 
-        return result  # type: ignore[return-value]
+        return result, None  # type: ignore[return-value]
 
     def _format_sources(self, sources: list[SourceInput]) -> str:
         """Format sources into a text block for LLM prompts."""

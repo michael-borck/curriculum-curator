@@ -163,7 +163,7 @@ async def propose_scaffold(
     db: Session = Depends(deps.get_db),
 ):
     """Generate a unit scaffold from research sources (no DB writes)."""
-    result = await outline_synthesis_service.propose_scaffold(
+    result, error = await outline_synthesis_service.propose_scaffold(
         sources=request.source_data,
         unit_title=request.unit_title,
         unit_description=request.unit_description,
@@ -175,7 +175,10 @@ async def propose_scaffold(
     )
 
     if not result:
-        raise HTTPException(status_code=500, detail="Failed to generate scaffold")
+        raise HTTPException(
+            status_code=422,
+            detail=error or "Failed to generate scaffold",
+        )
 
     return result
 
@@ -193,14 +196,17 @@ async def propose_comparison(
     if str(unit.owner_id) != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not your unit")
 
-    result = await outline_synthesis_service.propose_comparison(
+    result, error = await outline_synthesis_service.propose_comparison(
         sources=request.source_data,
         unit_id=request.unit_id,
         db=db,
     )
 
     if not result:
-        raise HTTPException(status_code=500, detail="Failed to generate comparison")
+        raise HTTPException(
+            status_code=422,
+            detail=error or "Failed to generate comparison",
+        )
 
     return result
 
@@ -218,7 +224,7 @@ async def propose_reading_list(
     if str(unit.owner_id) != str(current_user.id):
         raise HTTPException(status_code=403, detail="Not your unit")
 
-    result = await outline_synthesis_service.propose_reading_list(
+    result, error = await outline_synthesis_service.propose_reading_list(
         sources=request.source_data,
         unit_id=request.unit_id,
         db=db,
@@ -226,7 +232,8 @@ async def propose_reading_list(
 
     if not result:
         raise HTTPException(
-            status_code=500, detail="Failed to generate reading list matches"
+            status_code=422,
+            detail=error or "Failed to generate reading list matches",
         )
 
     return result

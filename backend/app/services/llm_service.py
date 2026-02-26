@@ -135,9 +135,27 @@ class LLMService:
         provider, model, api_key = self._get_user_llm_config(user)
 
         if not provider:
-            provider = system_settings.get("default_llm_provider", "openai")
-            model = system_settings.get("default_llm_model")
-            api_key = self._get_system_api_key(provider, system_settings)
+            # Use explicit system default if it has a key
+            default_provider = system_settings.get("default_llm_provider")
+            if default_provider:
+                key = self._get_system_api_key(default_provider, system_settings)
+                if key or default_provider == "ollama":
+                    provider = default_provider
+                    model = system_settings.get("default_llm_model")
+                    api_key = key
+
+            # Otherwise, pick the first provider that has an API key
+            if not provider:
+                for candidate in ("anthropic", "openai", "gemini"):
+                    key = self._get_system_api_key(candidate, system_settings)
+                    if key:
+                        provider = candidate
+                        api_key = key
+                        break
+
+            # Last resort: try ollama (no key needed)
+            if not provider:
+                provider = "ollama"
 
         if not model:
             model = self.DEFAULT_MODELS.get(provider, "gpt-4")
@@ -171,7 +189,10 @@ class LLMService:
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
         if not api_key and provider not in ["ollama"]:
-            error_msg = f"No API key configured for provider {provider}"
+            error_msg = (
+                f"No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
+                f"or configure Ollama for local AI. (Tried: {provider})"
+            )
             if stream:
 
                 async def error_gen() -> AsyncGenerator[str, None]:
@@ -240,7 +261,10 @@ class LLMService:
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
         if not api_key and provider not in ["ollama"]:
-            yield f"No API key configured for provider {provider}"
+            yield (
+                "No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
+                "or configure Ollama for local AI."
+            )
             return
 
         prompt = self._build_pedagogy_prompt(pedagogy, topic, content_type)
@@ -301,7 +325,10 @@ Create content that aligns with this pedagogical approach."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
         if not api_key and provider not in ["ollama"]:
-            return None, f"No API key configured for provider {provider}"
+            return None, (
+                f"No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
+                f"or configure Ollama for local AI. (Tried: {provider})"
+            )
 
         json_schema = response_model.model_json_schema()
         enhanced_prompt = f"""{prompt}
