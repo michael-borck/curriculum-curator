@@ -31,14 +31,6 @@ interface DashboardStats {
   recent_registrations: number;
 }
 
-interface RecentActivity {
-  id: string;
-  action: string;
-  description: string;
-  timestamp: string;
-  type: 'user' | 'whitelist' | 'settings';
-}
-
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: Home },
   { id: 'users', label: 'User Management', icon: Users },
@@ -53,7 +45,6 @@ const AdminDashboard = () => {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
     null
   );
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState('');
   const { user, logout } = useAuthStore();
@@ -69,31 +60,6 @@ const AdminDashboard = () => {
       ]);
 
       setDashboardStats(statsResponse.data);
-
-      // Mock recent activity - would come from audit log API in production
-      setRecentActivity([
-        {
-          id: '1',
-          action: 'New user registered',
-          description: 'john.doe@example.com',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          type: 'user',
-        },
-        {
-          id: '2',
-          action: 'Email whitelist updated',
-          description: 'Added 3 new domains',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          type: 'whitelist',
-        },
-        {
-          id: '3',
-          action: 'System settings changed',
-          description: 'AI features enabled',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          type: 'settings',
-        },
-      ]);
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setStatsError('Failed to load dashboard statistics');
@@ -131,33 +97,6 @@ const AdminDashboard = () => {
     logout();
     localStorage.removeItem('token');
     navigate('/login');
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return 'Just now';
-    if (diffHours === 1) return '1 hour ago';
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    if (diffDays === 1) return '1 day ago';
-    return `${diffDays} days ago`;
-  };
-
-  const getActivityIcon = (type: RecentActivity['type']) => {
-    switch (type) {
-      case 'user':
-        return 'bg-green-500';
-      case 'whitelist':
-        return 'bg-blue-500';
-      case 'settings':
-        return 'bg-purple-500';
-      default:
-        return 'bg-gray-500';
-    }
   };
 
   const renderOverview = () => {
@@ -231,46 +170,6 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-
-        {/* Recent Activity */}
-        <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-6'>
-          <h3 className='text-lg font-semibold text-gray-900 mb-4'>
-            Recent Activity
-          </h3>
-          {recentActivity.length > 0 ? (
-            <div className='space-y-4'>
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={activity.id}
-                  className={`flex items-center justify-between py-3 ${
-                    index < recentActivity.length - 1
-                      ? 'border-b border-gray-100'
-                      : ''
-                  }`}
-                >
-                  <div className='flex items-center gap-3'>
-                    <div
-                      className={`w-2 h-2 ${getActivityIcon(activity.type)} rounded-full`}
-                    />
-                    <div>
-                      <p className='text-sm font-medium text-gray-900'>
-                        {activity.action}
-                      </p>
-                      <p className='text-xs text-gray-600'>
-                        {activity.description}
-                      </p>
-                    </div>
-                  </div>
-                  <span className='text-xs text-gray-500'>
-                    {formatDate(activity.timestamp)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className='text-gray-500 text-center py-8'>No recent activity</p>
-          )}
-        </div>
       </div>
     );
   };

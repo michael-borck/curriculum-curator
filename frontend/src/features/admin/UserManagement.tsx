@@ -2,11 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Search,
   MoreVertical,
-  UserPlus,
   Lock,
   Unlock,
   Trash2,
-  Edit,
   CheckCircle,
   XCircle,
   UserX,
@@ -113,13 +111,6 @@ const UserManagement = () => {
     }
   };
 
-  const handleChangeRole = async (_userId: string, _newRole: User['role']) => {
-    window.alert(
-      'Role change functionality will be implemented in a future version'
-    );
-    setShowDropdown(null);
-  };
-
   const handleDeleteUser = async (
     userId: string,
     permanent: boolean = false
@@ -185,15 +176,7 @@ const UserManagement = () => {
 
   return (
     <div className='space-y-6'>
-      <div className='flex justify-between items-center'>
-        <h2 className='text-2xl font-semibold text-gray-900'>
-          User Management
-        </h2>
-        <Button>
-          <UserPlus className='w-4 h-4 mr-2' />
-          Add User
-        </Button>
-      </div>
+      <h2 className='text-2xl font-semibold text-gray-900'>User Management</h2>
 
       {/* Filters */}
       <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
@@ -282,7 +265,6 @@ const UserManagement = () => {
                     handleToggleStatus(user.id, user.isActive)
                   }
                   onVerify={() => handleVerifyUser(user.id)}
-                  onChangeRole={newRole => handleChangeRole(user.id, newRole)}
                   onDeactivate={() => handleDeleteUser(user.id, false)}
                   onDelete={() => handleDeleteUser(user.id, true)}
                   formatDate={formatDate}
@@ -315,7 +297,6 @@ interface UserRowProps {
   onToggleDropdown: () => void;
   onToggleStatus: () => void;
   onVerify: () => void;
-  onChangeRole: (role: User['role']) => void;
   onDeactivate: () => void;
   onDelete: () => void;
   formatDate: (date: string) => string;
@@ -327,7 +308,6 @@ const UserRow = ({
   onToggleDropdown,
   onToggleStatus,
   onVerify,
-  onChangeRole,
   onDeactivate,
   onDelete,
   formatDate,
@@ -404,7 +384,6 @@ const UserRow = ({
               user={user}
               onToggleStatus={onToggleStatus}
               onVerify={onVerify}
-              onChangeRole={onChangeRole}
               onDeactivate={onDeactivate}
               onDelete={onDelete}
             />
@@ -420,7 +399,6 @@ interface UserActionsDropdownProps {
   user: User;
   onToggleStatus: () => void;
   onVerify: () => void;
-  onChangeRole: (role: User['role']) => void;
   onDeactivate: () => void;
   onDelete: () => void;
 }
@@ -429,7 +407,6 @@ const UserActionsDropdown = ({
   user,
   onToggleStatus,
   onVerify,
-  onChangeRole,
   onDeactivate,
   onDelete,
 }: UserActionsDropdownProps) => (
@@ -459,15 +436,6 @@ const UserActionsDropdown = ({
             Activate
           </>
         )}
-      </button>
-      <button
-        onClick={() =>
-          onChangeRole(user.role === 'admin' ? 'lecturer' : 'admin')
-        }
-        className='flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left'
-      >
-        <Edit className='w-4 h-4' />
-        Make {user.role === 'admin' ? 'Lecturer' : 'Admin'}
       </button>
       {user.isActive && (
         <button

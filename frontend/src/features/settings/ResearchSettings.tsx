@@ -110,7 +110,6 @@ const ResearchSettings = () => {
             <option value={1}>
               Tier 1: Academic (OpenAlex + Semantic Scholar)
             </option>
-            <option value={2}>Tier 2: LLM Native (coming soon)</option>
             <option value={3}>
               Tier 3: General Web (requires API keys below)
             </option>
