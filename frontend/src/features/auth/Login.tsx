@@ -137,6 +137,9 @@ const Login = ({ onBackToLanding }: LoginProps) => {
             <p className='mt-2 text-center text-sm text-gray-600'>
               Access your personalised content creation platform
             </p>
+            <p className='mt-1 text-center text-xs text-gray-400'>
+              v{__APP_VERSION__}
+            </p>
           </div>
 
           {error && (

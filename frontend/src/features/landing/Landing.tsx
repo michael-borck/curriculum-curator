@@ -154,6 +154,7 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             <span className='text-sm font-medium text-white'>
               Curriculum Curator
             </span>
+            <span className='text-xs text-gray-500'>v{__APP_VERSION__}</span>
           </div>
           <p className='text-sm'>
             Built by educators, for educators. Open source.
