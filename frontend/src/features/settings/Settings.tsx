@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import {
   User,
-  Bell,
   Shield,
-  Palette,
   Key,
   Save,
   CheckCircle,
@@ -40,16 +38,6 @@ const Settings = () => {
     institution: user?.institution || '',
     department: user?.department || '',
     educationSector: user?.educationSector || '',
-  });
-
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    browserNotifications: false,
-    weeklyReports: true,
-    contentSuggestions: true,
-    language: 'en-AU',
-    timezone: 'Australia/Sydney',
-    theme: 'light',
   });
 
   const [security, setSecurity] = useState({
@@ -152,9 +140,7 @@ const Settings = () => {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'teaching-style', label: 'Teaching Style', icon: Sparkles },
-    { id: 'preferences', label: 'Preferences', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'research', label: 'Research', icon: Search },
@@ -326,116 +312,6 @@ const Settings = () => {
           )}
 
           {activeTab === 'teaching-style' && <TeachingStyleSettings />}
-
-          {activeTab === 'preferences' && (
-            <div className='bg-white rounded-lg shadow-md p-6'>
-              <h2 className='text-xl font-semibold mb-6'>
-                Notification Preferences
-              </h2>
-
-              <div className='space-y-6'>
-                <div>
-                  <h3 className='font-medium mb-3'>Email Notifications</h3>
-                  <div className='space-y-3'>
-                    <label className='flex items-center'>
-                      <input
-                        type='checkbox'
-                        checked={preferences.emailNotifications}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            emailNotifications: e.target.checked,
-                          })
-                        }
-                        className='mr-3 h-4 w-4 text-blue-600 rounded border-gray-300'
-                      />
-                      <span>Email notifications for important updates</span>
-                    </label>
-
-                    <label className='flex items-center'>
-                      <input
-                        type='checkbox'
-                        checked={preferences.weeklyReports}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            weeklyReports: e.target.checked,
-                          })
-                        }
-                        className='mr-3 h-4 w-4 text-blue-600 rounded border-gray-300'
-                      />
-                      <span>Weekly progress reports</span>
-                    </label>
-
-                    <label className='flex items-center'>
-                      <input
-                        type='checkbox'
-                        checked={preferences.contentSuggestions}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            contentSuggestions: e.target.checked,
-                          })
-                        }
-                        className='mr-3 h-4 w-4 text-blue-600 rounded border-gray-300'
-                      />
-                      <span>Content improvement suggestions</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className='font-medium mb-3'>Language & Region</h3>
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>
-                        Language
-                      </label>
-                      <select
-                        value={preferences.language}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            language: e.target.value,
-                          })
-                        }
-                        className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                      >
-                        <option value='en-US'>English (US)</option>
-                        <option value='en-GB'>English (UK)</option>
-                        <option value='en-AU'>English (AU)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>
-                        Timezone
-                      </label>
-                      <select
-                        value={preferences.timezone}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            timezone: e.target.value,
-                          })
-                        }
-                        className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                      >
-                        <option value='Australia/Sydney'>Sydney</option>
-                        <option value='Australia/Melbourne'>Melbourne</option>
-                        <option value='Australia/Perth'>Perth</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <p className='mt-6 text-sm text-gray-500 italic'>
-                Notification preferences are not yet saved. This feature is
-                coming soon.
-              </p>
-            </div>
-          )}
 
           {activeTab === 'security' && (
             <div className='bg-white rounded-lg shadow-md p-6'>
@@ -859,97 +735,6 @@ const Settings = () => {
                       </>
                     )}
                   </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'appearance' && (
-            <div className='bg-white rounded-lg shadow-md p-6'>
-              <h2 className='text-xl font-semibold mb-6'>Appearance</h2>
-
-              <div className='space-y-6'>
-                <div>
-                  <h3 className='font-medium mb-3'>Theme</h3>
-                  <div className='grid grid-cols-3 gap-4'>
-                    <label className='cursor-pointer'>
-                      <input
-                        type='radio'
-                        name='theme'
-                        value='light'
-                        checked={preferences.theme === 'light'}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            theme: e.target.value,
-                          })
-                        }
-                        className='sr-only'
-                      />
-                      <div
-                        className={`p-4 border-2 rounded-lg text-center ${
-                          preferences.theme === 'light'
-                            ? 'border-blue-500'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        <div className='w-full h-20 bg-white border border-gray-300 rounded mb-2'></div>
-                        <span className='text-sm'>Light</span>
-                      </div>
-                    </label>
-
-                    <label className='cursor-pointer'>
-                      <input
-                        type='radio'
-                        name='theme'
-                        value='dark'
-                        checked={preferences.theme === 'dark'}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            theme: e.target.value,
-                          })
-                        }
-                        className='sr-only'
-                      />
-                      <div
-                        className={`p-4 border-2 rounded-lg text-center ${
-                          preferences.theme === 'dark'
-                            ? 'border-blue-500'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        <div className='w-full h-20 bg-gray-900 rounded mb-2'></div>
-                        <span className='text-sm'>Dark</span>
-                      </div>
-                    </label>
-
-                    <label className='cursor-pointer'>
-                      <input
-                        type='radio'
-                        name='theme'
-                        value='auto'
-                        checked={preferences.theme === 'auto'}
-                        onChange={e =>
-                          setPreferences({
-                            ...preferences,
-                            theme: e.target.value,
-                          })
-                        }
-                        className='sr-only'
-                      />
-                      <div
-                        className={`p-4 border-2 rounded-lg text-center ${
-                          preferences.theme === 'auto'
-                            ? 'border-blue-500'
-                            : 'border-gray-200'
-                        }`}
-                      >
-                        <div className='w-full h-20 bg-gradient-to-r from-white to-gray-900 rounded mb-2'></div>
-                        <span className='text-sm'>Auto</span>
-                      </div>
-                    </label>
-                  </div>
                 </div>
               </div>
             </div>
