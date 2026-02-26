@@ -234,9 +234,44 @@ const SearchPanel = () => {
 
       {/* Error */}
       {error && (
-        <div className='p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2'>
-          <AlertCircle className='w-5 h-5 text-red-600 mt-0.5 flex-shrink-0' />
-          <span className='text-sm text-red-800'>{error}</span>
+        <div
+          className={`p-3 rounded-lg flex items-start gap-2 ${
+            error.includes('No AI provider')
+              ? 'bg-amber-50 border border-amber-200'
+              : 'bg-red-50 border border-red-200'
+          }`}
+        >
+          <AlertCircle
+            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+              error.includes('No AI provider')
+                ? 'text-amber-600'
+                : 'text-red-600'
+            }`}
+          />
+          <div className='text-sm'>
+            <span
+              className={
+                error.includes('No AI provider')
+                  ? 'text-amber-800'
+                  : 'text-red-800'
+              }
+            >
+              {error}
+            </span>
+            {error.includes('No AI provider') && (
+              <>
+                {' '}
+                <a
+                  href='/settings'
+                  target='_blank'
+                  rel='noreferrer'
+                  className='text-amber-700 underline hover:text-amber-900'
+                >
+                  Open Settings
+                </a>
+              </>
+            )}
+          </div>
         </div>
       )}
 

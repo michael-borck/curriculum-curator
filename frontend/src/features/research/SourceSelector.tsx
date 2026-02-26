@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   PlusCircle,
   GitCompare,
@@ -7,6 +7,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useUnitsStore } from '../../stores/unitsStore';
+import { useAuthStore } from '../../stores/authStore';
+import { getSectorProfile } from '../../constants/sectorProfiles';
 import type { SourceInput, ResearchAction } from '../../types/research';
 import type { PedagogyType } from '../../types';
 
@@ -50,6 +52,11 @@ const SourceSelector = ({
   loading,
 }: SourceSelectorProps) => {
   const { units, fetchUnits } = useUnitsStore();
+  const { user } = useAuthStore();
+  const sectorProfile = useMemo(
+    () => getSectorProfile(user?.educationSector),
+    [user?.educationSector]
+  );
   const [selectedAction, setSelectedAction] = useState<ResearchAction | null>(
     null
   );
@@ -58,7 +65,7 @@ const SourceSelector = ({
   const [scaffoldForm, setScaffoldForm] = useState<ScaffoldParams>({
     unitTitle: '',
     unitDescription: '',
-    durationWeeks: 12,
+    durationWeeks: sectorProfile.duration,
     pedagogyStyle: 'mixed_approach',
   });
 
@@ -136,7 +143,9 @@ const SourceSelector = ({
             <PlusCircle
               className={`w-5 h-5 mb-2 ${selectedAction === 'scaffold' ? 'text-purple-600' : 'text-gray-400'}`}
             />
-            <p className='font-medium text-sm'>Scaffold New Unit</p>
+            <p className='font-medium text-sm'>
+              Scaffold New {sectorProfile.unitLabel}
+            </p>
             <p className='text-xs text-gray-500 mt-1'>
               Generate a complete unit structure from these sources
             </p>
@@ -181,11 +190,13 @@ const SourceSelector = ({
       {/* Action-specific form */}
       {selectedAction === 'scaffold' && (
         <div className='bg-gray-50 rounded-lg p-4 space-y-4'>
-          <h4 className='font-medium text-sm'>New Unit Details</h4>
+          <h4 className='font-medium text-sm'>
+            New {sectorProfile.unitLabel} Details
+          </h4>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div>
               <label className='block text-sm font-medium text-gray-700 mb-1'>
-                Unit Title *
+                {sectorProfile.unitLabel} Title *
               </label>
               <input
                 type='text'
@@ -230,7 +241,7 @@ const SourceSelector = ({
               }
               rows={3}
               className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-              placeholder='Brief description of the unit...'
+              placeholder={`Brief description of the ${sectorProfile.unitLabel.toLowerCase()}...`}
             />
           </div>
           <div>

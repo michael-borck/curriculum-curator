@@ -153,9 +153,8 @@ class LLMService:
                         api_key = key
                         break
 
-            # Last resort: try ollama (no key needed)
-            if not provider:
-                provider = "ollama"
+        if not provider:
+            return "", "", None, None
 
         if not model:
             model = self.DEFAULT_MODELS.get(provider, "gpt-4")
@@ -188,10 +187,10 @@ class LLMService:
         """Generate text from a prompt with optional streaming."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
-        if not api_key and provider not in ["ollama"]:
+        if not provider or (not api_key and provider != "ollama"):
             error_msg = (
-                f"No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
-                f"or configure Ollama for local AI. (Tried: {provider})"
+                "No AI provider configured. Go to Settings → AI/LLM to add an API key "
+                "(OpenAI, Anthropic, or Gemini) or configure a local Ollama server."
             )
             if stream:
 
@@ -260,10 +259,10 @@ class LLMService:
         """Generate educational content using LLM with streaming"""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
-        if not api_key and provider not in ["ollama"]:
+        if not provider or (not api_key and provider != "ollama"):
             yield (
-                "No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
-                "or configure Ollama for local AI."
+                "No AI provider configured. Go to Settings → AI/LLM to add an API key "
+                "(OpenAI, Anthropic, or Gemini) or configure a local Ollama server."
             )
             return
 
@@ -324,10 +323,10 @@ Create content that aligns with this pedagogical approach."""
         """Generate structured content with JSON output and Pydantic validation."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
-        if not api_key and provider not in ["ollama"]:
+        if not provider or (not api_key and provider != "ollama"):
             return None, (
-                f"No AI provider configured. Add an API key in Settings → AI/LLM Settings, "
-                f"or configure Ollama for local AI. (Tried: {provider})"
+                "No AI provider configured. Go to Settings → AI/LLM to add an API key "
+                "(OpenAI, Anthropic, or Gemini) or configure a local Ollama server."
             )
 
         json_schema = response_model.model_json_schema()
