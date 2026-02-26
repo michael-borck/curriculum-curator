@@ -173,6 +173,9 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
               <span className='text-lg font-bold truncate'>
                 Curriculum Curator
               </span>
+              <span className='text-[10px] text-gray-500 font-normal'>
+                v{__APP_VERSION__}
+              </span>
             </div>
             <button
               onClick={() => setMobileSidebarOpen(false)}
