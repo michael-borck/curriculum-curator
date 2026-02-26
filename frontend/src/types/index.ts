@@ -12,6 +12,8 @@ export interface User {
   email: string;
   name: string;
   role: 'lecturer' | 'admin' | 'student' | 'assistant';
+  institution?: string | undefined;
+  department?: string | undefined;
   teachingPhilosophy?: string;
   educationSector?: string | undefined;
   languagePreference?: string;

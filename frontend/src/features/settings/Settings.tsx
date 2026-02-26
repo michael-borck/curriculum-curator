@@ -37,9 +37,8 @@ const Settings = () => {
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    institution: '',
-    department: '',
-    bio: '',
+    institution: user?.institution || '',
+    department: user?.department || '',
     educationSector: user?.educationSector || '',
   });
 
@@ -118,19 +117,6 @@ const Settings = () => {
       window.setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const savePreferences = async () => {
-    try {
-      setSaving(true);
-      // Save preferences to backend
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      console.error('Error saving preferences:', error);
     } finally {
       setSaving(false);
     }
@@ -315,21 +301,6 @@ const Settings = () => {
                     Controls default labels and presets for new units
                   </p>
                 </div>
-
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-1'>
-                    Bio
-                  </label>
-                  <textarea
-                    value={profileData.bio}
-                    onChange={e =>
-                      setProfileData({ ...profileData, bio: e.target.value })
-                    }
-                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                    rows={4}
-                    placeholder='Tell us about yourself...'
-                  />
-                </div>
               </div>
 
               <div className='mt-6 flex justify-end'>
@@ -459,25 +430,10 @@ const Settings = () => {
                 </div>
               </div>
 
-              <div className='mt-6 flex justify-end'>
-                <button
-                  onClick={savePreferences}
-                  disabled={saving}
-                  className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
-                >
-                  {saved ? (
-                    <>
-                      <CheckCircle className='h-4 w-4 mr-2' />
-                      Saved
-                    </>
-                  ) : (
-                    <>
-                      <Save className='h-4 w-4 mr-2' />
-                      {saving ? 'Saving...' : 'Save Preferences'}
-                    </>
-                  )}
-                </button>
-              </div>
+              <p className='mt-6 text-sm text-gray-500 italic'>
+                Notification preferences are not yet saved. This feature is
+                coming soon.
+              </p>
             </div>
           )}
 
