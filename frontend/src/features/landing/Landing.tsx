@@ -29,9 +29,9 @@ const Landing = ({ onSignInClick }: LandingProps) => {
     },
     {
       icon: BookOpen,
-      title: 'Unit Structure',
+      title: 'Flexible Structure',
       description:
-        'Plan 12-week units with learning outcomes, weekly materials, and assessments.',
+        'Plan learning programs with outcomes, materials, and assessments — from 4-week workshops to full semesters.',
     },
     {
       icon: Upload,
@@ -83,13 +83,13 @@ const Landing = ({ onSignInClick }: LandingProps) => {
       <section className='bg-gradient-to-br from-purple-50 via-white to-indigo-50 px-6 md:px-8 py-16 md:py-24'>
         <div className='max-w-4xl mx-auto text-center'>
           <h1 className='text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight'>
-            Create Unit Content
+            Create Learning Content
             <br />
             <span className='text-purple-600'>That Teaches Your Way</span>
           </h1>
           <p className='text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
             An AI-powered platform for educators. Build pedagogically-aligned
-            units with learning outcomes, weekly materials, and assessments.
+            learning programs with outcomes, materials, and assessments.
           </p>
           <button
             onClick={() => navigate('/download')}
@@ -131,7 +131,7 @@ const Landing = ({ onSignInClick }: LandingProps) => {
         <div className='max-w-3xl mx-auto text-center text-white'>
           <Sparkles className='w-10 h-10 mx-auto mb-4 opacity-80' />
           <h2 className='text-2xl md:text-3xl font-bold mb-4'>
-            Ready to Create Better Unit Content?
+            Ready to Create Better Learning Content?
           </h2>
           <p className='text-lg opacity-90 mb-8'>
             Join educators using AI to build pedagogically-aligned materials.
