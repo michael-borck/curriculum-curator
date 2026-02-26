@@ -40,16 +40,16 @@ const Landing = ({ onSignInClick }: LandingProps) => {
         'Bring existing materials and let AI help improve and align them.',
     },
     {
-      icon: CheckCircle,
-      title: 'Accreditation Ready',
+      icon: Globe,
+      title: 'Any Sector, Your Way',
       description:
-        'Map to Graduate Capabilities and AACSB Assurance of Learning standards.',
+        'Built for K-12, VET, higher education, and corporate training — with defaults that fit your context.',
     },
     {
-      icon: Globe,
-      title: 'UN Global Goals',
+      icon: CheckCircle,
+      title: 'Alignment & Mapping',
       description:
-        'Align your curriculum with the 17 UN Sustainable Development Goals.',
+        'Map outcomes to accreditation standards, graduate capabilities, SDGs, or your own custom frameworks.',
     },
   ];
 
