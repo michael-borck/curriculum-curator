@@ -1,6 +1,6 @@
 {
   "name": "curriculum-curator-desktop",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Curriculum Curator — Desktop edition",
   "main": "./out/main/index.js",
   "author": "Curriculum Curator Team",
