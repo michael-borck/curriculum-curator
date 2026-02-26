@@ -9,6 +9,7 @@ interface RegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  isFirstUserSetup?: boolean | undefined;
 }
 
 interface FormData {
@@ -37,6 +38,7 @@ const RegistrationModal = ({
   isOpen,
   onClose,
   onSuccess,
+  isFirstUserSetup,
 }: RegistrationModalProps) => {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -189,8 +191,26 @@ const RegistrationModal = ({
   const isDisabled = isLoading || isRegistered;
 
   return (
-    <Modal isOpen={true} onClose={onClose} title='Create Account' size='lg'>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={isFirstUserSetup ? 'Set Up Your Admin Account' : 'Create Account'}
+      size='lg'
+    >
       <form onSubmit={handleSubmit} className='space-y-4'>
+        {isFirstUserSetup && !isRegistered && (
+          <Alert variant='info'>
+            <div>
+              <p className='font-semibold'>Welcome to Curriculum Curator!</p>
+              <p className='mt-1'>
+                No accounts exist yet. This first account will become the{' '}
+                <strong>site administrator</strong> with full access to manage
+                users and system settings.
+              </p>
+            </div>
+          </Alert>
+        )}
+
         {errors.general && (
           <Alert
             variant='error'

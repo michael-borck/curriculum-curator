@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [isFirstUserSetup, setIsFirstUserSetup] = useState(false);
 
   const registrationModal = useModal();
   const passwordResetModal = useModal();
@@ -23,6 +24,22 @@ const Login = ({ onBackToLanding }: LoginProps) => {
 
   const login = useAuthStore(state => state.login);
   const navigate = useNavigate();
+
+  // Check if this is a fresh install (no users yet)
+  useEffect(() => {
+    api
+      .get('/auth/config')
+      .then(res => {
+        if (res.data?.hasUsers === false) {
+          setIsFirstUserSetup(true);
+          registrationModal.open();
+        }
+      })
+      .catch(() => {
+        // Config endpoint unavailable — proceed with normal login
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit: HandleSubmitFunction = async e => {
     e.preventDefault();
@@ -93,6 +110,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
 
   const handleRegistrationSuccess = () => {
     registrationModal.close();
+    setIsFirstUserSetup(false);
     navigate('/dashboard');
   };
 
@@ -194,8 +212,12 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       {/* Registration Modal */}
       <RegistrationModal
         isOpen={registrationModal.isOpen}
-        onClose={registrationModal.close}
+        onClose={() => {
+          registrationModal.close();
+          setIsFirstUserSetup(false);
+        }}
         onSuccess={handleRegistrationSuccess}
+        isFirstUserSetup={isFirstUserSetup}
       />
 
       {/* Password Reset Flow */}
