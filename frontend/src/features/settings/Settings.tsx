@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   User,
   Shield,
@@ -44,7 +44,6 @@ const Settings = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    twoFactorEnabled: false,
   });
 
   const [pluginList, setPluginList] = useState<PluginInfo[]>([]);
@@ -78,15 +77,6 @@ const Settings = () => {
       toast.error('Failed to update plugin');
     }
   };
-
-  const [llmSettings, setLlmSettings] = useState({
-    provider: user?.llmConfig?.provider || 'system',
-    openaiApiKey: '',
-    anthropicApiKey: '',
-    geminiApiKey: '',
-    modelPreference: user?.llmConfig?.model || '',
-    useSystemDefault: true,
-  });
 
   const saveProfile = async () => {
     try {
@@ -126,7 +116,6 @@ const Settings = () => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        twoFactorEnabled: security.twoFactorEnabled,
       });
       setSaved(true);
       window.setTimeout(() => setSaved(false), 3000);
@@ -388,357 +377,11 @@ const Settings = () => {
                     Update Password
                   </button>
                 </div>
-
-                <div>
-                  <h3 className='font-medium mb-3'>
-                    Two-Factor Authentication
-                  </h3>
-                  <label className='flex items-center'>
-                    <input
-                      type='checkbox'
-                      checked={security.twoFactorEnabled}
-                      onChange={e =>
-                        setSecurity({
-                          ...security,
-                          twoFactorEnabled: e.target.checked,
-                        })
-                      }
-                      className='mr-3 h-4 w-4 text-blue-600 rounded border-gray-300'
-                    />
-                    <span>Enable two-factor authentication</span>
-                  </label>
-                  <p className='text-sm text-gray-600 mt-2'>
-                    Add an extra layer of security to your account
-                  </p>
-                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'llm' && <LLMSettings />}
-
-          {activeTab === 'llm-old' && (
-            <div className='bg-white rounded-lg shadow-md p-6'>
-              <h2 className='text-xl font-semibold mb-6'>AI/LLM Settings</h2>
-
-              <div className='space-y-6'>
-                {/* Provider Selection */}
-                <div>
-                  <h3 className='font-medium mb-3'>LLM Provider</h3>
-                  <div className='space-y-3'>
-                    <label className='flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50'>
-                      <input
-                        type='radio'
-                        name='llmProvider'
-                        value='system'
-                        checked={llmSettings.provider === 'system'}
-                        onChange={e =>
-                          setLlmSettings({
-                            ...llmSettings,
-                            provider: e.target.value,
-                          })
-                        }
-                        className='mr-3'
-                      />
-                      <div>
-                        <span className='font-medium'>Use System Default</span>
-                        <p className='text-sm text-gray-600'>
-                          Use the institution&apos;s configured LLM provider
-                        </p>
-                      </div>
-                    </label>
-
-                    <label className='flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50'>
-                      <input
-                        type='radio'
-                        name='llmProvider'
-                        value='openai'
-                        checked={llmSettings.provider === 'openai'}
-                        onChange={e =>
-                          setLlmSettings({
-                            ...llmSettings,
-                            provider: e.target.value,
-                          })
-                        }
-                        className='mr-3'
-                      />
-                      <div>
-                        <span className='font-medium'>OpenAI (GPT-4)</span>
-                        <p className='text-sm text-gray-600'>
-                          Use your own OpenAI API key
-                        </p>
-                      </div>
-                    </label>
-
-                    <label className='flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50'>
-                      <input
-                        type='radio'
-                        name='llmProvider'
-                        value='anthropic'
-                        checked={llmSettings.provider === 'anthropic'}
-                        onChange={e =>
-                          setLlmSettings({
-                            ...llmSettings,
-                            provider: e.target.value,
-                          })
-                        }
-                        className='mr-3'
-                      />
-                      <div>
-                        <span className='font-medium'>Anthropic (Claude)</span>
-                        <p className='text-sm text-gray-600'>
-                          Use your own Anthropic API key
-                        </p>
-                      </div>
-                    </label>
-
-                    <label className='flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50'>
-                      <input
-                        type='radio'
-                        name='llmProvider'
-                        value='gemini'
-                        checked={llmSettings.provider === 'gemini'}
-                        onChange={e =>
-                          setLlmSettings({
-                            ...llmSettings,
-                            provider: e.target.value,
-                          })
-                        }
-                        className='mr-3'
-                      />
-                      <div>
-                        <span className='font-medium'>Google Gemini</span>
-                        <p className='text-sm text-gray-600'>
-                          Use your own Google Gemini API key
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* API Keys */}
-                {llmSettings.provider !== 'system' && (
-                  <div>
-                    <h3 className='font-medium mb-3'>API Configuration</h3>
-
-                    {llmSettings.provider === 'openai' && (
-                      <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>
-                          OpenAI API Key
-                        </label>
-                        <input
-                          type='password'
-                          value={llmSettings.openaiApiKey}
-                          onChange={e =>
-                            setLlmSettings({
-                              ...llmSettings,
-                              openaiApiKey: e.target.value,
-                            })
-                          }
-                          className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                          placeholder='sk-...'
-                        />
-                        <p className='text-sm text-gray-600 mt-1'>
-                          Get your API key from{' '}
-                          <a
-                            href='https://platform.openai.com/api-keys'
-                            target='_blank'
-                            className='text-blue-600 hover:underline'
-                            rel='noreferrer'
-                          >
-                            OpenAI Platform
-                          </a>
-                        </p>
-                      </div>
-                    )}
-
-                    {llmSettings.provider === 'anthropic' && (
-                      <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>
-                          Anthropic API Key
-                        </label>
-                        <input
-                          type='password'
-                          value={llmSettings.anthropicApiKey}
-                          onChange={e =>
-                            setLlmSettings({
-                              ...llmSettings,
-                              anthropicApiKey: e.target.value,
-                            })
-                          }
-                          className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                          placeholder='sk-ant-...'
-                        />
-                        <p className='text-sm text-gray-600 mt-1'>
-                          Get your API key from{' '}
-                          <a
-                            href='https://console.anthropic.com/'
-                            target='_blank'
-                            className='text-blue-600 hover:underline'
-                            rel='noreferrer'
-                          >
-                            Anthropic Console
-                          </a>
-                        </p>
-                      </div>
-                    )}
-
-                    {llmSettings.provider === 'gemini' && (
-                      <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>
-                          Google Gemini API Key
-                        </label>
-                        <input
-                          type='password'
-                          value={llmSettings.geminiApiKey}
-                          onChange={e =>
-                            setLlmSettings({
-                              ...llmSettings,
-                              geminiApiKey: e.target.value,
-                            })
-                          }
-                          className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                          placeholder='AIza...'
-                        />
-                        <p className='text-sm text-gray-600 mt-1'>
-                          Get your API key from{' '}
-                          <a
-                            href='https://makersuite.google.com/app/apikey'
-                            target='_blank'
-                            className='text-blue-600 hover:underline'
-                            rel='noreferrer'
-                          >
-                            Google AI Studio
-                          </a>
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Model Selection */}
-                    <div className='mt-4'>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>
-                        Preferred Model
-                      </label>
-                      <select
-                        value={llmSettings.modelPreference}
-                        onChange={e =>
-                          setLlmSettings({
-                            ...llmSettings,
-                            modelPreference: e.target.value,
-                          })
-                        }
-                        className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
-                      >
-                        <option value=''>Default</option>
-                        {llmSettings.provider === 'openai' && (
-                          <>
-                            <option value='gpt-4'>GPT-4</option>
-                            <option value='gpt-4-turbo'>GPT-4 Turbo</option>
-                            <option value='gpt-3.5-turbo'>GPT-3.5 Turbo</option>
-                          </>
-                        )}
-                        {llmSettings.provider === 'anthropic' && (
-                          <>
-                            <option value='claude-3-opus'>Claude 3 Opus</option>
-                            <option value='claude-3-sonnet'>
-                              Claude 3 Sonnet
-                            </option>
-                            <option value='claude-3-haiku'>
-                              Claude 3 Haiku
-                            </option>
-                          </>
-                        )}
-                        {llmSettings.provider === 'gemini' && (
-                          <>
-                            <option value='gemini-pro'>Gemini Pro</option>
-                            <option value='gemini-pro-vision'>
-                              Gemini Pro Vision
-                            </option>
-                          </>
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                {/* System Default Info */}
-                {llmSettings.provider === 'system' && (
-                  <div className='bg-blue-50 rounded-lg p-4'>
-                    <h3 className='font-medium text-blue-900 mb-2'>
-                      System Default Provider
-                    </h3>
-                    <p className='text-sm text-blue-800'>
-                      You are using the institution&apos;s configured LLM
-                      provider. Contact your administrator for details about the
-                      current provider and model being used.
-                    </p>
-                  </div>
-                )}
-
-                {/* Save Button */}
-                <div className='flex justify-end'>
-                  <button
-                    onClick={async () => {
-                      try {
-                        setSaving(true);
-                        // Save LLM config
-                        const llmConfig: any = {
-                          provider: llmSettings.provider,
-                          model: llmSettings.modelPreference,
-                        };
-
-                        // Only include API keys if provider is selected and key is provided
-                        if (
-                          llmSettings.provider === 'openai' &&
-                          llmSettings.openaiApiKey
-                        ) {
-                          llmConfig.openaiApiKey = llmSettings.openaiApiKey;
-                        }
-                        if (
-                          llmSettings.provider === 'anthropic' &&
-                          llmSettings.anthropicApiKey
-                        ) {
-                          llmConfig.anthropicApiKey =
-                            llmSettings.anthropicApiKey;
-                        }
-                        if (
-                          llmSettings.provider === 'gemini' &&
-                          llmSettings.geminiApiKey
-                        ) {
-                          llmConfig.geminiApiKey = llmSettings.geminiApiKey;
-                        }
-
-                        await api.patch('/auth/profile', {
-                          llmConfig: llmConfig,
-                        });
-
-                        setSaved(true);
-                        window.setTimeout(() => setSaved(false), 3000);
-                      } catch (error) {
-                        console.error('Error saving LLM settings:', error);
-                      } finally {
-                        setSaving(false);
-                      }
-                    }}
-                    disabled={saving}
-                    className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center'
-                  >
-                    {saved ? (
-                      <>
-                        <CheckCircle className='h-4 w-4 mr-2' />
-                        Saved
-                      </>
-                    ) : (
-                      <>
-                        <Save className='h-4 w-4 mr-2' />
-                        {saving ? 'Saving...' : 'Save LLM Settings'}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {activeTab === 'quality-rating' && <QualityRatingSettings />}
 
@@ -766,15 +409,10 @@ const PluginsTab: React.FC<{
   onLoad: () => void;
   onToggle: (name: string, enabled: boolean) => void;
 }> = ({ plugins, loading, onLoad, onToggle }) => {
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  // Load plugins on first render
-  useState(() => {
-    if (!hasLoaded) {
-      onLoad();
-      setHasLoaded(true);
-    }
-  });
+  useEffect(() => {
+    onLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const validators = plugins.filter(p => p.pluginType === 'validator');
   const remediators = plugins.filter(p => p.pluginType === 'remediator');

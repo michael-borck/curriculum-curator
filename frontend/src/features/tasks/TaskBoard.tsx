@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, MoreVertical, Calendar, User, Flag, X } from 'lucide-react';
+import { MoreVertical, Calendar, User, Flag, X } from 'lucide-react';
 import api from '../../services/api';
 
 interface Task {
@@ -163,12 +163,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, designId }) => {
               </div>
             )}
           </div>
-          <div className='flex items-center space-x-2'>
-            <button className='px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700'>
-              <Plus className='w-4 h-4 inline mr-1' />
-              Add Task
-            </button>
-          </div>
+          <div className='flex items-center space-x-2'></div>
         </div>
 
         {/* Task List Selector */}
@@ -226,9 +221,9 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, designId }) => {
                         <h4 className='font-medium text-gray-900 flex-1'>
                           {task.title}
                         </h4>
-                        <button className='text-gray-400 hover:text-gray-600'>
+                        <span className='text-gray-400'>
                           <MoreVertical className='w-4 h-4' />
-                        </button>
+                        </span>
                       </div>
 
                       {task.description && (
