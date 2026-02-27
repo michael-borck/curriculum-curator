@@ -17,6 +17,9 @@
   "dependencies": {
     "electron-updater": "^6.3.9"
   },
+  "overrides": {
+    "minimatch@>=10.0.0 <10.2.3": "10.2.3"
+  },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
