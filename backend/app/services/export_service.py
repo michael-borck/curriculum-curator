@@ -28,6 +28,8 @@ from app.models.content import Content
 from app.models.unit import Unit
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.content_json_renderer import render_content_json
+from app.services.slide_splitter import has_slide_breaks, split_at_slide_breaks
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
     mermaid_head,
@@ -267,7 +269,23 @@ class ExportService:
             raise ValueError(msg)
 
         doc_title = title or material.title or "Untitled"
-        html_content = render_material_html(material)
+
+        # PPTX with slide breaks: split into segments with H1 titles
+        if (
+            fmt == ExportFormat.PPTX
+            and material.content_json
+            and has_slide_breaks(material.content_json)
+        ):
+            segments = split_at_slide_breaks(material.content_json)
+            parts: list[str] = []
+            for i, seg in enumerate(segments, 1):
+                # Extract first heading text as slide title, fallback to "Slide N"
+                slide_title = self._extract_heading_text(seg) or f"Slide {i}"
+                parts.append(f"<h1>{slide_title}</h1>")
+                parts.append(render_content_json(seg))
+            html_content = "\n".join(parts)
+        else:
+            html_content = render_material_html(material)
 
         if fmt == ExportFormat.HTML:
             html = HTML_TEMPLATE.format(
@@ -615,6 +633,24 @@ class ExportService:
         buf = BytesIO(pdf_file.read_bytes())
         buf.seek(0)
         return buf
+
+    @staticmethod
+    def _extract_heading_text(segment: dict[str, Any]) -> str:
+        """Extract plain text from the first heading in a content_json segment."""
+        for node in segment.get("content", []):
+            if node.get("type") == "heading":
+                return ExportService._node_text(node)
+        return ""
+
+    @staticmethod
+    def _node_text(node: dict[str, Any]) -> str:
+        """Recursively extract plain text from a ProseMirror node."""
+        if node.get("type") == "text":
+            return node.get("text", "")
+        return "".join(
+            ExportService._node_text(child)
+            for child in node.get("content", [])
+        )
 
     @staticmethod
     def _slugify(text: str) -> str:

@@ -79,6 +79,8 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
         result = "<br>"
     elif node_type == "horizontalRule":
         result = "<hr>"
+    elif node_type == "slideBreak":
+        result = '<hr data-slide-break="" style="border:none;border-top:2px dashed #94a3b8;margin:1.5rem 0">'
     elif node_type == "text":
         text = escape(node.get("text", ""))
         result = _apply_marks(text, node.get("marks", []))

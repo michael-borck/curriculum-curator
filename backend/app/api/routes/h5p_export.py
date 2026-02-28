@@ -15,7 +15,9 @@ from app.models.enums import ContentType
 from app.models.quiz_question import QuizQuestion
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
+from app.services.h5p_course_presentation import h5p_course_presentation_builder
 from app.services.h5p_service import h5p_builder
+from app.services.slide_splitter import has_slide_breaks
 from app.services.unit_export_data import extract_quiz_nodes, slugify
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,34 @@ async def export_material_h5p(
 
     title_slug = slugify(str(material.title))
     filename = f"{title_slug}_quiz.h5p"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+@router.get("/materials/{material_id}/export/h5p-slides")
+async def export_material_h5p_slides(
+    material_id: str,
+    db: Annotated[Session, Depends(get_db)],
+) -> StreamingResponse:
+    """Export a material as H5P Course Presentation (.h5p) using slide breaks."""
+    material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    if not material.content_json or not has_slide_breaks(material.content_json):
+        raise HTTPException(status_code=404, detail="No slide breaks found in this material")
+
+    title = f"{material.title} - Slides"
+    buf = h5p_course_presentation_builder.build(material.content_json, title)
+
+    title_slug = slugify(str(material.title))
+    filename = f"{title_slug}_slides.h5p"
 
     return StreamingResponse(
         buf,

@@ -21,11 +21,16 @@ declare module '@tiptap/core' {
           | 'fill_in_blank'
           | undefined;
         questionText?: string | undefined;
-        options?: Array<{ id: string; text: string; correct: boolean }> | undefined;
+        options?:
+          | Array<{ id: string; text: string; correct: boolean }>
+          | undefined;
         feedback?: string | undefined;
         points?: number | undefined;
         explanation?: string | undefined;
       }) => ReturnType;
+    };
+    slideBreak: {
+      insertSlideBreak: () => ReturnType;
     };
   }
 }
