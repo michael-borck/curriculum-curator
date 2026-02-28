@@ -66,8 +66,8 @@ content phases (2–5) complete.
 
 ## Phase 3 — H5P Question Set + QTI from content_json — COMPLETE
 
-**Commits:** `20036524` (3a), `835dcc42` (3b)
-**Ships**: H5P quiz export, QTI from authored quizzes, content_json rendering.
+**Commits:** `20036524` (3a), `835dcc42` (3b), `fd65a516` (3c)
+**Ships**: H5P quiz export, QTI from authored quizzes, content_json rendering, format selector UI, H5P embedding in IMSCC/SCORM.
 
 ### What was delivered
 
@@ -85,14 +85,9 @@ content phases (2–5) complete.
 - H5P export endpoints: `/units/{id}/export/h5p`, `/materials/{id}/export/h5p`
 - Frontend: QTI 2.1 and H5P export buttons in unit export menu
 
-### Remaining (small items)
-
-- **Per-material format selector UI** — dropdown in material settings
-  (Default / LMS Native Quiz / Interactive Quiz). The `export_format` DB column
-  exists (Phase 1) but has no UI.
-- **H5P embedding in IMSCC/SCORM** — when `export_format == "h5p_question_set"`,
-  embed `.h5p` file in the package instead of QTI XML. Currently H5P is only
-  available as a standalone download.
+**Phase 3c** — format selector UI + H5P embedding in IMSCC/SCORM:
+- Per-material format selector dropdown in material edit form
+- H5P `.h5p` files embedded in IMSCC/SCORM packages when `export_format == "h5p_question_set"`
 
 ---
 
@@ -173,32 +168,47 @@ content phases (2–5) complete.
 
 ---
 
-## Phase 6a — Two-Level Export Dialog
+## Phase 6a — Two-Level Export Dialog — COMPLETE
 
-**Status**: Not started
-**Ships**: Full export dialog with per-material format previews, unit-level export defaults.
+**Status**: COMPLETE
+**Commit:** `707183ef`
+**Ships**: Export dialog with per-material target resolution, 4-level defaults, user export preferences.
 
-### Work Items
+### What was delivered
 
-1. **Two-level export dialog** — `features/export/ExportDialog.tsx` modal listing
-   all materials by week, each with editable format dropdown and status indicator.
-   Package type selector (IMSCC / SCORM / Flat ZIP). Sensible defaults cover 90%
-   of cases; overrides feel optional.
+1. **Export Dialog** — `ExportDialog.tsx` modal listing all materials grouped by
+   week, each with toggleable target chips per content type. Package type selector
+   (IMSCC / SCORM), LMS target dropdown. "Export... (full dialog)" added at top of
+   existing export dropdown as entry point.
 
-2. **Default format resolver** — resolves: explicit override > unit default >
-   content type inference > global default. Returns `(material_id, target_format)` pairs.
+2. **Format resolver service** — `format_resolver.py` with 4-level resolution
+   chain: auto-infer → user defaults → per-material override → at export time.
+   `detect_content_types()` walks content_json for quiz/slide/branching nodes.
+   16 tests in `test_format_resolver.py`.
 
-3. **Unit-level export defaults** — `export_defaults` JSON column on `Unit` model,
-   settings UI (e.g., "all quizzes default to H5P")
+3. **Model migration** — `export_format` String(30) → `export_targets` JSON list
+   (same DB column name to avoid migration). `export_targets_list` property
+   normalizes legacy string values.
 
-### Key Files (~10)
-- `frontend/src/features/export/ExportDialog.tsx`, `MaterialFormatSelector.tsx`
-- `backend/app/services/export_format_resolver.py`
-- `backend/app/models/unit.py` — add `export_defaults` column
-- `frontend/src/pages/UnitPage.tsx` — replace dropdown with dialog trigger
+4. **Preview + Package endpoints** — `GET /units/{id}/export/preview` returns
+   resolved export plan; `POST /units/{id}/export/package` accepts per-material
+   target overrides, delegates to IMSCC/SCORM services.
 
-### Dependencies: All prior phases (2–5)
-### Risks: UX complexity — dialog must feel optional, not mandatory
+5. **User-level export defaults** — Settings → Export tab gains "Default Export
+   Targets" section with toggleable pills per content type (Quiz, Slides,
+   Branching). Saves to `teaching_preferences.export_defaults`.
+
+6. **IMSCC/SCORM override support** — Both services accept `target_overrides`
+   dict from the export dialog, checked before per-material `export_targets_list`.
+
+### Key Files
+- `frontend/src/components/ExportDialog/ExportDialog.tsx`, `MaterialExportRow.tsx`
+- `frontend/src/services/exportApi.ts`
+- `backend/app/services/format_resolver.py`
+- `backend/app/schemas/export_preview.py`
+- `backend/app/api/routes/export_preview.py`, `package_export.py`
+- `frontend/src/features/settings/ExportTemplates.tsx` (extended)
+- `frontend/src/pages/UnitPage.tsx` (dialog trigger added)
 
 ---
 
@@ -251,15 +261,12 @@ once Phase 5 ships and the branching card data model is proven.
 |-------|------|----------------|--------|
 | 1 | Foundations | `content_json` storage, shared export data module | COMPLETE |
 | 2 | Quiz Authoring | TipTap quiz nodes (5 question types) | COMPLETE |
-| 3 | H5P Quiz + QTI | H5P Question Set, QTI from content_json, content_json renderer | COMPLETE* |
+| 3 | H5P Quiz + QTI | H5P Question Set, QTI from content_json, format selector, H5P embedding | COMPLETE |
 | 4 | Slides | SlideBreak node, H5P Course Presentation | COMPLETE |
 | 5 | Branching | Card authoring, map view, H5P Branching Scenario | COMPLETE |
-| 6a | Export Dialog | Two-level export UI, format resolver, unit defaults | Not started |
+| 6a | Export Dialog | Two-level export UI, 4-level format resolver, user defaults | COMPLETE |
 | 6b | Interactive Video | H5P Interactive Video (optional) | Not started |
 | 6c | Progress Streaming | SSE progress for large exports (nice-to-have) | Not started |
-
-\* Phase 3 has two small remaining items: per-material format selector UI and
-H5P embedding in IMSCC/SCORM packages.
 
 *Originally planned Feb 2026. Plan recovered from conversation transcript and
 saved here Feb 2026.*
