@@ -27,6 +27,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.content_json_renderer import render_content_json
 
 MERMAID_CDN_SCRIPT = (
     '  <script type="module">'
@@ -82,6 +83,17 @@ def escape_html(text: str) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+def render_material_html(mat: "WeeklyMaterial") -> str:
+    """Render material content to HTML, preferring content_json over description.
+
+    If the material has structured content_json (from the TipTap editor),
+    render it to HTML. Otherwise fall back to the legacy description field.
+    """
+    if mat.content_json:
+        return render_content_json(mat.content_json)
+    return str(mat.description or "")
 
 
 @dataclass

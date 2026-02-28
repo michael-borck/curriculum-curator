@@ -33,6 +33,7 @@ from app.services.unit_export_data import (
     HTML_TEMPLATE,
     escape_html,
     gather_unit_export_data,
+    render_material_html,
     slugify,
 )
 
@@ -132,7 +133,7 @@ class SCORMExportService:
                 href = f"{week_dir}/{filename}"
                 identifier = f"mat_{mat.id}"
 
-                content = str(mat.description or "")
+                content = render_material_html(mat)
                 html = self._material_to_html(str(mat.title), content)
 
                 resources.append((identifier, href, str(mat.title)))

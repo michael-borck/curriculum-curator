@@ -544,6 +544,13 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load qti_export routes: {e}")
 
+try:
+    from app.api.routes import h5p_export
+
+    app.include_router(h5p_export.router, prefix="/api", tags=["h5p-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load h5p_export routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 

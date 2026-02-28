@@ -36,6 +36,7 @@ from app.services.unit_export_data import (
     UnitExportData,
     escape_html,
     gather_unit_export_data,
+    render_material_html,
     slugify,
 )
 
@@ -113,7 +114,7 @@ class IMSCCExportService:
                 # Reuse original CC identifier if available, else fresh
                 identifier = mat_reverse.get(str(mat.id), f"mat_{mat.id}")
 
-                content = str(mat.description or "")
+                content = render_material_html(mat)
                 html = self._material_to_html(str(mat.title), content)
 
                 resources.append((identifier, href, str(mat.title)))

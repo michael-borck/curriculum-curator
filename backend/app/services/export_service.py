@@ -28,7 +28,11 @@ from app.models.content import Content
 from app.models.unit import Unit
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
-from app.services.unit_export_data import HTML_TEMPLATE, mermaid_head
+from app.services.unit_export_data import (
+    HTML_TEMPLATE,
+    mermaid_head,
+    render_material_html,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,7 @@ class ExportFormat(str, Enum):
     PDF = "pdf"
     DOCX = "docx"
     PPTX = "pptx"
+    H5P_QUESTION_SET = "h5p_question_set"
 
 
 # Map formats to file extensions
@@ -68,6 +73,7 @@ FORMAT_EXTENSIONS: dict[ExportFormat, str] = {
     ExportFormat.PDF: ".pdf",
     ExportFormat.DOCX: ".docx",
     ExportFormat.PPTX: ".pptx",
+    ExportFormat.H5P_QUESTION_SET: ".h5p",
 }
 
 # Map formats to MIME types
@@ -76,6 +82,7 @@ FORMAT_MEDIA_TYPES: dict[ExportFormat, str] = {
     ExportFormat.PDF: "application/pdf",
     ExportFormat.DOCX: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ExportFormat.PPTX: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ExportFormat.H5P_QUESTION_SET: "application/zip",
 }
 
 
@@ -260,7 +267,7 @@ class ExportService:
             raise ValueError(msg)
 
         doc_title = title or material.title or "Untitled"
-        html_content = material.description or ""
+        html_content = render_material_html(material)
 
         if fmt == ExportFormat.HTML:
             html = HTML_TEMPLATE.format(
@@ -348,7 +355,7 @@ class ExportService:
                     folder = f"{folder}_{topic_slug}"
 
                 mat_slug = self._slugify(mat.title or "untitled")
-                html_content = mat.description or ""
+                html_content = render_material_html(mat)
                 doc_title = mat.title or "Untitled"
 
                 if fmt == ExportFormat.HTML:

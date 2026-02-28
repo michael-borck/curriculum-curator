@@ -399,15 +399,19 @@ const UnitPage = () => {
     }
   };
 
-  const handleExport = async (format: 'imscc' | 'scorm' | 'html') => {
+  const handleExport = async (
+    format: 'imscc' | 'scorm' | 'html' | 'qti' | 'h5p'
+  ) => {
     if (!unitId) return;
     setExportMenuOpen(false);
-    const label =
-      format === 'imscc'
-        ? 'IMSCC v1.1'
-        : format === 'html'
-          ? 'HTML'
-          : 'SCORM 1.2';
+    const labelMap: Record<string, string> = {
+      imscc: 'IMSCC v1.1',
+      scorm: 'SCORM 1.2',
+      html: 'HTML',
+      qti: 'QTI 2.1',
+      h5p: 'H5P Quiz',
+    };
+    const label = labelMap[format] ?? format;
     try {
       setExporting(true);
       await downloadExport(unitId, format, targetLms);
@@ -585,6 +589,19 @@ const UnitPage = () => {
                       onClick={() => handleExport('html')}
                     >
                       Export as HTML (.html)
+                    </button>
+                    <div className='border-t border-gray-100' />
+                    <button
+                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                      onClick={() => handleExport('qti')}
+                    >
+                      LMS Native Quiz (QTI 2.1)
+                    </button>
+                    <button
+                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                      onClick={() => handleExport('h5p')}
+                    >
+                      Interactive Quiz (H5P)
                     </button>
                     <div className='border-t border-gray-100' />
                     <button
