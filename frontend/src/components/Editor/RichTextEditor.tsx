@@ -13,6 +13,9 @@ import { MermaidNode } from './MermaidNode';
 import { QuizQuestionNode } from './QuizQuestionNode';
 import { SlideBreakNode } from './SlideBreakNode';
 import { BranchingCardNode } from './BranchingCardNode';
+import { InteractiveVideoEmbedNode } from './InteractiveVideoEmbedNode';
+import { TranscriptSegmentNode } from './TranscriptSegmentNode';
+import { VideoInteractionNode } from './VideoInteractionNode';
 import ImageInsertDialog from './ImageInsertDialog';
 import BranchingMapDialog from './BranchingMapDialog';
 import VisualPromptPanel from './VisualPromptPanel';
@@ -275,6 +278,9 @@ const RichTextEditor = ({
       QuizQuestionNode,
       SlideBreakNode,
       BranchingCardNode,
+      InteractiveVideoEmbedNode,
+      TranscriptSegmentNode,
+      VideoInteractionNode,
     ],
     content,
     onUpdate: ({ editor }: { editor: Editor }) => {

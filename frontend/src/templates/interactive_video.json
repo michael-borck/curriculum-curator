@@ -1,0 +1,22 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "interactiveVideoEmbed",
+      "attrs": {
+        "url": "",
+        "platform": "youtube",
+        "title": "Interactive Video"
+      }
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Load a transcript using the button above, then insert quiz interactions between segments."
+        }
+      ]
+    }
+  ]
+}

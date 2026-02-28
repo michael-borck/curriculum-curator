@@ -343,7 +343,7 @@ since students are already authenticated in the LMS).
 | 4 | Slides | SlideBreak node, H5P Course Presentation | COMPLETE |
 | 5 | Branching | Card authoring, map view, H5P Branching Scenario | COMPLETE |
 | 6a | Export Dialog | Two-level export UI, 4-level format resolver, user defaults | COMPLETE |
-| 6b-i | Interactive Video: Authoring | Transcript service, 3 TipTap nodes, manual interaction placement | Not started |
+| 6b-i | Interactive Video: Authoring | Transcript service, 3 TipTap nodes, manual interaction placement | COMPLETE |
 | 6b-ii | Interactive Video: Export | H5P Interactive Video, Echo360 fallback | Not started |
 | 6b-iii | Interactive Video: AI | AI-suggested interactions from transcript | Not started |
 | 6c | Progress Streaming | SSE progress for large exports (nice-to-have) | Not started |

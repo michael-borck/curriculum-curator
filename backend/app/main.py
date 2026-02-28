@@ -565,6 +565,13 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load package_export routes: {e}")
 
+try:
+    from app.api.routes import transcript
+
+    app.include_router(transcript.router, prefix="/api", tags=["transcript"])
+except ImportError as e:
+    logger.warning(f"Failed to load transcript routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 

@@ -91,6 +91,12 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
         result = _render_quiz_question(attrs)
     elif node_type == "branchingCard":
         result = _render_branching_card(attrs)
+    elif node_type == "interactiveVideoEmbed":
+        result = _render_interactive_video_embed(attrs)
+    elif node_type == "transcriptSegment":
+        result = _render_transcript_segment(attrs, children)
+    elif node_type == "videoInteraction":
+        result = _render_video_interaction(attrs)
     else:
         if node_type:
             logger.warning("Unknown TipTap node type: %s", node_type)
@@ -248,6 +254,98 @@ def _render_quiz_question(attrs: dict[str, Any]) -> str:
         "border-radius:8px;padding:1rem;margin:1rem 0;"
         'background:#f9f9fb;">'
     )
+    parts.append(
+        f'<p style="font-size:0.85rem;color:#666;margin:0 0 0.5rem;">'
+        f"{type_label} &middot; {points} pt{'s' if float(points) != 1.0 else ''}</p>"
+    )
+    parts.append(f"<p><strong>{question_text}</strong></p>")
+
+    if options:
+        parts.append("<ol>")
+        for opt in options:
+            opt_text = escape(str(opt.get("text", "")))
+            is_correct = opt.get("correct", False)
+            marker = ' <span style="color:green;">&#10003;</span>' if is_correct else ""
+            parts.append(f"<li>{opt_text}{marker}</li>")
+        parts.append("</ol>")
+
+    if feedback:
+        parts.append(
+            f'<p style="font-style:italic;color:#555;margin-top:0.5rem;">'
+            f"Feedback: {escape(feedback)}</p>"
+        )
+
+    parts.append("</div>")
+    return "".join(parts)
+
+
+def _render_interactive_video_embed(attrs: dict[str, Any]) -> str:
+    """Render an interactiveVideoEmbed node as a link for document exports."""
+    url = escape(attrs.get("url", ""))
+    title = escape(attrs.get("title", "Interactive Video"))
+    platform = escape(attrs.get("platform", ""))
+    return (
+        f'<div class="video-embed" style="border:1px solid #ddd;'
+        f'border-radius:8px;padding:1rem;margin:1rem 0;background:#f0f0ff;">'
+        f'<p style="font-size:0.85rem;color:#666;margin:0 0 0.5rem;">'
+        f"Interactive Video ({platform})</p>"
+        f'<p><a href="{url}">{title or url}</a></p>'
+        f"</div>"
+    )
+
+
+def _format_timestamp(seconds: float) -> str:
+    """Format seconds as mm:ss."""
+    mins = int(seconds) // 60
+    secs = int(seconds) % 60
+    return f"{mins}:{secs:02d}"
+
+
+def _render_transcript_segment(attrs: dict[str, Any], children: str) -> str:
+    """Render a transcriptSegment node for document exports."""
+    start = float(attrs.get("startTime", 0))
+    end = float(attrs.get("endTime", 0))
+    ts = f"[{_format_timestamp(start)}\u2013{_format_timestamp(end)}]"
+    return (
+        f'<div class="transcript-segment" style="margin:0.25rem 0;color:#666;">'
+        f'<span style="font-family:monospace;font-size:0.8rem;color:#999;">{ts}</span> '
+        f"{children}</div>"
+    )
+
+
+def _render_video_interaction(attrs: dict[str, Any]) -> str:
+    """Render a videoInteraction node — reuses quiz rendering with a timestamp header."""
+    time_val = float(attrs.get("time", 0))
+    pause = attrs.get("pause", True)
+    ts = _format_timestamp(time_val)
+    pause_label = " (pauses)" if pause else ""
+
+    parts: list[str] = []
+    parts.append(
+        '<div class="video-interaction" style="border:1px solid #93c5fd;'
+        "border-left:4px solid #3b82f6;border-radius:8px;padding:1rem;"
+        'margin:1rem 0;background:#eff6ff;">'
+    )
+    parts.append(
+        f'<p style="font-size:0.85rem;color:#3b82f6;margin:0 0 0.5rem;">'
+        f"Interaction @ {ts}{pause_label}</p>"
+    )
+
+    question_text = escape(attrs.get("questionText", ""))
+    question_type = attrs.get("questionType", "multiple_choice")
+    options: list[dict[str, Any]] = attrs.get("options", [])
+    feedback = attrs.get("feedback", "")
+    points = attrs.get("points", 1.0)
+
+    type_labels = {
+        "multiple_choice": "Multiple Choice",
+        "true_false": "True/False",
+        "multi_select": "Multiple Select",
+        "short_answer": "Short Answer",
+        "fill_in_blank": "Fill in the Blank",
+    }
+    type_label = type_labels.get(question_type, question_type)
+
     parts.append(
         f'<p style="font-size:0.85rem;color:#666;margin:0 0 0.5rem;">'
         f"{type_label} &middot; {points} pt{'s' if float(points) != 1.0 else ''}</p>"
