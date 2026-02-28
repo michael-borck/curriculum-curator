@@ -11,6 +11,13 @@ import {
   CheckCircle,
   BarChart,
   ClipboardList,
+  ClipboardCheck,
+  Presentation,
+  FlaskConical,
+  BookOpen,
+  MessageSquare,
+  Wrench,
+  type LucideIcon,
 } from 'lucide-react';
 import { assessmentsApi } from '../../services/unitStructureApi';
 import AIAssistField from './AIAssistField';
@@ -20,13 +27,38 @@ import {
   AssessmentCreate,
   AssessmentUpdate,
   AssessmentType,
-  AssessmentCategory,
+  ASSESSMENT_CATEGORIES,
   AssessmentStatus,
   GradeDistribution,
   Rubric,
 } from '../../types/unitStructure';
 import toast from 'react-hot-toast';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
+import { useAuthStore } from '../../stores/authStore';
+import { getCategoryMeta } from '../../constants/assessmentCategories';
+import { AssessmentCategoryCombobox } from '../shared/AssessmentCategoryCombobox';
+
+const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
+  Presentation,
+  Users,
+  FlaskConical,
+  BookOpen,
+  FileText,
+  MessageSquare,
+  Wrench,
+  ClipboardCheck,
+};
+
+function CategoryIcon({
+  iconName,
+  className,
+}: {
+  iconName: string;
+  className?: string | undefined;
+}) {
+  const Icon = CATEGORY_ICON_MAP[iconName] ?? FileText;
+  return <Icon className={className} />;
+}
 
 interface AssessmentsManagerProps {
   unitId: string;
@@ -35,7 +67,7 @@ interface AssessmentsManagerProps {
 interface AssessmentFormData {
   title: string;
   type: AssessmentType;
-  category: AssessmentCategory;
+  category: string;
   weight: number;
   description: string;
   releaseWeek: number | undefined;
@@ -46,22 +78,6 @@ interface AssessmentFormData {
   status: AssessmentStatus;
   rubric: Rubric | undefined;
 }
-
-const categoryIcons: Record<AssessmentCategory, React.ReactElement> = {
-  [AssessmentCategory.QUIZ]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.EXAM]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.ASSIGNMENT]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.PROJECT]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.DISCUSSION]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.PAPER]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.PRESENTATION]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.LAB]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.LAB_REPORT]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.PORTFOLIO]: <FileText className='w-4 h-4' />,
-  [AssessmentCategory.PARTICIPATION]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.VIVA]: <Users className='w-4 h-4' />,
-  [AssessmentCategory.OTHER]: <FileText className='w-4 h-4' />,
-};
 
 const AssessmentCard: React.FC<{
   assessment: AssessmentResponse;
@@ -90,10 +106,15 @@ const AssessmentCard: React.FC<{
             >
               {assessment.type}
             </span>
-            <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800'>
-              {categoryIcons[assessment.category]}
+            <span
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryMeta(assessment.category).color}`}
+            >
+              <CategoryIcon
+                iconName={getCategoryMeta(assessment.category).icon}
+                className='w-3 h-3'
+              />
               <span className='ml-1'>
-                {assessment.category.replace('_', ' ')}
+                {getCategoryMeta(assessment.category).label}
               </span>
             </span>
             <span
@@ -177,6 +198,7 @@ const AssessmentCard: React.FC<{
 export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   unitId,
 }) => {
+  const userSector = useAuthStore(s => s.user?.educationSector);
   const [assessments, setAssessments] = useState<AssessmentResponse[]>([]);
   const [gradeDistribution, setGradeDistribution] =
     useState<GradeDistribution | null>(null);
@@ -187,7 +209,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   const [formData, setFormData] = useState<AssessmentFormData>({
     title: '',
     type: AssessmentType.SUMMATIVE,
-    category: AssessmentCategory.ASSIGNMENT,
+    category: ASSESSMENT_CATEGORIES.ASSIGNMENT,
     weight: 0,
     description: '',
     releaseWeek: undefined,
@@ -327,7 +349,7 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
     setFormData({
       title: '',
       type: AssessmentType.SUMMATIVE,
-      category: AssessmentCategory.ASSIGNMENT,
+      category: ASSESSMENT_CATEGORIES.ASSIGNMENT,
       weight: 0,
       description: '',
       releaseWeek: undefined,
@@ -479,23 +501,11 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
                 <label className='block text-sm font-medium text-gray-700'>
                   Category *
                 </label>
-                <select
+                <AssessmentCategoryCombobox
                   value={formData.category}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      category: e.target.value as AssessmentCategory,
-                    })
-                  }
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
-                >
-                  {Object.values(AssessmentCategory).map(category => (
-                    <option key={category} value={category}>
-                      {category.replace('_', ' ').charAt(0).toUpperCase() +
-                        category.replace('_', ' ').slice(1)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={category => setFormData({ ...formData, category })}
+                  sectorId={userSector}
+                />
               </div>
 
               <div>

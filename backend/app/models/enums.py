@@ -50,3 +50,5 @@ class ContentType(str, Enum):
     ACTIVITY = "activity"
     ASSIGNMENT = "assignment"
     RESOURCE = "resource"
+    # Free text
+    CUSTOM = "custom"

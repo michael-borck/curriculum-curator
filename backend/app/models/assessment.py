@@ -46,6 +46,17 @@ class AssessmentCategory(str, Enum):
     PORTFOLIO = "portfolio"
     PARTICIPATION = "participation"
     VIVA = "viva"
+    # Cross-sector
+    REFLECTION = "reflection"
+    JOURNAL = "journal"
+    CASE_STUDY = "case_study"
+    PEER_REVIEW = "peer_review"
+    # VET
+    PRACTICAL_ASSESSMENT = "practical_assessment"
+    SKILLS_DEMONSTRATION = "skills_demonstration"
+    # K-12
+    TEST = "test"
+    HOMEWORK = "homework"
     OTHER = "other"
 
 

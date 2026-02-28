@@ -14,6 +14,7 @@ export interface SectorProfile {
   codePlaceholder: string;
   presets: string[];
   defaultSessionFormats: string[];
+  defaultAssessmentCategories: string[];
 }
 
 const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
@@ -37,6 +38,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'independent',
       'assessment',
     ],
+    defaultAssessmentCategories: [
+      'test',
+      'assignment',
+      'project',
+      'homework',
+      'presentation',
+      'participation',
+    ],
   },
   vet: {
     id: 'vet',
@@ -58,6 +67,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'simulation',
       'placement',
       'assessment',
+    ],
+    defaultAssessmentCategories: [
+      'practical_assessment',
+      'skills_demonstration',
+      'assignment',
+      'portfolio',
+      'project',
+      'reflection',
     ],
   },
   higher_ed: {
@@ -89,6 +106,15 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'seminar',
       'independent',
     ],
+    defaultAssessmentCategories: [
+      'exam',
+      'assignment',
+      'quiz',
+      'project',
+      'paper',
+      'presentation',
+      'lab_report',
+    ],
   },
   corporate: {
     id: 'corporate',
@@ -109,6 +135,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'elearning',
       'simulation',
       'independent',
+    ],
+    defaultAssessmentCategories: [
+      'case_study',
+      'presentation',
+      'project',
+      'reflection',
+      'peer_review',
+      'portfolio',
     ],
   },
   other: {
@@ -138,6 +172,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'independent',
       'elearning',
       'assessment',
+    ],
+    defaultAssessmentCategories: [
+      'assignment',
+      'project',
+      'quiz',
+      'reflection',
+      'presentation',
+      'portfolio',
     ],
   },
 };

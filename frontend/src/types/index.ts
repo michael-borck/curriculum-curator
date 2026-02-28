@@ -115,7 +115,8 @@ export type ContentType =
   | 'discussion'
   | 'activity'
   | 'assignment'
-  | 'resource';
+  | 'resource'
+  | 'custom';
 export type PedagogyType =
   | 'inquiry-based'
   | 'project-based'

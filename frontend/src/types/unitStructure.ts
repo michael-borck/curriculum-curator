@@ -44,21 +44,32 @@ export enum AssessmentType {
   SUMMATIVE = 'summative',
 }
 
-export enum AssessmentCategory {
-  QUIZ = 'quiz',
-  EXAM = 'exam',
-  ASSIGNMENT = 'assignment',
-  PROJECT = 'project',
-  DISCUSSION = 'discussion',
-  PAPER = 'paper',
-  PRESENTATION = 'presentation',
-  LAB = 'lab',
-  LAB_REPORT = 'lab_report',
-  PORTFOLIO = 'portfolio',
-  PARTICIPATION = 'participation',
-  VIVA = 'viva',
-  OTHER = 'other',
-}
+export const ASSESSMENT_CATEGORIES = {
+  QUIZ: 'quiz',
+  EXAM: 'exam',
+  ASSIGNMENT: 'assignment',
+  PROJECT: 'project',
+  DISCUSSION: 'discussion',
+  PAPER: 'paper',
+  PRESENTATION: 'presentation',
+  LAB: 'lab',
+  LAB_REPORT: 'lab_report',
+  PORTFOLIO: 'portfolio',
+  PARTICIPATION: 'participation',
+  VIVA: 'viva',
+  REFLECTION: 'reflection',
+  JOURNAL: 'journal',
+  CASE_STUDY: 'case_study',
+  PEER_REVIEW: 'peer_review',
+  PRACTICAL_ASSESSMENT: 'practical_assessment',
+  SKILLS_DEMONSTRATION: 'skills_demonstration',
+  TEST: 'test',
+  HOMEWORK: 'homework',
+  OTHER: 'other',
+} as const;
+
+/** Any known category string, or a free-text custom value. */
+export type AssessmentCategory = string;
 
 export enum AssessmentStatus {
   DRAFT = 'draft',
