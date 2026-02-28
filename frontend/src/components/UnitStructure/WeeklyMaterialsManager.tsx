@@ -83,7 +83,7 @@ interface MaterialFormData {
   title: string;
   type: string;
   category: MaterialCategory;
-  exportFormat: string;
+  exportTargets: string[];
   description: string;
   durationMinutes: number;
   status: MaterialStatus;
@@ -409,7 +409,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     title: '',
     type: SESSION_FORMATS.LECTURE,
     category: MaterialCategory.GENERAL,
-    exportFormat: '',
+    exportTargets: [],
     description: '',
     durationMinutes: 60,
     status: MaterialStatus.DRAFT,
@@ -454,7 +454,9 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
           title: formData.title,
           type: formData.type,
           category: formData.category,
-          ...(formData.exportFormat && { exportFormat: formData.exportFormat }),
+          ...(formData.exportTargets.length > 0 && {
+            exportTargets: formData.exportTargets,
+          }),
           ...(formData.description && { description: formData.description }),
           ...(formData.durationMinutes && {
             durationMinutes: formData.durationMinutes,
@@ -499,7 +501,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       title: material.title,
       type: material.type,
       category: material.category || MaterialCategory.GENERAL,
-      exportFormat: material.exportFormat || '',
+      exportTargets: material.exportTargets || [],
       description: material.description || '',
       durationMinutes: material.durationMinutes || 60,
       status: material.status,
@@ -556,7 +558,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       title: '',
       type: SESSION_FORMATS.LECTURE,
       category: MaterialCategory.GENERAL,
-      exportFormat: '',
+      exportTargets: [],
       description: '',
       durationMinutes: 60,
       status: MaterialStatus.DRAFT,
@@ -742,23 +744,24 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   Export Format
                 </label>
                 <select
-                  value={formData.exportFormat}
+                  value={formData.exportTargets[0] || ''}
                   onChange={e =>
                     setFormData({
                       ...formData,
-                      exportFormat: e.target.value,
+                      exportTargets: e.target.value ? [e.target.value] : [],
                     })
                   }
                   className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
                 >
-                  <option value=''>Default</option>
+                  <option value=''>Auto (default)</option>
                   <option value='h5p_question_set'>
                     Interactive Quiz (H5P)
                   </option>
                   <option value='qti'>LMS Native Quiz (QTI)</option>
                 </select>
                 <p className='mt-1 text-xs text-gray-500'>
-                  Controls how quiz questions are packaged during LMS export
+                  Controls how quiz questions are packaged during LMS export.
+                  Use the Export dialog for full control.
                 </p>
               </div>
             )}

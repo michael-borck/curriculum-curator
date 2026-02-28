@@ -65,8 +65,11 @@ class WeeklyMaterial(Base):
     # Structured content (ProseMirror JSON from TipTap editor)
     content_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
-    # Per-material export format override (e.g. "h5p_question_set", "qti")
-    export_format: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    # Per-material export target overrides (e.g. ["h5p_question_set"], ["qti"])
+    # Column kept as "export_format" to avoid migration; stores JSON list.
+    export_targets: Mapped[list[str] | None] = mapped_column(
+        "export_format", JSON, nullable=True
+    )
 
     # Content and metadata
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -111,6 +114,19 @@ class WeeklyMaterial(Base):
 
     def __repr__(self) -> str:
         return f"<WeeklyMaterial(id={self.id}, title='{self.title}', week={self.week_number}, type='{self.type}')>"
+
+    @property
+    def export_targets_list(self) -> list[str]:
+        """Normalize export_targets, handling legacy string values."""
+        val = self.export_targets
+        if val is None:
+            return []
+        if isinstance(val, str):
+            # Legacy: single string like "h5p_question_set"
+            return [val] if val else []
+        if isinstance(val, list):
+            return [str(v) for v in val if v]
+        return []
 
     @property
     def is_complete(self) -> bool:

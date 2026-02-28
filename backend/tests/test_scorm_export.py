@@ -289,7 +289,7 @@ class TestH5PEmbedding:
             type="lecture",
             description="<p>Quiz material</p>",
             order_index=0,
-            export_format="h5p_question_set",
+            export_targets=["h5p_question_set"],
             content_json={
                 "type": "doc",
                 "content": [

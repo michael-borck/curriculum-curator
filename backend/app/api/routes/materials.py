@@ -57,7 +57,7 @@ def _to_material_response(material: WeeklyMaterial) -> MaterialResponse:
         duration_minutes=material.duration_minutes,
         file_path=material.file_path,
         material_metadata=material.material_metadata,
-        export_format=material.export_format,
+        export_targets=material.export_targets_list or None,
         category=material.category,
         order_index=material.order_index,
         status=material.status,

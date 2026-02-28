@@ -12,6 +12,8 @@ import {
   exportTemplateApi,
   type TemplateInfo,
 } from '../../services/exportTemplateApi';
+import api from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface FormatSectionProps {
   format: string;
@@ -167,6 +169,144 @@ const FormatSection: React.FC<FormatSectionProps> = ({
   );
 };
 
+// ─── Default Export Targets ──────────────────────────────────────────
+
+interface ContentTypeRow {
+  key: string;
+  label: string;
+  targets: { value: string; label: string }[];
+}
+
+const CONTENT_TYPE_ROWS: ContentTypeRow[] = [
+  {
+    key: 'quiz',
+    label: 'Quizzes',
+    targets: [
+      { value: 'qti', label: 'QTI (LMS native)' },
+      { value: 'h5p_question_set', label: 'H5P Quiz' },
+    ],
+  },
+  {
+    key: 'slides',
+    label: 'Slides',
+    targets: [
+      { value: 'h5p_course_presentation', label: 'H5P Course Presentation' },
+      { value: 'html', label: 'HTML' },
+    ],
+  },
+  {
+    key: 'branching',
+    label: 'Branching Scenarios',
+    targets: [{ value: 'h5p_branching', label: 'H5P Branching Scenario' }],
+  },
+];
+
+const DefaultExportTargets: React.FC = () => {
+  const user = useAuthStore(s => s.user);
+  const prefs = (user?.teachingPreferences ?? {}) as Record<string, unknown>;
+  const savedDefaults = (prefs.export_defaults ??
+    prefs.exportDefaults ??
+    {}) as Record<string, string[]>;
+  const [defaults, setDefaults] =
+    useState<Record<string, string[]>>(savedDefaults);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (contentType: string, target: string) => {
+    const current = defaults[contentType] ?? [];
+    const isActive = current.includes(target);
+    let next: string[];
+    if (isActive) {
+      next = current.filter(t => t !== target);
+    } else {
+      next = [...current, target];
+    }
+    // Empty means "Auto"
+    const updated = { ...defaults };
+    if (next.length === 0) {
+      delete updated[contentType];
+    } else {
+      updated[contentType] = next;
+    }
+    setDefaults(updated);
+    void save(updated);
+  };
+
+  const save = async (val: Record<string, string[]>) => {
+    try {
+      setSaving(true);
+      await api.patch('/auth/profile', {
+        teachingPreferences: { export_defaults: val },
+      });
+    } catch {
+      toast.error('Failed to save export defaults');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className='bg-white rounded-lg shadow-md p-6 mb-6'>
+      <h2 className='text-xl font-semibold mb-2'>Default Export Targets</h2>
+      <p className='text-sm text-gray-600 mb-4'>
+        Choose which format each content type defaults to during export. Leave
+        empty for &ldquo;Auto&rdquo; (sensible defaults).
+        {saving && (
+          <Loader2 className='inline-block ml-2 h-3.5 w-3.5 animate-spin text-purple-500' />
+        )}
+      </p>
+
+      <div className='space-y-3'>
+        {CONTENT_TYPE_ROWS.map(row => {
+          const active = defaults[row.key] ?? [];
+          return (
+            <div
+              key={row.key}
+              className='flex items-center justify-between py-2'
+            >
+              <span className='text-sm font-medium text-gray-700 w-40'>
+                {row.label}
+              </span>
+              <div className='flex items-center gap-2'>
+                {row.targets.map(t => {
+                  const isOn = active.includes(t.value);
+                  return (
+                    <button
+                      key={t.value}
+                      onClick={() => toggle(row.key, t.value)}
+                      className={`text-xs px-3 py-1 rounded-full border transition ${
+                        isOn
+                          ? 'bg-purple-100 border-purple-300 text-purple-700 font-medium'
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+                {active.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const updated = { ...defaults };
+                      delete updated[row.key];
+                      setDefaults(updated);
+                      void save(updated);
+                    }}
+                    className='text-[10px] text-gray-400 hover:text-gray-600 ml-1'
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main component ──────────────────────────────────────────────────
+
 const ExportTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,45 +381,48 @@ const ExportTemplates: React.FC = () => {
   }
 
   return (
-    <div className='bg-white rounded-lg shadow-md p-6'>
-      <h2 className='text-xl font-semibold mb-2'>Export Templates</h2>
-      <p className='text-sm text-gray-600 mb-6'>
-        Upload reference documents used to style PPTX and DOCX exports.
-        Templates control fonts, colours, and layouts. The default template is
-        used automatically when exporting.
-      </p>
+    <>
+      <DefaultExportTargets />
+      <div className='bg-white rounded-lg shadow-md p-6'>
+        <h2 className='text-xl font-semibold mb-2'>Export Templates</h2>
+        <p className='text-sm text-gray-600 mb-6'>
+          Upload reference documents used to style PPTX and DOCX exports.
+          Templates control fonts, colours, and layouts. The default template is
+          used automatically when exporting.
+        </p>
 
-      <div className='space-y-4'>
-        <FormatSection
-          format='pptx'
-          label='Presentations (.pptx)'
-          icon={<Presentation className='h-5 w-5 text-orange-500' />}
-          accept='.pptx'
-          templates={pptxTemplates}
-          onUpload={handleUpload}
-          onRemove={handleRemove}
-          onSetDefault={handleSetDefault}
-          uploading={uploading}
-        />
+        <div className='space-y-4'>
+          <FormatSection
+            format='pptx'
+            label='Presentations (.pptx)'
+            icon={<Presentation className='h-5 w-5 text-orange-500' />}
+            accept='.pptx'
+            templates={pptxTemplates}
+            onUpload={handleUpload}
+            onRemove={handleRemove}
+            onSetDefault={handleSetDefault}
+            uploading={uploading}
+          />
 
-        <FormatSection
-          format='docx'
-          label='Documents (.docx)'
-          icon={<FileText className='h-5 w-5 text-blue-500' />}
-          accept='.docx'
-          templates={docxTemplates}
-          onUpload={handleUpload}
-          onRemove={handleRemove}
-          onSetDefault={handleSetDefault}
-          uploading={uploading}
-        />
+          <FormatSection
+            format='docx'
+            label='Documents (.docx)'
+            icon={<FileText className='h-5 w-5 text-blue-500' />}
+            accept='.docx'
+            templates={docxTemplates}
+            onUpload={handleUpload}
+            onRemove={handleRemove}
+            onSetDefault={handleSetDefault}
+            uploading={uploading}
+          />
+        </div>
+
+        <p className='text-xs text-gray-400 mt-4'>
+          Exports without a template use Pandoc defaults. Templates can also be
+          extracted automatically when importing PPTX or DOCX files.
+        </p>
       </div>
-
-      <p className='text-xs text-gray-400 mt-4'>
-        Exports without a template use Pandoc defaults. Templates can also be
-        extracted automatically when importing PPTX or DOCX files.
-      </p>
-    </div>
+    </>
   );
 };
 

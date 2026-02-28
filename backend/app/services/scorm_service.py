@@ -89,6 +89,7 @@ class SCORMExportService:
         db: Session,
         *,
         target_lms: TargetLMS = TargetLMS.GENERIC,
+        target_overrides: dict[str, dict[str, list[str]]] | None = None,
     ) -> tuple[BytesIO, str]:
         """Export a unit as SCORM 1.2 ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
@@ -160,13 +161,19 @@ class SCORMExportService:
             file_contents[qti_href] = qti_xml
 
         # Quiz from editor content_json (quizQuestion TipTap nodes)
-        # Route to H5P or QTI based on per-material export_format
+        # Route to H5P or QTI based on per-material export_targets or override map
         mat_by_id = {str(m.id): m for m in data.weekly_materials}
         for material_id, questions in data.quiz_questions_by_material.items():
             if not questions:
                 continue
             mat_obj = mat_by_id.get(material_id)
-            use_h5p = mat_obj and str(mat_obj.export_format) == "h5p_question_set"
+            # Check override map first (from export dialog), then per-material setting
+            mat_targets: list[str] = []
+            if target_overrides and material_id in target_overrides:
+                mat_targets = target_overrides[material_id].get("quiz", [])
+            elif mat_obj:
+                mat_targets = mat_obj.export_targets_list
+            use_h5p = "h5p_question_set" in mat_targets
             quiz_title = f"Quiz {material_id[:8]}"
 
             if use_h5p:

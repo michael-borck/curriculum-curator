@@ -55,6 +55,7 @@ import { useUnitDesign } from '../hooks/useUnitDesign';
 import { useWorkingContextStore } from '../stores/workingContextStore';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
+import ExportDialog from '../components/ExportDialog/ExportDialog';
 
 type TabType =
   | 'structure'
@@ -358,6 +359,7 @@ const UnitPage = () => {
     }
   };
 
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
@@ -556,6 +558,15 @@ const UnitPage = () => {
                 </Button>
                 {exportMenuOpen && (
                   <div className='absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                    <button
+                      className='w-full text-left px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-t-lg border-b border-gray-100'
+                      onClick={() => {
+                        setExportMenuOpen(false);
+                        setShowExportDialog(true);
+                      }}
+                    >
+                      Export... (full dialog)
+                    </button>
                     <div className='px-4 py-2 border-b border-gray-100'>
                       <label className='block text-xs font-medium text-gray-500 mb-1'>
                         Target LMS
@@ -892,6 +903,13 @@ const UnitPage = () => {
         isOpen={showOutcomeMap}
         onClose={() => setShowOutcomeMap(false)}
         topicLabel={topicLabel}
+      />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        unitId={unitId!}
       />
 
       {/* Delete Confirmation Modal */}

@@ -149,7 +149,7 @@ export interface MaterialUpdate {
   type?: SessionFormat;
   description?: string;
   contentJson?: Record<string, unknown>;
-  exportFormat?: string;
+  exportTargets?: string[];
   durationMinutes?: number;
   category?: MaterialCategory;
   filePath?: string;
@@ -166,7 +166,7 @@ export interface MaterialResponse {
   type: SessionFormat;
   description?: string;
   contentJson?: Record<string, unknown>;
-  exportFormat?: string;
+  exportTargets?: string[];
   durationMinutes?: number;
   category: MaterialCategory;
   filePath?: string;

@@ -51,7 +51,7 @@ class MaterialUpdate(CamelModel):
     type: str | None = None
     description: str | None = None
     content_json: dict[str, Any] | None = None
-    export_format: str | None = Field(None, max_length=30)
+    export_targets: list[str] | None = None
     duration_minutes: int | None = Field(None, ge=0)
     file_path: str | None = Field(None, max_length=500)
     material_metadata: dict[str, Any] | None = None
@@ -67,7 +67,7 @@ class MaterialResponse(MaterialBase):
     unit_id: str
     file_path: str | None
     material_metadata: dict[str, Any] | None
-    export_format: str | None = None
+    export_targets: list[str] | None = None
     quality_score: int | None = None
     created_at: datetime
     updated_at: datetime

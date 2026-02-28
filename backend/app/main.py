@@ -551,6 +551,20 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load h5p_export routes: {e}")
 
+try:
+    from app.api.routes import export_preview
+
+    app.include_router(export_preview.router, prefix="/api", tags=["export-preview"])
+except ImportError as e:
+    logger.warning(f"Failed to load export_preview routes: {e}")
+
+try:
+    from app.api.routes import package_export
+
+    app.include_router(package_export.router, prefix="/api", tags=["package-export"])
+except ImportError as e:
+    logger.warning(f"Failed to load package_export routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 
