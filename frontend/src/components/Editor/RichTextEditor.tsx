@@ -10,6 +10,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { VideoNode } from './VideoNode';
 import { YoutubeNode } from './YoutubeNode';
 import { MermaidNode } from './MermaidNode';
+import { QuizQuestionNode } from './QuizQuestionNode';
 import ImageInsertDialog from './ImageInsertDialog';
 import VisualPromptPanel from './VisualPromptPanel';
 import { createLowlight } from 'lowlight';
@@ -43,6 +44,7 @@ import {
   Youtube,
   Video,
   GitMerge,
+  HelpCircle,
   Wand2,
   Undo,
   Redo,
@@ -176,6 +178,13 @@ const MenuBar = ({
         <GitMerge size={18} />
       </button>
       <button
+        onClick={() => editor.commands.insertQuizQuestion()}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Insert quiz question'
+      >
+        <HelpCircle size={18} />
+      </button>
+      <button
         onClick={isAIDisabled ? undefined : onVisualPromptClick}
         className={`p-2 rounded ${
           isAIDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
@@ -233,6 +242,7 @@ const RichTextEditor = ({
       VideoNode,
       YoutubeNode,
       MermaidNode,
+      QuizQuestionNode,
     ],
     content,
     onUpdate: ({ editor }: { editor: Editor }) => {
