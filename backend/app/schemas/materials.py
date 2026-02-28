@@ -7,11 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import SessionFormat
 from app.schemas.base import CamelModel
 from app.schemas.learning_outcomes import LLOResponse, ULOResponse
-
-VALID_SESSION_FORMATS = {f.value for f in SessionFormat}
 
 
 class MaterialBase(CamelModel):

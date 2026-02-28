@@ -4,15 +4,26 @@
 
 // ============= Enums =============
 
-export enum SessionFormat {
-  LECTURE = 'lecture',
-  TUTORIAL = 'tutorial',
-  LAB = 'lab',
-  WORKSHOP = 'workshop',
-  SEMINAR = 'seminar',
-  INDEPENDENT = 'independent',
-  OTHER = 'other',
-}
+export const SESSION_FORMATS = {
+  LECTURE: 'lecture',
+  TUTORIAL: 'tutorial',
+  LAB: 'lab',
+  WORKSHOP: 'workshop',
+  SEMINAR: 'seminar',
+  INDEPENDENT: 'independent',
+  LESSON: 'lesson',
+  EXCURSION: 'excursion',
+  PRACTICAL: 'practical',
+  PLACEMENT: 'placement',
+  SIMULATION: 'simulation',
+  PRESENTATION: 'presentation',
+  ELEARNING: 'elearning',
+  ASSESSMENT: 'assessment',
+  CUSTOM: 'custom',
+} as const;
+
+/** Any known format string, or a free-text custom value. */
+export type SessionFormat = string;
 
 export enum MaterialStatus {
   DRAFT = 'draft',

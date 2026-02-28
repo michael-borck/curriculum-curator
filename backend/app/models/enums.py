@@ -19,7 +19,20 @@ class SessionFormat(str, Enum):
     WORKSHOP = "workshop"
     SEMINAR = "seminar"
     INDEPENDENT = "independent"
-    OTHER = "other"
+    # K-12
+    LESSON = "lesson"
+    EXCURSION = "excursion"
+    # VET
+    PRACTICAL = "practical"
+    PLACEMENT = "placement"
+    SIMULATION = "simulation"
+    # Corporate
+    PRESENTATION = "presentation"
+    ELEARNING = "elearning"
+    # Cross-sector
+    ASSESSMENT = "assessment"
+    # Free text
+    CUSTOM = "custom"
 
 
 class ContentType(str, Enum):

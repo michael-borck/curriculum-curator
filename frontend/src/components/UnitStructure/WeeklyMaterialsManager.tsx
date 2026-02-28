@@ -27,6 +27,11 @@ import {
   FlaskConical,
   Presentation,
   MessageSquare,
+  Map as MapIcon,
+  Wrench,
+  Building,
+  Monitor,
+  ClipboardCheck,
   Copy,
   Clipboard,
   GripVertical,
@@ -38,6 +43,7 @@ import {
   Download,
   History,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import axios from 'axios';
 import { materialsApi } from '../../services/unitStructureApi';
@@ -49,11 +55,14 @@ import {
   MaterialResponse,
   MaterialCreate,
   MaterialUpdate,
-  SessionFormat,
+  SESSION_FORMATS,
   MaterialStatus,
   MaterialCategory,
   WeekMaterials,
 } from '../../types/unitStructure';
+import { getFormatMeta } from '../../constants/sessionFormats';
+import { SessionFormatCombobox } from '../shared/SessionFormatCombobox';
+import { useAuthStore } from '../../stores/authStore';
 import {
   useTeachingStyleStore,
   pedagogyOptions,
@@ -72,7 +81,7 @@ interface WeeklyMaterialsManagerProps {
 
 interface MaterialFormData {
   title: string;
-  type: SessionFormat;
+  type: string;
   category: MaterialCategory;
   description: string;
   durationMinutes: number;
@@ -118,25 +127,30 @@ const QualityBadge: React.FC<{ score: number }> = ({ score }) => {
   );
 };
 
-const sessionFormatIcons: Record<SessionFormat, React.ReactElement> = {
-  [SessionFormat.LECTURE]: <Presentation className='w-4 h-4' />,
-  [SessionFormat.TUTORIAL]: <Users className='w-4 h-4' />,
-  [SessionFormat.LAB]: <FlaskConical className='w-4 h-4' />,
-  [SessionFormat.WORKSHOP]: <Users className='w-4 h-4' />,
-  [SessionFormat.SEMINAR]: <MessageSquare className='w-4 h-4' />,
-  [SessionFormat.INDEPENDENT]: <BookOpen className='w-4 h-4' />,
-  [SessionFormat.OTHER]: <FileText className='w-4 h-4' />,
+const ICON_MAP: Record<string, LucideIcon> = {
+  Presentation,
+  Users,
+  FlaskConical,
+  BookOpen,
+  FileText,
+  MessageSquare,
+  Map: MapIcon,
+  Wrench,
+  Building,
+  Monitor,
+  ClipboardCheck,
 };
 
-const sessionFormatColors: Record<SessionFormat, string> = {
-  [SessionFormat.LECTURE]: 'bg-blue-100 text-blue-800',
-  [SessionFormat.TUTORIAL]: 'bg-green-100 text-green-800',
-  [SessionFormat.LAB]: 'bg-purple-100 text-purple-800',
-  [SessionFormat.WORKSHOP]: 'bg-yellow-100 text-yellow-800',
-  [SessionFormat.SEMINAR]: 'bg-teal-100 text-teal-800',
-  [SessionFormat.INDEPENDENT]: 'bg-orange-100 text-orange-800',
-  [SessionFormat.OTHER]: 'bg-gray-100 text-gray-800',
-};
+function FormatIcon({
+  iconName,
+  className,
+}: {
+  iconName: string;
+  className?: string | undefined;
+}) {
+  const Icon = ICON_MAP[iconName] ?? FileText;
+  return <Icon className={className} />;
+}
 
 const exportFormats = [
   { value: 'html', label: 'HTML' },
@@ -239,10 +253,15 @@ const SortableMaterialItem: React.FC<{
           <div className='flex-1'>
             <div className='flex items-center space-x-2'>
               <span
-                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${sessionFormatColors[material.type]}`}
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getFormatMeta(material.type).color}`}
               >
-                {sessionFormatIcons[material.type]}
-                <span className='ml-1'>{material.type}</span>
+                <FormatIcon
+                  iconName={getFormatMeta(material.type).icon}
+                  className='w-4 h-4'
+                />
+                <span className='ml-1'>
+                  {getFormatMeta(material.type).label}
+                </span>
               </span>
 
               <h4 className='font-medium text-gray-900'>{material.title}</h4>
@@ -373,6 +392,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
 }) => {
   const { globalStyle } = useTeachingStyleStore();
   const { canGenerate } = useAILevel();
+  const userSector = useAuthStore(s => s.user?.educationSector);
   const [weekMaterials, setWeekMaterials] = useState<WeekMaterials | null>(
     null
   );
@@ -386,7 +406,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     useState<MaterialResponse | null>(null);
   const [formData, setFormData] = useState<MaterialFormData>({
     title: '',
-    type: SessionFormat.LECTURE,
+    type: SESSION_FORMATS.LECTURE,
     category: MaterialCategory.GENERAL,
     description: '',
     durationMinutes: 60,
@@ -530,7 +550,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     setEditingMaterial(null);
     setFormData({
       title: '',
-      type: SessionFormat.LECTURE,
+      type: SESSION_FORMATS.LECTURE,
       category: MaterialCategory.GENERAL,
       description: '',
       durationMinutes: 60,
@@ -552,13 +572,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       const style = formData.overrideStyle || globalStyle;
       // Map material type to content type for API
       const contentType =
-        formData.type === SessionFormat.LECTURE
-          ? 'slides'
-          : formData.type === SessionFormat.OTHER
-            ? 'assignment'
-            : formData.type === SessionFormat.LAB
-              ? 'activity'
-              : 'slides';
+        formData.type === SESSION_FORMATS.LAB ? 'activity' : 'slides';
 
       const response = await generateContent(
         contentType,
@@ -669,22 +683,11 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                 <label className='block text-sm font-medium text-gray-700'>
                   Type *
                 </label>
-                <select
+                <SessionFormatCombobox
                   value={formData.type}
-                  onChange={e =>
-                    setFormData({
-                      ...formData,
-                      type: e.target.value as SessionFormat,
-                    })
-                  }
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
-                >
-                  {Object.values(SessionFormat).map(type => (
-                    <option key={type} value={type}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={type => setFormData({ ...formData, type })}
+                  sectorId={userSector}
+                />
               </div>
 
               <div>

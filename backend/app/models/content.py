@@ -1,5 +1,9 @@
 """
 Content model for unit materials (slides, worksheets, etc.)
+
+DEPRECATED: The Content model predates WeeklyMaterial and may be consolidated
+in a future release. New features should use WeeklyMaterial instead.
+See ADR-055 for the relationship between these models.
 """
 
 import uuid

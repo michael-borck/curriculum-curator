@@ -13,6 +13,7 @@ export interface SectorProfile {
   codeLabel: string;
   codePlaceholder: string;
   presets: string[];
+  defaultSessionFormats: string[];
 }
 
 const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
@@ -29,6 +30,13 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     codeLabel: 'Subject Code',
     codePlaceholder: 'e.g., MATH-7',
     presets: ['term', 'intensive', 'custom'],
+    defaultSessionFormats: [
+      'lesson',
+      'workshop',
+      'excursion',
+      'independent',
+      'assessment',
+    ],
   },
   vet: {
     id: 'vet',
@@ -43,6 +51,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     codeLabel: 'Unit Code',
     codePlaceholder: 'e.g., ICTPRG302',
     presets: ['semester', 'trimester', 'intensive', 'custom'],
+    defaultSessionFormats: [
+      'practical',
+      'tutorial',
+      'workshop',
+      'simulation',
+      'placement',
+      'assessment',
+    ],
   },
   higher_ed: {
     id: 'higher_ed',
@@ -65,6 +81,14 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'self-paced',
       'custom',
     ],
+    defaultSessionFormats: [
+      'lecture',
+      'tutorial',
+      'lab',
+      'workshop',
+      'seminar',
+      'independent',
+    ],
   },
   corporate: {
     id: 'corporate',
@@ -79,6 +103,13 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
     codeLabel: 'Program Name',
     codePlaceholder: 'e.g., Leadership 101',
     presets: ['workshop', 'intensive', 'self-paced', 'custom'],
+    defaultSessionFormats: [
+      'presentation',
+      'workshop',
+      'elearning',
+      'simulation',
+      'independent',
+    ],
   },
   other: {
     id: 'other',
@@ -100,6 +131,13 @@ const SECTOR_PROFILES: Record<SectorId, SectorProfile> = {
       'workshop',
       'self-paced',
       'custom',
+    ],
+    defaultSessionFormats: [
+      'workshop',
+      'lesson',
+      'independent',
+      'elearning',
+      'assessment',
     ],
   },
 };

@@ -11,19 +11,25 @@ import {
   BookOpen,
   FileText,
   MessageSquare,
+  Map as MapIcon,
+  Wrench,
+  Building,
+  Monitor,
+  ClipboardCheck,
   Edit,
   Trash2,
   Copy,
   X,
   Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import {
   MaterialResponse,
-  SessionFormat,
   MaterialCategory,
   WeekQualityScore,
 } from '../../types/unitStructure';
+import { getFormatMeta } from '../../constants/sessionFormats';
 import StarRating from '../shared/StarRating';
 import toast from 'react-hot-toast';
 
@@ -48,25 +54,30 @@ interface WeekData {
   isLoaded: boolean;
 }
 
-const sessionFormatIcons: Record<SessionFormat, React.ReactElement> = {
-  [SessionFormat.LECTURE]: <Presentation className='w-4 h-4' />,
-  [SessionFormat.TUTORIAL]: <Users className='w-4 h-4' />,
-  [SessionFormat.LAB]: <FlaskConical className='w-4 h-4' />,
-  [SessionFormat.WORKSHOP]: <Users className='w-4 h-4' />,
-  [SessionFormat.SEMINAR]: <MessageSquare className='w-4 h-4' />,
-  [SessionFormat.INDEPENDENT]: <BookOpen className='w-4 h-4' />,
-  [SessionFormat.OTHER]: <FileText className='w-4 h-4' />,
+const ICON_MAP: Record<string, LucideIcon> = {
+  Presentation,
+  Users,
+  FlaskConical,
+  BookOpen,
+  FileText,
+  MessageSquare,
+  Map: MapIcon,
+  Wrench,
+  Building,
+  Monitor,
+  ClipboardCheck,
 };
 
-const sessionFormatColors: Record<SessionFormat, string> = {
-  [SessionFormat.LECTURE]: 'bg-blue-100 text-blue-700',
-  [SessionFormat.TUTORIAL]: 'bg-green-100 text-green-700',
-  [SessionFormat.LAB]: 'bg-purple-100 text-purple-700',
-  [SessionFormat.WORKSHOP]: 'bg-yellow-100 text-yellow-700',
-  [SessionFormat.SEMINAR]: 'bg-teal-100 text-teal-700',
-  [SessionFormat.INDEPENDENT]: 'bg-orange-100 text-orange-700',
-  [SessionFormat.OTHER]: 'bg-gray-100 text-gray-700',
-};
+function FormatIcon({
+  iconName,
+  className,
+}: {
+  iconName: string;
+  className?: string | undefined;
+}) {
+  const Icon = ICON_MAP[iconName] ?? FileText;
+  return <Icon className={className} />;
+}
 
 const CATEGORY_ORDER: MaterialCategory[] = [
   MaterialCategory.PRE_CLASS,
@@ -194,7 +205,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
       return { count: 0, types: [], duration: 0 };
     }
 
-    const typeCounts = new Map<SessionFormat, number>();
+    const typeCounts = new Map<string, number>();
     weekData.materials.forEach(m => {
       typeCounts.set(m.type, (typeCounts.get(m.type) || 0) + 1);
     });
@@ -236,10 +247,13 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     >
       <div className='flex items-center gap-3'>
         <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${sessionFormatColors[material.type]}`}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getFormatMeta(material.type).color}`}
         >
-          {sessionFormatIcons[material.type]}
-          {material.type}
+          <FormatIcon
+            iconName={getFormatMeta(material.type).icon}
+            className='w-3.5 h-3.5'
+          />
+          {getFormatMeta(material.type).label}
         </span>
         <span className='font-medium text-gray-900'>{material.title}</span>
         {material.durationMinutes && (
@@ -349,16 +363,22 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                   {/* Material type badges (collapsed view) */}
                   {!isExpanded && summary.types.length > 0 && (
                     <div className='flex items-center gap-1 ml-2'>
-                      {summary.types.slice(0, 4).map(([type, count]) => (
-                        <span
-                          key={type}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${sessionFormatColors[type]}`}
-                          title={`${count} ${type}${count > 1 ? 's' : ''}`}
-                        >
-                          {sessionFormatIcons[type]}
-                          {count > 1 && <span>{count}</span>}
-                        </span>
-                      ))}
+                      {summary.types.slice(0, 4).map(([type, count]) => {
+                        const meta = getFormatMeta(type);
+                        return (
+                          <span
+                            key={type}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${meta.color}`}
+                            title={`${count} ${meta.label}${count > 1 ? 's' : ''}`}
+                          >
+                            <FormatIcon
+                              iconName={meta.icon}
+                              className='w-3.5 h-3.5'
+                            />
+                            {count > 1 && <span>{count}</span>}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </button>
