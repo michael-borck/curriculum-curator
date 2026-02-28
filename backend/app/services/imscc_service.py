@@ -29,6 +29,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.h5p_service import h5p_builder
 from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminology
 from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
@@ -49,7 +50,7 @@ NS_LOMIMSCC = "http://ltsc.ieee.org/xsd/imsccv1p1/LOM/resource"
 class IMSCCExportService:
     """Exports a Unit as an IMS Common Cartridge v1.1 package."""
 
-    def export_unit(
+    def export_unit(  # noqa: PLR0912
         self,
         unit_id: str,
         db: Session,
@@ -75,7 +76,7 @@ class IMSCCExportService:
 
         # Build all resources: list of (identifier, href, title)
         resources: list[tuple[str, str, str]] = []
-        file_contents: dict[str, str] = {}
+        file_contents: dict[str, str | bytes] = {}
 
         # Overview pages
         lo_html = self._build_learning_outcomes_html(data.learning_outcomes)
@@ -143,16 +144,29 @@ class IMSCCExportService:
             file_contents[qti_href] = qti_xml
             qti_resources.append((qti_ident, qti_href, quiz_title))
 
-        # QTI from editor content_json (quizQuestion TipTap nodes)
+        # Quiz from editor content_json (quizQuestion TipTap nodes)
+        # Route to H5P or QTI based on per-material export_format
+        mat_by_id = {str(m.id): m for m in data.weekly_materials}
+        h5p_resources: list[tuple[str, str, str]] = []
         for material_id, questions in data.quiz_questions_by_material.items():
             if not questions:
                 continue
+            mat_obj = mat_by_id.get(material_id)
+            use_h5p = mat_obj and str(mat_obj.export_format) == "h5p_question_set"
             quiz_title = f"Quiz {material_id[:8]}"
-            qti_ident = f"qti_mat_{material_id[:8]}"
-            qti_href = f"quizzes/{qti_ident}/assessment.xml"
-            qti_xml = qti_exporter.export_qti12(questions, quiz_title)
-            file_contents[qti_href] = qti_xml
-            qti_resources.append((qti_ident, qti_href, quiz_title))
+
+            if use_h5p:
+                h5p_ident = f"h5p_mat_{material_id[:8]}"
+                h5p_href = f"h5p/{h5p_ident}.h5p"
+                h5p_buf = h5p_builder.build(questions, quiz_title)
+                file_contents[h5p_href] = h5p_buf.getvalue()  # type: ignore[assignment]
+                h5p_resources.append((h5p_ident, h5p_href, quiz_title))
+            else:
+                qti_ident = f"qti_mat_{material_id[:8]}"
+                qti_href = f"quizzes/{qti_ident}/assessment.xml"
+                qti_xml = qti_exporter.export_qti12(questions, quiz_title)
+                file_contents[qti_href] = qti_xml
+                qti_resources.append((qti_ident, qti_href, quiz_title))
 
         # Build manifest XML
         manifest_xml = self._build_manifest(
@@ -162,6 +176,7 @@ class IMSCCExportService:
             resources,
             data.materials_by_week,
             qti_resources=qti_resources,
+            h5p_resources=h5p_resources,
             terms=terms,
         )
 
@@ -174,7 +189,7 @@ class IMSCCExportService:
             zf.writestr("imsmanifest.xml", manifest_xml)
             zf.writestr("curriculum_curator_meta.json", meta_json)
             for href, content in file_contents.items():
-                zf.writestr(href, content)
+                zf.writestr(href, content)  # type: ignore[arg-type]
 
         buf.seek(0)
         title_slug = slugify(str(data.unit.title))
@@ -190,6 +205,7 @@ class IMSCCExportService:
         materials_by_week: dict[int, list[WeeklyMaterial]],
         *,
         qti_resources: list[tuple[str, str, str]] | None = None,
+        h5p_resources: list[tuple[str, str, str]] | None = None,
         terms: LMSTerminology | None = None,
     ) -> str:
         """Build imsmanifest.xml content."""
@@ -386,22 +402,23 @@ class IMSCCExportService:
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
                 t.text = res_title
 
-        # Quizzes folder (QTI resources)
-        if qti_resources:
+        # Quizzes folder (QTI + H5P resources)
+        all_quiz_resources = list(qti_resources or []) + list(h5p_resources or [])
+        if all_quiz_resources:
             quiz_item = ET.SubElement(
                 root_item, f"{{{NS_CP}}}item", identifier="quizzes"
             )
             quiz_title_elem = ET.SubElement(quiz_item, f"{{{NS_CP}}}title")
             quiz_title_elem.text = terms.quiz_label
-            for qti_id, _qti_href, qti_title in qti_resources:
+            for q_id, _q_href, q_title in all_quiz_resources:
                 item = ET.SubElement(
                     quiz_item,
                     f"{{{NS_CP}}}item",
-                    identifier=f"item_{qti_id}",
-                    identifierref=qti_id,
+                    identifier=f"item_{q_id}",
+                    identifierref=q_id,
                 )
                 t = ET.SubElement(item, f"{{{NS_CP}}}title")
-                t.text = qti_title
+                t.text = q_title
 
         # Resources section
         resources_elem = ET.SubElement(manifest, f"{{{NS_CP}}}resources")
@@ -426,6 +443,18 @@ class IMSCCExportService:
                     href=qti_href,
                 )
                 ET.SubElement(res, f"{{{NS_CP}}}file", href=qti_href)
+
+        # H5P resources (webcontent — LMSs with H5P plugins can import these)
+        if h5p_resources:
+            for h5p_id, h5p_href, _h5p_title in h5p_resources:
+                res = ET.SubElement(
+                    resources_elem,
+                    f"{{{NS_CP}}}resource",
+                    identifier=h5p_id,
+                    type="webcontent",
+                    href=h5p_href,
+                )
+                ET.SubElement(res, f"{{{NS_CP}}}file", href=h5p_href)
 
         # Serialize
         tree = ET.ElementTree(manifest)

@@ -231,3 +231,95 @@ class TestEdgeCases:
         service = SCORMExportService()
         with pytest.raises(ValueError, match=r"Unit .* not found"):
             service.export_unit(str(uuid.uuid4()), test_db)
+
+
+class TestH5PEmbedding:
+    """Test H5P embedding when material export_format is h5p_question_set."""
+
+    def test_h5p_material_produces_h5p_file_instead_of_qti(
+        self, test_db: Session, test_user: Any
+    ) -> None:
+        """Material with export_format='h5p_question_set' embeds .h5p in SCORM ZIP."""
+        from app.models.unit import Unit as UnitModel
+        from app.models.unit_outline import UnitOutline
+        from app.models.weekly_material import WeeklyMaterial
+        from app.models.weekly_topic import WeeklyTopic
+
+        unit = UnitModel(
+            id=str(uuid.uuid4()),
+            title="H5P SCORM Test",
+            code="H5PS01",
+            year=2026,
+            semester="semester_1",
+            pedagogy_type="inquiry-based",
+            difficulty_level="intermediate",
+            duration_weeks=12,
+            owner_id=str(test_user.id),
+            created_by_id=str(test_user.id),
+            credit_points=6,
+        )
+        test_db.add(unit)
+        test_db.flush()
+
+        outline = UnitOutline(
+            unit_id=str(unit.id),
+            title="H5P SCORM Test",
+            duration_weeks=12,
+            credit_points=6,
+            status="planning",
+            created_by_id=str(test_user.id),
+        )
+        test_db.add(outline)
+        test_db.flush()
+
+        topic = WeeklyTopic(
+            unit_outline_id=str(outline.id),
+            unit_id=str(unit.id),
+            week_number=1,
+            topic_title="H5P Week",
+            created_by_id=str(test_user.id),
+        )
+        test_db.add(topic)
+        test_db.flush()
+
+        mat = WeeklyMaterial(
+            unit_id=str(unit.id),
+            week_number=1,
+            title="Interactive Quiz",
+            type="lecture",
+            description="<p>Quiz material</p>",
+            order_index=0,
+            export_format="h5p_question_set",
+            content_json={
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "quizQuestion",
+                        "attrs": {
+                            "questionType": "multiple_choice",
+                            "questionText": "What is 2+2?",
+                            "options": [
+                                {"text": "3", "isCorrect": False},
+                                {"text": "4", "isCorrect": True},
+                            ],
+                            "explanation": "Basic arithmetic",
+                        },
+                    }
+                ],
+            },
+        )
+        test_db.add(mat)
+        test_db.commit()
+
+        service = SCORMExportService()
+        buf, _ = service.export_unit(str(unit.id), test_db)
+        with zipfile.ZipFile(buf, "r") as zf:
+            names = zf.namelist()
+            h5p_files = [n for n in names if n.startswith("h5p/") and n.endswith(".h5p")]
+            qti_mat_files = [n for n in names if "qti_mat_" in n]
+            assert len(h5p_files) == 1, f"Expected 1 H5P file, got: {h5p_files}"
+            assert len(qti_mat_files) == 0, f"Expected no QTI mat files, got: {qti_mat_files}"
+
+            # H5P file should be a valid ZIP itself
+            h5p_data = zf.read(h5p_files[0])
+            assert zipfile.is_zipfile(BytesIO(h5p_data))

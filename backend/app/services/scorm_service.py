@@ -27,6 +27,7 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
+from app.services.h5p_service import h5p_builder
 from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminology
 from app.services.qti_service import qti_exporter
 from app.services.unit_export_data import (
@@ -95,7 +96,7 @@ class SCORMExportService:
 
         # Build all resources: list of (identifier, href, title)
         resources: list[tuple[str, str, str]] = []
-        file_contents: dict[str, str] = {}
+        file_contents: dict[str, str | bytes] = {}
 
         # Overview pages
         lo_html = self._build_learning_outcomes_html(data.learning_outcomes)
@@ -158,15 +159,26 @@ class SCORMExportService:
             qti_xml = qti_exporter.export_qti12(questions, quiz_title)
             file_contents[qti_href] = qti_xml
 
-        # QTI from editor content_json (quizQuestion TipTap nodes)
+        # Quiz from editor content_json (quizQuestion TipTap nodes)
+        # Route to H5P or QTI based on per-material export_format
+        mat_by_id = {str(m.id): m for m in data.weekly_materials}
         for material_id, questions in data.quiz_questions_by_material.items():
             if not questions:
                 continue
+            mat_obj = mat_by_id.get(material_id)
+            use_h5p = mat_obj and str(mat_obj.export_format) == "h5p_question_set"
             quiz_title = f"Quiz {material_id[:8]}"
-            qti_ident = f"qti_mat_{material_id[:8]}"
-            qti_href = f"quizzes/{qti_ident}/assessment.xml"
-            qti_xml = qti_exporter.export_qti12(questions, quiz_title)
-            file_contents[qti_href] = qti_xml
+
+            if use_h5p:
+                h5p_ident = f"h5p_mat_{material_id[:8]}"
+                h5p_href = f"h5p/{h5p_ident}.h5p"
+                h5p_buf = h5p_builder.build(questions, quiz_title)
+                file_contents[h5p_href] = h5p_buf.getvalue()
+            else:
+                qti_ident = f"qti_mat_{material_id[:8]}"
+                qti_href = f"quizzes/{qti_ident}/assessment.xml"
+                qti_xml = qti_exporter.export_qti12(questions, quiz_title)
+                file_contents[qti_href] = qti_xml
 
         # Build SCORM manifest XML
         manifest_xml = self._build_manifest(
@@ -195,7 +207,7 @@ class SCORMExportService:
             zf.writestr("scorm_api.js", SCORM_API_JS)
             zf.writestr("curriculum_curator_meta.json", meta_json)
             for href, content in file_contents.items():
-                zf.writestr(href, content)
+                zf.writestr(href, content)  # type: ignore[arg-type]
 
         buf.seek(0)
         title_slug = slugify(str(data.unit.title))
