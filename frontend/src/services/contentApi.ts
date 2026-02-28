@@ -85,6 +85,7 @@ export const contentApi = {
     data: {
       title?: string;
       body?: string;
+      contentJson?: Record<string, unknown>;
       summary?: string;
       weekNumber?: number;
       estimatedDurationMinutes?: number;

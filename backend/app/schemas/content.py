@@ -7,6 +7,7 @@ These schemas handle metadata and API request/response formats.
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import Field
 
@@ -33,6 +34,9 @@ class ContentCreate(CamelModel):
     title: str = Field(..., min_length=1, max_length=500)
     content_type: ContentType
     body: str = Field(default="", description="Markdown content body")
+    content_json: dict[str, Any] | None = Field(
+        None, description="Structured content (ProseMirror/TipTap JSON)"
+    )
     summary: str | None = None
     order_index: int = Field(default=0, ge=0)
     week_number: int | None = Field(None, ge=1, le=52)
@@ -44,6 +48,7 @@ class ContentUpdate(CamelModel):
 
     title: str | None = Field(None, min_length=1, max_length=500)
     body: str | None = Field(None, description="Markdown content body")
+    content_json: dict[str, Any] | None = None
     summary: str | None = None
     order_index: int | None = Field(None, ge=0)
     week_number: int | None = None
@@ -59,6 +64,7 @@ class ContentResponse(CamelModel):
     title: str
     content_type: str
     body: str = Field(default="", description="Markdown content from Git")
+    content_json: dict[str, Any] | None = None
     summary: str | None = None
     order_index: int
     week_number: int | None = None

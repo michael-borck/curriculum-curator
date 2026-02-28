@@ -35,7 +35,7 @@ class TaskList(Base):
     __tablename__ = "task_lists"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
     design_id: Mapped[str | None] = mapped_column(
         GUID(), ForeignKey("learning_designs.id"), index=True, default=None

@@ -30,7 +30,7 @@ class CustomAlignmentFramework(Base):
     __tablename__ = "custom_alignment_frameworks"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to Unit
@@ -78,7 +78,7 @@ class FrameworkItem(Base):
     __tablename__ = "framework_items"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to framework
@@ -126,7 +126,7 @@ class ULOFrameworkItemMapping(Base):
     __tablename__ = "ulo_framework_item_mappings"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to ULO

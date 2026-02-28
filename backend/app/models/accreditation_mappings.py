@@ -85,7 +85,7 @@ class ULOGraduateCapabilityMapping(Base):
     __tablename__ = "ulo_graduate_capability_mappings"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to ULO
@@ -129,7 +129,7 @@ class UnitAoLMapping(Base):
     __tablename__ = "unit_aol_mappings"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to Unit
@@ -174,7 +174,7 @@ class UnitSDGMapping(Base):
     __tablename__ = "unit_sdg_mappings"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Foreign key to Unit

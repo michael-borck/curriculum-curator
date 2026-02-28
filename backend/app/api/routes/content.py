@@ -172,6 +172,7 @@ async def upload_content(
             title=file.filename or "Uploaded Content",
             content_type=ContentType(content_type),
             body=result["content"],
+            content_json=None,
             week_number=week_number,
             estimated_duration_minutes=result.get("estimated_reading_time", 30),
         )
@@ -284,6 +285,7 @@ async def upload_content_batch(
                 title=file.filename or "Uploaded Content",
                 content_type=ContentType(result["content_type"]),
                 body=result["content"],
+                content_json=None,
                 week_number=None,  # Let user assign week later
                 estimated_duration_minutes=result.get("estimated_reading_time", 30),
             )

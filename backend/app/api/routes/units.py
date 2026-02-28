@@ -210,6 +210,7 @@ async def quick_create(
         title=content_title,
         content_type=ContentType(content_type_value),
         body="",
+        content_json=None,
         week_number=None,
         estimated_duration_minutes=None,
     )

@@ -37,6 +37,9 @@ const MaterialDetail: React.FC = () => {
   >('content');
   const [isEditing, setIsEditing] = useState(false);
   const [editedBody, setEditedBody] = useState('');
+  const [editedBodyJson, setEditedBodyJson] = useState<
+    Record<string, unknown> | undefined
+  >(undefined);
   const [editedTitle, setEditedTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const previewModal = useModal();
@@ -78,6 +81,7 @@ const MaterialDetail: React.FC = () => {
       await contentApi.update(unitId, contentId, {
         title: editedTitle,
         body: editedBody,
+        ...(editedBodyJson && { contentJson: editedBodyJson }),
       });
       await fetchContent();
       setIsEditing(false);
@@ -298,6 +302,7 @@ const MaterialDetail: React.FC = () => {
             <UnifiedEditor
               content={editedBody}
               onChange={setEditedBody}
+              onJsonChange={setEditedBodyJson}
               contentId={contentId}
             />
           ) : (

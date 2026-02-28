@@ -101,7 +101,7 @@ async def test_propose_scaffold(test_db: Session, test_user):
         new_callable=AsyncMock,
         return_value=(SAMPLE_SCAFFOLD, None),
     ) as mock_llm:
-        result = await service.propose_scaffold(
+        result, error = await service.propose_scaffold(
             sources=SAMPLE_SOURCES,
             unit_title="ML Fundamentals",
             unit_description="Intro to ML",
@@ -112,6 +112,7 @@ async def test_propose_scaffold(test_db: Session, test_user):
             db=test_db,
         )
 
+    assert error is None
     assert result is not None
     assert result.title == "Machine Learning Fundamentals"
     assert len(result.ulos) == 2
@@ -135,7 +136,7 @@ async def test_propose_scaffold_llm_failure(test_db: Session, test_user):
         new_callable=AsyncMock,
         return_value=(None, "LLM service unavailable"),
     ):
-        result = await service.propose_scaffold(
+        result, error = await service.propose_scaffold(
             sources=SAMPLE_SOURCES,
             unit_title="Test",
             unit_description="",
@@ -147,6 +148,7 @@ async def test_propose_scaffold_llm_failure(test_db: Session, test_user):
         )
 
     assert result is None
+    assert error is not None
 
 
 # ──────────────────────────────────────────────────────────────
@@ -206,12 +208,13 @@ async def test_propose_comparison(test_db: Session, test_unit: Unit, test_user):
         new_callable=AsyncMock,
         return_value=(mock_comparison, None),
     ) as mock_llm:
-        result = await service.propose_comparison(
+        result, error = await service.propose_comparison(
             sources=SAMPLE_SOURCES,
             unit_id=str(test_unit.id),
             db=test_db,
         )
 
+    assert error is None
     assert result is not None
     assert result.unit_id == str(test_unit.id)
     assert len(result.gaps) == 1
@@ -225,7 +228,7 @@ async def test_propose_comparison(test_db: Session, test_unit: Unit, test_user):
 async def test_propose_comparison_unit_not_found(test_db: Session, test_user):
     service = OutlineSynthesisService()
 
-    result = await service.propose_comparison(
+    result, _error = await service.propose_comparison(
         sources=SAMPLE_SOURCES,
         unit_id=str(uuid.uuid4()),  # Valid UUID that doesn't exist in DB
         db=test_db,
@@ -296,12 +299,13 @@ async def test_propose_reading_list(test_db: Session, test_unit: Unit, test_user
         new_callable=AsyncMock,
         return_value=(mock_reading_list, None),
     ):
-        result = await service.propose_reading_list(
+        result, error = await service.propose_reading_list(
             sources=SAMPLE_SOURCES,
             unit_id=str(test_unit.id),
             db=test_db,
         )
 
+    assert error is None
     assert result is not None
     assert result.unit_id == str(test_unit.id)
     assert len(result.unit_weeks) == 3  # 3 topics added

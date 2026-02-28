@@ -53,9 +53,11 @@ def _to_material_response(material: WeeklyMaterial) -> MaterialResponse:
         title=material.title,
         type=material.type,
         description=material.description,
+        content_json=material.content_json,
         duration_minutes=material.duration_minutes,
         file_path=material.file_path,
         material_metadata=material.material_metadata,
+        export_format=material.export_format,
         category=material.category,
         order_index=material.order_index,
         status=material.status,
@@ -166,24 +168,7 @@ async def get_week_materials(
         week_number=week_number,
         total_duration_minutes=summary["total_duration_minutes"],
         material_count=len(materials),
-        materials=[
-            MaterialResponse(
-                id=str(mat.id),
-                unit_id=str(mat.unit_id),
-                week_number=mat.week_number,
-                title=mat.title,
-                type=mat.type,
-                description=mat.description,
-                duration_minutes=mat.duration_minutes,
-                file_path=mat.file_path,
-                material_metadata=mat.material_metadata,
-                order_index=mat.order_index,
-                status=mat.status,
-                created_at=mat.created_at,
-                updated_at=mat.updated_at,
-            )
-            for mat in materials
-        ],
+        materials=[_to_material_response(mat) for mat in materials],
     )
 
 
@@ -208,19 +193,7 @@ async def get_material(
         )
 
     response = MaterialWithOutcomes(
-        id=str(material.id),
-        unit_id=str(material.unit_id),
-        week_number=material.week_number,
-        title=material.title,
-        type=material.type,
-        description=material.description,
-        duration_minutes=material.duration_minutes,
-        file_path=material.file_path,
-        material_metadata=material.material_metadata,
-        order_index=material.order_index,
-        status=material.status,
-        created_at=material.created_at,
-        updated_at=material.updated_at,
+        **_to_material_response(material).model_dump(),
         local_outcomes=[],
         mapped_ulos=[],
     )
@@ -278,21 +251,7 @@ async def update_material(
                 detail="Material not found",
             )
 
-        return MaterialResponse(
-            id=str(material.id),
-            unit_id=str(material.unit_id),
-            week_number=material.week_number,
-            title=material.title,
-            type=material.type,
-            description=material.description,
-            duration_minutes=material.duration_minutes,
-            file_path=material.file_path,
-            material_metadata=material.material_metadata,
-            order_index=material.order_index,
-            status=material.status,
-            created_at=material.created_at,
-            updated_at=material.updated_at,
-        )
+        return _to_material_response(material)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -336,21 +295,7 @@ async def duplicate_material(
             duplicate_data=duplicate_data,
         )
 
-        return MaterialResponse(
-            id=str(material.id),
-            unit_id=str(material.unit_id),
-            week_number=material.week_number,
-            title=material.title,
-            type=material.type,
-            description=material.description,
-            duration_minutes=material.duration_minutes,
-            file_path=material.file_path,
-            material_metadata=material.material_metadata,
-            order_index=material.order_index,
-            status=material.status,
-            created_at=material.created_at,
-            updated_at=material.updated_at,
-        )
+        return _to_material_response(material)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -378,24 +323,7 @@ async def reorder_materials(
             reorder_data=reorder_data,
         )
 
-        return [
-            MaterialResponse(
-                id=str(mat.id),
-                unit_id=str(mat.unit_id),
-                week_number=mat.week_number,
-                title=mat.title,
-                type=mat.type,
-                description=mat.description,
-                duration_minutes=mat.duration_minutes,
-                file_path=mat.file_path,
-                material_metadata=mat.material_metadata,
-                order_index=mat.order_index,
-                status=mat.status,
-                created_at=mat.created_at,
-                updated_at=mat.updated_at,
-            )
-            for mat in materials
-        ]
+        return [_to_material_response(mat) for mat in materials]
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -419,19 +347,7 @@ async def update_material_mappings(
         )
 
         return MaterialWithOutcomes(
-            id=str(material.id),
-            unit_id=str(material.unit_id),
-            week_number=material.week_number,
-            title=material.title,
-            type=material.type,
-            description=material.description,
-            duration_minutes=material.duration_minutes,
-            file_path=material.file_path,
-            material_metadata=material.material_metadata,
-            order_index=material.order_index,
-            status=material.status,
-            created_at=material.created_at,
-            updated_at=material.updated_at,
+            **_to_material_response(material).model_dump(),
             local_outcomes=[
                 LLOResponse(
                     id=str(llo.id),

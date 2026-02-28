@@ -199,7 +199,7 @@ class ContentWorkflowService:
 
         # Create session with proper initial state
         session = WorkflowChatSession(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             user_id=user_id,
             unit_id=unit_id,
             session_name=session_name or f"Workflow for {unit.title}",

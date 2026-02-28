@@ -35,7 +35,7 @@ class LearningDesign(Base):
     __tablename__ = "learning_designs"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
     unit_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("units.id"), nullable=False, index=True

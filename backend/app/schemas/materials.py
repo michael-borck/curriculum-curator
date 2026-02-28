@@ -17,7 +17,10 @@ class MaterialBase(CamelModel):
     week_number: int = Field(..., ge=1, le=52, description="Week number")
     title: str = Field(..., min_length=1, max_length=500, description="Material title")
     type: str = Field(..., description="Session format (lecture, tutorial, lab, etc.)")
-    description: str | None = Field(None, description="Material description")
+    description: str | None = Field(None, description="Material description (HTML)")
+    content_json: dict[str, Any] | None = Field(
+        None, description="Structured content (ProseMirror/TipTap JSON)"
+    )
     duration_minutes: int | None = Field(
         None, ge=0, description="Estimated duration in minutes"
     )
@@ -47,6 +50,8 @@ class MaterialUpdate(CamelModel):
     title: str | None = Field(None, min_length=1, max_length=500)
     type: str | None = None
     description: str | None = None
+    content_json: dict[str, Any] | None = None
+    export_format: str | None = Field(None, max_length=30)
     duration_minutes: int | None = Field(None, ge=0)
     file_path: str | None = Field(None, max_length=500)
     material_metadata: dict[str, Any] | None = None
@@ -62,6 +67,7 @@ class MaterialResponse(MaterialBase):
     unit_id: str
     file_path: str | None
     material_metadata: dict[str, Any] | None
+    export_format: str | None = None
     quality_score: int | None = None
     created_at: datetime
     updated_at: datetime

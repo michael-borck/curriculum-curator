@@ -50,7 +50,7 @@ class WeeklyMaterial(Base):
 
     # Primary key
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Parent relationships
@@ -61,6 +61,12 @@ class WeeklyMaterial(Base):
     title: Mapped[str] = mapped_column(String(500))
     type: Mapped[str] = mapped_column(String(50), index=True)  # SessionFormat enum
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Structured content (ProseMirror JSON from TipTap editor)
+    content_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
+    # Per-material export format override (e.g. "h5p_question_set", "qti")
+    export_format: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     # Content and metadata
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)

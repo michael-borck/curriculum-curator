@@ -144,10 +144,11 @@ class TestDeleteMaterial:
         material = await mat_service.create_material(
             test_db, _uid(test_unit.id), _make_material_create()
         )
-        deleted = await mat_service.delete_material(test_db, _uid(material.id))
+        material_id = _uid(material.id)  # Capture before deletion invalidates ORM object
+        deleted = await mat_service.delete_material(test_db, material_id)
         assert deleted is True
 
-        result = await mat_service.get_material(test_db, _uid(material.id))
+        result = await mat_service.get_material(test_db, material_id)
         assert result is None
 
     @pytest.mark.asyncio

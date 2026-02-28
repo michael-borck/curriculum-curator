@@ -30,7 +30,7 @@ class LoginAttempt(Base):
     __tablename__ = "login_attempts"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # User identification (email used for login attempts)
@@ -160,7 +160,7 @@ class LoginAttempt(Base):
 
         # Create new record
         attempt = cls(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email=email.lower(),
             ip_address=ip_address,
             attempt_type=LoginAttemptType.LOGIN_FAILED.value,

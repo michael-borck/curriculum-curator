@@ -189,11 +189,12 @@ class TestDeleteULO:
         ulo = await ulo_service.create_ulo(
             test_db, _uid(test_unit.id), _make_ulo_create(), _uid(test_user.id)
         )
-        deleted = await ulo_service.delete_ulo(test_db, _uid(ulo.id))
+        ulo_id = _uid(ulo.id)  # Capture before deletion invalidates ORM object
+        deleted = await ulo_service.delete_ulo(test_db, ulo_id)
         assert deleted is True
 
         # Confirm it's gone
-        result = await ulo_service.get_ulo(test_db, _uid(ulo.id))
+        result = await ulo_service.get_ulo(test_db, ulo_id)
         assert result is None
 
     @pytest.mark.asyncio

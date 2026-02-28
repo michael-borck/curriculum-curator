@@ -63,7 +63,7 @@ class UnitLearningOutcome(Base):
     __tablename__ = "unit_learning_outcomes"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Links
@@ -271,7 +271,7 @@ class AssessmentLearningOutcome(Base):
     __tablename__ = "assessment_learning_outcomes"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Links

@@ -166,6 +166,7 @@ export const createContent = (
     title: string;
     contentType: string;
     body?: string;
+    contentJson?: Record<string, unknown>;
     summary?: string;
     weekNumber?: number;
     estimatedDurationMinutes?: number;
@@ -178,6 +179,7 @@ export const updateContent = (
   data: {
     title?: string;
     body?: string;
+    contentJson?: Record<string, unknown>;
     summary?: string;
     weekNumber?: number;
     estimatedDurationMinutes?: number;

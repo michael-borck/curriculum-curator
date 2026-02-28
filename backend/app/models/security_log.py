@@ -60,7 +60,7 @@ class SecurityLog(Base):
     __tablename__ = "security_logs"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Event information

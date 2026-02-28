@@ -142,6 +142,9 @@ const ContentCreator = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [content, setContent] = useState('');
+  const [contentJson, setContentJson] = useState<
+    Record<string, unknown> | undefined
+  >(undefined);
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('');
@@ -312,6 +315,7 @@ const ContentCreator = () => {
         await updateContent(selectedUnitId, contentId, {
           title: title.trim(),
           body: content,
+          ...(contentJson && { contentJson }),
         });
         toast.success('Content updated successfully!');
       } else {
@@ -320,6 +324,7 @@ const ContentCreator = () => {
           title: title.trim(),
           contentType: contentType || 'slides',
           body: content,
+          ...(contentJson && { contentJson }),
         });
         toast.success('Content saved successfully!');
       }
@@ -651,6 +656,7 @@ const ContentCreator = () => {
               <RichTextEditor
                 content={content}
                 onChange={setContent}
+                onJsonChange={setContentJson}
                 pedagogyHints={[getPedagogyHint(pedagogy)]}
                 unitId={selectedUnitId || unitId}
                 materialId={contentId}

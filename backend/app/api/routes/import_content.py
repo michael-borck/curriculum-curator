@@ -257,9 +257,9 @@ async def create_unit_structure_from_pdf(
             # Create course outline
             outline_data = course_mapping["course_outline"]
             outline = UnitOutline(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 unit_id=unit_id,
-                title=outline_data["title"] or f"Course Outline for {unit.name}",
+                title=outline_data["title"] or f"Course Outline for {unit.title}",
                 description=outline_data["description"],
                 duration_weeks=outline_data["duration_weeks"],
                 created_by_id=current_user.id,
@@ -271,7 +271,7 @@ async def create_unit_structure_from_pdf(
             # Create learning outcomes
             for lo_data in course_mapping["learning_outcomes"]:
                 outcome = UnitLearningOutcome(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     unit_id=unit_id,
                     unit_outline_id=outline.id,
                     outcome_type=lo_data["outcome_type"],
@@ -287,7 +287,7 @@ async def create_unit_structure_from_pdf(
             # Create weekly topics
             for topic_data in course_mapping["weekly_topics"]:
                 topic = WeeklyTopic(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     unit_outline_id=outline.id,
                     unit_id=unit_id,
                     week_number=topic_data["week_number"],
@@ -310,7 +310,7 @@ async def create_unit_structure_from_pdf(
             # Create assessments
             for assess_data in course_mapping["assessments"]:
                 assessment = AssessmentPlan(
-                    id=uuid.uuid4(),
+                    id=str(uuid.uuid4()),
                     unit_outline_id=outline.id,
                     unit_id=unit_id,
                     assessment_name=assess_data["assessment_name"],
@@ -410,7 +410,7 @@ async def create_content_from_pdf(
 
         # Create content item
         content = Content(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             unit_id=unit_id,
             title=extracted_doc.metadata.title or pdf_filename.replace(".pdf", ""),
             type=content_type.value,

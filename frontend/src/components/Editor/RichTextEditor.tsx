@@ -210,6 +210,7 @@ const MenuBar = ({
 const RichTextEditor = ({
   content,
   onChange,
+  onJsonChange,
   pedagogyHints = [],
   unitId,
   materialId,
@@ -236,6 +237,7 @@ const RichTextEditor = ({
     content,
     onUpdate: ({ editor }: { editor: Editor }) => {
       onChange(editor.getHTML());
+      onJsonChange?.(editor.getJSON());
     },
   });
 

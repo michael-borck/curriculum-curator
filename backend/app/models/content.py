@@ -55,7 +55,7 @@ class Content(Base):
 
     # Primary key
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
 
     # Basic content information
@@ -69,6 +69,9 @@ class Content(Base):
     # NOTE: Body is stored in Git for version control. These fields are for caching/legacy:
     content_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Structured content (ProseMirror JSON from TipTap editor)
+    content_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Git storage references (primary storage for body)

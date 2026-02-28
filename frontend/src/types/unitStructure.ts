@@ -134,6 +134,7 @@ export interface MaterialCreate {
   title: string;
   type: SessionFormat;
   description?: string;
+  contentJson?: Record<string, unknown>;
   durationMinutes?: number;
   category?: MaterialCategory;
   filePath?: string;
@@ -147,6 +148,8 @@ export interface MaterialUpdate {
   title?: string;
   type?: SessionFormat;
   description?: string;
+  contentJson?: Record<string, unknown>;
+  exportFormat?: string;
   durationMinutes?: number;
   category?: MaterialCategory;
   filePath?: string;
@@ -162,6 +165,8 @@ export interface MaterialResponse {
   title: string;
   type: SessionFormat;
   description?: string;
+  contentJson?: Record<string, unknown>;
+  exportFormat?: string;
   durationMinutes?: number;
   category: MaterialCategory;
   filePath?: string;

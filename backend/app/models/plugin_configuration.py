@@ -19,7 +19,7 @@ class PluginConfiguration(Base):
     __tablename__ = "plugin_configurations"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
     name: Mapped[str] = mapped_column(String(200), unique=True, index=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)

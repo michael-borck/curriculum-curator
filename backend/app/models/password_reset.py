@@ -24,7 +24,7 @@ class PasswordReset(Base):
     __tablename__ = "password_resets"
 
     id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4, index=True
+        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
     user_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=False, index=True
