@@ -18,13 +18,15 @@ Phase 1 (Foundations)
         └── Phase 3 (H5P Quiz + QTI)
               ├── Phase 4 (Slides) ──────┐
               ├── Phase 5 (Branching) ───┤
-              └── Phase 6b (Int. Video)  │
-                                         └── Phase 6a (Two-Level UI)
-                                               └── Phase 6c (Progress)
+              │                          └── Phase 6a (Two-Level UI)
+              │                                └── Phase 6c (Progress)
+              └── Phase 6b-i (IV Authoring)
+                    ├── Phase 6b-ii (IV Export) ── needs 6a too
+                    └── Phase 6b-iii (IV AI)
 ```
 
-Phases 4, 5, and 6b can run in parallel after Phase 3. Phase 6a needs all
-content phases (2–5) complete.
+Phases 4, 5, and 6b-i can run in parallel after Phase 3. Phase 6a needs
+content phases (2–5). Phase 6b-ii needs both 6b-i and 6a.
 
 ---
 
@@ -212,23 +214,97 @@ content phases (2–5) complete.
 
 ---
 
-## Phase 6b — H5P Interactive Video (Optional)
+## Phase 6b-i — Interactive Video: Transcript + Authoring
 
 **Status**: Not started
-**Ships**: H5P Interactive Video export for video-type materials.
+**Ships**: Transcript-based interactive video authoring — VTT/SRT parsing,
+YouTube transcript auto-fetch, 3 new TipTap nodes, manual interaction placement.
+
+> Full design rationale in [interactive-video-plan.md](interactive-video-plan.md).
 
 ### Work Items
 
-1. **InteractiveVideoNode Tiptap extension** — video URL + timeline markers
-   pointing to embedded quiz nodes
-2. **H5P Interactive Video exporter**
+1. **Transcript service** — `transcript_service.py` with VTT/SRT parser and
+   YouTube auto-fetch via `youtube-transcript-api`. Two endpoints:
+   `POST /api/transcript/fetch-youtube`, `POST /api/transcript/parse-vtt`.
+
+2. **TipTap nodes** — 3 new nodes, all in `components/Editor/`:
+   - `InteractiveVideoEmbedNode` — block node at doc top, video URL + platform + preview
+   - `TranscriptSegmentNode` — read-only block, timestamp margin, dimmed text
+   - `VideoInteractionNode` — timestamp wrapper containing existing `quizQuestion` nodes
+
+3. **Interactive video template** — `frontend/src/templates/interactive_video.json`
+   with embed placeholder + sample transcript segments + one interaction
+
+4. **Editor integration** — toolbar button to insert interaction between segments,
+   transcript loading flow (paste URL or upload VTT), video material type detection
+
+### Key Files (~12)
+- `backend/app/services/transcript_service.py`
+- `backend/app/api/routes/transcript.py`
+- `frontend/src/components/Editor/InteractiveVideoEmbedNode.ts`, `InteractiveVideoEmbedView.tsx`
+- `frontend/src/components/Editor/TranscriptSegmentNode.ts`, `TranscriptSegmentView.tsx`
+- `frontend/src/components/Editor/VideoInteractionNode.ts`, `VideoInteractionView.tsx`
+- `frontend/src/templates/interactive_video.json`
+
+### Dependencies: Phase 2 (quiz nodes reused inside videoInteraction)
+### Note: `youtube-transcript-api` uses undocumented APIs; robust VTT upload fallback essential
+
+---
+
+## Phase 6b-ii — Interactive Video: H5P Export + Echo360 Handling
+
+**Status**: Not started
+**Ships**: H5P Interactive Video export for YouTube/Vimeo sources, Echo360
+detection with fallback to standalone quiz/QTI export.
+
+### Work Items
+
+1. **H5P Interactive Video builder** — `h5p_interactive_video_service.py`.
+   Walks content_json, extracts video URL + interactions by timestamp,
+   maps quizQuestion nodes to H5P interaction libraries (MultiChoice,
+   TrueFalse, Blanks, Text).
+
+2. **Echo360 detection + fallback** — detect Echo360 URLs in preview,
+   prompt for alternative YouTube/Vimeo URL at export time, offer
+   standalone H5P Question Set or QTI fallback. Integrates with
+   Phase 6a export dialog.
+
+3. **Export endpoints** — `/materials/{id}/export/h5p-interactive-video`,
+   format resolver gains `interactive_video` content type
+
+### Key Files (~6)
+- `backend/app/services/h5p_interactive_video_service.py`
+- `backend/app/api/routes/h5p_export.py` (extended)
+- `backend/app/services/format_resolver.py` (extended)
+- `frontend/src/components/ExportDialog/` (Echo360 fallback UI)
+
+### Dependencies: Phase 6b-i, Phase 3 (H5P base builder), Phase 6a (export dialog)
+
+---
+
+## Phase 6b-iii — AI-Assisted Interaction Generation (Enhancement)
+
+**Status**: Not started
+**Ships**: AI-suggested interaction points and question generation from transcript context.
+
+### Work Items
+
+1. **"Generate question here"** — button on transcript segments, sends
+   surrounding context to LLM, returns quizQuestion attrs for review
+
+2. **"Suggest interaction points"** — batch generation from full transcript,
+   LLM identifies concept transitions, proposes timestamp + question pairs
+
+3. **Two backend endpoints** via existing AI routes:
+   `POST /api/ai/suggest-interaction`, `POST /api/ai/suggest-interaction-points`
 
 ### Key Files (~4)
-- `frontend/src/components/Editor/InteractiveVideoNode.ts`, `InteractiveVideoView.tsx`
-- `backend/app/services/h5p_interactive_video_service.py`
+- `backend/app/api/routes/ai.py` (extended)
+- `frontend/src/components/Editor/TranscriptSegmentView.tsx` (extended)
+- Prompt templates for interaction generation
 
-### Dependencies: Phase 3 (H5P base builder), Phase 2 (quiz nodes for overlays)
-### Note: Most speculative H5P type. Can be deferred indefinitely.
+### Dependencies: Phase 6b-i, existing LLM service
 
 ---
 
@@ -251,7 +327,9 @@ content phases (2–5) complete.
 **Interactive HTML export** (standalone branching player with path-aware scoring)
 uses the same branching card authoring from Phase 5 but outputs a self-contained
 HTML file with a lightweight JS runtime instead of H5P. Can be added as a Phase 7
-once Phase 5 ships and the branching card data model is proven.
+once Phase 5 ships and the branching card data model is proven. Also the most
+promising path for Echo360 interactive video (our own player can iframe Echo360
+since students are already authenticated in the LMS).
 
 ---
 
@@ -265,7 +343,9 @@ once Phase 5 ships and the branching card data model is proven.
 | 4 | Slides | SlideBreak node, H5P Course Presentation | COMPLETE |
 | 5 | Branching | Card authoring, map view, H5P Branching Scenario | COMPLETE |
 | 6a | Export Dialog | Two-level export UI, 4-level format resolver, user defaults | COMPLETE |
-| 6b | Interactive Video | H5P Interactive Video (optional) | Not started |
+| 6b-i | Interactive Video: Authoring | Transcript service, 3 TipTap nodes, manual interaction placement | Not started |
+| 6b-ii | Interactive Video: Export | H5P Interactive Video, Echo360 fallback | Not started |
+| 6b-iii | Interactive Video: AI | AI-suggested interactions from transcript | Not started |
 | 6c | Progress Streaming | SSE progress for large exports (nice-to-have) | Not started |
 
 *Originally planned Feb 2026. Plan recovered from conversation transcript and
