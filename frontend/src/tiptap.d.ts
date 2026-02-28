@@ -32,5 +32,22 @@ declare module '@tiptap/core' {
     slideBreak: {
       insertSlideBreak: () => ReturnType;
     };
+    branchingCard: {
+      insertBranchingCard: (attrs?: {
+        cardType?: 'content' | 'branch' | 'ending' | undefined;
+        cardTitle?: string | undefined;
+        cardContent?: string | undefined;
+        choices?:
+          | Array<{
+              id: string;
+              text: string;
+              targetCardId: string;
+              feedback: string;
+            }>
+          | undefined;
+        endScore?: number | undefined;
+        endMessage?: string | undefined;
+      }) => ReturnType;
+    };
   }
 }

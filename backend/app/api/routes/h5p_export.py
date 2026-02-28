@@ -3,7 +3,7 @@ API endpoints for H5P Question Set export.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -15,10 +15,11 @@ from app.models.enums import ContentType
 from app.models.quiz_question import QuizQuestion
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
+from app.services.h5p_branching_service import h5p_branching_builder
 from app.services.h5p_course_presentation import h5p_course_presentation_builder
 from app.services.h5p_service import h5p_builder
 from app.services.slide_splitter import has_slide_breaks
-from app.services.unit_export_data import extract_quiz_nodes, slugify
+from app.services.unit_export_data import extract_branching_cards, extract_quiz_nodes, slugify
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,38 @@ async def export_material_h5p_slides(
 
     title_slug = slugify(str(material.title))
     filename = f"{title_slug}_slides.h5p"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+@router.get("/materials/{material_id}/export/h5p-branching")
+async def export_material_h5p_branching(
+    material_id: str,
+    db: Annotated[Session, Depends(get_db)],
+) -> StreamingResponse:
+    """Export branching cards from a material as H5P Branching Scenario."""
+    material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    cards: list[dict[str, Any]] = []
+    if material.content_json:
+        cards = extract_branching_cards(material.content_json)
+
+    if not cards:
+        raise HTTPException(status_code=404, detail="No branching cards found in this material")
+
+    title = f"{material.title} - Branching Scenario"
+    buf = h5p_branching_builder.build(cards, title)
+
+    title_slug = slugify(str(material.title))
+    filename = f"{title_slug}_branching.h5p"
 
     return StreamingResponse(
         buf,

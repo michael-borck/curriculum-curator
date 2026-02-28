@@ -12,7 +12,9 @@ import { YoutubeNode } from './YoutubeNode';
 import { MermaidNode } from './MermaidNode';
 import { QuizQuestionNode } from './QuizQuestionNode';
 import { SlideBreakNode } from './SlideBreakNode';
+import { BranchingCardNode } from './BranchingCardNode';
 import ImageInsertDialog from './ImageInsertDialog';
+import BranchingMapDialog from './BranchingMapDialog';
 import VisualPromptPanel from './VisualPromptPanel';
 import { createLowlight } from 'lowlight';
 import js from 'highlight.js/lib/languages/javascript';
@@ -47,6 +49,8 @@ import {
   GitMerge,
   HelpCircle,
   PanelTopDashed,
+  GitFork,
+  Map,
   Wand2,
   Undo,
   Redo,
@@ -57,11 +61,13 @@ const MenuBar = ({
   editor,
   onImageClick,
   onVisualPromptClick,
+  onMapClick,
   isAIDisabled,
 }: {
   editor: Editor | null;
   onImageClick: () => void;
   onVisualPromptClick: () => void;
+  onMapClick: () => void;
   isAIDisabled: boolean;
 }) => {
   if (!editor) return null;
@@ -194,6 +200,20 @@ const MenuBar = ({
         <PanelTopDashed size={18} />
       </button>
       <button
+        onClick={() => editor.commands.insertBranchingCard()}
+        className='p-2 rounded hover:bg-gray-100'
+        title='Insert branching card'
+      >
+        <GitFork size={18} />
+      </button>
+      <button
+        onClick={onMapClick}
+        className='p-2 rounded hover:bg-gray-100'
+        title='View branching map'
+      >
+        <Map size={18} />
+      </button>
+      <button
         onClick={isAIDisabled ? undefined : onVisualPromptClick}
         className={`p-2 rounded ${
           isAIDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
@@ -236,6 +256,7 @@ const RichTextEditor = ({
   const { isAIDisabled } = useAILevel();
   const globalStyle = useTeachingStyleStore(state => state.globalStyle);
   const [showImageDialog, setShowImageDialog] = useState(false);
+  const [showBranchingMap, setShowBranchingMap] = useState(false);
   const [showVisualPrompt, setShowVisualPrompt] = useState(false);
   const [visualPromptText, setVisualPromptText] = useState('');
 
@@ -253,6 +274,7 @@ const RichTextEditor = ({
       MermaidNode,
       QuizQuestionNode,
       SlideBreakNode,
+      BranchingCardNode,
     ],
     content,
     onUpdate: ({ editor }: { editor: Editor }) => {
@@ -274,6 +296,7 @@ const RichTextEditor = ({
       <MenuBar
         editor={editor}
         onImageClick={() => setShowImageDialog(true)}
+        onMapClick={() => setShowBranchingMap(true)}
         onVisualPromptClick={() => {
           const { from, to } = editor?.state.selection ?? { from: 0, to: 0 };
           const text =
@@ -292,6 +315,13 @@ const RichTextEditor = ({
         unitId={unitId}
         materialId={materialId}
       />
+      {editor && (
+        <BranchingMapDialog
+          isOpen={showBranchingMap}
+          onClose={() => setShowBranchingMap(false)}
+          editor={editor}
+        />
+      )}
       <VisualPromptPanel
         isOpen={showVisualPrompt}
         onClose={() => setShowVisualPrompt(false)}

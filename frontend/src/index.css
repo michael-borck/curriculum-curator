@@ -51,6 +51,11 @@ div[data-youtube-video] iframe {
   user-select: text;
 }
 
+/* Branching card styles in TipTap editor */
+.branching-card-node {
+  user-select: none;
+}
+
 /* Slide break numbering in TipTap editor */
 .ProseMirror {
   counter-reset: slide-break;

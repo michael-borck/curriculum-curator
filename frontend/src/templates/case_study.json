@@ -1,0 +1,104 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [{ "type": "text", "text": "Case Study: [Your Title Here]" }]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "This branching scenario presents a case study with decision points. Students navigate through the scenario by making choices that lead to different outcomes."
+        }
+      ]
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-intro-001",
+        "cardType": "content",
+        "cardTitle": "Introduction",
+        "cardContent": "Describe the initial scenario here. Set the scene, introduce the key characters or situation, and provide the context students need to make their first decision.",
+        "choices": [],
+        "endScore": 0,
+        "endMessage": ""
+      }
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-decision-002",
+        "cardType": "branch",
+        "cardTitle": "Decision Point",
+        "cardContent": "Present the dilemma or decision that students must make. What are the key factors they should consider?",
+        "choices": [
+          {
+            "id": "choice-a",
+            "text": "Path A: [Describe option A]",
+            "targetCardId": "card-path-a-003",
+            "feedback": ""
+          },
+          {
+            "id": "choice-b",
+            "text": "Path B: [Describe option B]",
+            "targetCardId": "card-path-b-004",
+            "feedback": ""
+          }
+        ],
+        "endScore": 0,
+        "endMessage": ""
+      }
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-path-a-003",
+        "cardType": "content",
+        "cardTitle": "Path A: Consequence",
+        "cardContent": "Describe what happens when students choose Path A. What are the consequences of this decision? How does the situation develop?",
+        "choices": [],
+        "endScore": 0,
+        "endMessage": ""
+      }
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-path-b-004",
+        "cardType": "content",
+        "cardTitle": "Path B: Consequence",
+        "cardContent": "Describe what happens when students choose Path B. What are the consequences of this decision? How does the situation develop?",
+        "choices": [],
+        "endScore": 0,
+        "endMessage": ""
+      }
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-ending-good-005",
+        "cardType": "ending",
+        "cardTitle": "Good Outcome",
+        "cardContent": "Explain the positive outcome. What did the student do well? What can they learn from this path?",
+        "choices": [],
+        "endScore": 100,
+        "endMessage": "Well done! You made effective decisions throughout this scenario."
+      }
+    },
+    {
+      "type": "branchingCard",
+      "attrs": {
+        "cardId": "card-ending-improve-006",
+        "cardType": "ending",
+        "cardTitle": "Needs Improvement",
+        "cardContent": "Explain the less optimal outcome. What could the student have done differently? What key concepts should they revisit?",
+        "choices": [],
+        "endScore": 40,
+        "endMessage": "Review the key concepts and try again to find a better approach."
+      }
+    }
+  ]
+}

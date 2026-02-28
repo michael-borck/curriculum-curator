@@ -89,6 +89,8 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
         result = f'<pre class="mermaid">{escape(text)}</pre>'
     elif node_type == "quizQuestion":
         result = _render_quiz_question(attrs)
+    elif node_type == "branchingCard":
+        result = _render_branching_card(attrs)
     else:
         if node_type:
             logger.warning("Unknown TipTap node type: %s", node_type)
@@ -164,6 +166,62 @@ def _extract_text(content: list[dict[str, Any]]) -> str:
             parts.append(node.get("text", ""))
         elif "content" in node:
             parts.append(_extract_text(node["content"]))
+    return "".join(parts)
+
+
+def _render_branching_card(attrs: dict[str, Any]) -> str:
+    """Render a branchingCard node as a styled HTML block for document exports."""
+    card_type = attrs.get("cardType", "content")
+    card_title = escape(attrs.get("cardTitle", ""))
+    card_content = escape(attrs.get("cardContent", ""))
+    choices: list[dict[str, Any]] = attrs.get("choices", [])
+    end_score = attrs.get("endScore", 0)
+    end_message = attrs.get("endMessage", "")
+
+    type_colors = {
+        "content": "#dbeafe",
+        "branch": "#fef3c7",
+        "ending": "#fce7f3",
+    }
+    type_labels = {
+        "content": "Content",
+        "branch": "Branch Point",
+        "ending": "Ending",
+    }
+    bg_color = type_colors.get(card_type, "#f3f4f6")
+    type_label = type_labels.get(card_type, card_type)
+
+    parts: list[str] = []
+    parts.append(
+        f'<div class="branching-card" style="border:1px solid #ddd;'
+        f"border-radius:8px;padding:1rem;margin:1rem 0;"
+        f'background:{bg_color};">'
+    )
+    parts.append(
+        f'<p style="font-size:0.85rem;color:#666;margin:0 0 0.5rem;">{type_label}</p>'
+    )
+    if card_title:
+        parts.append(f"<p><strong>{card_title}</strong></p>")
+    if card_content:
+        parts.append(f"<p>{card_content}</p>")
+
+    if card_type == "branch" and choices:
+        parts.append("<ul>")
+        for choice in choices:
+            choice_text = escape(str(choice.get("text", "")))
+            parts.append(f"<li>{choice_text}</li>")
+        parts.append("</ul>")
+
+    if card_type == "ending":
+        parts.append(
+            f'<p style="font-size:0.85rem;color:#666;">Score: {end_score}</p>'
+        )
+        if end_message:
+            parts.append(
+                f'<p style="font-style:italic;color:#555;">{escape(end_message)}</p>'
+            )
+
+    parts.append("</div>")
     return "".join(parts)
 
 

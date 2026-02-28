@@ -201,6 +201,38 @@ def extract_quiz_nodes(content_json: dict[str, Any]) -> list[QuizQuestion]:
     return questions
 
 
+def extract_branching_cards(content_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract branchingCard nodes from TipTap content_json.
+
+    Recursively walks the ProseMirror/TipTap document tree looking for
+    nodes with type == "branchingCard" and returns their attrs dicts.
+    """
+    cards: list[dict[str, Any]] = []
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        for node in nodes:
+            if node.get("type") == "branchingCard":
+                attrs = node.get("attrs", {})
+                cards.append({
+                    "cardId": str(attrs.get("cardId", "")),
+                    "cardType": str(attrs.get("cardType", "content")),
+                    "cardTitle": str(attrs.get("cardTitle", "")),
+                    "cardContent": str(attrs.get("cardContent", "")),
+                    "choices": attrs.get("choices", []),
+                    "endScore": int(attrs.get("endScore", 0)),
+                    "endMessage": str(attrs.get("endMessage", "")),
+                })
+
+            if "content" in node:
+                _walk(node["content"])
+
+    top_content = content_json.get("content")
+    if isinstance(top_content, list):
+        _walk(top_content)
+
+    return cards
+
+
 def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
     """Query the DB for all data needed to export a unit.
 
