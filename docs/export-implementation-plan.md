@@ -252,32 +252,48 @@ YouTube transcript auto-fetch, 3 new TipTap nodes, manual interaction placement.
 
 ---
 
-## Phase 6b-ii — Interactive Video: H5P Export + Echo360 Handling
+## Phase 6b-ii — Interactive Video: H5P Export + Echo360 Handling — COMPLETE
 
-**Status**: Not started
+**Status**: COMPLETE
 **Ships**: H5P Interactive Video export for YouTube/Vimeo sources, Echo360
-detection with fallback to standalone quiz/QTI export.
+detection with 422 rejection + automatic fallback targets (H5P Question Set, QTI).
 
-### Work Items
+### What was delivered
 
-1. **H5P Interactive Video builder** — `h5p_interactive_video_service.py`.
-   Walks content_json, extracts video URL + interactions by timestamp,
-   maps quizQuestion nodes to H5P interaction libraries (MultiChoice,
-   TrueFalse, Blanks, Text).
+1. **Video data extractors** — `extract_video_embed()` and
+   `extract_video_interactions()` in `unit_export_data.py`, following the
+   existing `extract_quiz_nodes()` / `extract_branching_cards()` pattern.
 
-2. **Echo360 detection + fallback** — detect Echo360 URLs in preview,
-   prompt for alternative YouTube/Vimeo URL at export time, offer
-   standalone H5P Question Set or QTI fallback. Integrates with
-   Phase 6a export dialog.
+2. **H5P Interactive Video builder** — `h5p_interactive_video_service.py`.
+   Platform MIME mapping (YouTube → `video/YouTube`, Vimeo → `video/Vimeo`).
+   Echo360/unknown platforms raise `ValueError`. Reuses `H5PQuestionSetBuilder._build_question()`
+   for quiz interaction conversion. Each interaction positioned at `x=50, y=50`
+   with `duration.from = time` and configurable pause.
 
-3. **Export endpoints** — `/materials/{id}/export/h5p-interactive-video`,
-   format resolver gains `interactive_video` content type
+3. **Export endpoint** — `GET /materials/{id}/export/h5p-interactive-video`
+   in `h5p_export.py`. Returns 422 for unsupported platforms (Echo360),
+   404 for missing embed/interactions.
 
-### Key Files (~6)
+4. **Format resolver** — `interactive_video` content type detected when both
+   `interactiveVideoEmbed` and `videoInteraction` nodes are present.
+   Auto default: `h5p_interactive_video`. Available targets include
+   `h5p_question_set` and `qti` as fallbacks (export just the quiz interactions).
+
+5. **Frontend** — `interactive_video` badge (indigo) in `MaterialExportRow.tsx`,
+   `h5p_interactive_video` label in export dialog. No special Echo360 UI needed —
+   backend 422 rejection + fallback targets handle it automatically.
+
+6. **17 tests** — `test_h5p_interactive_video.py` covering extractors (embed
+   present/missing, interactions sorted/empty), builder (YouTube, Vimeo, Echo360
+   rejection, multiple interactions), format resolver detection, and fallback targets.
+
+### Key Files
 - `backend/app/services/h5p_interactive_video_service.py`
+- `backend/app/services/unit_export_data.py` (extended)
 - `backend/app/api/routes/h5p_export.py` (extended)
 - `backend/app/services/format_resolver.py` (extended)
-- `frontend/src/components/ExportDialog/` (Echo360 fallback UI)
+- `backend/tests/test_h5p_interactive_video.py`
+- `frontend/src/components/ExportDialog/MaterialExportRow.tsx` (extended)
 
 ### Dependencies: Phase 6b-i, Phase 3 (H5P base builder), Phase 6a (export dialog)
 
@@ -344,7 +360,7 @@ since students are already authenticated in the LMS).
 | 5 | Branching | Card authoring, map view, H5P Branching Scenario | COMPLETE |
 | 6a | Export Dialog | Two-level export UI, 4-level format resolver, user defaults | COMPLETE |
 | 6b-i | Interactive Video: Authoring | Transcript service, 3 TipTap nodes, manual interaction placement | COMPLETE |
-| 6b-ii | Interactive Video: Export | H5P Interactive Video, Echo360 fallback | Not started |
+| 6b-ii | Interactive Video: Export | H5P Interactive Video, Echo360 fallback | COMPLETE |
 | 6b-iii | Interactive Video: AI | AI-suggested interactions from transcript | Not started |
 | 6c | Progress Streaming | SSE progress for large exports (nice-to-have) | Not started |
 

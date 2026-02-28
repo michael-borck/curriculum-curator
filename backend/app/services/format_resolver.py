@@ -13,13 +13,19 @@ from __future__ import annotations
 from typing import Any
 
 from app.services.slide_splitter import has_slide_breaks
-from app.services.unit_export_data import extract_branching_cards, extract_quiz_nodes
+from app.services.unit_export_data import (
+    extract_branching_cards,
+    extract_quiz_nodes,
+    extract_video_embed,
+    extract_video_interactions,
+)
 
 # ─── Content type detection ───────────────────────────────────────────
 
 CONTENT_TYPE_QUIZ = "quiz"
 CONTENT_TYPE_SLIDES = "slides"
 CONTENT_TYPE_BRANCHING = "branching"
+CONTENT_TYPE_INTERACTIVE_VIDEO = "interactive_video"
 CONTENT_TYPE_RICH_TEXT = "rich_text"
 
 
@@ -43,6 +49,9 @@ def detect_content_types(content_json: dict[str, Any] | None) -> list[str]:
     if extract_branching_cards(content_json):
         types.append(CONTENT_TYPE_BRANCHING)
 
+    if extract_video_embed(content_json) and extract_video_interactions(content_json):
+        types.append(CONTENT_TYPE_INTERACTIVE_VIDEO)
+
     return types or [CONTENT_TYPE_RICH_TEXT]
 
 
@@ -53,6 +62,7 @@ AUTO_DEFAULTS: dict[str, list[str]] = {
     CONTENT_TYPE_QUIZ: ["qti"],
     CONTENT_TYPE_SLIDES: ["h5p_course_presentation"],
     CONTENT_TYPE_BRANCHING: ["h5p_branching"],
+    CONTENT_TYPE_INTERACTIVE_VIDEO: ["h5p_interactive_video"],
     CONTENT_TYPE_RICH_TEXT: ["html"],
 }
 
@@ -61,6 +71,11 @@ TARGETS_FOR_CONTENT_TYPE: dict[str, list[str]] = {
     CONTENT_TYPE_QUIZ: ["qti", "h5p_question_set"],
     CONTENT_TYPE_SLIDES: ["h5p_course_presentation", "html"],
     CONTENT_TYPE_BRANCHING: ["h5p_branching"],
+    CONTENT_TYPE_INTERACTIVE_VIDEO: [
+        "h5p_interactive_video",
+        "h5p_question_set",
+        "qti",
+    ],
     CONTENT_TYPE_RICH_TEXT: ["html"],
 }
 

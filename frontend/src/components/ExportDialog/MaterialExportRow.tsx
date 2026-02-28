@@ -7,6 +7,10 @@ const CONTENT_TYPE_BADGES: Record<string, { label: string; color: string }> = {
   quiz: { label: 'Quiz', color: 'bg-purple-100 text-purple-700' },
   slides: { label: 'Slides', color: 'bg-orange-100 text-orange-700' },
   branching: { label: 'Branching', color: 'bg-green-100 text-green-700' },
+  interactive_video: {
+    label: 'Interactive Video',
+    color: 'bg-indigo-100 text-indigo-700',
+  },
   rich_text: { label: 'Text', color: 'bg-gray-100 text-gray-600' },
 };
 
@@ -15,6 +19,7 @@ const TARGET_LABELS: Record<string, string> = {
   h5p_question_set: 'H5P Quiz',
   h5p_course_presentation: 'H5P Slides',
   h5p_branching: 'H5P Branching',
+  h5p_interactive_video: 'H5P Interactive Video',
   html: 'HTML',
 };
 

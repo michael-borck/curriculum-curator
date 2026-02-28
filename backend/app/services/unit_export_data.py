@@ -118,7 +118,7 @@ class UnitExportData:
     )
 
 
-class _InMemoryQuizQuestion:
+class InMemoryQuizQuestion:
     """Lightweight stand-in for QuizQuestion without SQLAlchemy instrumentation.
 
     The QTI exporter only reads attribute values (question_text, question_type,
@@ -178,7 +178,7 @@ def extract_quiz_nodes(content_json: dict[str, Any]) -> list[QuizQuestion]:
                     if o.get("correct", False)
                 ]
 
-                q = _InMemoryQuizQuestion(
+                q = InMemoryQuizQuestion(
                     question_id=str(attrs.get("questionId", "")),
                     question_text=str(attrs.get("questionText", "")),
                     question_type=str(attrs.get("questionType", "multiple_choice")),
@@ -213,15 +213,17 @@ def extract_branching_cards(content_json: dict[str, Any]) -> list[dict[str, Any]
         for node in nodes:
             if node.get("type") == "branchingCard":
                 attrs = node.get("attrs", {})
-                cards.append({
-                    "cardId": str(attrs.get("cardId", "")),
-                    "cardType": str(attrs.get("cardType", "content")),
-                    "cardTitle": str(attrs.get("cardTitle", "")),
-                    "cardContent": str(attrs.get("cardContent", "")),
-                    "choices": attrs.get("choices", []),
-                    "endScore": int(attrs.get("endScore", 0)),
-                    "endMessage": str(attrs.get("endMessage", "")),
-                })
+                cards.append(
+                    {
+                        "cardId": str(attrs.get("cardId", "")),
+                        "cardType": str(attrs.get("cardType", "content")),
+                        "cardTitle": str(attrs.get("cardTitle", "")),
+                        "cardContent": str(attrs.get("cardContent", "")),
+                        "choices": attrs.get("choices", []),
+                        "endScore": int(attrs.get("endScore", 0)),
+                        "endMessage": str(attrs.get("endMessage", "")),
+                    }
+                )
 
             if "content" in node:
                 _walk(node["content"])
@@ -231,6 +233,74 @@ def extract_branching_cards(content_json: dict[str, Any]) -> list[dict[str, Any]
         _walk(top_content)
 
     return cards
+
+
+def extract_video_embed(content_json: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract the interactiveVideoEmbed node from TipTap content_json.
+
+    Returns the node's attrs (url, platform, title) or None if not found.
+    """
+    result: dict[str, Any] | None = None
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        nonlocal result
+        for node in nodes:
+            if node.get("type") == "interactiveVideoEmbed":
+                attrs = node.get("attrs", {})
+                result = {
+                    "url": str(attrs.get("url", "")),
+                    "platform": str(attrs.get("platform", "")),
+                    "title": str(attrs.get("title", "")),
+                }
+                return
+
+            if "content" in node:
+                _walk(node["content"])
+                if result is not None:
+                    return
+
+    top_content = content_json.get("content")
+    if isinstance(top_content, list):
+        _walk(top_content)
+
+    return result
+
+
+def extract_video_interactions(content_json: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract videoInteraction nodes from TipTap content_json, sorted by time.
+
+    Returns a list of interaction attrs dicts.
+    """
+    interactions: list[dict[str, Any]] = []
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        for node in nodes:
+            if node.get("type") == "videoInteraction":
+                attrs = node.get("attrs", {})
+                interactions.append(
+                    {
+                        "interactionId": str(attrs.get("interactionId", "")),
+                        "time": float(attrs.get("time", 0)),
+                        "pause": bool(attrs.get("pause", True)),
+                        "questionType": str(
+                            attrs.get("questionType", "multiple_choice")
+                        ),
+                        "questionText": str(attrs.get("questionText", "")),
+                        "options": attrs.get("options", []),
+                        "feedback": attrs.get("feedback") or None,
+                        "points": float(attrs.get("points", 1.0)),
+                    }
+                )
+
+            if "content" in node:
+                _walk(node["content"])
+
+    top_content = content_json.get("content")
+    if isinstance(top_content, list):
+        _walk(top_content)
+
+    interactions.sort(key=lambda x: x["time"])
+    return interactions
 
 
 def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:

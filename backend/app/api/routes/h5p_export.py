@@ -17,9 +17,16 @@ from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
 from app.services.h5p_branching_service import h5p_branching_builder
 from app.services.h5p_course_presentation import h5p_course_presentation_builder
+from app.services.h5p_interactive_video_service import h5p_interactive_video_builder
 from app.services.h5p_service import h5p_builder
 from app.services.slide_splitter import has_slide_breaks
-from app.services.unit_export_data import extract_branching_cards, extract_quiz_nodes, slugify
+from app.services.unit_export_data import (
+    extract_branching_cards,
+    extract_quiz_nodes,
+    extract_video_embed,
+    extract_video_interactions,
+    slugify,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +42,9 @@ async def export_unit_h5p(
     all_questions = _gather_all_questions(str(unit.id), db)
 
     if not all_questions:
-        raise HTTPException(status_code=404, detail="No quiz questions found in this unit")
+        raise HTTPException(
+            status_code=404, detail="No quiz questions found in this unit"
+        )
 
     title = f"{unit.code} - Interactive Quiz"
     buf = h5p_builder.build(all_questions, title)
@@ -67,7 +76,9 @@ async def export_material_h5p(
         questions = extract_quiz_nodes(material.content_json)
 
     if not questions:
-        raise HTTPException(status_code=404, detail="No quiz questions found in this material")
+        raise HTTPException(
+            status_code=404, detail="No quiz questions found in this material"
+        )
 
     title = f"{material.title} - Interactive Quiz"
     buf = h5p_builder.build(questions, title)
@@ -95,7 +106,9 @@ async def export_material_h5p_slides(
         raise HTTPException(status_code=404, detail="Material not found")
 
     if not material.content_json or not has_slide_breaks(material.content_json):
-        raise HTTPException(status_code=404, detail="No slide breaks found in this material")
+        raise HTTPException(
+            status_code=404, detail="No slide breaks found in this material"
+        )
 
     title = f"{material.title} - Slides"
     buf = h5p_course_presentation_builder.build(material.content_json, title)
@@ -127,13 +140,60 @@ async def export_material_h5p_branching(
         cards = extract_branching_cards(material.content_json)
 
     if not cards:
-        raise HTTPException(status_code=404, detail="No branching cards found in this material")
+        raise HTTPException(
+            status_code=404, detail="No branching cards found in this material"
+        )
 
     title = f"{material.title} - Branching Scenario"
     buf = h5p_branching_builder.build(cards, title)
 
     title_slug = slugify(str(material.title))
     filename = f"{title_slug}_branching.h5p"
+
+    return StreamingResponse(
+        buf,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+@router.get("/materials/{material_id}/export/h5p-interactive-video")
+async def export_material_h5p_interactive_video(
+    material_id: str,
+    db: Annotated[Session, Depends(get_db)],
+) -> StreamingResponse:
+    """Export an interactive video material as H5P Interactive Video."""
+    material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+
+    if not material.content_json:
+        raise HTTPException(status_code=404, detail="No content found in this material")
+
+    embed = extract_video_embed(material.content_json)
+    interactions = extract_video_interactions(material.content_json)
+
+    if not embed:
+        raise HTTPException(
+            status_code=404, detail="No video embed found in this material"
+        )
+
+    if not interactions:
+        raise HTTPException(
+            status_code=404, detail="No video interactions found in this material"
+        )
+
+    try:
+        buf = h5p_interactive_video_builder.build(
+            embed, interactions, str(material.title)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    title_slug = slugify(str(material.title))
+    filename = f"{title_slug}_interactive_video.h5p"
 
     return StreamingResponse(
         buf,
