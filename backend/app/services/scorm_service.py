@@ -157,6 +157,16 @@ class SCORMExportService:
             qti_xml = qti_exporter.export_qti12(questions, quiz_title)
             file_contents[qti_href] = qti_xml
 
+        # QTI from editor content_json (quizQuestion TipTap nodes)
+        for material_id, questions in data.quiz_questions_by_material.items():
+            if not questions:
+                continue
+            quiz_title = f"Quiz {material_id[:8]}"
+            qti_ident = f"qti_mat_{material_id[:8]}"
+            qti_href = f"quizzes/{qti_ident}/assessment.xml"
+            qti_xml = qti_exporter.export_qti12(questions, quiz_title)
+            file_contents[qti_href] = qti_xml
+
         # Build SCORM manifest XML
         manifest_xml = self._build_manifest(
             data.unit,

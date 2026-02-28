@@ -13,9 +13,10 @@ from app.api.deps import get_db, get_user_unit
 from app.models.content import Content
 from app.models.enums import ContentType
 from app.models.quiz_question import QuizQuestion
+from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
 from app.services.qti_service import qti_exporter
-from app.services.unit_export_data import slugify
+from app.services.unit_export_data import extract_quiz_nodes, slugify
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,16 @@ async def export_unit_qti(
             .all()
         )
         all_questions.extend(questions)
+
+    # Also extract quiz nodes from editor content_json in weekly materials
+    materials = (
+        db.query(WeeklyMaterial)
+        .filter(WeeklyMaterial.unit_id == unit.id)
+        .all()
+    )
+    for mat in materials:
+        if mat.content_json:
+            all_questions.extend(extract_quiz_nodes(mat.content_json))
 
     title = f"{unit.code} - Quiz Export"
     buf = qti_exporter.export_qti21_zip(all_questions, title)

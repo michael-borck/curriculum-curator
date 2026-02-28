@@ -112,6 +112,7 @@ class QTIExporter:
             if q_type in (
                 QuestionType.MULTIPLE_CHOICE.value,
                 QuestionType.TRUE_FALSE.value,
+                QuestionType.MULTI_SELECT.value,
             ):
                 self._mc_to_qti12(section, q)
             elif q_type in _TEXT_ENTRY_TYPES:
@@ -154,11 +155,13 @@ class QTIExporter:
     # ------------------------------------------------------------------
 
     def _mc_to_qti12(self, section: ET.Element, q: QuizQuestion) -> None:
-        """Multiple choice / true-false → QTI 1.2."""
+        """Multiple choice / true-false / multi-select → QTI 1.2."""
         ident = f"q_{uuid.uuid4().hex[:8]}"
         item = ET.SubElement(
             section, "item", ident=ident, title=str(q.question_text)[:80]
         )
+
+        is_multi = str(q.question_type) == QuestionType.MULTI_SELECT.value
 
         # Presentation
         presentation = ET.SubElement(item, "presentation")
@@ -170,7 +173,7 @@ class QTIExporter:
             presentation,
             "response_lid",
             ident="response1",
-            rcardinality="Single",
+            rcardinality="Multiple" if is_multi else "Single",
         )
         render_choice = ET.SubElement(response_lid, "render_choice")
 
@@ -371,6 +374,7 @@ class QTIExporter:
         if q_type in (
             QuestionType.MULTIPLE_CHOICE.value,
             QuestionType.TRUE_FALSE.value,
+            QuestionType.MULTI_SELECT.value,
         ):
             return self._mc_to_qti21(q, ident)
         if q_type in _TEXT_ENTRY_TYPES:
@@ -384,7 +388,7 @@ class QTIExporter:
         return None
 
     def _mc_to_qti21(self, q: QuizQuestion, ident: str) -> str:
-        """Multiple choice / true-false → QTI 2.1 assessmentItem."""
+        """Multiple choice / true-false / multi-select → QTI 2.1 assessmentItem."""
         ET.register_namespace("", NS_QTI21)
         item = ET.Element(
             f"{{{NS_QTI21}}}assessmentItem",
@@ -396,25 +400,28 @@ class QTIExporter:
 
         options = q.options or []
         correct = q.correct_answers or []
+        is_multi = str(q.question_type) == QuestionType.MULTI_SELECT.value
 
-        # Find correct option identifier
-        correct_ident = "opt_0"
+        # Find correct option identifier(s)
+        correct_idents: list[str] = []
         for j, opt in enumerate(options):
             opt_text = str(opt) if isinstance(opt, str) else str(opt.get("text", opt))
             if opt_text in correct or str(j) in [str(c) for c in correct]:
-                correct_ident = f"opt_{j}"
-                break
+                correct_idents.append(f"opt_{j}")
+        if not correct_idents:
+            correct_idents = ["opt_0"]
 
         # responseDeclaration
         resp_decl = ET.SubElement(
             item,
             f"{{{NS_QTI21}}}responseDeclaration",
             identifier="RESPONSE",
-            cardinality="single",
+            cardinality="multiple" if is_multi else "single",
             baseType="identifier",
         )
         correct_resp = ET.SubElement(resp_decl, f"{{{NS_QTI21}}}correctResponse")
-        ET.SubElement(correct_resp, f"{{{NS_QTI21}}}value").text = correct_ident
+        for ci in correct_idents:
+            ET.SubElement(correct_resp, f"{{{NS_QTI21}}}value").text = ci
 
         # outcomeDeclaration
         ET.SubElement(
@@ -432,7 +439,7 @@ class QTIExporter:
             f"{{{NS_QTI21}}}choiceInteraction",
             responseIdentifier="RESPONSE",
             shuffle="false",
-            maxChoices="1",
+            maxChoices="0" if is_multi else "1",
         )
         prompt = ET.SubElement(choice_interaction, f"{{{NS_QTI21}}}prompt")
         prompt.text = str(q.question_text)

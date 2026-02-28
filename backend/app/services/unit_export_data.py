@@ -9,6 +9,7 @@ Provides:
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -100,6 +101,92 @@ class UnitExportData:
     quiz_questions_by_content: dict[str, list[QuizQuestion]] = field(
         default_factory=dict
     )
+    quiz_questions_by_material: dict[str, list[QuizQuestion]] = field(
+        default_factory=dict
+    )
+
+
+class _InMemoryQuizQuestion:
+    """Lightweight stand-in for QuizQuestion without SQLAlchemy instrumentation.
+
+    The QTI exporter only reads attribute values (question_text, question_type,
+    options, correct_answers, answer_explanation, points, id). This class
+    provides those attributes without triggering SQLAlchemy's descriptor
+    machinery, so we can build instances outside a Session.
+    """
+
+    def __init__(
+        self,
+        *,
+        question_id: str,
+        question_text: str,
+        question_type: str,
+        options: list[dict[str, str]],
+        correct_answers: list[str],
+        answer_explanation: str | None,
+        points: float,
+        order_index: int,
+    ) -> None:
+        self.id = question_id
+        self.content_id = ""
+        self.question_text = question_text
+        self.question_type = question_type
+        self.order_index = order_index
+        self.options = options
+        self.correct_answers = correct_answers
+        self.answer_explanation = answer_explanation
+        self.points = points
+        self.feedback: dict[str, Any] | None = None
+        self.partial_credit: dict[str, Any] | None = None
+        self.difficulty_level: str | None = None
+        self.bloom_level: str | None = None
+        self.learning_objective: str | None = None
+        self.question_metadata: dict[str, Any] | None = None
+
+
+def extract_quiz_nodes(content_json: dict[str, Any]) -> list[QuizQuestion]:
+    """Extract quizQuestion nodes from TipTap content_json into in-memory QuizQuestion-compatible instances.
+
+    Recursively walks the ProseMirror/TipTap document tree looking for
+    nodes with type == "quizQuestion" and converts their attrs into
+    lightweight objects that duck-type as QuizQuestion (no DB session needed).
+    """
+    questions: list[QuizQuestion] = []
+
+    def _walk(nodes: list[dict[str, Any]]) -> None:
+        for node in nodes:
+            if node.get("type") == "quizQuestion":
+                attrs = node.get("attrs", {})
+                options_raw: list[dict[str, Any]] = attrs.get("options", [])
+
+                options = [{"text": str(o.get("text", ""))} for o in options_raw]
+                correct_answers = [
+                    str(o.get("text", ""))
+                    for o in options_raw
+                    if o.get("correct", False)
+                ]
+
+                q = _InMemoryQuizQuestion(
+                    question_id=str(attrs.get("questionId", "")),
+                    question_text=str(attrs.get("questionText", "")),
+                    question_type=str(attrs.get("questionType", "multiple_choice")),
+                    options=options,
+                    correct_answers=correct_answers,
+                    answer_explanation=attrs.get("feedback") or None,
+                    points=float(attrs.get("points", 1.0)),
+                    order_index=len(questions),
+                )
+                questions.append(q)  # type: ignore[arg-type]
+
+            # Recurse into child nodes
+            if "content" in node:
+                _walk(node["content"])
+
+    top_content = content_json.get("content")
+    if isinstance(top_content, list):
+        _walk(top_content)
+
+    return questions
 
 
 def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
@@ -182,6 +269,14 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
         if questions:
             quiz_questions_by_content[str(qc.id)] = questions
 
+    # Quiz questions from editor content_json (quizQuestion TipTap nodes)
+    quiz_questions_by_material: dict[str, list[QuizQuestion]] = {}
+    for mat in weekly_materials:
+        if mat.content_json:
+            extracted = extract_quiz_nodes(mat.content_json)
+            if extracted:
+                quiz_questions_by_material[str(mat.id)] = extracted
+
     return UnitExportData(
         unit=unit,
         outline=outline,
@@ -194,4 +289,5 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
         gc_mappings=gc_mappings,
         materials_by_week=materials_by_week,
         quiz_questions_by_content=quiz_questions_by_content,
+        quiz_questions_by_material=quiz_questions_by_material,
     )

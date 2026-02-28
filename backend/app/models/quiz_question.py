@@ -28,6 +28,7 @@ class QuestionType(str, Enum):
     TRUE_FALSE = "true_false"
     MATCHING = "matching"
     FILL_IN_BLANK = "fill_in_blank"
+    MULTI_SELECT = "multi_select"
     CASE_STUDY = "case_study"
     SCENARIO = "scenario"
 
