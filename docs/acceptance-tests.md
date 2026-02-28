@@ -10,21 +10,22 @@
 
 ## Scenario 1 — Registration, Login & Settings
 
-**Covers:** 10.1, 10.2, 10.5, 10.6, 10.7
+**Covers:** 10.1, 10.2, 10.5, 10.6, 10.7, 17A.1
 
 - [ ] 1. Open the app. Click "Register". Fill in email, full name, password. Submit.
 - [ ] 2. Registration succeeds — you are redirected to login (or auto-logged-in).
 - [ ] 3. Log in with the credentials you just created. A JWT session is established (you land on the dashboard).
 - [ ] 4. Navigate to **Settings**. Set your preferred teaching style (e.g. "Problem-Based Learning").
-- [ ] 5. On the same settings page, enter an LLM API key (OpenAI or Anthropic). Save.
-- [ ] 6. Verify the key is saved (page reload shows the key masked but present).
-- [ ] 7. *(Optional — if Ollama is installed)* Select "Ollama" as AI provider. Verify the app detects the local instance.
+- [ ] 5. Set your **education sector** to "Higher Education". Save. Verify it persists after reload.
+- [ ] 6. On the same settings page, enter an LLM API key (OpenAI or Anthropic). Save.
+- [ ] 7. Verify the key is saved (page reload shows the key masked but present).
+- [ ] 8. *(Optional — if Ollama is installed)* Select "Ollama" as AI provider. Verify the app detects the local instance.
 
 ---
 
 ## Scenario 2 — Create a Unit with Custom Topic Label
 
-**Covers:** 1.1, 1.2, 1.3, 1.8, 1.9, 1.10, 17.1
+**Covers:** 1.1, 1.2, 1.3, 1.8, 1.9, 1.10, 18.1
 
 - [ ] 1. From the dashboard, click **Create Unit**.
 - [ ] 2. Verify the form is streamlined — only essential fields (title, code, credits, semester, weeks) are shown upfront.
@@ -41,40 +42,42 @@
 
 ## Scenario 3 — ULOs, Assessments, Rubrics & Alignment
 
-**Covers:** 2.1–2.8, 4.1–4.10, 7.4–7.6
+**Covers:** 2.1–2.8, 4.1–4.10, 7.4–7.6, 17A.3, 17A.4
 
 - [ ] 1. In the unit from Scenario 2, navigate to **Learning Outcomes**.
 - [ ] 2. Add a ULO manually: "Construct responsive web pages using HTML and CSS" at Bloom's level "Apply". Verify it saves.
 - [ ] 3. Use **bulk create** — paste 3 more ULOs (one per line). Verify all 3 appear.
 - [ ] 4. Reorder ULOs by drag-and-drop. Verify the new order persists after page reload.
-- [ ] 5. Navigate to **Assessments**. Add an assessment: "Portfolio Website", type "Project", weight 40%, due Module 10.
-- [ ] 6. Add a second assessment: "Final Exam", weight 60%, due Module 12.
-- [ ] 7. Verify the weight total shows 100% (no validation error).
-- [ ] 8. Change one weight to 50% — verify a validation warning appears (total != 100%).
-- [ ] 9. Fix the weight back. Map both assessments to ULOs (select at least one ULO per assessment).
-- [ ] 10. Navigate to the **Alignment** or **Analytics** view. Verify the alignment report shows ULO coverage across materials and assessments.
-- [ ] 11. Verify the **quality score** is visible (graded A–F) and any validation warnings are listed.
-- [ ] 12. Check that recommendations are shown for improving the unit.
-- [ ] 13. Edit the "Portfolio Website" assessment. Expand the **Rubric** section (collapsed by default, showing "No rubric").
-- [ ] 14. Select **Analytic** rubric type. Verify a grid appears with 4 default levels (Excellent/Good/Satisfactory/Unsatisfactory) and 1 criterion row.
-- [ ] 15. Edit the criterion name to "Design Quality". Set weight to 30. Fill in cell descriptions for each level. Add a second criterion "Code Quality" (weight 40) and a third "Documentation" (weight 30).
-- [ ] 16. Add a 5th level column (e.g. "Outstanding"). Verify all criteria rows gain an extra cell. Remove the column — verify all rows shrink back.
-- [ ] 17. Set Total Points to 100. Save the assessment. Reload the page — verify the rubric data persists (4 levels, 3 criteria, all cell text intact).
-- [ ] 18. Verify the assessment card now shows a purple **Rubric** badge.
-- [ ] 19. Collapse the Rubric section. Verify the summary reads "Analytic: 3 criteria, 4 levels".
-- [ ] 20. Edit the assessment again. Change the rubric type to **Holistic**. Verify a confirmation dialog warns about data reset. Accept.
-- [ ] 21. Verify the editor now shows level cards with label, points, and a paragraph textarea (no criteria rows). Add descriptions to each level. Save.
-- [ ] 22. Edit the "Final Exam" assessment. Add a **Checklist** rubric. Verify the editor shows simple criteria rows with a checkbox placeholder. Add 5 criteria. Save and reload — verify persistence.
-- [ ] 23. Create a new assessment "Peer Review" (formative, 0%). Add a **Single-Point** rubric. Verify the editor shows a 3-column layout: "Concerns" (read-only) | criterion name + proficient description (editable) | "Advanced" (read-only). Add 3 criteria. Save.
-- [ ] 24. On the "Peer Review" assessment, click **Remove Rubric** inside the rubric editor. Confirm. Verify the rubric is cleared and the card no longer shows a Rubric badge.
+- [ ] 5. Navigate to **Assessments**. Click **Add Assessment**. Open the **Category** combobox. Verify Higher Ed defaults appear first (Exam, Assignment, Quiz, Project, Paper, Presentation, Lab Report) with an "All categories" section below.
+- [ ] 6. Type "port" in the category search box. Verify the list filters to show "Portfolio" (and any other matches). Select "Portfolio". Set title "Portfolio Website", weight 40%, due Module 10.
+- [ ] 7. Add a second assessment: category "Exam", title "Final Exam", weight 60%, due Module 12.
+- [ ] 8. Verify the weight total shows 100% (no validation error).
+- [ ] 9. Change one weight to 50% — verify a validation warning appears (total != 100%).
+- [ ] 10. Fix the weight back. Map both assessments to ULOs (select at least one ULO per assessment).
+- [ ] 11. Navigate to the **Alignment** or **Analytics** view. Verify the alignment report shows ULO coverage across materials and assessments.
+- [ ] 12. Verify the **quality score** is visible (graded A–F) and any validation warnings are listed.
+- [ ] 13. Check that recommendations are shown for improving the unit.
+- [ ] 14. Add a third assessment. In the category combobox, click **Custom...** and type "Design Critique". Press Enter. Verify the category saves as "design_critique" and displays as a neutral gray pill labelled "Design Critique".
+- [ ] 15. Edit the "Portfolio Website" assessment. Expand the **Rubric** section (collapsed by default, showing "No rubric").
+- [ ] 16. Select **Analytic** rubric type. Verify a grid appears with 4 default levels (Excellent/Good/Satisfactory/Unsatisfactory) and 1 criterion row.
+- [ ] 17. Edit the criterion name to "Design Quality". Set weight to 30. Fill in cell descriptions for each level. Add a second criterion "Code Quality" (weight 40) and a third "Documentation" (weight 30).
+- [ ] 18. Add a 5th level column (e.g. "Outstanding"). Verify all criteria rows gain an extra cell. Remove the column — verify all rows shrink back.
+- [ ] 19. Set Total Points to 100. Save the assessment. Reload the page — verify the rubric data persists (4 levels, 3 criteria, all cell text intact).
+- [ ] 20. Verify the assessment card now shows a purple **Rubric** badge.
+- [ ] 21. Collapse the Rubric section. Verify the summary reads "Analytic: 3 criteria, 4 levels".
+- [ ] 22. Edit the assessment again. Change the rubric type to **Holistic**. Verify a confirmation dialog warns about data reset. Accept.
+- [ ] 23. Verify the editor now shows level cards with label, points, and a paragraph textarea (no criteria rows). Add descriptions to each level. Save.
+- [ ] 24. Edit the "Final Exam" assessment. Add a **Checklist** rubric. Verify the editor shows simple criteria rows with a checkbox placeholder. Add 5 criteria. Save and reload — verify persistence.
+- [ ] 25. Create a new assessment "Peer Review" (formative, 0%). Add a **Single-Point** rubric. Verify the editor shows a 3-column layout: "Concerns" (read-only) | criterion name + proficient description (editable) | "Advanced" (read-only). Add 3 criteria. Save.
+- [ ] 26. On the "Peer Review" assessment, click **Remove Rubric** inside the rubric editor. Confirm. Verify the rubric is cleared and the card no longer shows a Rubric badge.
 
 ---
 
 ## Scenario 4 — Materials & Rich Text Editor
 
-**Covers:** 3.1–3.12, 15.1–15.4, 15.7–15.9, 2.7
+**Covers:** 3.1–3.12, 15.1–15.4, 15.7–15.9, 2.7, 17A.2, 17A.4
 
-- [ ] 1. In Module 1 of the unit, click **Add Material**. Select type "Lecture", title "Introduction to HTML". Set category to **In-class**.
+- [ ] 1. In Module 1 of the unit, click **Add Material**. Open the **Type** combobox. Verify Higher Ed defaults appear first (Lecture, Tutorial, Lab, Workshop, Seminar, Independent). Select "Lecture", title "Introduction to HTML". Set category to **In-class**.
 - [ ] 2. Add a second material: type "Reading", title "HTML Reference Guide", category **Pre-class**.
 - [ ] 3. Add a third material: type "Quiz", title "HTML Basics Check", category **Post-class**.
 - [ ] 4. Verify Module 1 shows materials grouped under category headers (Pre-class, In-class, Post-class) — not a flat list.
@@ -97,12 +100,13 @@
 - [ ] 21. Click **Apply Module 1 Structure**. Choose **Copy material stubs**. Verify all empty modules now have the same 3 materials (same titles, types, categories) but no content.
 - [ ] 22. Delete materials from Modules 4–6. Click **Apply Module 1 Structure** again → choose **Categories only**. Verify Modules 4–6 now have one placeholder per category (Pre-class, In-class, Post-class) but modules 2, 3, 7–12 are unchanged (non-destructive).
 - [ ] 23. Delete a module that has materials. Verify you get a confirmation dialog. Confirm — verify the module is removed and subsequent modules shift down.
+- [ ] 24. Add a material. In the Type combobox, click **Custom...** and type "Studio Session". Submit. Verify it saves and displays as a neutral gray pill labelled "Studio Session".
 
 ---
 
 ## Scenario 5 — AI Scaffold, Fill Gaps & AI Sidebar
 
-**Covers:** 1.6, 1.7, 5.1–5.11, 17.3
+**Covers:** 1.6, 1.7, 5.1–5.11, 18.3
 
 - [ ] 1. Create a new unit with just a title: "Data Science Essentials". Leave everything else empty.
 - [ ] 2. Click **Quick Scaffold**. Verify AI generates topics, ULOs, assessments, and a weekly plan.
@@ -271,6 +275,23 @@
 
 ---
 
+## Scenario 15 — Sector-Aware Defaults
+
+**Covers:** 17A.1–17A.5
+
+- [ ] 1. Navigate to **Settings**. Change education sector to **VET**. Save.
+- [ ] 2. Create or open a unit. Add a material — open the **Type** combobox. Verify VET defaults appear first (Practical, Tutorial, Workshop, Simulation, Placement, Assessment).
+- [ ] 3. Verify "All formats" section below contains the remaining formats (Lecture, Seminar, etc.).
+- [ ] 4. Navigate to **Assessments**. Add an assessment — open the **Category** combobox. Verify VET defaults appear first (Practical Assessment, Skills Demonstration, Assignment, Portfolio, Project, Reflection).
+- [ ] 5. Click **Custom...** in the category combobox. Type "Competency Logbook". Submit. Verify it saves and displays as a neutral gray pill.
+- [ ] 6. Change sector to **K-12** in Settings. Return to the unit.
+- [ ] 7. Add a material — verify K-12 defaults now appear first (Lesson, Workshop, Excursion, Independent, Assessment).
+- [ ] 8. Add an assessment — verify K-12 defaults now appear first (Test, Assignment, Project, Homework, Presentation, Participation).
+- [ ] 9. Verify previously saved custom values ("Competency Logbook", "Design Critique") still display correctly with their neutral gray pill styling.
+- [ ] 10. Change sector to **Corporate**. Add an assessment — verify Corporate defaults (Case Study, Presentation, Project, Reflection, Peer Review, Portfolio) appear first.
+
+---
+
 ## Coverage Matrix
 
 | Category | Stories | Scenarios |
@@ -289,7 +310,8 @@
 | 13. Version Control | 13.1–13.4 | 12 |
 | 14. Learning Design | 14.1–14.4 | 6 |
 | 15. Editor | 15.1–15.4, 15.7–15.9 | 4 |
-| 17. Flexibility | 17.1–17.3 | 2, 5 |
+| 17. Sector & Personalisation | 17A.1–17A.5 | 1, 3, 4, 15 |
+| 18. Flexibility | 18.1–18.3 | 2, 5 |
 
 ### Not Covered (by design)
 
@@ -299,4 +321,4 @@
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
 | 15.5, 15.6 | Cut from scope |
 
-*Last updated: 2026-02-25*
+*Last updated: 2026-02-28*

@@ -224,13 +224,23 @@
 | 16.3 | As a **user**, I want PDF/PPTX export in the desktop app, even if I need to install Pandoc separately and point the app to it. | P3 | **Done** — Pandoc + Typst bundled in app resources |
 | 16.4 | As a **user**, I want the desktop app to auto-update so I don't have to re-download each release. | P3 | **Done** — electron-updater with GitHub Releases |
 
-## 17. Flexibility & Workflow Freedom
+## 17. Sector & Personalisation
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 17.1 | As a **Creator**, I want to work on my unit in any order — I shouldn't be forced to define ULOs before creating materials, or complete all weeks before exporting. | P1 | **Done** — no enforced sequence |
-| 17.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P3 | **Done** — Quick Create modal on dashboard; auto-generates lightweight unit behind the scenes |
-| 17.3 | As a **Creator**, I want quality to improve progressively — the system should work with minimal input but produce better results as I add more detail (ULOs, descriptions, pedagogy). | P2 | **Done** — fill-gap + scaffold respect existing context |
+| 17A.1 | As a **Creator**, I want to select my education sector (K-12, VET, Higher Ed, Corporate, Other) so the UI shows terminology and defaults appropriate to my context. | P1 | **Done** — `educationSector` on user profile; sector profiles drive labels, presets, and defaults |
+| 17A.2 | As a **Creator**, I want session format options to default to my sector's common types (e.g. "Lesson" for K-12, "Practical" for VET) while still letting me pick any format or type a custom one. | P1 | **Done** — SessionFormatCombobox with sector-aware defaults, searchable list, and free-text entry |
+| 17A.3 | As a **Creator**, I want assessment category options to default to my sector's common types (e.g. "Test/Homework" for K-12, "Practical Assessment/Skills Demonstration" for VET) while still letting me pick any category or type a custom one. | P1 | **Done** — AssessmentCategoryCombobox with sector-aware defaults, searchable list, and free-text entry |
+| 17A.4 | As a **Creator**, I want custom session formats and assessment categories I type to display with sensible styling (title-cased label, neutral pill colour) so they look professional even if they're not built-in. | P1 | **Done** — `getFormatMeta()` and `getCategoryMeta()` fallback for unknown values |
+| 17A.5 | As a **Creator**, I want to use niche content types (placement logs, simulation debriefs, etc.) that aren't in the built-in list, so I can describe my materials accurately. | P1 | **Done** — `ContentType.CUSTOM` backend enum + `'custom'` frontend type |
+
+## 18. Flexibility & Workflow Freedom
+
+| # | Story | Phase | Status |
+|---|-------|-------|--------|
+| 18.1 | As a **Creator**, I want to work on my unit in any order — I shouldn't be forced to define ULOs before creating materials, or complete all weeks before exporting. | P1 | **Done** — no enforced sequence |
+| 18.2 | As a **Creator**, I want to create a standalone piece of content (a quiz, a worksheet) without setting up a full unit, for quick one-off needs. | P3 | **Done** — Quick Create modal on dashboard; auto-generates lightweight unit behind the scenes |
+| 18.3 | As a **Creator**, I want quality to improve progressively — the system should work with minimal input but produce better results as I add more detail (ULOs, descriptions, pedagogy). | P2 | **Done** — fill-gap + scaffold respect existing context |
 
 ---
 
@@ -238,7 +248,7 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~115 |
+| **Done** | ~120 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -255,4 +265,4 @@
 | 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-02-25*
+*Last updated: 2026-02-28*
