@@ -14,7 +14,6 @@ import zipfile
 from io import BytesIO
 from typing import Any
 
-
 # H5P library version dicts
 _BRANCHING_SCENARIO_LIB: dict[str, Any] = {
     "machineName": "H5P.BranchingScenario",
@@ -158,15 +157,15 @@ class H5PBranchingScenarioBuilder:
                 },
             ]
 
-        screens: list[dict[str, Any]] = []
-        for card in ending_cards:
-            screens.append({
+        return [
+            {
                 "endScreenTitle": str(card.get("cardTitle", "End")),
                 "endScreenSubtitle": str(card.get("endMessage", "")),
                 "contentId": -1,
                 "endScreenScore": int(card.get("endScore", 0)),
-            })
-        return screens
+            }
+            for card in ending_cards
+        ]
 
     def _build_content_json(
         self,

@@ -15,6 +15,9 @@ export type {
   SpinnerSize,
 } from './LoadingSpinner';
 
+export { ConfirmDialogProvider, useConfirmDialog } from './ConfirmDialog';
+export type { ConfirmOptions } from './ConfirmDialog';
+
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 

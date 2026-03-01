@@ -8,17 +8,14 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  Key,
-  Link,
-  Shield,
   BarChart3,
   Settings,
-  RefreshCw,
   Cpu,
 } from 'lucide-react';
 import llmApi from '../../services/llmApi';
 import { useAuthStore } from '../../stores/authStore';
 import { LLMProvider } from '../../types/llm';
+import { useConfirmDialog } from '../../components/ui';
 import type {
   LLMConfig,
   LLMTestResponse,
@@ -29,8 +26,10 @@ import ollamaApi from '../../services/ollamaApi';
 import type { OllamaStatus } from '../../types/ollama';
 import LocalAISetup from './LocalAISetup';
 import LocalAIQualityNotice from '../../components/LocalAIQualityNotice';
+import { LLMProviderFields } from '../../components/shared/LLMProviderFields';
 
 const LLMSettings: React.FC = () => {
+  const confirm = useConfirmDialog();
   const [configurations, setConfigurations] = useState<LLMConfig[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<LLMConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,11 +226,13 @@ const LLMSettings: React.FC = () => {
   const handleDeleteConfiguration = async (config: LLMConfig) => {
     if (!config.id) return;
 
-    if (
-      !window.confirm('Are you sure you want to delete this configuration?')
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete configuration?',
+      message: 'Are you sure you want to delete this configuration?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await llmApi.deleteConfiguration(config.id);
@@ -288,87 +289,8 @@ const LLMSettings: React.FC = () => {
     setAvailableModels([]);
   };
 
-  const renderProviderFields = () => {
-    const { provider } = formData;
-
-    return (
-      <>
-        {/* API Key - for most providers */}
-        {provider !== 'ollama' && (
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              API Key
-            </label>
-            <div className='relative'>
-              <Key className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
-              <input
-                type='password'
-                value={formData.api_key || ''}
-                onChange={e =>
-                  setFormData({ ...formData, api_key: e.target.value })
-                }
-                className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                placeholder={`Enter your ${PROVIDER_DISPLAY_NAMES[formData.provider || LLMProvider.OPENAI]} API key`}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* API URL - for Ollama and Custom */}
-        {(provider === 'ollama' || provider === 'custom') && (
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              API URL
-            </label>
-            <div className='relative'>
-              <Link className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
-              <input
-                type='url'
-                value={formData.api_url || ''}
-                onChange={e =>
-                  setFormData({ ...formData, api_url: e.target.value })
-                }
-                className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                placeholder={
-                  provider === 'ollama'
-                    ? 'http://localhost:11434'
-                    : 'https://api.example.com'
-                }
-              />
-            </div>
-            <p className='mt-1 text-sm text-gray-500'>
-              {provider === 'ollama'
-                ? 'Leave empty for local Ollama (localhost:11434)'
-                : 'Full URL to your custom LLM API endpoint'}
-            </p>
-          </div>
-        )}
-
-        {/* Bearer Token - for Ollama with auth */}
-        {provider === 'ollama' && (
-          <div>
-            <label className='block text-sm font-medium text-gray-700 mb-1'>
-              Bearer Token (Optional)
-            </label>
-            <div className='relative'>
-              <Shield className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
-              <input
-                type='password'
-                value={formData.bearer_token || ''}
-                onChange={e =>
-                  setFormData({ ...formData, bearer_token: e.target.value })
-                }
-                className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                placeholder='Bearer token for protected Ollama instances'
-              />
-            </div>
-            <p className='mt-1 text-sm text-gray-500'>
-              Only needed if your Ollama instance requires authentication
-            </p>
-          </div>
-        )}
-      </>
-    );
+  const handleFormChange = (updates: Partial<LLMConfig>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
   };
 
   if (isLoading) {
@@ -512,60 +434,14 @@ const LLMSettings: React.FC = () => {
             </h3>
 
             <div className='space-y-4'>
-              {/* Provider Selection */}
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Provider
-                </label>
-                <select
-                  value={formData.provider}
-                  onChange={e =>
-                    handleProviderChange(e.target.value as LLMProvider)
-                  }
-                  className='block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                >
-                  {Object.entries(PROVIDER_DISPLAY_NAMES).map(
-                    ([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-
-              {/* Provider-specific fields */}
-              {renderProviderFields()}
-
-              {/* Model Selection */}
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Model
-                </label>
-                <div className='flex gap-2'>
-                  <select
-                    value={formData.model_name || ''}
-                    onChange={e =>
-                      setFormData({ ...formData, model_name: e.target.value })
-                    }
-                    className='flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-                  >
-                    <option value=''>Select a model...</option>
-                    {availableModels.map(model => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleLoadModels}
-                    className='px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors'
-                    title='Refresh models'
-                  >
-                    <RefreshCw className='w-4 h-4' />
-                  </button>
-                </div>
-              </div>
+              <LLMProviderFields
+                formData={formData}
+                onChange={handleFormChange}
+                availableModels={availableModels}
+                onRefreshModels={handleLoadModels}
+                providerOptions='all'
+                onProviderChange={handleProviderChange}
+              />
 
               {/* Temperature */}
               <div>

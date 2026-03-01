@@ -38,9 +38,7 @@ def _doc(*nodes: dict[str, Any]) -> dict[str, Any]:
     return {"type": "doc", "content": list(nodes)}
 
 
-# ---------------------------------------------------------------------------
-# split_at_slide_breaks
-# ---------------------------------------------------------------------------
+# ─── split_at_slide_breaks ───────────────────────────────────────────
 
 
 class TestSplitAtSlideBreaks:
@@ -102,9 +100,7 @@ class TestSplitAtSlideBreaks:
             assert len(seg["content"]) > 0
 
 
-# ---------------------------------------------------------------------------
-# has_slide_breaks
-# ---------------------------------------------------------------------------
+# ─── has_slide_breaks ────────────────────────────────────────────────
 
 
 class TestHasSlideBreaks:

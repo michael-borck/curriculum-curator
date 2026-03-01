@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Mail, Info } from 'lucide-react';
 import api from '../../services/api';
-import { LoadingState, Alert, Button, EmptyState } from '../../components/ui';
+import {
+  LoadingState,
+  Alert,
+  Button,
+  EmptyState,
+  useConfirmDialog,
+} from '../../components/ui';
 
 interface WhitelistEntry {
   id: string;
@@ -13,6 +19,7 @@ interface WhitelistEntry {
 }
 
 const EmailWhitelist = () => {
+  const confirm = useConfirmDialog();
   const [entries, setEntries] = useState<WhitelistEntry[]>([]);
   const [newEntry, setNewEntry] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -88,9 +95,13 @@ const EmailWhitelist = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to remove this entry?')) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Remove whitelist entry?',
+      message: 'Are you sure you want to remove this entry?',
+      confirmLabel: 'Remove',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/admin/whitelist/${id}`);

@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useConfirmDialog } from '../../components/ui';
 import AILevelBadge from '../../components/shared/AILevelBadge';
 
 interface Unit {
@@ -83,6 +84,7 @@ interface DesignData {
 const DesignCreator = () => {
   const { unitId } = useParams<{ unitId: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirmDialog();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -331,11 +333,13 @@ const DesignCreator = () => {
       }
 
       // Generate tasks if requested
-      if (
-        window.confirm(
-          'Would you like to generate tasks from this learning design?'
-        )
-      ) {
+      const generateTasks = await confirm({
+        title: 'Generate tasks?',
+        message: 'Would you like to generate tasks from this learning design?',
+        confirmLabel: 'Generate',
+        variant: 'info',
+      });
+      if (generateTasks) {
         await api.post(`/designs/${response.data.id}/generate-tasks`);
       }
 

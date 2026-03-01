@@ -9,8 +9,6 @@ Measures pedagogical inclusivity across 4 dimensions:
 """
 
 import logging
-import math
-from collections import Counter
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -22,6 +20,7 @@ from app.models.assessment import Assessment, AssessmentStatus
 from app.models.weekly_material import WeeklyMaterial
 from app.plugins.accessibility_validator import AccessibilityValidator
 from app.plugins.readability_validator import ReadabilityValidator
+from app.services.scoring_utils import score_to_grade, score_to_stars, shannon_diversity
 
 logger = logging.getLogger(__name__)
 
@@ -38,58 +37,6 @@ class UDLService:
         self._accessibility = AccessibilityValidator()
 
     # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _shannon_diversity(items: list[str]) -> float:
-        """Shannon diversity index normalised to 0-100."""
-        if not items:
-            return 0.0
-        counts = Counter(items)
-        total = len(items)
-        num_types = len(counts)
-        if num_types <= 1:
-            return 0.0 if total <= 1 else 20.0
-
-        entropy = -sum(
-            (c / total) * math.log(c / total) for c in counts.values() if c > 0
-        )
-        max_entropy = math.log(num_types)
-        evenness = entropy / max_entropy if max_entropy > 0 else 0
-        return round(evenness * 100.0, 2)
-
-    @staticmethod
-    def _score_to_stars(score: float) -> float:
-        """Convert 0-100 score to 0-5 star rating."""
-        thresholds = [
-            (95, 5.0),
-            (90, 4.5),
-            (85, 4.0),
-            (80, 3.5),
-            (70, 3.0),
-            (55, 2.5),
-            (40, 2.0),
-            (20, 1.0),
-        ]
-        for threshold, stars in thresholds:
-            if score >= threshold:
-                return stars
-        return 0.0
-
-    @staticmethod
-    def _score_to_grade(score: float) -> str:
-        if score >= 90:
-            return "A"
-        if score >= 80:
-            return "B"
-        if score >= 70:
-            return "C"
-        if score >= 60:
-            return "D"
-        return "F"
-
-    # ------------------------------------------------------------------
     # Per-week scoring
     # ------------------------------------------------------------------
 
@@ -102,7 +49,7 @@ class UDLService:
             return 0.0
 
         categories = [str(m.category) for m in materials]
-        diversity = self._shannon_diversity(categories)
+        diversity = shannon_diversity(categories)
 
         # Bonus for varying description lengths (short + long = richer representation)
         desc_lengths = [len(m.description) for m in materials if m.description]
@@ -127,7 +74,7 @@ class UDLService:
         unique_types = set(types)
 
         # Base: diversity of session formats
-        diversity = self._shannon_diversity(types)
+        diversity = shannon_diversity(types)
 
         # Bonus for interactive types
         interactive_count = sum(1 for t in unique_types if t in _INTERACTIVE_FORMATS)
@@ -156,7 +103,7 @@ class UDLService:
             return 50.0  # Neutral — not penalised
 
         categories = [str(a.category) for a in assessments]
-        diversity = self._shannon_diversity(categories)
+        diversity = shannon_diversity(categories)
 
         # Bonus for group work mix
         has_group = any(a.group_work for a in assessments)
@@ -295,7 +242,7 @@ class UDLService:
                         "expression": round(expr, 2),
                         "accessibility": round(acc, 2),
                     },
-                    "star_rating": self._score_to_stars(avg),
+                    "star_rating": score_to_stars(avg),
                 }
             )
 
@@ -350,17 +297,17 @@ class UDLService:
             .all()
         )
         assess_categories = [str(a.category) for a in assessments]
-        assess_diversity = self._shannon_diversity(assess_categories)
+        assess_diversity = shannon_diversity(assess_categories)
 
         overall = sum(avg_sub.values()) / len(dims)
 
         return {
             "unit_id": str(unit_id),
             "overall_score": round(overall, 2),
-            "star_rating": self._score_to_stars(overall),
+            "star_rating": score_to_stars(overall),
             "sub_scores": avg_sub,
             "assessment_format_diversity": round(assess_diversity, 2),
-            "grade": self._score_to_grade(overall),
+            "grade": score_to_grade(overall),
             "calculated_at": datetime.utcnow(),
         }
 

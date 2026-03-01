@@ -5,8 +5,9 @@ This is the unified AI endpoint - all LLM functionality is accessed through /api
 """
 
 import json
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -59,6 +60,35 @@ from app.services.design_context import (
     get_design_context,
 )
 from app.services.llm_service import llm_service
+
+logger = logging.getLogger(__name__)
+
+
+def _llm_error_response(e: Exception, operation: str) -> HTTPException:
+    """Map LLM exceptions to appropriate HTTP status codes."""
+    error_msg = str(e)
+    error_lower = error_msg.lower()
+
+    # Authentication / API key issues
+    if any(kw in error_lower for kw in ("auth", "api key", "api_key", "unauthorized", "invalid key")):
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{operation}: invalid or missing API key")
+
+    # Rate limiting
+    if any(kw in error_lower for kw in ("rate limit", "rate_limit", "too many requests", "429")):
+        return HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=f"{operation}: rate limited by provider")
+
+    # Connection / availability issues
+    if any(kw in error_lower for kw in ("connect", "timeout", "unreachable", "refused", "503", "502")):
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"{operation}: LLM provider unavailable")
+
+    # Input validation
+    if isinstance(e, (ValueError, TypeError)):
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{operation}: {error_msg}")
+
+    # Unexpected errors — log and return 500
+    logger.exception("%s failed unexpectedly", operation)
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{operation} failed: {error_msg}")
+
 
 router = APIRouter()
 
@@ -192,7 +222,7 @@ async def generate_content(
         return {"content": result}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _llm_error_response(e, "Content generation")
 
 
 @router.post("/enhance", response_model=LLMResponse)
@@ -236,7 +266,7 @@ async def enhance_content(
             content=enhanced_content, model="default", provider="configured"
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Enhancement failed: {e!s}")
+        raise _llm_error_response(e, "Enhancement")
 
 
 # =============================================================================
@@ -263,7 +293,7 @@ async def analyze_pedagogy(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {e!s}")
+        raise _llm_error_response(e, "Pedagogy analysis")
 
 
 # =============================================================================
@@ -293,9 +323,7 @@ async def generate_questions(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Question generation failed: {e!s}"
-        )
+        raise _llm_error_response(e, "Question generation")
 
 
 @router.post("/generate-feedback", response_model=GeneratedFeedback)
@@ -315,9 +343,7 @@ async def generate_feedback(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Feedback generation failed: {e!s}"
-        )
+        raise _llm_error_response(e, "Feedback generation")
 
 
 # =============================================================================
@@ -347,7 +373,7 @@ async def generate_summary(
         )
         return LLMResponse(content=summary, model="default", provider="configured")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Summary generation failed: {e!s}")
+        raise _llm_error_response(e, "Summary generation")
 
 
 @router.post("/translate", response_model=LLMResponse)
@@ -369,7 +395,7 @@ async def translate_content(
         )
         return LLMResponse(content=translated, model="default", provider="configured")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Translation failed: {e!s}")
+        raise _llm_error_response(e, "Translation")
 
 
 # =============================================================================
@@ -399,9 +425,7 @@ async def generate_learning_path(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Learning path generation failed: {e!s}"
-        )
+        raise _llm_error_response(e, "Learning path generation")
 
 
 @router.post("/detect-misconceptions")
@@ -422,9 +446,7 @@ async def detect_misconceptions(
             db=db,
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Misconception detection failed: {e!s}"
-        )
+        raise _llm_error_response(e, "Misconception detection")
 
 
 # =============================================================================
@@ -453,7 +475,7 @@ async def chat_completion(
             provider=request.provider or "configured",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat completion failed: {e!s}")
+        raise _llm_error_response(e, "Chat completion")
 
 
 @router.post("/validate-content")
@@ -490,7 +512,7 @@ Return findings as JSON with keys: issues, suggestions, score"""
         response = await llm_service.get_completion(messages, user=current_user, db=db)
         return {"validation_result": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Validation failed: {e!s}")
+        raise _llm_error_response(e, "Content validation")
 
 
 # =============================================================================
@@ -690,9 +712,7 @@ Return the schedule as a JSON array with this exact structure:
             status_code=500, detail=f"Failed to parse schedule JSON: {e!s}"
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Schedule generation failed: {e!s}"
-        )
+        raise _llm_error_response(e, "Schedule generation")
 
 
 # =============================================================================
@@ -1157,10 +1177,7 @@ Return ONLY valid JSON, no markdown fences or extra text."""
             detail=f"Failed to parse AI response as JSON: {e}",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Visual prompt generation failed: {e!s}",
-        )
+        raise _llm_error_response(e, "Visual prompt generation")
 
 
 # =============================================================================
@@ -1286,10 +1303,7 @@ Requirements:
             detail=f"Failed to parse AI response as JSON: {e}",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Video interaction generation failed: {e!s}",
-        )
+        raise _llm_error_response(e, "Video interaction generation")
 
 
 @router.post(
@@ -1420,7 +1434,4 @@ Requirements:
             detail=f"Failed to parse AI response as JSON: {e}",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Interaction suggestion failed: {e!s}",
-        )
+        raise _llm_error_response(e, "Interaction suggestion")

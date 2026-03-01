@@ -13,6 +13,7 @@ from app.models.learning_outcome import BloomLevel, OutcomeType, UnitLearningOut
 from app.models.mappings import assessment_ulo_mappings, material_ulo_mappings
 from app.models.unit import Unit
 from app.models.user import User
+from app.services.scoring_utils import score_to_grade
 from app.models.weekly_material import MaterialStatus, WeeklyMaterial
 from app.services.analytics_service import AnalyticsService
 
@@ -442,12 +443,12 @@ class TestExport:
 
 
 class TestPrivateMethods:
-    def test_score_to_grade(self, analytics: AnalyticsService):
-        assert analytics._score_to_grade(95) == "A"
-        assert analytics._score_to_grade(85) == "B"
-        assert analytics._score_to_grade(75) == "C"
-        assert analytics._score_to_grade(65) == "D"
-        assert analytics._score_to_grade(45) == "F"
+    def test_score_to_grade(self):
+        assert score_to_grade(95) == "A"
+        assert score_to_grade(85) == "B"
+        assert score_to_grade(75) == "C"
+        assert score_to_grade(65) == "D"
+        assert score_to_grade(45) == "F"
 
     def test_workload_variance_empty(self, analytics: AnalyticsService):
         assert analytics._calculate_workload_variance([]) == 0.0

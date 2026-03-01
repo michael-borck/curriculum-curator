@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Save, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { createContent, quickCreateUnit } from '../../services/api';
+import { quickCreateUnit } from '../../services/api';
+import { contentApi } from '../../services/contentApi';
 import { useUnitsStore } from '../../stores/unitsStore';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { useModal } from '../../hooks/useModal';
@@ -62,7 +63,7 @@ const SaveToUnitButton = ({
     setSaving(true);
     try {
       const title = extractTitle(messageContent);
-      await createContent(targetUnitId, {
+      await contentApi.create(targetUnitId, {
         title,
         contentType,
         body: messageContent,

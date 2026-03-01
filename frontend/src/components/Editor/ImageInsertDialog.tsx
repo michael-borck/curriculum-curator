@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, Link, Loader2, ImagePlus } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { uploadMaterialImage } from '../../services/api';
+import { uploadMaterialImage } from '../../services/materialsApi';
 import toast from 'react-hot-toast';
 
 interface ImageInsertDialogProps {

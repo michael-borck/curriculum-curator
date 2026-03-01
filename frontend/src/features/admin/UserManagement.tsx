@@ -10,7 +10,13 @@ import {
   UserX,
 } from 'lucide-react';
 import api from '../../services/api';
-import { LoadingState, Alert, Button, EmptyState } from '../../components/ui';
+import {
+  LoadingState,
+  Alert,
+  Button,
+  EmptyState,
+  useConfirmDialog,
+} from '../../components/ui';
 
 interface User {
   id: string;
@@ -41,6 +47,7 @@ const statusOptions = [
 ];
 
 const UserManagement = () => {
+  const confirm = useConfirmDialog();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<RoleFilter>('all');
@@ -123,13 +130,13 @@ const UserManagement = () => {
       ? 'This will permanently remove the user and all their data. This action cannot be undone!'
       : 'This will deactivate the user account. They will not be able to login.';
 
-    if (
-      !window.confirm(
-        `Are you sure you want to ${action} ${user.email}?\n\n${warning}`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${user.email}?`,
+      message: warning,
+      confirmLabel: action.charAt(0).toUpperCase() + action.slice(1),
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       const response = await api.delete(

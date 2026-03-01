@@ -58,6 +58,7 @@ import {
   FormInput,
   FormTextarea,
   FormSelect,
+  useConfirmDialog,
 } from '../components/ui';
 import { useModal } from '../hooks';
 import { analyticsApi } from '../services/unitStructureApi';
@@ -221,6 +222,7 @@ const contentTypeCards: { value: string; label: string; icon: LucideIcon }[] = [
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const confirm = useConfirmDialog();
   const createModal = useModal();
   const quickCreateModal = useModal();
 
@@ -652,11 +654,14 @@ const DashboardPage = () => {
       ? `"${unitToDelete.code} - ${unitToDelete.title}"`
       : 'this unit';
 
-    const confirmed = window.confirm(
-      `Remove ${unitName} from the portfolio?\n\n` +
+    const confirmed = await confirm({
+      title: `Archive ${unitName}?`,
+      message:
         'All data and version history will be preserved. ' +
-        'You can restore it later from the archived section.'
-    );
+        'You can restore it later from the archived section.',
+      confirmLabel: 'Archive',
+      variant: 'warning',
+    });
 
     if (confirmed) {
       try {

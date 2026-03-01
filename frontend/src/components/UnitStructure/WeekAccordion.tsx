@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
+import { useConfirmDialog } from '../../components/ui';
 import {
   MaterialResponse,
   MaterialCategory,
@@ -133,6 +134,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   onOpenAI,
 }) => {
   const navigate = useNavigate();
+  const confirm = useConfirmDialog();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
   const [allMaterialsLoaded, setAllMaterialsLoaded] = useState(false);
   const [showApplyPopover, setShowApplyPopover] = useState(false);
@@ -221,7 +223,7 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     navigate(`/units/${unitId}/materials/${materialId}`);
   };
 
-  const handleDeleteWeekClick = (
+  const handleDeleteWeekClick = async (
     e: React.MouseEvent,
     weekNumber: number,
     hasContent: boolean
@@ -230,10 +232,13 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     if (!onDeleteWeek) return;
 
     if (hasContent) {
-      const confirmed = window.confirm(
-        `${topicLabel} ${weekNumber} has materials that will be permanently deleted. Continue?`
-      );
-      if (!confirmed) return;
+      const ok = await confirm({
+        title: `Delete ${topicLabel} ${weekNumber}?`,
+        message: `${topicLabel} ${weekNumber} has materials that will be permanently deleted. Continue?`,
+        confirmLabel: 'Delete',
+        variant: 'danger',
+      });
+      if (!ok) return;
     }
 
     onDeleteWeek(weekNumber);

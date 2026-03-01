@@ -27,6 +27,7 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { learningOutcomesApi } from '../../services/unitStructureApi';
+import { useConfirmDialog } from '../../components/ui';
 import AIAssistField from './AIAssistField';
 import {
   ULOWithMappings,
@@ -196,6 +197,7 @@ const SortableULOItem: React.FC<SortableULOItemProps> = ({
 };
 
 const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
+  const confirm = useConfirmDialog();
   const [ulos, setUlos] = useState<ULOWithMappings[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -316,11 +318,13 @@ const ULOManager: React.FC<ULOManagerProps> = ({ unitId, onULOsChange }) => {
   };
 
   const handleDelete = async (uloId: string) => {
-    if (
-      !window.confirm('Are you sure you want to delete this learning outcome?')
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete learning outcome?',
+      message: 'Are you sure you want to delete this learning outcome?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await learningOutcomesApi.deleteULO(uloId);

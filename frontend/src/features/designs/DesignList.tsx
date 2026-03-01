@@ -14,10 +14,12 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '../../services/api';
+import { useConfirmDialog } from '../../components/ui';
 
 const DesignList = () => {
   const { unitId } = useParams();
   const navigate = useNavigate();
+  const confirm = useConfirmDialog();
 
   const [designs, setDesigns] = useState<any[]>([]);
   const [unit, setUnit] = useState<any>(null);
@@ -87,15 +89,19 @@ const DesignList = () => {
   };
 
   const handleDelete = async (designId: string) => {
-    if (
-      window.confirm('Are you sure you want to delete this learning design?')
-    ) {
-      try {
-        await api.delete(`/designs/${designId}`);
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting learning design:', error);
-      }
+    const ok = await confirm({
+      title: 'Delete learning design?',
+      message: 'Are you sure you want to delete this learning design?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    try {
+      await api.delete(`/designs/${designId}`);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting learning design:', error);
     }
   };
 

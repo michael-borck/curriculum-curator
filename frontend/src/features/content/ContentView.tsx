@@ -9,7 +9,7 @@ import {
   FileText,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getContent, deleteContent } from '../../services/api';
+import { contentApi } from '../../services/contentApi';
 import { Modal, Button, LoadingState, Alert } from '../../components/ui';
 import type { Content } from '../../types/index';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
@@ -36,7 +36,7 @@ const ContentView = () => {
       }
 
       try {
-        const response = await getContent(unitId, contentId);
+        const response = await contentApi.get(unitId, contentId);
         setContent(response.data);
       } catch (err: unknown) {
         console.error('Failed to fetch content:', err);
@@ -54,7 +54,7 @@ const ContentView = () => {
 
     setIsDeleting(true);
     try {
-      await deleteContent(unitId, contentId);
+      await contentApi.delete(unitId, contentId);
       toast.success('Content deleted successfully');
       navigate(`/units/${unitId}`);
     } catch (err: unknown) {

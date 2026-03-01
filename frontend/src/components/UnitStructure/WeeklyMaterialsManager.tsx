@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { materialsApi } from '../../services/unitStructureApi';
+import { useConfirmDialog } from '../../components/ui';
 import { materialVersionApi } from '../../services/materialVersionApi';
 import VersionHistory from '../../features/materials/VersionHistory';
 import type { VersionHistoryApi } from '../../features/materials/VersionHistory';
@@ -391,6 +392,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   weekNumber,
   topicLabel = 'Week',
 }) => {
+  const confirm = useConfirmDialog();
   const { globalStyle } = useTeachingStyleStore();
   const { canGenerate } = useAILevel();
   const userSector = useAuthStore(s => s.user?.educationSector);
@@ -513,8 +515,13 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this material?'))
-      return;
+    const ok = await confirm({
+      title: 'Delete material?',
+      message: 'Are you sure you want to delete this material?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await materialsApi.deleteMaterial(id);

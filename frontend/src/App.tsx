@@ -44,6 +44,9 @@ import WelcomeOnboarding from './components/onboarding/WelcomeOnboarding';
 import { useAuthStore } from './stores/authStore';
 import { useTeachingStyleStore } from './stores/teachingStyleStore';
 
+// UI
+import { ConfirmDialogProvider } from './components/ui';
+
 // Redirect helper for routes with params
 const UnitDashboardRedirect = () => {
   const { unitId } = useParams();
@@ -121,11 +124,13 @@ function App() {
     if (user.role === 'admin') {
       return (
         <Router>
-          <Toaster position='top-right' />
-          <Routes>
-            <Route path='/admin' element={<AdminDashboard />} />
-            <Route path='*' element={<Navigate to='/admin' replace />} />
-          </Routes>
+          <ConfirmDialogProvider>
+            <Toaster position='top-right' />
+            <Routes>
+              <Route path='/admin' element={<AdminDashboard />} />
+              <Route path='*' element={<Navigate to='/admin' replace />} />
+            </Routes>
+          </ConfirmDialogProvider>
         </Router>
       );
     }
@@ -133,113 +138,118 @@ function App() {
     // Regular users get the new app layout
     return (
       <Router>
-        <Toaster position='top-right' />
-        {showWelcomeOnboarding && (
-          <WelcomeOnboarding
-            onComplete={() => setShowWelcomeOnboarding(false)}
-            onSkip={() => {
-              setShowWelcomeOnboarding(false);
-              setOnboardingDismissed(true);
-            }}
-          />
-        )}
-        <Routes>
-          {/* App Layout wrapper with nested routes */}
-          <Route element={<AppLayout onLogout={handleLogout} />}>
-            {/* Dashboard / Home */}
-            <Route path='/' element={<DashboardPage />} />
-            <Route path='/dashboard' element={<DashboardPage />} />
-
-            {/* Unit routes */}
-            <Route path='/units' element={<DashboardPage />} />
-            <Route path='/units/:unitId' element={<UnitPage />} />
-            <Route path='/units/:unitId/edit' element={<UnitPage />} />
-
-            {/* Legacy redirects */}
-            <Route path='/courses' element={<Navigate to='/units' replace />} />
-            <Route
-              path='/units/:unitId/dashboard'
-              element={<UnitDashboardRedirect />}
+        <ConfirmDialogProvider>
+          <Toaster position='top-right' />
+          {showWelcomeOnboarding && (
+            <WelcomeOnboarding
+              onComplete={() => setShowWelcomeOnboarding(false)}
+              onSkip={() => {
+                setShowWelcomeOnboarding(false);
+                setOnboardingDismissed(true);
+              }}
             />
-            <Route
-              path='/units/:unitId/structure'
-              element={<UnitStructureRedirect />}
-            />
+          )}
+          <Routes>
+            {/* App Layout wrapper with nested routes */}
+            <Route element={<AppLayout onLogout={handleLogout} />}>
+              {/* Dashboard / Home */}
+              <Route path='/' element={<DashboardPage />} />
+              <Route path='/dashboard' element={<DashboardPage />} />
 
-            {/* Content Creation and Viewing */}
-            <Route path='/content/new' element={<ContentCreator />} />
-            <Route path='/create/:type' element={<ContentCreator />} />
-            <Route
-              path='/units/:unitId/content/:contentId'
-              element={<ContentView />}
-            />
-            <Route
-              path='/units/:unitId/content/:contentId/edit'
-              element={<ContentCreator />}
-            />
+              {/* Unit routes */}
+              <Route path='/units' element={<DashboardPage />} />
+              <Route path='/units/:unitId' element={<UnitPage />} />
+              <Route path='/units/:unitId/edit' element={<UnitPage />} />
 
-            {/* Import */}
-            <Route path='/import' element={<ImportMaterials />} />
-            <Route path='/import/package' element={<PackageImport />} />
+              {/* Legacy redirects */}
+              <Route
+                path='/courses'
+                element={<Navigate to='/units' replace />}
+              />
+              <Route
+                path='/units/:unitId/dashboard'
+                element={<UnitDashboardRedirect />}
+              />
+              <Route
+                path='/units/:unitId/structure'
+                element={<UnitStructureRedirect />}
+              />
 
-            {/* Research */}
-            <Route path='/research' element={<ResearchPage />} />
+              {/* Content Creation and Viewing */}
+              <Route path='/content/new' element={<ContentCreator />} />
+              <Route path='/create/:type' element={<ContentCreator />} />
+              <Route
+                path='/units/:unitId/content/:contentId'
+                element={<ContentView />}
+              />
+              <Route
+                path='/units/:unitId/content/:contentId/edit'
+                element={<ContentCreator />}
+              />
 
-            {/* Materials — legacy route kept for backward compat */}
-            <Route
-              path='/units/:unitId/materials/:contentId'
-              element={<MaterialDetail />}
-            />
+              {/* Import */}
+              <Route path='/import' element={<ImportMaterials />} />
+              <Route path='/import/package' element={<PackageImport />} />
 
-            {/* Teaching Style - redirect to settings */}
-            <Route
-              path='/teaching-style'
-              element={<Navigate to='/settings?tab=teaching-style' replace />}
-            />
+              {/* Research */}
+              <Route path='/research' element={<ResearchPage />} />
 
-            {/* AI Assistant */}
-            <Route path='/ai-assistant' element={<AIAssistant />} />
+              {/* Materials — legacy route kept for backward compat */}
+              <Route
+                path='/units/:unitId/materials/:contentId'
+                element={<MaterialDetail />}
+              />
 
-            {/* Settings */}
-            <Route path='/settings' element={<Settings />} />
+              {/* Teaching Style - redirect to settings */}
+              <Route
+                path='/teaching-style'
+                element={<Navigate to='/settings?tab=teaching-style' replace />}
+              />
 
-            {/* Task Routes */}
-            <Route
-              path='/units/:unitId/tasks/:taskListId'
-              element={<TaskBoardWrapper />}
-            />
+              {/* AI Assistant */}
+              <Route path='/ai-assistant' element={<AIAssistant />} />
 
-            {/* Learning Design Routes */}
-            <Route path='/units/:unitId/designs' element={<DesignList />} />
-            <Route
-              path='/units/:unitId/designs/new'
-              element={<DesignCreator />}
-            />
-            <Route
-              path='/units/:unitId/designs/:designId'
-              element={<DesignDetail />}
-            />
-            <Route
-              path='/units/:unitId/designs/:designId/edit'
-              element={<DesignCreator />}
-            />
+              {/* Settings */}
+              <Route path='/settings' element={<Settings />} />
 
-            {/* Guide & About */}
-            <Route
-              path='/guide/learning-design'
-              element={<LearningDesignGuide />}
-            />
-            <Route
-              path='/guide/assessment-design'
-              element={<AssessmentDesignGuide />}
-            />
-            <Route path='/guide/content' element={<ContentGuide />} />
-            <Route path='/about' element={<AboutPage />} />
+              {/* Task Routes */}
+              <Route
+                path='/units/:unitId/tasks/:taskListId'
+                element={<TaskBoardWrapper />}
+              />
 
-            {/* Catch-all redirect */}
-            <Route path='*' element={<Navigate to='/dashboard' replace />} />
-          </Route>
-        </Routes>
+              {/* Learning Design Routes */}
+              <Route path='/units/:unitId/designs' element={<DesignList />} />
+              <Route
+                path='/units/:unitId/designs/new'
+                element={<DesignCreator />}
+              />
+              <Route
+                path='/units/:unitId/designs/:designId'
+                element={<DesignDetail />}
+              />
+              <Route
+                path='/units/:unitId/designs/:designId/edit'
+                element={<DesignCreator />}
+              />
+
+              {/* Guide & About */}
+              <Route
+                path='/guide/learning-design'
+                element={<LearningDesignGuide />}
+              />
+              <Route
+                path='/guide/assessment-design'
+                element={<AssessmentDesignGuide />}
+              />
+              <Route path='/guide/content' element={<ContentGuide />} />
+              <Route path='/about' element={<AboutPage />} />
+
+              {/* Catch-all redirect */}
+              <Route path='*' element={<Navigate to='/dashboard' replace />} />
+            </Route>
+          </Routes>
+        </ConfirmDialogProvider>
       </Router>
     );
   }
@@ -247,20 +257,22 @@ function App() {
   // If not authenticated, wrap everything in Router for navigation context
   return (
     <Router>
-      <Toaster position='top-right' />
-      <Routes>
-        <Route path='/download' element={<Download />} />
-        <Route
-          path='*'
-          element={
-            showLogin ? (
-              <Login onBackToLanding={() => setShowLogin(false)} />
-            ) : (
-              <Landing onSignInClick={() => setShowLogin(true)} />
-            )
-          }
-        />
-      </Routes>
+      <ConfirmDialogProvider>
+        <Toaster position='top-right' />
+        <Routes>
+          <Route path='/download' element={<Download />} />
+          <Route
+            path='*'
+            element={
+              showLogin ? (
+                <Login onBackToLanding={() => setShowLogin(false)} />
+              ) : (
+                <Landing onSignInClick={() => setShowLogin(true)} />
+              )
+            }
+          />
+        </Routes>
+      </ConfirmDialogProvider>
     </Router>
   );
 }

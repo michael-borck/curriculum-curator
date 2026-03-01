@@ -12,6 +12,7 @@ import {
   RubricLevel,
   RubricCriterion,
 } from '../../types/unitStructure';
+import { useConfirmDialog } from '../../components/ui';
 
 interface RubricEditorProps {
   value: Rubric | undefined;
@@ -632,27 +633,39 @@ const ChecklistEditor: React.FC<{
 // ---------------------------------------------------------------------------
 
 const RubricEditor: React.FC<RubricEditorProps> = ({ value, onChange }) => {
+  const confirm = useConfirmDialog();
   const [expanded, setExpanded] = useState(false);
 
-  const handleTypeChange = (newType: RubricType) => {
+  const handleTypeChange = async (newType: RubricType) => {
     if (value && value.type !== newType) {
       const hasData =
         value.criteria.some(
           c => c.name !== '' && c.cells.some(cell => cell !== '')
         ) || value.levels.some(l => (l.description ?? '') !== '');
-      if (
-        hasData &&
-        !window.confirm('Changing rubric type will reset the rubric. Continue?')
-      ) {
-        return;
+      if (hasData) {
+        const ok = await confirm({
+          title: 'Reset rubric?',
+          message: 'Changing rubric type will reset the rubric. Continue?',
+          confirmLabel: 'Continue',
+          variant: 'warning',
+        });
+        if (!ok) return;
       }
     }
     onChange(defaultForType(newType));
     setExpanded(true);
   };
 
-  const handleClear = () => {
-    if (value && !window.confirm('Remove rubric from this assessment?')) return;
+  const handleClear = async () => {
+    if (value) {
+      const ok = await confirm({
+        title: 'Remove rubric?',
+        message: 'Remove rubric from this assessment?',
+        confirmLabel: 'Remove',
+        variant: 'warning',
+      });
+      if (!ok) return;
+    }
     onChange(undefined);
     setExpanded(false);
   };

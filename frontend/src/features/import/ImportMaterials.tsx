@@ -18,11 +18,8 @@ import {
   FolderOpen,
   Sparkles,
 } from 'lucide-react';
-import api, {
-  enhanceContent,
-  getContent,
-  updateContent,
-} from '../../services/api';
+import api, { enhanceContent } from '../../services/api';
+import { contentApi } from '../../services/contentApi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface UploadedFile {
@@ -336,7 +333,7 @@ const ImportMaterials = () => {
 
     try {
       // Fetch the content body
-      const contentResponse = await getContent(selectedUnit, contentId);
+      const contentResponse = await contentApi.get(selectedUnit, contentId);
       const body = contentResponse.data.body;
       if (!body) throw new Error('No content body found');
 
@@ -348,7 +345,7 @@ const ImportMaterials = () => {
       if (!enhancedBody) throw new Error('No enhanced content returned');
 
       // Save the enhanced content back
-      await updateContent(selectedUnit, contentId, { body: enhancedBody });
+      await contentApi.update(selectedUnit, contentId, { body: enhancedBody });
 
       setEnhancedFiles(prev => new Set(prev).add(fileInfo.id));
     } catch (error) {

@@ -151,62 +151,6 @@ export const quickCreateUnit = (
 ): Promise<ApiResponse<QuickCreateResponse>> =>
   api.post('/units/quick-create', data);
 
-// Content management - routes are nested under /units/{unitId}/content
-export const getUnitContents = (unitId: string): Promise<ApiResponse> =>
-  api.get(`/units/${unitId}/content`);
-
-export const getContent = (
-  unitId: string,
-  contentId: string
-): Promise<ApiResponse> => api.get(`/units/${unitId}/content/${contentId}`);
-
-export const createContent = (
-  unitId: string,
-  data: {
-    title: string;
-    contentType: string;
-    body?: string;
-    contentJson?: Record<string, unknown>;
-    summary?: string;
-    weekNumber?: number;
-    estimatedDurationMinutes?: number;
-  }
-): Promise<ApiResponse> => api.post(`/units/${unitId}/content`, data);
-
-export const updateContent = (
-  unitId: string,
-  contentId: string,
-  data: {
-    title?: string;
-    body?: string;
-    contentJson?: Record<string, unknown>;
-    summary?: string;
-    weekNumber?: number;
-    estimatedDurationMinutes?: number;
-  }
-): Promise<ApiResponse> =>
-  api.put(`/units/${unitId}/content/${contentId}`, data);
-
-export const deleteContent = (
-  unitId: string,
-  contentId: string
-): Promise<ApiResponse> => api.delete(`/units/${unitId}/content/${contentId}`);
-
-// Legacy alias for backwards compatibility (deprecated)
-export const getContents = getUnitContents;
-
-// File upload
-export const uploadFile = (
-  unitId: string,
-  file: File
-): Promise<ApiResponse> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  return api.post(`/units/${unitId}/content/upload`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-};
-
 // Streaming content generation
 export const generateContentStream = async (
   type: ContentType,
@@ -416,20 +360,6 @@ export const updatePluginConfig = (
 ): Promise<ApiResponse<PluginInfo>> => api.patch(`/plugins/${name}`, config);
 
 // Material image endpoints
-export const uploadMaterialImage = (
-  unitId: string,
-  materialId: string,
-  file: File
-): Promise<ApiResponse<{ url: string; filename: string }>> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  return api.post(
-    `/materials/units/${unitId}/materials/${materialId}/images`,
-    formData,
-    { headers: { 'Content-Type': 'multipart/form-data' } }
-  );
-};
-
 export const listMaterialImages = (
   unitId: string,
   materialId: string

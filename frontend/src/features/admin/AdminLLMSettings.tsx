@@ -21,6 +21,8 @@ import {
 import { llmApi } from '../../services/llmApi';
 import { LLMProvider } from '../../types/llm';
 import type { LLMConfig, TokenUsageStats } from '../../types/llm';
+import { useConfirmDialog } from '../../components/ui';
+import { LLMProviderFields } from '../../components/shared/LLMProviderFields';
 
 interface AdminLLMSettingsProps {
   onClose?: () => void;
@@ -29,6 +31,7 @@ interface AdminLLMSettingsProps {
 export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
   onClose,
 }) => {
+  const confirm = useConfirmDialog();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -218,11 +221,13 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
   };
 
   const handleDelete = async (configId: string) => {
-    if (
-      !window.confirm('Are you sure you want to delete this configuration?')
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete configuration?',
+      message: 'Are you sure you want to delete this configuration?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await llmApi.deleteConfiguration(configId);
@@ -453,135 +458,19 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
                     </h4>
 
                     <div className='space-y-4'>
-                      <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>
-                          Provider
-                        </label>
-                        <select
-                          value={formData.provider}
-                          onChange={e =>
-                            handleProviderChange(e.target.value as LLMProvider)
-                          }
-                          className='w-full px-3 py-2 border rounded-lg'
-                        >
-                          <option value='openai'>OpenAI</option>
-                          <option value='anthropic'>Anthropic</option>
-                          <option value='ollama'>Ollama</option>
-                          <option value='gemini'>Google Gemini</option>
-                        </select>
-                      </div>
-
-                      {formData.provider !== 'ollama' && (
-                        <div>
-                          <label className='block text-sm font-medium text-gray-700 mb-1'>
-                            API Key
-                          </label>
-                          <input
-                            type='password'
-                            value={formData.api_key || ''}
-                            onChange={e =>
-                              setFormData({
-                                ...formData,
-                                api_key: e.target.value,
-                              })
-                            }
-                            className='w-full px-3 py-2 border rounded-lg'
-                            placeholder='Enter API key'
-                          />
-                        </div>
-                      )}
-
-                      {formData.provider === 'ollama' && (
-                        <>
-                          <div>
-                            <label className='block text-sm font-medium text-gray-700 mb-1'>
-                              API URL
-                            </label>
-                            <input
-                              type='text'
-                              value={formData.api_url || ''}
-                              onChange={e =>
-                                setFormData({
-                                  ...formData,
-                                  api_url: e.target.value,
-                                })
-                              }
-                              className='w-full px-3 py-2 border rounded-lg'
-                              placeholder='http://localhost:11434'
-                            />
-                          </div>
-
-                          <div>
-                            <label className='block text-sm font-medium text-gray-700 mb-1'>
-                              Bearer Token (Optional)
-                            </label>
-                            <input
-                              type='password'
-                              value={formData.bearer_token || ''}
-                              onChange={e =>
-                                setFormData({
-                                  ...formData,
-                                  bearer_token: e.target.value,
-                                })
-                              }
-                              className='w-full px-3 py-2 border rounded-lg'
-                              placeholder='Optional authentication token'
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      <div className='flex items-end space-x-2'>
-                        <div className='flex-1'>
-                          <label className='block text-sm font-medium text-gray-700 mb-1'>
-                            Model
-                          </label>
-                          {availableModels.length > 0 ? (
-                            <select
-                              value={formData.model_name || ''}
-                              onChange={e =>
-                                setFormData({
-                                  ...formData,
-                                  model_name: e.target.value,
-                                })
-                              }
-                              className='w-full px-3 py-2 border rounded-lg'
-                            >
-                              {availableModels.map(model => (
-                                <option key={model} value={model}>
-                                  {model}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type='text'
-                              value={formData.model_name || ''}
-                              onChange={e =>
-                                setFormData({
-                                  ...formData,
-                                  model_name: e.target.value,
-                                })
-                              }
-                              className='w-full px-3 py-2 border rounded-lg'
-                              placeholder='Enter model name or test connection'
-                            />
-                          )}
-                        </div>
-                        <button
-                          onClick={() =>
-                            loadModels(formData.provider as LLMProvider)
-                          }
-                          disabled={loadingModels}
-                          className='px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg'
-                        >
-                          {loadingModels ? (
-                            <Loader2 className='h-5 w-5 animate-spin' />
-                          ) : (
-                            <RefreshCw className='h-5 w-5' />
-                          )}
-                        </button>
-                      </div>
+                      <LLMProviderFields
+                        formData={formData}
+                        onChange={updates =>
+                          setFormData(prev => ({ ...prev, ...updates }))
+                        }
+                        availableModels={availableModels}
+                        onRefreshModels={() =>
+                          loadModels(formData.provider as LLMProvider)
+                        }
+                        loadingModels={loadingModels}
+                        providerOptions='core'
+                        onProviderChange={handleProviderChange}
+                      />
 
                       <div className='grid grid-cols-2 gap-4'>
                         <div>

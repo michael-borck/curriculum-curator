@@ -309,6 +309,6 @@ SQLAlchemy models are not implemented yet. When implementing:
 - Apply migrations: `alembic upgrade head`
 - Current setup uses SQLite for development
 
-## Task Tracking
+## Documentation
 
-Active task files live in `/tasks/`. The original PRD (Dec 2024) is archived in `docs/archive/` — it served its purpose but no longer reflects the current product.
+Current docs live in `docs/` — user stories, ADRs, guides, and concepts. Historical docs are preserved in git history only (no archive directory).

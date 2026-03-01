@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { assessmentsApi } from '../../services/unitStructureApi';
+import { useConfirmDialog } from '../../components/ui';
 import AIAssistField from './AIAssistField';
 import RubricEditor from './RubricEditor';
 import {
@@ -198,6 +199,7 @@ const AssessmentCard: React.FC<{
 export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   unitId,
 }) => {
+  const confirm = useConfirmDialog();
   const userSector = useAuthStore(s => s.user?.educationSector);
   const [assessments, setAssessments] = useState<AssessmentResponse[]>([]);
   const [gradeDistribution, setGradeDistribution] =
@@ -330,8 +332,13 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this assessment?'))
-      return;
+    const ok = await confirm({
+      title: 'Delete assessment?',
+      message: 'Are you sure you want to delete this assessment?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await assessmentsApi.deleteAssessment(id);

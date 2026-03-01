@@ -4,9 +4,6 @@ import RichTextEditor from '../../components/Editor/RichTextEditor';
 import PedagogySelector from '../../components/Wizard/PedagogySelector';
 import {
   enhanceContent,
-  createContent,
-  updateContent,
-  getContent,
   getUnits,
   generateContentStream,
   validateContent,
@@ -18,6 +15,7 @@ import type {
   PluginResultData,
   PluginValidateResponse,
 } from '../../services/api';
+import { contentApi } from '../../services/contentApi';
 import {
   Loader2,
   Sparkles,
@@ -185,7 +183,7 @@ const ContentCreator = () => {
 
       setIsLoading(true);
       try {
-        const response = await getContent(unitId, contentId);
+        const response = await contentApi.get(unitId, contentId);
         const data = response.data;
         setTitle(data.title);
         setContent(data.body || '');
@@ -312,7 +310,7 @@ const ContentCreator = () => {
     try {
       if (isEditMode && contentId) {
         // Update existing content
-        await updateContent(selectedUnitId, contentId, {
+        await contentApi.update(selectedUnitId, contentId, {
           title: title.trim(),
           body: content,
           ...(contentJson && { contentJson }),
@@ -320,7 +318,7 @@ const ContentCreator = () => {
         toast.success('Content updated successfully!');
       } else {
         // Create new content
-        await createContent(selectedUnitId, {
+        await contentApi.create(selectedUnitId, {
           title: title.trim(),
           contentType: contentType || 'slides',
           body: content,
