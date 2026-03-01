@@ -217,12 +217,18 @@ class LLMService:
                         temperature=temperature,
                         max_tokens=max_tokens,
                         stream=True,
+                        stream_options={"include_usage": True},
                     )
+                    final_chunk: Any = None
                     async for chunk in cast("Any", response):
+                        if hasattr(chunk, "usage") and chunk.usage:
+                            final_chunk = chunk
                         if hasattr(chunk, "choices") and chunk.choices:
                             delta = chunk.choices[0].delta
                             if hasattr(delta, "content") and delta.content:
                                 yield delta.content
+                    if final_chunk:
+                        self._log_usage(final_chunk, model, provider or "unknown", "generate_text_stream", user, db)
 
                 return stream_gen()
 
@@ -236,6 +242,7 @@ class LLMService:
                 stream=False,
             )
             result = cast("Any", response)
+            self._log_usage(result, model, provider or "unknown", "generate_text", user, db)
             return result.choices[0].message.content or ""
 
         except Exception as e:
@@ -282,12 +289,18 @@ class LLMService:
                 api_key=api_key,
                 api_base=api_base,
                 stream=True,
+                stream_options={"include_usage": True},
             )
+            final_chunk: Any = None
             async for chunk in cast("Any", response):
+                if hasattr(chunk, "usage") and chunk.usage:
+                    final_chunk = chunk
                 if hasattr(chunk, "choices") and chunk.choices:
                     delta = chunk.choices[0].delta
                     if hasattr(delta, "content") and delta.content:
                         yield delta.content
+            if final_chunk:
+                self._log_usage(final_chunk, model, provider or "unknown", "generate_content", user, db)
         except Exception as e:
             yield f"Error generating content: {e!s}"
 
@@ -362,6 +375,7 @@ Provide ONLY the JSON object, no additional text or markdown formatting."""
                 )
 
                 result = cast("Any", response)
+                self._log_usage(result, model, provider or "unknown", "generate_structured", user, db)
                 content = result.choices[0].message.content or ""
 
                 # Clean markdown formatting if present
@@ -818,6 +832,51 @@ Format as JSON."""
             if isinstance(result, str)
             else "".join([chunk async for chunk in result])
         )
+
+    # =========================================================================
+    # Token Usage Logging
+    # =========================================================================
+
+    def _log_usage(
+        self,
+        response: Any,
+        model: str,
+        provider: str,
+        feature: str,
+        user: User | None,
+        db: Session | None,
+    ) -> None:
+        """Write a TokenUsageLog row from an acompletion response."""
+        if not db or not user:
+            return
+        usage = getattr(response, "usage", None)
+        if not usage:
+            return
+        prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
+        completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+        if prompt_tokens + completion_tokens == 0:
+            return
+        try:
+            cost = completion_cost(completion_response=response)
+        except Exception:
+            cost = None
+        from app.models.llm_config import TokenUsageLog  # noqa: PLC0415
+
+        try:
+            log = TokenUsageLog(
+                user_id=user.id,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=prompt_tokens + completion_tokens,
+                provider=provider,
+                model=model,
+                cost_estimate=cost,
+                feature=feature,
+            )
+            db.add(log)
+            db.commit()
+        except Exception:
+            db.rollback()
 
     # =========================================================================
     # Utility Methods

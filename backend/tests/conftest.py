@@ -8,11 +8,18 @@ Supports three test modes:
 """
 
 import os
+import sys
 import time
 import uuid
+from unittest.mock import MagicMock
 
 import pytest
 import requests
+
+# Ensure the import_content router can load even without PyMuPDF installed.
+# The router imports pdf_parser_service which does `import fitz` at module level.
+if "fitz" not in sys.modules:
+    sys.modules["fitz"] = MagicMock()
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool

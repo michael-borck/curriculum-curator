@@ -133,6 +133,7 @@ class TestLLMService:
         # Mock litellm acompletion
         mock_response = Mock()
         mock_response.choices = [Mock(message=Mock(content="Test response"))]
+        mock_response.usage = None  # prevent _log_usage from processing Mock attrs
 
         with patch(
             "app.services.llm_service.acompletion", new_callable=AsyncMock
@@ -145,6 +146,8 @@ class TestLLMService:
             # Mock settings
             with patch("app.services.llm_service.settings") as mock_settings:
                 mock_settings.OPENAI_API_KEY = "test-key"
+                mock_settings.ANTHROPIC_API_KEY = None
+                mock_settings.GEMINI_API_KEY = None
 
                 # Mock database session
                 mock_db = Mock()

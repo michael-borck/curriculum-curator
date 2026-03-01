@@ -4,7 +4,7 @@
 > Status: **Done** | **Partial** | **Planned** | **Cut**
 >
 > Phase tags (P1–P4) indicate implementation priority — see
-> [implementation-plan.md](implementation-plan.md) for the phased roadmap.
+> [implementation-plan.md](archive/implementation-plan.md) for the phased roadmap.
 
 ## Personas
 
@@ -149,6 +149,16 @@
 | 9.10 | As a **Creator**, I want to select a target LMS when exporting so the package uses the correct naming conventions and structure for that LMS. | P4 | **Done** — `target_lms` query param on IMSCC/SCORM export routes; LMS dropdown in export menu |
 | 9.11 | As a **Creator**, I want to export quizzes as QTI 2.1 XML (standalone ZIP) so I can import them into any LMS quiz bank without exporting the full unit. | P4 | **Done** — `GET /api/units/{id}/export/qti` returns QTI 2.1 package ZIP |
 | 9.12 | As a **Creator**, I want IMSCC/SCORM exports to embed QTI quiz items so quizzes import as interactive, auto-graded assessments in the LMS — not just static description pages. | P4 | **Done** — QTI 1.2 XML embedded in IMSCC (CC assessment resource type) and SCORM exports |
+| 9.13 | As a **Creator**, I want to export a quiz as an H5P Question Set so students get a rich interactive experience (drag-drop, immediate feedback, multimedia) beyond what the native LMS quiz offers. | P5 | **Planned** |
+| 9.14 | As a **Creator**, I want to export a slide deck as an H5P Course Presentation so students can view interactive slides with embedded questions directly in the LMS. | P5 | **Planned** |
+| 9.15 | As a **Creator**, I want to export a case study as an H5P Branching Scenario so students can make decisions and experience consequences in a choose-your-own-adventure style. | P5 | **Planned** |
+| 9.16 | As a **Creator**, I want to export a video material as an H5P Interactive Video so I can overlay questions at specific timestamps for active viewing. | P5 | **Planned** |
+| 9.17 | As a **Creator**, I want H5P exports to be embeddable in my IMSCC packages alongside HTML and QTI content, so a single package can contain a mix of static pages, native quizzes, and interactive H5P objects. | P5 | **Planned** |
+| 9.18 | As a **Creator**, I want to export a unit or selection of materials as a flat ZIP file (folder structure mirroring unit/week/material hierarchy) for manual distribution or archival outside an LMS. | P5 | **Planned** |
+| 9.19 | As a **Creator**, I want export options displayed with user-friendly labels and tooltips ("LMS Native Quiz", "Interactive Quiz", "Printable Document") rather than technical format names, so I can choose without knowing what H5P or QTI means. | P5 | **Planned** |
+| 9.20 | As a **Creator**, I want to set a default export format per content type (e.g., "my quizzes default to LMS Native Quiz") so I don't have to choose every time I export. | P5 | **Planned** |
+| 9.21 | As a **Creator**, I want the system to warn me at export time if my content contains elements that the chosen format doesn't support (e.g., matching questions in a QTI export) and suggest an alternative format. | P5 | **Planned** |
+| 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Planned** |
 
 ## 10. Authentication & User Management
 
@@ -234,6 +244,38 @@
 | 17A.4 | As a **Creator**, I want custom session formats and assessment categories I type to display with sensible styling (title-cased label, neutral pill colour) so they look professional even if they're not built-in. | P1 | **Done** — `getFormatMeta()` and `getCategoryMeta()` fallback for unknown values |
 | 17A.5 | As a **Creator**, I want to use niche content types (placement logs, simulation debriefs, etc.) that aren't in the built-in list, so I can describe my materials accurately. | P1 | **Done** — `ContentType.CUSTOM` backend enum + `'custom'` frontend type |
 
+## 19. Interactive Content Authoring
+
+### 19A. Branching Scenario Authoring
+
+| # | Story | Phase | Status |
+|---|-------|-------|--------|
+| 19A.1 | As a **Creator**, I want to author a branching scenario as a collection of cards, where each card has content (rich text, images, video) and zero or more choices that link to other cards. | P5 | **Planned** |
+| 19A.2 | As a **Creator**, I want to see a visual map (node graph) of my branching scenario alongside the editor, so I can see the overall narrative structure, convergence points, and dead ends at a glance. | P5 | **Planned** |
+| 19A.3 | As a **Creator**, I want to click a node in the map view to navigate directly to that card in the editor. | P5 | **Planned** |
+| 19A.4 | As a **Creator**, I want the system to flag dead-end cards (no choices and not marked as an end card) and orphaned cards (not reachable from the start) so I can fix structural issues. | P5 | **Planned** |
+| 19A.5 | As a **Creator**, I want to designate cards as "end cards" with a summary message and an author-assigned score, so different endings reflect different learning outcomes. | P5 | **Planned** |
+| 19A.6 | As a **Creator**, I want to allow multiple paths to converge on the same card, so branching narratives can rejoin without duplicating content. | P5 | **Planned** |
+
+### 19B. Interactive HTML Export
+
+| # | Story | Phase | Status |
+|---|-------|-------|--------|
+| 19B.1 | As a **Creator**, I want to export a branching scenario as a standalone Interactive HTML file (single self-contained page, no dependencies) that works by opening in any browser, embedding in an LMS, or sharing via URL. | P6 | **Planned** |
+| 19B.2 | As a **Creator**, I want the Interactive HTML export to track the number of cards a student visits and display different end-card messages based on step count thresholds, so I can reward thorough exploration or recognise efficient decision-making. | P6 | **Planned** |
+| 19B.3 | As a **Creator**, I want to define step-count thresholds on end cards using simple structured fields (a number and two text variants), not scripting, so path-aware scoring is accessible to non-technical authors. | P6 | **Planned** |
+| 19B.4 | As a **Creator**, I want students to be able to replay an Interactive HTML branching scenario to explore different paths and see how different decisions affect the outcome. | P6 | **Planned** |
+
+### 19C. Tiptap Templates & Custom Nodes
+
+| # | Story | Phase | Status |
+|---|-------|-------|--------|
+| 19C.1 | As a **Creator**, I want to select a content type (quiz, case study, slides, etc.) when creating a material and have the editor load with a pre-built template structure, so I have the right layout without manual setup. | P5 | **Planned** |
+| 19C.2 | As a **Creator**, I want structured quiz question blocks in the editor where I define question text, answer options, correct answers, and feedback in dedicated fields rather than free-form text. | P5 | **Planned** |
+| 19C.3 | As a **Creator**, I want to choose question types (multiple choice, true/false, multiple select, short answer, fill-in-the-blank, matching, drag-and-drop) and have the editor show the appropriate answer structure for each. | P5 | **Planned** |
+| 19C.4 | As a **Creator**, I want structured slide break nodes in the editor so I can clearly separate slides with titles and content areas, making export to PPTX and H5P Course Presentation predictable. | P5 | **Planned** |
+| 19C.5 | As a **Creator**, I want structured branching card nodes in the editor with choice fields (label + target card), so authoring branching scenarios feels like filling in a form, not writing markup. | P5 | **Planned** |
+
 ## 18. Flexibility & Workflow Freedom
 
 | # | Story | Phase | Status |
@@ -249,6 +291,7 @@
 | Status | Count |
 |--------|-------|
 | **Done** | ~120 |
+| **Planned** | 21 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -257,6 +300,8 @@
 | **P2** | AI integration, smart completion, import flow, version control, editor UX, SCORM/document export | **Complete** |
 | **P3** | Desktop app, IMSCC/SCORM import, image handling, research, plugin system | **Complete** |
 | **P4** | Accessibility validation, LMS terminology mapping, LMS-targeted export | **Complete** |
+| **P5** | H5P export, Tiptap templates/custom nodes, branching scenario authoring, export UX improvements | **Planned** |
+| **P6** | Interactive HTML export with path-aware scoring (future, depends on P5 branching) | **Planned** |
 
 ### Cut Stories
 
@@ -265,4 +310,4 @@
 | 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-02-28*
+*Last updated: 2026-03-01*

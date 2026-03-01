@@ -239,12 +239,12 @@ class TestImportEndpoints:
 
     # ── PDF analysis tests ───────────────────────────────────────────────
 
-    @patch("app.services.pdf_parser_service.pdf_parser_service.extract_from_bytes")
+    @patch("app.api.routes.import_content.pdf_parser_service.extract_from_bytes")
     @patch(
-        "app.services.document_analyzer_service.document_analyzer_service.analyze_document"
+        "app.api.routes.import_content.document_analyzer_service.analyze_document"
     )
     @patch(
-        "app.services.document_analyzer_service.document_analyzer_service.map_to_course_structure"
+        "app.api.routes.import_content.document_analyzer_service.map_to_course_structure"
     )
     def test_analyze_pdf_success(
         self, mock_map_structure, mock_analyze, mock_extract, client
@@ -312,12 +312,12 @@ class TestImportEndpoints:
         assert "course_structure" in data
         assert len(data["sections"]) == 1
 
-    @patch("app.services.pdf_parser_service.pdf_parser_service.extract_from_bytes")
+    @patch("app.api.routes.import_content.pdf_parser_service.extract_from_bytes")
     @patch(
-        "app.services.document_analyzer_service.document_analyzer_service.analyze_document"
+        "app.api.routes.import_content.document_analyzer_service.analyze_document"
     )
     @patch(
-        "app.services.document_analyzer_service.document_analyzer_service.map_to_course_structure"
+        "app.api.routes.import_content.document_analyzer_service.map_to_course_structure"
     )
     def test_create_unit_structure_from_pdf(
         self, mock_map_structure, mock_analyze, mock_extract, client, test_unit
