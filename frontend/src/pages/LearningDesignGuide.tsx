@@ -1148,13 +1148,23 @@ const LearningDesignGuide = () => {
         </ul>
 
         <div className='border-t border-gray-100 pt-4 text-center'>
-          <p className='text-sm text-gray-500'>
+          <p className='text-sm text-gray-500 mb-2'>
             For assessment-specific guidance including rubric design, see the{' '}
             <Link
               to='/guide/assessment-design'
               className='text-purple-600 hover:text-purple-700 underline'
             >
               Assessment Design Guide
+            </Link>
+            .
+          </p>
+          <p className='text-sm text-gray-500'>
+            For content authoring philosophy and the export workflow, see the{' '}
+            <Link
+              to='/guide/content'
+              className='text-purple-600 hover:text-purple-700 underline'
+            >
+              Content Guide
             </Link>
             .
           </p>

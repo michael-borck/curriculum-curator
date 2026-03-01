@@ -34,6 +34,7 @@ import Settings from './features/settings/Settings';
 import AboutPage from './pages/AboutPage';
 import LearningDesignGuide from './pages/LearningDesignGuide';
 import AssessmentDesignGuide from './pages/AssessmentDesignGuide';
+import ContentGuide from './pages/ContentGuide';
 import TaskBoard from './features/tasks/TaskBoard';
 
 // Onboarding
@@ -232,6 +233,7 @@ function App() {
               path='/guide/assessment-design'
               element={<AssessmentDesignGuide />}
             />
+            <Route path='/guide/content' element={<ContentGuide />} />
             <Route path='/about' element={<AboutPage />} />
 
             {/* Catch-all redirect */}

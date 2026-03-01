@@ -1192,6 +1192,16 @@ const AssessmentDesignGuide = () => {
             </Link>
             .
           </p>
+          <p className='text-sm text-gray-500'>
+            For content authoring philosophy and the export workflow, see the{' '}
+            <Link
+              to='/guide/content'
+              className='text-amber-600 hover:text-amber-700 underline'
+            >
+              Content Guide
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

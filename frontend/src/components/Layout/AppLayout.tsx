@@ -513,6 +513,20 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                         </button>
                         <button
                           onClick={() => {
+                            navigate('/guide/content');
+                            setUserMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 transition ${
+                            isActive('/guide/content')
+                              ? 'text-purple-600'
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          <FileText className='w-4 h-4' />
+                          <span>Content Guide</span>
+                        </button>
+                        <button
+                          onClick={() => {
                             navigate('/about');
                             setUserMenuOpen(false);
                           }}
