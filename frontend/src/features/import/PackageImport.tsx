@@ -29,15 +29,16 @@ import toast from 'react-hot-toast';
 import {
   unifiedAnalyze,
   unifiedApply,
-  unifiedStatus,
   checkUnitCode,
 } from '../../services/api';
 import type {
   UnifiedImportPreview,
-  ImportTaskStatus,
   FilePreviewItem,
   SkippedFile,
 } from '../../services/api';
+import { TaskProgressBar } from '../../components/TaskProgress';
+import { useTaskProgress } from '../../hooks/useTaskProgress';
+import type { TaskStatus } from '../../services/taskApi';
 
 type Phase = 'upload' | 'preview' | 'processing' | 'done' | 'failed';
 
@@ -123,11 +124,22 @@ export default function PackageImport() {
   const [phase, setPhase] = useState<Phase>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<UnifiedImportPreview | null>(null);
-  const [taskStatus, setTaskStatus] = useState<ImportTaskStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [showSkipped, setShowSkipped] = useState(false);
-  const pollRef = useRef<number | null>(null);
+
+  // Background task tracking via SSE
+  const { status: taskStatus, start: startTracking } = useTaskProgress({
+    onComplete: () => {
+      setPhase('done');
+      toast.success('Package imported successfully');
+    },
+    onError: err => {
+      setPhase('failed');
+      setError(err);
+      toast.error('Import failed');
+    },
+  });
 
   // Editable overrides
   const [unitCode, setUnitCode] = useState('');
@@ -141,10 +153,9 @@ export default function PackageImport() {
   const [checkingCode, setCheckingCode] = useState(false);
   const codeCheckTimer = useRef<number | null>(null);
 
-  // Cleanup polling and debounce timers on unmount
+  // Cleanup debounce timer on unmount
   useEffect(() => {
     return () => {
-      if (pollRef.current) window.clearInterval(pollRef.current);
       if (codeCheckTimer.current) window.clearTimeout(codeCheckTimer.current);
     };
   }, []);
@@ -215,30 +226,7 @@ export default function PackageImport() {
         durationWeeks: preview?.durationWeeks,
       });
       const taskId = res.data.taskId;
-
-      // Start polling
-      pollRef.current = window.setInterval(async () => {
-        try {
-          const statusRes = await unifiedStatus(taskId);
-          const status = statusRes.data;
-          setTaskStatus(status);
-
-          if (status.status === 'completed') {
-            if (pollRef.current) window.clearInterval(pollRef.current);
-            pollRef.current = null;
-            setPhase('done');
-            toast.success('Package imported successfully');
-          } else if (status.status === 'failed') {
-            if (pollRef.current) window.clearInterval(pollRef.current);
-            pollRef.current = null;
-            setPhase('failed');
-            setError(status.errors.join('; ') || 'Import failed');
-            toast.error('Import failed');
-          }
-        } catch {
-          // Polling error — keep trying
-        }
-      }, 1000);
+      startTracking(taskId);
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -251,7 +239,7 @@ export default function PackageImport() {
       setPhase('preview');
       toast.error('Import failed');
     }
-  }, [file, unitCode, unitTitle, preview?.durationWeeks]);
+  }, [file, unitCode, unitTitle, preview?.durationWeeks, startTracking]);
 
   const updateFile = (index: number, updates: Partial<FilePreviewItem>) => {
     setEditableFiles(prev => {
@@ -558,35 +546,10 @@ export default function PackageImport() {
           <div className='flex flex-col items-center'>
             <Loader2 className='h-12 w-12 text-purple-500 animate-spin mb-4' />
             <p className='text-gray-700 font-medium'>Importing package...</p>
-            {taskStatus && (
-              <p className='text-sm text-gray-500 mt-1'>
-                {taskStatus.currentFile
-                  ? `Processing: ${taskStatus.currentFile}`
-                  : 'Starting...'}
-              </p>
-            )}
           </div>
-          {taskStatus && taskStatus.totalFiles > 0 && (
+          {taskStatus && (
             <div className='max-w-md mx-auto'>
-              <div className='flex justify-between text-xs text-gray-500 mb-1'>
-                <span>
-                  {taskStatus.processedFiles} / {taskStatus.totalFiles} files
-                </span>
-                <span>
-                  {Math.round(
-                    (taskStatus.processedFiles / taskStatus.totalFiles) * 100
-                  )}
-                  %
-                </span>
-              </div>
-              <div className='w-full bg-gray-200 rounded-full h-2'>
-                <div
-                  className='bg-purple-600 h-2 rounded-full transition-all duration-300'
-                  style={{
-                    width: `${(taskStatus.processedFiles / taskStatus.totalFiles) * 100}%`,
-                  }}
-                />
-              </div>
+              <TaskProgressBar status={taskStatus} />
             </div>
           )}
         </div>
@@ -616,49 +579,66 @@ export default function PackageImport() {
 
       {/* Phase: Done */}
       {phase === 'done' && taskStatus && (
-        <div className='space-y-6'>
-          <div className='bg-green-50 border border-green-200 rounded-xl p-6 text-center'>
-            <FileCheck className='h-10 w-10 text-green-600 mx-auto mb-3' />
-            <h2 className='text-lg font-semibold text-gray-900 mb-1'>
-              Import Complete
-            </h2>
-            <p className='text-gray-600'>
-              <strong>{taskStatus.unitCode}</strong> — {taskStatus.unitTitle}
-            </p>
-            <p className='text-sm text-gray-500 mt-1'>
-              {taskStatus.processedFiles} file
-              {taskStatus.processedFiles !== 1 ? 's' : ''} processed
-            </p>
-          </div>
+        <DonePhase taskStatus={taskStatus} navigate={navigate} />
+      )}
+    </div>
+  );
+}
 
-          {taskStatus.errors.length > 0 && (
-            <div className='p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm'>
-              <p className='font-medium mb-1'>
-                Some files had issues ({taskStatus.errors.length}):
-              </p>
-              <ul className='list-disc list-inside space-y-0.5'>
-                {taskStatus.errors.slice(0, 5).map((err, i) => (
-                  <li key={i}>{err}</li>
-                ))}
-                {taskStatus.errors.length > 5 && (
-                  <li>...and {taskStatus.errors.length - 5} more</li>
-                )}
-              </ul>
-            </div>
-          )}
+function DonePhase({
+  taskStatus,
+  navigate,
+}: {
+  taskStatus: TaskStatus;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const unitId = taskStatus.meta.unit_id as string | undefined;
+  const unitCodeVal = taskStatus.meta.unit_code as string | undefined;
+  const unitTitleVal = taskStatus.meta.unit_title as string | undefined;
+  const skippedItems = (taskStatus.meta.skipped_items ?? []) as SkippedFile[];
 
-          {taskStatus.skippedItems.length > 0 && (
-            <SkippedFilesList files={taskStatus.skippedItems} />
-          )}
+  return (
+    <div className='space-y-6'>
+      <div className='bg-green-50 border border-green-200 rounded-xl p-6 text-center'>
+        <FileCheck className='h-10 w-10 text-green-600 mx-auto mb-3' />
+        <h2 className='text-lg font-semibold text-gray-900 mb-1'>
+          Import Complete
+        </h2>
+        <p className='text-gray-600'>
+          <strong>{unitCodeVal}</strong> — {unitTitleVal}
+        </p>
+        <p className='text-sm text-gray-500 mt-1'>
+          {taskStatus.progress} file
+          {taskStatus.progress !== 1 ? 's' : ''} processed
+        </p>
+      </div>
 
-          <button
-            onClick={() => navigate(`/units/${taskStatus.unitId}`)}
-            className='w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-white font-medium hover:bg-purple-700 transition-colors'
-          >
-            Go to Unit
-            <ArrowRight className='h-5 w-5' />
-          </button>
+      {taskStatus.errors.length > 0 && (
+        <div className='p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm'>
+          <p className='font-medium mb-1'>
+            Some files had issues ({taskStatus.errors.length}):
+          </p>
+          <ul className='list-disc list-inside space-y-0.5'>
+            {taskStatus.errors.slice(0, 5).map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+            {taskStatus.errors.length > 5 && (
+              <li>...and {taskStatus.errors.length - 5} more</li>
+            )}
+          </ul>
         </div>
+      )}
+
+      {skippedItems.length > 0 && <SkippedFilesList files={skippedItems} />}
+
+      {unitId && (
+        <button
+          onClick={() => navigate(`/units/${unitId}`)}
+          className='w-full flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-3 text-white font-medium hover:bg-purple-700 transition-colors'
+        >
+          Go to Unit
+          <ArrowRight className='h-5 w-5' />
+        </button>
       )}
     </div>
   );

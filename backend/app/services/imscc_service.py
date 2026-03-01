@@ -32,6 +32,7 @@ from app.models.weekly_topic import WeeklyTopic
 from app.services.h5p_service import h5p_builder
 from app.services.lms_terminology import LMSTerminology, TargetLMS, get_terminology
 from app.services.qti_service import qti_exporter
+from app.services.task_store import ProgressCallback
 from app.services.unit_export_data import (
     HTML_TEMPLATE,
     UnitExportData,
@@ -57,6 +58,7 @@ class IMSCCExportService:
         *,
         target_lms: TargetLMS = TargetLMS.GENERIC,
         target_overrides: dict[str, dict[str, list[str]]] | None = None,
+        on_progress: ProgressCallback | None = None,
     ) -> tuple[BytesIO, str]:
         """Export a unit as .imscc ZIP. Returns (BytesIO, filename)."""
         data = gather_unit_export_data(unit_id, db)
@@ -106,9 +108,14 @@ class IMSCCExportService:
         file_contents["overview/accreditation.html"] = accred_html
 
         # Weekly material pages
+        total_mats = sum(len(m) for m in data.materials_by_week.values())
+        mat_idx = 0
         for week_num, mats in sorted(data.materials_by_week.items()):
             week_dir = f"week{week_num:02d}"
             for mat in mats:
+                mat_idx += 1
+                if on_progress:
+                    on_progress(mat_idx, total_mats, f"Exporting: {mat.title}")
                 slug = slugify(mat.title)
                 mat_type = str(mat.type)
                 filename = f"{mat_type}_{slug}.html"

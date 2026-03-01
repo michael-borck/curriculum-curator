@@ -389,6 +389,13 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load tasks routes: {e}")
 
+try:
+    from app.api.routes import background_tasks
+
+    app.include_router(background_tasks.router, prefix="/api", tags=["background-tasks"])
+except ImportError as e:
+    logger.warning(f"Failed to load background_tasks routes: {e}")
+
 # content_versions removed - version control now via Git in content routes
 
 try:

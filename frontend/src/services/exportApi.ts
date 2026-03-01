@@ -48,36 +48,23 @@ export async function fetchExportPreview(
   return data;
 }
 
-export async function downloadPackageExport(
+/**
+ * Kick off an async background export. Returns the task_id
+ * which can be tracked via SSE at /api/bg-tasks/{id}/events.
+ */
+export async function startPackageExport(
   unitId: string,
   request: ExportPackageRequest
 ): Promise<string> {
-  const response = await axios.post(
+  const { data } = await axios.post<{ taskId: string }>(
     `/api/units/${unitId}/export/package`,
     request,
     {
-      responseType: 'blob',
       headers: {
         ...getAuthHeaders(),
         'Content-Type': 'application/json',
       },
     }
   );
-
-  const disposition = response.headers['content-disposition'] as
-    | string
-    | undefined;
-  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-  const filename = filenameMatch?.[1] ?? 'export.zip';
-
-  const url = URL.createObjectURL(response.data as Blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(url);
-  a.remove();
-
-  return filename;
+  return data.taskId;
 }
