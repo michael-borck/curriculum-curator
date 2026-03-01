@@ -22,7 +22,6 @@ from .assessment import (
 )
 from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
-from .chat_session import SessionStatus, WorkflowChatSession, WorkflowStage
 from .common import GUID
 from .content import Content, ContentCategory, ContentStatus
 from .content_version import ContentVersion
@@ -150,9 +149,6 @@ __all__ = [
     "AssessmentType",
     "AssessmentMode",
     "OutcomeType",
-    "WorkflowChatSession",
-    "WorkflowStage",
-    "SessionStatus",
     # New unit structure models
     "WeeklyMaterial",
     "MaterialStatus",

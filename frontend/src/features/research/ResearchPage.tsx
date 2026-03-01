@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Search, Link2 } from 'lucide-react';
+import { Search, Link2, Bookmark } from 'lucide-react';
 import SearchPanel from './SearchPanel';
 import UrlExtractPanel from './UrlExtractPanel';
+import SavedSourcesPanel from './SavedSourcesPanel';
 
-type Tab = 'search' | 'urls';
+type Tab = 'search' | 'urls' | 'saved';
 
 const ResearchPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>('search');
@@ -43,6 +44,17 @@ const ResearchPage = () => {
             <Link2 className='w-4 h-4' />
             Import URLs
           </button>
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`pb-3 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+              activeTab === 'saved'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Bookmark className='w-4 h-4' />
+            Saved Sources
+          </button>
         </nav>
       </div>
 
@@ -50,6 +62,7 @@ const ResearchPage = () => {
       <div className='bg-white rounded-lg shadow-md p-6'>
         {activeTab === 'search' && <SearchPanel />}
         {activeTab === 'urls' && <UrlExtractPanel />}
+        {activeTab === 'saved' && <SavedSourcesPanel />}
       </div>
     </div>
   );

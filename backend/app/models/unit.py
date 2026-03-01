@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from app.models.accreditation_mappings import UnitAoLMapping, UnitSDGMapping
     from app.models.assessment import Assessment
     from app.models.chat import ChatSession
-    from app.models.chat_session import WorkflowChatSession
     from app.models.content import Content
     from app.models.custom_alignment_framework import CustomAlignmentFramework
     from app.models.learning_design import LearningDesign
@@ -143,9 +142,6 @@ class Unit(Base):
         back_populates="unit", cascade="all, delete-orphan"
     )
     chat_sessions: Mapped[list["ChatSession"]] = relationship(
-        back_populates="unit", cascade="all, delete-orphan"
-    )
-    workflow_chat_sessions: Mapped[list["WorkflowChatSession"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
     unit_outline: Mapped["UnitOutline | None"] = relationship(

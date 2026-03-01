@@ -406,15 +406,6 @@ except ImportError as e:
     logger.warning(f"Failed to load import_content routes: {e}")
 
 try:
-    from app.api.routes import content_workflow
-
-    app.include_router(
-        content_workflow.router, prefix="/api/content", tags=["workflow"]
-    )
-except ImportError as e:
-    logger.warning(f"Failed to load content_workflow routes: {e}")
-
-try:
     from app.api.routes import llm_config
 
     app.include_router(llm_config.router, prefix="/api/llm-config", tags=["llm-config"])

@@ -10,8 +10,12 @@ import {
   Calendar,
   Quote,
   Award,
+  Bookmark,
+  BookmarkCheck,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import * as researchApi from '../../services/researchApi';
+import { saveFromSearch } from '../../services/researchSourceApi';
 import SourceSelector from './SourceSelector';
 import ProposalReview from './ProposalReview';
 import type { ActionParams } from './SourceSelector';
@@ -39,6 +43,7 @@ const SearchPanel = () => {
   const [tierUsed, setTierUsed] = useState('');
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
 
   const [error, setError] = useState<string | null>(null);
   const [proposing, setProposing] = useState(false);
@@ -88,6 +93,21 @@ const SearchPanel = () => {
       else next.add(idx);
       return next;
     });
+  };
+
+  const handleSaveSource = async (item: AcademicSearchResultItem) => {
+    try {
+      await saveFromSearch({
+        url: item.url,
+        title: item.title,
+        summary: item.abstract,
+        academicScore: item.academicScore,
+      });
+      setSavedUrls(prev => new Set(prev).add(item.url));
+      toast.success('Source saved');
+    } catch {
+      toast.error('Failed to save source');
+    }
   };
 
   const selectedSources: SourceInput[] = [...selected].map(i => ({
@@ -332,10 +352,33 @@ const SearchPanel = () => {
                           {item.title}
                           <ExternalLink className='w-3 h-3 flex-shrink-0' />
                         </a>
-                        <span className='flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs font-medium'>
-                          <Award className='w-3 h-3' />
-                          {(item.academicScore * 100).toFixed(0)}
-                        </span>
+                        <div className='flex items-center gap-1.5 flex-shrink-0'>
+                          <span className='inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs font-medium'>
+                            <Award className='w-3 h-3' />
+                            {(item.academicScore * 100).toFixed(0)}
+                          </span>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (!savedUrls.has(item.url))
+                                handleSaveSource(item);
+                            }}
+                            title={
+                              savedUrls.has(item.url) ? 'Saved' : 'Save source'
+                            }
+                            className={`p-1 rounded transition ${
+                              savedUrls.has(item.url)
+                                ? 'text-purple-600'
+                                : 'text-gray-400 hover:text-purple-600'
+                            }`}
+                          >
+                            {savedUrls.has(item.url) ? (
+                              <BookmarkCheck className='w-4 h-4' />
+                            ) : (
+                              <Bookmark className='w-4 h-4' />
+                            )}
+                          </button>
+                        </div>
                       </div>
 
                       <div className='flex flex-wrap gap-3 mt-1 text-xs text-gray-500'>

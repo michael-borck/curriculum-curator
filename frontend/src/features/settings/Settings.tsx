@@ -12,6 +12,7 @@ import {
   Star,
   Search,
   Download,
+  HardDriveDownload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -46,6 +47,8 @@ const Settings = () => {
     confirmPassword: '',
   });
 
+  const [downloading, setDownloading] = useState(false);
+
   const [pluginList, setPluginList] = useState<PluginInfo[]>([]);
   const [pluginsLoading, setPluginsLoading] = useState(false);
   const [pluginsLoaded, setPluginsLoaded] = useState(false);
@@ -75,6 +78,29 @@ const Settings = () => {
     } catch (error) {
       console.error('Failed to update plugin:', error);
       toast.error('Failed to update plugin');
+    }
+  };
+
+  const handleDownloadData = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get('/user/export/data', {
+        params: { export_format: 'zip' },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(response.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `curriculum-curator-export-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Data exported successfully');
+    } catch {
+      toast.error('Failed to download data');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -295,6 +321,29 @@ const Settings = () => {
                       {saving ? 'Saving...' : 'Save Changes'}
                     </>
                   )}
+                </button>
+              </div>
+
+              <hr className='my-8 border-gray-200' />
+
+              <div>
+                <h3 className='text-lg font-semibold text-gray-900 mb-1'>
+                  Data Export
+                </h3>
+                <p className='text-sm text-gray-600 mb-4'>
+                  Download all your units and content as a ZIP archive.
+                </p>
+                <button
+                  onClick={handleDownloadData}
+                  disabled={downloading}
+                  className='px-5 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2 transition'
+                >
+                  {downloading ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <HardDriveDownload className='h-4 w-4' />
+                  )}
+                  {downloading ? 'Downloading...' : 'Download My Data'}
                 </button>
               </div>
             </div>
