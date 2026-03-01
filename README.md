@@ -1,5 +1,9 @@
 # Curriculum Curator
 
+<!-- BADGES:START -->
+[![configuration](https://img.shields.io/badge/-configuration-blue?style=flat-square)](https://github.com/topics/configuration) [![eslint](https://img.shields.io/badge/-eslint-blue?style=flat-square)](https://github.com/topics/eslint) [![front-end](https://img.shields.io/badge/-front--end-blue?style=flat-square)](https://github.com/topics/front-end) [![react](https://img.shields.io/badge/-react-61dafb?style=flat-square)](https://github.com/topics/react) [![rust](https://img.shields.io/badge/-rust-000000?style=flat-square)](https://github.com/topics/rust) [![template](https://img.shields.io/badge/-template-blue?style=flat-square)](https://github.com/topics/template) [![typescript](https://img.shields.io/badge/-typescript-3178c6?style=flat-square)](https://github.com/topics/typescript) [![vite](https://img.shields.io/badge/-vite-blue?style=flat-square)](https://github.com/topics/vite) [![web-development](https://img.shields.io/badge/-web--development-blue?style=flat-square)](https://github.com/topics/web-development) [![edtech](https://img.shields.io/badge/-edtech-4caf50?style=flat-square)](https://github.com/topics/edtech)
+<!-- BADGES:END -->
+
 > **You choose how to install it. You choose how to teach with it.**
 > Deploy on your institution's server or run it on your laptop. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build, import, and curate curriculum your way.
 
