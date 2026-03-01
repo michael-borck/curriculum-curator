@@ -104,3 +104,63 @@ class VisualPromptResponse(CamelModel):
     prompt: str
     negative_prompt: str
     style_notes: str
+
+
+# =============================================================================
+# Video Interaction AI Generation
+# =============================================================================
+
+
+class GenerateVideoInteractionRequest(CamelModel):
+    """Request to generate a quiz interaction from transcript context."""
+
+    segment_text: str = Field(..., min_length=1, max_length=10000)
+    question_type: str = Field(default="multiple_choice")
+    unit_id: str | None = None
+    design_id: str | None = None
+    week_number: int | None = None
+    difficulty: str = Field(default="medium")
+
+
+class GenerateVideoInteractionOption(CamelModel):
+    text: str
+    correct: bool
+
+
+class GenerateVideoInteractionResponse(CamelModel):
+    question_text: str
+    question_type: str
+    options: list[GenerateVideoInteractionOption]
+    feedback: str
+    explanation: str
+    points: int = 1
+
+
+class TranscriptSegmentInput(CamelModel):
+    start: float
+    end: float
+    text: str
+
+
+class SuggestInteractionPointsRequest(CamelModel):
+    """Request to scan a full transcript and suggest interaction points."""
+
+    transcript_segments: list[TranscriptSegmentInput]
+    unit_id: str | None = None
+    design_id: str | None = None
+    week_number: int | None = None
+    max_interactions: int = Field(default=5, ge=1, le=20)
+
+
+class SuggestedInteraction(CamelModel):
+    time: float
+    question_text: str
+    question_type: str
+    options: list[GenerateVideoInteractionOption]
+    feedback: str
+    explanation: str
+    points: int = 1
+
+
+class SuggestInteractionPointsResponse(CamelModel):
+    interactions: list[SuggestedInteraction]

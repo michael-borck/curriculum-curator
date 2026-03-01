@@ -299,26 +299,32 @@ detection with 422 rejection + automatic fallback targets (H5P Question Set, QTI
 
 ---
 
-## Phase 6b-iii — AI-Assisted Interaction Generation (Enhancement)
+## Phase 6b-iii — AI-Assisted Interaction Generation — COMPLETE
 
-**Status**: Not started
+**Status**: COMPLETE
 **Ships**: AI-suggested interaction points and question generation from transcript context.
 
 ### Work Items
 
-1. **"Generate question here"** — button on transcript segments, sends
-   surrounding context to LLM, returns quizQuestion attrs for review
+1. **"Generate with AI"** — Sparkles button on transcript segments, sends
+   surrounding context to LLM, inserts pre-filled videoInteraction node
 
-2. **"Suggest interaction points"** — batch generation from full transcript,
-   LLM identifies concept transitions, proposes timestamp + question pairs
+2. **"Suggest all"** — batch button on first transcript segment, scans full
+   transcript, proposes multiple timestamp + question pairs, inserts all
 
-3. **Two backend endpoints** via existing AI routes:
-   `POST /api/ai/suggest-interaction`, `POST /api/ai/suggest-interaction-points`
+3. **AI button in VideoInteractionView edit mode** — generates question from
+   nearest transcript segment, populates draft for review before saving
 
-### Key Files (~4)
-- `backend/app/api/routes/ai.py` (extended)
+4. **Two backend endpoints**:
+   `POST /api/ai/generate-video-interaction`, `POST /api/ai/suggest-interaction-points`
+
+### Key Files
+- `backend/app/schemas/ai.py` (extended — 7 new schemas)
+- `backend/app/api/routes/ai.py` (extended — 2 endpoints + helper)
+- `backend/tests/test_ai_video_interactions.py` (new — 7 tests)
+- `frontend/src/services/videoInteractionApi.ts` (new — typed API client)
 - `frontend/src/components/Editor/TranscriptSegmentView.tsx` (extended)
-- Prompt templates for interaction generation
+- `frontend/src/components/Editor/VideoInteractionView.tsx` (extended)
 
 ### Dependencies: Phase 6b-i, existing LLM service
 
@@ -361,7 +367,7 @@ since students are already authenticated in the LMS).
 | 6a | Export Dialog | Two-level export UI, 4-level format resolver, user defaults | COMPLETE |
 | 6b-i | Interactive Video: Authoring | Transcript service, 3 TipTap nodes, manual interaction placement | COMPLETE |
 | 6b-ii | Interactive Video: Export | H5P Interactive Video, Echo360 fallback | COMPLETE |
-| 6b-iii | Interactive Video: AI | AI-suggested interactions from transcript | Not started |
+| 6b-iii | Interactive Video: AI | AI-suggested interactions from transcript | COMPLETE |
 | 6c | Progress Streaming | SSE progress for large exports (nice-to-have) | Not started |
 
 *Originally planned Feb 2026. Plan recovered from conversation transcript and

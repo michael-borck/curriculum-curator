@@ -18,11 +18,17 @@ from app.models.weekly_topic import WeeklyTopic
 from app.schemas.ai import (
     FillGapRequest,
     FillGapResponse,
+    GenerateVideoInteractionOption,
+    GenerateVideoInteractionRequest,
+    GenerateVideoInteractionResponse,
     ScaffoldAssessment,
     ScaffoldULO,
     ScaffoldUnitRequest,
     ScaffoldUnitResponse,
     ScaffoldWeek,
+    SuggestedInteraction,
+    SuggestInteractionPointsRequest,
+    SuggestInteractionPointsResponse,
     VisualPromptRequest,
     VisualPromptResponse,
 )
@@ -92,6 +98,18 @@ def _enrich_with_week_context(
     if parts:
         return "\n".join(parts) + "\n\n" + topic
     return topic
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """Strip markdown code fences from LLM JSON responses."""
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    if text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
 
 
 def _inject_source_materials(db: Session, material_ids: list[str], topic: str) -> str:
@@ -1142,4 +1160,267 @@ Return ONLY valid JSON, no markdown fences or extra text."""
         raise HTTPException(
             status_code=500,
             detail=f"Visual prompt generation failed: {e!s}",
+        )
+
+
+# =============================================================================
+# Video Interaction AI Generation (6b-iii)
+# =============================================================================
+
+VALID_QUESTION_TYPES = {
+    "multiple_choice",
+    "true_false",
+    "multi_select",
+    "short_answer",
+    "fill_in_blank",
+}
+
+
+@router.post(
+    "/generate-video-interaction",
+    response_model=GenerateVideoInteractionResponse,
+)
+async def generate_video_interaction(
+    request: GenerateVideoInteractionRequest,
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+) -> GenerateVideoInteractionResponse:
+    """Generate a single quiz interaction from transcript context."""
+    if request.question_type not in VALID_QUESTION_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid question_type. Must be one of: {', '.join(sorted(VALID_QUESTION_TYPES))}",
+        )
+
+    # Build context
+    context_parts: list[str] = []
+
+    design_ctx = None
+    if request.unit_id or request.design_id:
+        design_ctx = await get_design_context(
+            db, request.unit_id or "", request.design_id
+        )
+    if design_ctx:
+        context_parts.append(design_ctx)
+
+    if request.week_number and request.unit_id:
+        enriched = _enrich_with_week_context(
+            db, request.unit_id, request.week_number, ""
+        )
+        if enriched.strip():
+            context_parts.append(enriched.strip())
+
+    context_block = "\n".join(context_parts)
+    context_section = f"\n\nEducational context:\n{context_block}" if context_block else ""
+
+    prompt = f"""Generate a {request.question_type.replace("_", " ")} quiz question based on the following video transcript segment.
+
+Difficulty: {request.difficulty}
+{context_section}
+
+Transcript segment:
+{request.segment_text}
+
+Return a JSON object with this exact structure:
+{{
+  "question_text": "The question to ask the student",
+  "question_type": "{request.question_type}",
+  "options": [
+    {{"text": "Option text", "correct": true}},
+    {{"text": "Option text", "correct": false}}
+  ],
+  "feedback": "Feedback shown after answering",
+  "explanation": "Detailed explanation of the correct answer",
+  "points": 1
+}}
+
+Requirements:
+- For multiple_choice: provide 4 options, exactly 1 correct
+- For true_false: provide 2 options ("True" and "False"), exactly 1 correct
+- For multi_select: provide 4 options, 2-3 correct
+- For short_answer or fill_in_blank: provide 1 option with the expected answer, marked correct
+- The question should test understanding of the transcript content
+- Use Australian/British English
+- Return ONLY valid JSON, no markdown fences or extra text"""
+
+    try:
+        result = await llm_service.generate_text(
+            prompt=prompt,
+            system_prompt=(
+                "You are an expert educational video interaction designer. "
+                "You create engaging quiz questions that test student comprehension of video content. "
+                "Always respond with valid JSON only."
+            ),
+            user=current_user,
+            db=db,
+            temperature=0.7,
+        )
+
+        response_text = (
+            result
+            if isinstance(result, str)
+            else "".join([chunk async for chunk in result])
+        )
+
+        response_text = _strip_markdown_fences(response_text)
+        parsed = json.loads(response_text)
+
+        return GenerateVideoInteractionResponse(
+            question_text=parsed.get("question_text", ""),
+            question_type=parsed.get("question_type", request.question_type),
+            options=[
+                GenerateVideoInteractionOption(
+                    text=o.get("text", ""),
+                    correct=o.get("correct", False),
+                )
+                for o in parsed.get("options", [])
+            ],
+            feedback=parsed.get("feedback", ""),
+            explanation=parsed.get("explanation", ""),
+            points=parsed.get("points", 1),
+        )
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse AI response as JSON: {e}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Video interaction generation failed: {e!s}",
+        )
+
+
+@router.post(
+    "/suggest-interaction-points",
+    response_model=SuggestInteractionPointsResponse,
+)
+async def suggest_interaction_points(
+    request: SuggestInteractionPointsRequest,
+    current_user: User = Depends(deps.get_current_user),
+    db: Session = Depends(deps.get_db),
+) -> SuggestInteractionPointsResponse:
+    """Scan a full transcript and suggest interaction points with generated questions."""
+    # Build context
+    context_parts: list[str] = []
+
+    design_ctx = None
+    if request.unit_id or request.design_id:
+        design_ctx = await get_design_context(
+            db, request.unit_id or "", request.design_id
+        )
+    if design_ctx:
+        context_parts.append(design_ctx)
+
+    if request.week_number and request.unit_id:
+        enriched = _enrich_with_week_context(
+            db, request.unit_id, request.week_number, ""
+        )
+        if enriched.strip():
+            context_parts.append(enriched.strip())
+
+    context_block = "\n".join(context_parts)
+    context_section = f"\n\nEducational context:\n{context_block}" if context_block else ""
+
+    # Format transcript with timestamps
+    transcript_lines = "\n".join(
+        f"[{s.start:.1f}s - {s.end:.1f}s] {s.text}"
+        for s in request.transcript_segments
+    )
+
+    prompt = f"""Analyze the following video transcript and identify the {request.max_interactions} best points to insert quiz interactions.
+
+Look for:
+- Key concept introductions or transitions
+- Important definitions or facts
+- Points where student comprehension should be checked
+- Natural pauses or topic shifts
+{context_section}
+
+Transcript:
+{transcript_lines}
+
+Return a JSON object with this exact structure:
+{{
+  "interactions": [
+    {{
+      "time": 45.0,
+      "question_text": "The question to ask",
+      "question_type": "multiple_choice",
+      "options": [
+        {{"text": "Option A", "correct": true}},
+        {{"text": "Option B", "correct": false}},
+        {{"text": "Option C", "correct": false}},
+        {{"text": "Option D", "correct": false}}
+      ],
+      "feedback": "Feedback shown after answering",
+      "explanation": "Why the correct answer is correct",
+      "points": 1
+    }}
+  ]
+}}
+
+Requirements:
+- Return at most {request.max_interactions} interactions
+- Space them evenly through the transcript
+- Use a mix of question types (multiple_choice, true_false, multi_select)
+- Each interaction time must fall within the transcript time range
+- Use Australian/British English
+- Return ONLY valid JSON, no markdown fences or extra text"""
+
+    try:
+        result = await llm_service.generate_text(
+            prompt=prompt,
+            system_prompt=(
+                "You are an expert educational video interaction designer. "
+                "You analyze video transcripts to identify key learning moments and create "
+                "engaging quiz questions. Always respond with valid JSON only."
+            ),
+            user=current_user,
+            db=db,
+            temperature=0.7,
+        )
+
+        response_text = (
+            result
+            if isinstance(result, str)
+            else "".join([chunk async for chunk in result])
+        )
+
+        response_text = _strip_markdown_fences(response_text)
+        parsed = json.loads(response_text)
+
+        interactions_data = parsed.get("interactions", [])
+
+        return SuggestInteractionPointsResponse(
+            interactions=[
+                SuggestedInteraction(
+                    time=i.get("time", 0.0),
+                    question_text=i.get("question_text", ""),
+                    question_type=i.get("question_type", "multiple_choice"),
+                    options=[
+                        GenerateVideoInteractionOption(
+                            text=o.get("text", ""),
+                            correct=o.get("correct", False),
+                        )
+                        for o in i.get("options", [])
+                    ],
+                    feedback=i.get("feedback", ""),
+                    explanation=i.get("explanation", ""),
+                    points=i.get("points", 1),
+                )
+                for i in interactions_data
+            ]
+        )
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse AI response as JSON: {e}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Interaction suggestion failed: {e!s}",
         )

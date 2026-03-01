@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import type { QuestionType, QuizOption } from './QuizQuestionNode';
-import { Zap } from 'lucide-react';
+import { Loader2, Sparkles, Zap } from 'lucide-react';
+import { useWorkingContextStore } from '../../stores/workingContextStore';
+import { videoInteractionApi } from '../../services/videoInteractionApi';
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: 'Multiple Choice',
@@ -48,6 +50,8 @@ function resetOptionsForType(
 
 const VideoInteractionView: React.FC<NodeViewProps> = ({
   node,
+  editor,
+  getPos,
   updateAttributes,
 }) => {
   const attrs = node.attrs as {
@@ -62,10 +66,12 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
     explanation: string;
   };
 
+  const ctx = useWorkingContextStore();
   const isNew = !attrs.questionText && attrs.options.every(o => !o.text);
   const [editing, setEditing] = useState(isNew);
   const [draft, setDraft] = useState({ ...attrs, options: [...attrs.options] });
   const [showFeedback, setShowFeedback] = useState(!!attrs.feedback);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const startEdit = () => {
     setDraft({ ...attrs, options: [...attrs.options] });
@@ -127,6 +133,52 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
     setDraft({ ...draft, questionType: newType, options: newOptions });
   };
 
+  const handleAIGenerate = async () => {
+    if (!editor || typeof getPos !== 'function' || aiGenerating) return;
+
+    // Find nearest transcript segment before this interaction
+    const myPos = getPos();
+    let nearestText = '';
+    editor.state.doc.descendants((n, pos) => {
+      if (n.type.name === 'transcriptSegment' && pos < myPos) {
+        nearestText = n.textContent;
+      }
+    });
+
+    if (!nearestText) return;
+
+    setAiGenerating(true);
+    try {
+      const resp = await videoInteractionApi.generateInteraction({
+        segmentText: nearestText,
+        questionType: draft.questionType,
+        unitId: ctx.activeUnitId ?? undefined,
+        designId: ctx.activeDesignId ?? undefined,
+        weekNumber: ctx.activeWeek ?? undefined,
+      });
+      const data = resp.data;
+
+      setDraft({
+        ...draft,
+        questionText: data.questionText,
+        questionType: data.questionType as QuestionType,
+        options: data.options.map(o => ({
+          id: generateId(),
+          text: o.text,
+          correct: o.correct,
+        })),
+        feedback: data.feedback,
+        explanation: data.explanation,
+        points: data.points,
+      });
+      setShowFeedback(!!data.feedback);
+    } catch (err) {
+      console.error('AI interaction generation failed:', err);
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   // ── Edit mode ──────────────────────────────────────────────
   if (editing) {
     return (
@@ -164,6 +216,24 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
               />
               Pause video
             </label>
+
+            <button
+              type='button'
+              disabled={aiGenerating}
+              onMouseDown={e => {
+                e.preventDefault();
+                void handleAIGenerate();
+              }}
+              className='ml-auto flex items-center gap-1 px-2 py-1 text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded disabled:opacity-50'
+              title='Generate question with AI from nearby transcript'
+            >
+              {aiGenerating ? (
+                <Loader2 size={14} className='animate-spin' />
+              ) : (
+                <Sparkles size={14} />
+              )}
+              <span>{aiGenerating ? 'Generating…' : 'AI'}</span>
+            </button>
           </div>
 
           {/* Question type & points */}
