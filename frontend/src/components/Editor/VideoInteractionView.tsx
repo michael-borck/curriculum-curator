@@ -3,6 +3,7 @@ import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import type { QuestionType, QuizOption } from './QuizQuestionNode';
 import { Loader2, Sparkles, Zap } from 'lucide-react';
+import { useAILevel } from '../../hooks/useAILevel';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { videoInteractionApi } from '../../services/videoInteractionApi';
 
@@ -66,6 +67,7 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
     explanation: string;
   };
 
+  const { canGenerate } = useAILevel();
   const ctx = useWorkingContextStore();
   const isNew = !attrs.questionText && attrs.options.every(o => !o.text);
   const [editing, setEditing] = useState(isNew);
@@ -217,23 +219,25 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
               Pause video
             </label>
 
-            <button
-              type='button'
-              disabled={aiGenerating}
-              onMouseDown={e => {
-                e.preventDefault();
-                void handleAIGenerate();
-              }}
-              className='ml-auto flex items-center gap-1 px-2 py-1 text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded disabled:opacity-50'
-              title='Generate question with AI from nearby transcript'
-            >
-              {aiGenerating ? (
-                <Loader2 size={14} className='animate-spin' />
-              ) : (
-                <Sparkles size={14} />
-              )}
-              <span>{aiGenerating ? 'Generating…' : 'AI'}</span>
-            </button>
+            {canGenerate && (
+              <button
+                type='button'
+                disabled={aiGenerating}
+                onMouseDown={e => {
+                  e.preventDefault();
+                  void handleAIGenerate();
+                }}
+                className='ml-auto flex items-center gap-1 px-2 py-1 text-xs text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded disabled:opacity-50'
+                title='Generate question with AI from nearby transcript'
+              >
+                {aiGenerating ? (
+                  <Loader2 size={14} className='animate-spin' />
+                ) : (
+                  <Sparkles size={14} />
+                )}
+                <span>{aiGenerating ? 'Generating…' : 'AI'}</span>
+              </button>
+            )}
           </div>
 
           {/* Question type & points */}

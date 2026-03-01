@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { Loader2, Plus, Sparkles, Wand2 } from 'lucide-react';
+import { useAILevel } from '../../hooks/useAILevel';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { videoInteractionApi } from '../../services/videoInteractionApi';
 import type { SuggestedInteraction } from '../../services/videoInteractionApi';
@@ -73,6 +74,7 @@ const TranscriptSegmentView: React.FC<NodeViewProps> = ({
     endTime: number;
   };
 
+  const { canGenerate } = useAILevel();
   const ctx = useWorkingContextStore();
   const [generating, setGenerating] = useState(false);
   const [suggestingAll, setSuggestingAll] = useState(false);
@@ -289,25 +291,27 @@ const TranscriptSegmentView: React.FC<NodeViewProps> = ({
           <span>Insert interaction</span>
         </button>
 
-        <button
-          type='button'
-          disabled={generating}
-          onMouseDown={e => {
-            e.preventDefault();
-            void handleGenerateWithAI();
-          }}
-          className='flex items-center gap-1 px-2 py-0.5 text-xs text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded disabled:opacity-50'
-          title='Generate quiz interaction with AI'
-        >
-          {generating ? (
-            <Loader2 size={12} className='animate-spin' />
-          ) : (
-            <Sparkles size={12} />
-          )}
-          <span>{generating ? 'Generating…' : 'Generate with AI'}</span>
-        </button>
+        {canGenerate && (
+          <button
+            type='button'
+            disabled={generating}
+            onMouseDown={e => {
+              e.preventDefault();
+              void handleGenerateWithAI();
+            }}
+            className='flex items-center gap-1 px-2 py-0.5 text-xs text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded disabled:opacity-50'
+            title='Generate quiz interaction with AI'
+          >
+            {generating ? (
+              <Loader2 size={12} className='animate-spin' />
+            ) : (
+              <Sparkles size={12} />
+            )}
+            <span>{generating ? 'Generating…' : 'Generate with AI'}</span>
+          </button>
+        )}
 
-        {isFirst && (
+        {canGenerate && isFirst && (
           <button
             type='button'
             disabled={suggestingAll}
