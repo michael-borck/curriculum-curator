@@ -7,7 +7,7 @@ packages = ["app"]
 
 [project]
 name = "curriculum-curator-backend"
-version = "0.5.15"
+version = "0.5.16"
 description = "Pedagogically-aware course content platform backend"
 readme = "../README.md"
 license = {text = "MIT"}
