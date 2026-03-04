@@ -645,12 +645,18 @@ if frontend_path.exists():
         "/assets", StaticFiles(directory=str(frontend_path / "assets")), name="assets"
     )
 
-    # Catch-all route for SPA - serves index.html for all non-API routes
+    # Catch-all route for SPA - serves static files or index.html
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         # Don't serve index.html for API routes
         if full_path.startswith("api/"):
             return {"detail": "Not Found"}
+
+        # Serve actual static files (favicon.svg, etc.) if they exist
+        if full_path:
+            file_path = frontend_path / full_path
+            if file_path.is_file():
+                return FileResponse(str(file_path))
 
         # Serve index.html for all other routes (SPA routing)
         index_path = frontend_path / "index.html"
