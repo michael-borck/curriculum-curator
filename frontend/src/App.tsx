@@ -27,6 +27,7 @@ import DesignList from './features/designs/DesignList';
 import DesignDetail from './features/designs/DesignDetail';
 import ImportMaterials from './features/import/ImportMaterials';
 import PackageImport from './features/import/PackageImport';
+import OutlineImport from './features/import/OutlineImport';
 import ResearchPage from './features/research/ResearchPage';
 import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
@@ -190,6 +191,7 @@ function App() {
               {/* Import */}
               <Route path='/import' element={<ImportMaterials />} />
               <Route path='/import/package' element={<PackageImport />} />
+              <Route path='/import/outline' element={<OutlineImport />} />
 
               {/* Research */}
               <Route path='/research' element={<ResearchPage />} />

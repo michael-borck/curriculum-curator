@@ -771,6 +771,13 @@ const DashboardPage = () => {
         <div className='flex items-center gap-3'>
           <Button
             variant='secondary'
+            onClick={() => navigate('/import/outline')}
+          >
+            <FileText className='h-5 w-5 mr-2' />
+            From Outline
+          </Button>
+          <Button
+            variant='secondary'
             onClick={() => navigate('/import/package')}
           >
             <Upload className='h-5 w-5 mr-2' />

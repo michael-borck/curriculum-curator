@@ -292,16 +292,65 @@
 
 ---
 
+## Scenario 16 — Unit Outline Import
+
+**Covers:** 1.13, 1.14, 1.15, 6.9, 6.10
+
+### Happy Path
+
+- [ ] 1. From the dashboard, click **Create from Outline** (or equivalent entry point).
+- [ ] 2. Verify the upload form shows a file input (accepts PDF, DOCX, TXT) and a parser dropdown.
+- [ ] 3. Verify the parser dropdown lists "Generic (AI-Powered)" (selected by default) and "Curtin University".
+- [ ] 4. Upload a Curtin University unit outline PDF. Select "Curtin University" parser. Click Parse.
+- [ ] 5. Verify the review form appears with extracted data: unit code, title, description, credit points, duration, semester.
+- [ ] 6. Verify extracted **Learning Outcomes** are shown in an editable table with Bloom's level dropdowns.
+- [ ] 7. Verify extracted **Weekly Schedule** is shown in an editable table (week number, topic title, activities, readings).
+- [ ] 8. Verify extracted **Assessments** are shown in an editable table (title, type, weight, due week).
+- [ ] 9. Verify extracted **Textbooks** are shown (title, authors, required/recommended toggle).
+- [ ] 10. Verify **Supplementary Info** section shows unmapped content with Keep/Drop toggles for each item.
+- [ ] 11. Edit a ULO's text in the review form. Verify the change is reflected.
+- [ ] 12. Remove an extracted assessment (delete row). Verify it disappears.
+- [ ] 13. Drop a supplementary info item. Keep another.
+- [ ] 14. Click **Create Unit**. Verify the unit is created with all reviewed data.
+- [ ] 15. Verify the created unit has: correct code, title, ULOs (with edited text), weekly topics, assessments (minus the deleted one), textbooks in unit metadata.
+- [ ] 16. Verify kept supplementary info is stored in `unit_metadata["supplementary_info"]`.
+- [ ] 17. Verify dropped supplementary info is not stored.
+
+### Generic Parser
+
+- [ ] 18. Upload a non-Curtin university outline PDF with "Generic (AI-Powered)" parser selected.
+- [ ] 19. Verify extraction produces reasonable results (at minimum: title, code, ULOs, weekly topics).
+- [ ] 20. Verify a confidence score is displayed.
+- [ ] 21. Upload a DOCX outline. Verify it parses successfully.
+- [ ] 22. Upload a TXT outline. Verify it parses successfully.
+
+### Parser Selection & Fallback
+
+- [ ] 23. Verify `GET /api/import/outline/parsers` returns available parsers with id, name, description, and supported formats.
+- [ ] 24. Upload a non-Curtin document with Curtin parser selected. Verify it falls back to generic parser with a notification.
+- [ ] 25. Switch parser in the dropdown and re-parse. Verify results update.
+
+### Validation & Edge Cases
+
+- [ ] 26. Verify assessment weights are validated (warning if sum != 100%) before creation.
+- [ ] 27. Verify Create button is disabled until required fields (title, code) are filled.
+- [ ] 28. Upload an empty or near-empty document. Verify a meaningful error message (not a crash).
+- [ ] 29. Upload a non-outline document (e.g. a novel excerpt). Verify generic parser extracts what it can with low confidence.
+- [ ] 30. Upload a large document (30+ pages). Verify it handles gracefully (completes or shows a page-limit message).
+- [ ] 31. Attempt to create a unit with a duplicate code+semester+year. Verify validation error — user can edit the code in the form.
+
+---
+
 ## Coverage Matrix
 
 | Category | Stories | Scenarios |
 |----------|---------|-----------|
-| 1. Unit Setup | 1.1–1.12 | 2, 5, 7, 13, 14 |
+| 1. Unit Setup | 1.1–1.15 | 2, 5, 7, 13, 14, 16 |
 | 2. Learning Outcomes | 2.1–2.8 | 3, 4, 5 |
 | 3. Weekly Materials | 3.1–3.12 | 4 |
 | 4. Assessments | 4.1–4.10 | 3 |
 | 5. AI Content | 5.1–5.11 | 5 |
-| 6. Import | 6.1–6.8 | 7, 8 |
+| 6. Import | 6.1–6.10 | 7, 8, 16 |
 | 7. Quality | 7.1–7.10 | 3, 10, 13 |
 | 8. Analytics | 8.1–8.5 | 10 |
 | 9. Export & LMS | 9.1–9.12 | 8, 9 |
@@ -321,4 +370,4 @@
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
 | 15.5, 15.6 | Cut from scope |
 
-*Last updated: 2026-02-28*
+*Last updated: 2026-03-09*

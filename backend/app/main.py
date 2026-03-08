@@ -494,6 +494,17 @@ except ImportError as e:
     logger.warning(f"Failed to load package_import routes: {e}")
 
 try:
+    from app.api.routes import outline_import
+
+    app.include_router(
+        outline_import.router,
+        prefix="/api/import/outline",
+        tags=["outline-import"],
+    )
+except ImportError as e:
+    logger.warning(f"Failed to load outline_import routes: {e}")
+
+try:
     from app.api.routes import prompt_templates
 
     app.include_router(

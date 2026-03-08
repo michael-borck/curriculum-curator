@@ -33,6 +33,9 @@
 | 1.10 | As a **Creator**, I want to customise the time-period label for my unit (Week, Module, Topic, etc.) so the UI matches my institution's terminology. | P1 | **Done** — configurable `topicLabel` on unit |
 | 1.11 | As a **Creator**, I want a Settings tab on my unit page where I can edit academic details (year, semester, delivery mode, credit points) and toggle optional features (accreditation mappings, SDGs, AoL, quality/UDL metrics) per unit. | P1 | **Done** — UnitSettings component with feature toggles stored in `unit_metadata.features` |
 | 1.12 | As a **Creator**, I want to define custom alignment frameworks (e.g. PLOs, ABET criteria, graduate attributes) with named items, and map my ULOs to them, so I can demonstrate alignment to any accreditation or institutional standard. | P1 | **Done** — `CustomAlignmentFramework` model, presets (PLO, Graduate Attributes, ABET, AQF), CRUD API, mapping UI on UnitPage |
+| 1.13 | As an **Enhancer**, I want to upload my unit outline document (PDF, DOCX, or TXT) and have the system extract unit metadata, learning outcomes, weekly schedule, assessments, and textbooks so I can scaffold my unit without manual data entry. | P2 | **Planned** — ADR-063 |
+| 1.14 | As an **Enhancer**, I want to review and edit the extracted outline data in a structured form before the unit is created, so I can correct parsing errors and decide what to keep or discard. | P2 | **Planned** — ADR-063 |
+| 1.15 | As an **Enhancer**, I want to select my institution's outline parser (e.g. "Curtin University") from a dropdown for more accurate extraction, with "Generic" as the default that works with any document. | P2 | **Planned** — ADR-063 |
 
 ## 2. Learning Outcomes
 
@@ -107,6 +110,8 @@
 | 6.6 | As an **Enhancer**, I want to import a PowerPoint and have it converted to editable content (text extracted, slides become sections). | P3 | **Done** — text + image extraction via `python-pptx`, images stored in content repo |
 | 6.7 | As an **Enhancer**, I want imported content to go straight into the normal editing flow so I can refine it immediately. | P2 | **Done** — import flow redirects to editing |
 | 6.8 | As an **Enhancer**, I want to extract the theme (colours, fonts, layouts) from an imported PPTX and save it as an export template, so future PPTX exports use my existing branding. | P2 | **Done** — opt-in checkbox on Import Materials; strips content slides, keeps masters/layouts/theme (ADR-056) |
+| 6.9 | As an **Enhancer**, I want a generic LLM-powered outline parser that intelligently extracts structure from any unit outline document regardless of format or institution, using AI to identify unit details, outcomes, schedule, and assessments. | P2 | **Planned** — ADR-063 |
+| 6.10 | As an **Enhancer**, I want a purpose-built parser for my institution (e.g. Curtin University) that accurately extracts data from its standard unit outline format, giving higher accuracy than the generic parser. | P2 | **Planned** — ADR-063 |
 
 ## 7. Content Validation & Quality
 
@@ -291,7 +296,7 @@
 | Status | Count |
 |--------|-------|
 | **Done** | ~120 |
-| **Planned** | 21 |
+| **Planned** | 26 |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
@@ -310,4 +315,4 @@
 | 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-03-01*
+*Last updated: 2026-03-09*

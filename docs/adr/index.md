@@ -74,6 +74,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [060](060-analytics-snapshot-storage.md) | Analytics Snapshot Storage | Accepted |
 | [061](061-transparent-import-reporting.md) | Transparent Import Reporting (No Silent Drops) | Accepted |
 | [062](062-education-sector-profiles.md) | Education Sector Profiles | Accepted |
+| [063](063-unit-outline-import-parser-system.md) | Unit Outline Import with Pluggable Parser System | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Accepted |
 
 ### Foundation
@@ -96,6 +97,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-043: In-Memory Import Task Store](043-in-memory-import-task-store.md) - Process-local background task tracking for package imports
 - [ADR-054: Import Provenance for Round-Trip Fidelity](054-import-provenance-round-trip-fidelity.md) - Store CC identifiers and mappings on Unit for lossless re-export
 - [ADR-056: PPTX Template Extraction on Import](056-pptx-template-extraction-on-import.md) - Strip content slides on import, keep theme for export templates
+- [ADR-063: Unit Outline Import](063-unit-outline-import-parser-system.md) - Pluggable parser system with LLM-powered generic and institution-specific parsers
 - [ADR-044: Quality Scoring Algorithm](044-quality-scoring-algorithm.md) - Six-dimension weighted scoring with Shannon entropy and CV
 
 ### AI & Prompt Engineering

@@ -85,6 +85,36 @@ dedicated trends view.
 
 ---
 
+## Outline Import — Future Enhancements
+
+### Admin-managed custom outline parsers
+
+Allow admins to add institution-specific outline parsers without code deployment.
+Workflow: download a parser template (Python file with the `OutlineParser` ABC
+pre-filled), edit it for their institution's outline format, upload it back.
+Uploaded parsers stored in `backend/user_parsers/{org_id}/` with sandboxed
+execution.
+
+**Key questions:**
+- Security model for executing user-uploaded Python — sandbox via subprocess + restricted imports?
+- Storage: per-organisation or per-user?
+- Validation: run against a sample document before activation?
+
+### User-managed personal parsers
+
+Educators working at multiple institutions may want their own parsers. Similar
+to admin-managed but scoped to the individual user. Appears in their parser
+dropdown only.
+
+**Key questions:**
+- Same sandbox approach as admin parsers?
+- UI for managing personal parsers (list, test, delete)
+- Could a non-technical user build a parser? Maybe a config-driven approach (section headings + regex patterns) instead of raw Python?
+
+**Related:** ADR-063, user stories 1.13–1.15
+
+---
+
 ## Template
 
 Use this structure for new entries:
