@@ -634,12 +634,12 @@ async def import_zip(
             detail="Only ZIP files are supported",
         )
 
-    # Check file size (max 100MB for ZIP)
+    # Check file size (max 500MB for ZIP — real LMS exports can be large)
     contents = await file.read()
-    if len(contents) > 100 * 1024 * 1024:
+    if len(contents) > 500 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds 100MB limit",
+            detail="File size exceeds 500MB limit",
         )
 
     try:

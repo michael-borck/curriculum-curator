@@ -236,6 +236,8 @@ app.add_middleware(
     RequestValidationMiddleware,
     max_request_size=10 * 1024 * 1024,  # 10MB limit
     require_user_agent=False,  # Set to True for stricter validation
+    large_upload_paths=["/api/import/package", "/api/import/unified", "/api/content/import"],
+    large_upload_max_size=500 * 1024 * 1024,  # 500MB for IMSCC/SCORM packages
 )
 
 # 3. Security headers

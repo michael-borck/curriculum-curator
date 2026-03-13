@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
+    DEFAULT_LLM_PROVIDER: str | None = None
     DEFAULT_LLM_MODEL: str = "gpt-4"
 
     # File Upload

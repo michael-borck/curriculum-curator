@@ -299,10 +299,10 @@ async def apply_outline(
         db.commit()
 
     return {
-        "unit_id": str(unit.id),
+        "unitId": str(unit.id),
         "title": unit.title,
         "code": unit.code,
-        "ulos_created": len(request.learning_outcomes),
-        "weeks_created": len(request.weekly_schedule),
-        "assessments_created": len(request.assessments),
+        "ulosCreated": len(request.learning_outcomes),
+        "weeksCreated": len(request.weekly_schedule),
+        "assessmentsCreated": len(request.assessments),
     }

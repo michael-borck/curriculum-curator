@@ -153,9 +153,13 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         blocked_user_agents: list | None = None,
         blocked_paths: list | None = None,
         require_user_agent: bool = False,
+        large_upload_paths: list[str] | None = None,
+        large_upload_max_size: int = 500 * 1024 * 1024,  # 500MB
     ):
         super().__init__(app)
         self.max_request_size = max_request_size
+        self.large_upload_paths = large_upload_paths or []
+        self.large_upload_max_size = large_upload_max_size
         self.blocked_user_agents = (
             blocked_user_agents or self._default_blocked_user_agents()
         )
@@ -194,8 +198,16 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         """Validate incoming request for security issues"""
 
         # Check request size (basic DoS protection)
+        # Allow larger uploads for import paths (IMSCC/SCORM packages)
+        path = request.url.path
+        is_large_upload_path = any(
+            path.startswith(p) for p in self.large_upload_paths
+        )
+        size_limit = (
+            self.large_upload_max_size if is_large_upload_path else self.max_request_size
+        )
         content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > self.max_request_size:
+        if content_length and int(content_length) > size_limit:
             return JSONResponse(
                 status_code=413,
                 content={

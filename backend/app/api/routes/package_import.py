@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB
+MAX_UPLOAD_SIZE = 500 * 1024 * 1024  # 500 MB (real Blackboard exports can be large)
 ALLOWED_EXTENSIONS = {".imscc", ".zip"}
 
 
@@ -63,7 +63,7 @@ async def analyze_package(
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=400, detail="File exceeds 100 MB limit.")
+        raise HTTPException(status_code=400, detail="File exceeds 500 MB limit.")
 
     try:
         return package_import_service.analyze_package(contents)
@@ -95,7 +95,7 @@ async def create_from_package(
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=400, detail="File exceeds 100 MB limit.")
+        raise HTTPException(status_code=400, detail="File exceeds 500 MB limit.")
 
     try:
         return package_import_service.create_unit_from_package(
@@ -131,7 +131,7 @@ async def unified_analyze(
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=400, detail="File exceeds 100 MB limit.")
+        raise HTTPException(status_code=400, detail="File exceeds 500 MB limit.")
 
     try:
         return unified_import_service.analyze(contents)
@@ -158,7 +158,7 @@ async def unified_apply(
 
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=400, detail="File exceeds 100 MB limit.")
+        raise HTTPException(status_code=400, detail="File exceeds 500 MB limit.")
 
     try:
         return unified_import_service.apply(

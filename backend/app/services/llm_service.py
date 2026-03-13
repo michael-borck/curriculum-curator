@@ -112,10 +112,10 @@ class LLMService:
         self, user: User | None
     ) -> tuple[str | None, str | None, str | None]:
         """Extract provider, model, and API key from user config"""
-        if not user or not user.llm_config:
+        if not user or not getattr(user, "llm_config", None):
             return None, None, None
 
-        user_config = user.llm_config
+        user_config = getattr(user, "llm_config", None)
         if isinstance(user_config, str):
             user_config = json.loads(user_config)
 
@@ -157,7 +157,11 @@ class LLMService:
             return "", "", None, None
 
         if not model:
-            model = self.DEFAULT_MODELS.get(provider, "gpt-4")
+            # If env specifies a default provider+model, use that model
+            if provider == settings.DEFAULT_LLM_PROVIDER:
+                model = settings.DEFAULT_LLM_MODEL
+            else:
+                model = self.DEFAULT_MODELS.get(provider, "gpt-4")
 
         litellm_model = self._format_model_name(model, provider)
         api_base = None

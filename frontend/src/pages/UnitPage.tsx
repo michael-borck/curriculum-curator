@@ -143,7 +143,7 @@ const UnitPage = () => {
 
   const handleAddMaterial = (weekNumber: number) => {
     // Navigate to content creator with week pre-selected
-    navigate(`/content/create?unitId=${unitId}&week=${weekNumber}`);
+    navigate(`/content/new?unit=${unitId}&week=${weekNumber}`);
   };
 
   const handleAddWeek = async () => {
@@ -329,7 +329,7 @@ const UnitPage = () => {
       // Bulk-create ULOs
       if (scaffold.ulos.length > 0) {
         await api.post(`/outcomes/units/${unitId}/ulos/bulk`, {
-          ulos: scaffold.ulos.map((u, i) => ({
+          outcomes: scaffold.ulos.map((u, i) => ({
             code: u.code,
             description: u.description,
             bloomLevel: u.bloomLevel,

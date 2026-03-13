@@ -1,0 +1,21 @@
+{
+  "name": "curriculum-curator-e2e",
+  "version": "0.5.20",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "setup": "node scripts/setup-test-db.js",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.3.5",
+    "better-sqlite3": "^11.9.1",
+    "typescript": "^5.9.3"
+  }
+}

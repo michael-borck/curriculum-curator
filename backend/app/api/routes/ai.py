@@ -973,7 +973,13 @@ Requirements:
         system_prompt="You are an expert university curriculum designer. Return ONLY valid JSON.",
         user=current_user,
         db=db,
+        max_tokens=4096,
     )
+
+    # Check for LLM error (generate_text returns error strings instead of raising)
+    if isinstance(result, str) and result.startswith(("Error generating text:", "No AI provider")):
+        logger.error("Scaffold LLM error: %s", result)
+        raise HTTPException(status_code=502, detail=result)
 
     # Parse the LLM response as JSON
     try:
@@ -992,6 +998,7 @@ Requirements:
         else:
             raise TypeError("Expected string from LLM")
     except (json.JSONDecodeError, TypeError) as e:
+        logger.error("Scaffold JSON parse error. Raw LLM output: %s", result[:500] if isinstance(result, str) else result)
         raise HTTPException(
             status_code=500,
             detail=f"Failed to parse AI response as structured JSON: {e}",

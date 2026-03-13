@@ -1,0 +1,3 @@
+# Large real-world exports (too big for git and exceed 100MB upload limit)
+ExportFile_*.zip
+CommonCartridge_*.imscc
