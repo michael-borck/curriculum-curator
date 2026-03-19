@@ -3,67 +3,23 @@ Enhanced password validation with security requirements
 """
 
 import re
+from pathlib import Path
 
-# Common weak passwords list (subset - in production, load from file)
-COMMON_PASSWORDS = {
-    "123456",
-    "password",
-    "123456789",
-    "12345678",
-    "12345",
-    "1234567",
-    "qwerty",
-    "abc123",
-    "password123",
-    "admin",
-    "letmein",
-    "welcome",
-    "monkey",
-    "1234567890",
-    "dragon",
-    "iloveyou",
-    "princess",
-    "sunshine",
-    "master",
-    "123123",
-    "football",
-    "baseball",
-    "superman",
-    "computer",
-    "michael",
-    "jordan",
-    "matrix",
-    "money",
-    "freedom",
-    "hello",
-    "batman",
-    "trustno1",
-    "hunter",
-    "ranger",
-    "buster",
-    "thomas",
-    "tigger",
-    "robert",
-    "access",
-    "love",
-    "internet",
-    "service",
-    "cookie",
-    "test",
-    "guest",
-    "honda",
-    "shadow",
-    "mustang",
-    "secret",
-    "summer",
-    "spider",
-    "michelle",
-    "whatever",
-    "chicken",
-    "startrek",
-    "orange",
-    "mercedes",
-}
+
+def _load_common_passwords() -> set[str]:
+    """Load common passwords from external file."""
+    passwords_file = Path(__file__).parent.parent.parent / "data" / "common_passwords.txt"
+    if passwords_file.exists():
+        return {
+            line.strip().lower()
+            for line in passwords_file.read_text().splitlines()
+            if line.strip() and not line.startswith("#")
+        }
+    # Fallback if file not found
+    return {"password", "123456", "123456789", "qwerty", "abc123", "password123"}
+
+
+COMMON_PASSWORDS = _load_common_passwords()
 
 
 class PasswordValidator:

@@ -413,12 +413,7 @@ async def login(
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "error": "email_not_verified",
-                "message": "Email address not verified. Please check your email for the verification code.",
-                "email": user.email,
-                "action": "redirect_to_verification",
-            },
+            detail="Incorrect email or password",
         )
 
     # Create access token
@@ -510,6 +505,20 @@ async def reset_password(
             detail="Invalid or expired reset code",
         )
 
+    # Validate new password strength
+    is_valid, password_errors = PasswordValidator.validate_password(
+        reset_request.new_password, "", email
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Password validation failed",
+                "issues": password_errors,
+                "message": "New password does not meet security requirements.",
+            },
+        )
+
     try:
         # Update password
         user_repo.update_password(db, user.id, reset_request.new_password)
@@ -557,6 +566,20 @@ async def change_password(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="New password must be different from current password",
+        )
+
+    # Validate new password strength
+    is_valid, password_errors = PasswordValidator.validate_password(
+        change_request.new_password, "", current_user.email
+    )
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Password validation failed",
+                "issues": password_errors,
+                "message": "New password does not meet security requirements.",
+            },
         )
 
     try:

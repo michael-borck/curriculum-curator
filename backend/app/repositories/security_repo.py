@@ -5,8 +5,9 @@ Handles login attempts, account lockouts, and security audit logs using SQLAlche
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.login_attempt import LoginAttempt
@@ -96,6 +97,25 @@ def record_login_failure(
 
     db.commit()
     db.refresh(attempt)
+
+    # Aggregate lockout: if many IPs are failing for the same email, lock all records
+    total_failures = (
+        db.query(func.sum(LoginAttempt.consecutive_failures))
+        .filter(LoginAttempt.email == email)
+        .scalar()
+    ) or 0
+
+    if total_failures >= 15 and not attempt.is_locked:
+        # Lock all records for this email (distributed brute force)
+        db.query(LoginAttempt).filter(
+            LoginAttempt.email == email,
+        ).update({
+            "is_locked": True,
+            "locked_until": datetime.utcnow() + timedelta(minutes=30),
+            "lockout_reason": "Account locked due to excessive failed attempts from multiple sources",
+        })
+        db.commit()
+
     return attempt
 
 

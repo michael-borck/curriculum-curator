@@ -20,7 +20,12 @@ import {
 } from 'lucide-react';
 import { llmApi } from '../../services/llmApi';
 import { LLMProvider } from '../../types/llm';
-import type { LLMConfig, TokenUsageStats } from '../../types/llm';
+import type {
+  LLMConfigResponse,
+  LLMConfigFormData,
+  LLMConfigRequest,
+  TokenUsageStats,
+} from '../../types/llm';
 import { useConfirmDialog } from '../../components/ui';
 import { LLMProviderFields } from '../../components/shared/LLMProviderFields';
 
@@ -40,13 +45,14 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
   } | null>(null);
 
   // System configurations
-  const [systemConfigs, setSystemConfigs] = useState<LLMConfig[]>([]);
-  const [userConfigs, setUserConfigs] = useState<LLMConfig[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState<LLMConfig | null>(null);
+  const [systemConfigs, setSystemConfigs] = useState<LLMConfigResponse[]>([]);
+  const [userConfigs, setUserConfigs] = useState<LLMConfigResponse[]>([]);
+  const [selectedConfig, setSelectedConfig] =
+    useState<LLMConfigResponse | null>(null);
   const [isNewConfig, setIsNewConfig] = useState(false);
 
   // Form data
-  const [formData, setFormData] = useState<Partial<LLMConfig>>({
+  const [formData, setFormData] = useState<Partial<LLMConfigFormData>>({
     provider: LLMProvider.OPENAI,
     is_default: false,
     temperature: 0.7,
@@ -189,9 +195,7 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     setSaving(true);
     try {
       if (isNewConfig) {
-        await llmApi.createSystemConfiguration(
-          formData as Omit<LLMConfig, 'id'>
-        );
+        await llmApi.createSystemConfiguration(formData as LLMConfigRequest);
         setMessage({
           type: 'success',
           text: 'Configuration created successfully',
@@ -251,18 +255,20 @@ export const AdminLLMSettings: React.FC<AdminLLMSettingsProps> = ({
     }
   };
 
-  const selectConfig = (config: LLMConfig) => {
+  const selectConfig = (config: LLMConfigResponse) => {
     setSelectedConfig(config);
     setIsNewConfig(false);
     setFormData({
       provider: config.provider,
-      api_key: config.api_key || '',
+      api_key: '',
       api_url: config.api_url || '',
-      bearer_token: config.bearer_token || '',
+      bearer_token: '',
       model_name: config.model_name || '',
       temperature: config.temperature,
       max_tokens: config.max_tokens || 4096,
       is_default: config.is_default,
+      api_key_preview: config.api_key_preview,
+      has_bearer_token: config.has_bearer_token,
     });
     if (config.model_name) {
       setAvailableModels([config.model_name]);

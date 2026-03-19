@@ -2,6 +2,8 @@
 Web Search API routes for academic content research
 """
 
+import ipaddress
+import socket
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,6 +15,39 @@ from app.models.user import User
 from app.services.web_search_service import web_search_service
 
 router = APIRouter()
+
+
+def _is_private_url(url: str) -> bool:
+    """Check if a URL resolves to a private/internal IP address (SSRF protection)."""
+    try:
+        from urllib.parse import urlparse  # noqa: PLC0415
+
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        if not hostname:
+            return True
+
+        # Block obvious private hostnames
+        if hostname in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+            return True
+
+        # Resolve hostname and check all IPs
+        addr_infos = socket.getaddrinfo(hostname, parsed.port or 80)
+        for _family, _type, _proto, _canonname, sockaddr in addr_infos:
+            ip_str = sockaddr[0]
+            ip = ipaddress.ip_address(ip_str)
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_reserved
+                or ip_str == "169.254.169.254"  # Cloud metadata endpoint
+            ):
+                return True
+    except (socket.gaierror, ValueError, OSError):
+        # If we can't resolve, block by default
+        return True
+    return False
 
 
 # =============================================================================
@@ -170,6 +205,13 @@ async def summarize_url(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="URL must start with http:// or https://",
+        )
+
+    # SSRF protection: block private/internal URLs
+    if _is_private_url(request.url):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="URL resolves to a private or internal address",
         )
 
     # Validate purpose

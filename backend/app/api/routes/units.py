@@ -35,19 +35,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/test")
-async def test_units_router():
-    """Test endpoint to verify router is working"""
-    return {"message": "Units router is working!", "status": "OK"}
-
-
-@router.post("/test-post")
-async def test_post_endpoint():
-    """Dead simple POST test - no auth, no validation, nothing"""
-    logger.info("[TEST-POST] This endpoint was called!")
-    return {"message": "POST works!", "status": "OK"}
-
-
 @router.get("/check-code")
 async def check_unit_code(
     code: str = Query(...),

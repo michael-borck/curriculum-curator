@@ -6,13 +6,12 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.routing import APIRoute
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
@@ -182,7 +181,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # typ
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     logger.error(f"[VALIDATION ERROR] Path: {request.url.path}")
     logger.error(f"[VALIDATION ERROR] Method: {request.method}")
-    logger.error(f"[VALIDATION ERROR] Details: {exc.errors()}")
+    logger.debug(f"[VALIDATION ERROR] Details: {exc.errors()}")
 
     # Convert errors to JSON-serializable format
     errors = []
@@ -198,24 +197,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
     return JSONResponse(
         status_code=422,
-        content={"detail": errors, "body": str(exc.body)},
+        content={"detail": errors},
     )
-
-
-# Add middleware to debug all requests to /api/units
-@app.middleware("http")
-async def debug_units_requests(request: Request, call_next):
-    if "/units" in request.url.path:
-        logger.info(f"[MIDDLEWARE] {request.method} {request.url.path}")
-        logger.info(f"[MIDDLEWARE] Headers: {dict(request.headers)}")
-        logger.info(f"[MIDDLEWARE] Content-Type: {request.headers.get('content-type')}")
-
-    response = await call_next(request)
-
-    if "/units" in request.url.path:
-        logger.info(f"[MIDDLEWARE] Response status: {response.status_code}")
-
-    return response
 
 
 # Security middleware (order matters - add from outermost to innermost)
@@ -227,8 +210,9 @@ app.add_middleware(
         "127.0.0.1",
         "*.localhost",
         "*.edu",
-        "*",
-    ],  # Adjust for production
+        "curriculumcurator.eduserver.au",
+        "testserver",  # FastAPI TestClient default host
+    ],
 )
 
 # 2. Request validation and basic security checks
@@ -272,8 +256,8 @@ app.add_middleware(
         "https://curriculumcurator.eduserver.au",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
 )
 
 # Import and include routers with individual error handling
@@ -593,22 +577,8 @@ async def health_check():
     return {"status": "healthy", "service": "curriculum-curator"}
 
 
-@app.get("/security/stats")
-async def security_stats():
-    """Get basic security statistics (admin only in production)"""
-    # TODO: Migrate to raw SQLite security_repo
-    return {
-        "period_hours": 24,
-        "total_login_attempts": 0,
-        "failed_attempts": 0,
-        "success_rate": 100.0,
-        "currently_locked_accounts": 0,
-        "unique_ip_addresses": 0,
-        "note": "Security stats temporarily unavailable during SQLite migration",
-    }
-
-
 @app.post("/password-strength")
+@limiter.limit("10/minute")
 async def check_password_strength(request: Request):
     """Check password strength (for real-time frontend feedback)"""
     body = await request.json()
@@ -630,18 +600,6 @@ async def check_password_strength(request: Request):
         "suggestions": suggestions,
         "strength_score": strength_score,
         "strength": strength_desc,
-    }
-
-
-# Debug endpoint for testing
-@app.post("/test-form")
-async def test_form_endpoint(form_data: OAuth2PasswordRequestForm = Depends()):
-    """Test endpoint to debug form data"""
-    return {
-        "username": form_data.username,
-        "password": "hidden",
-        "grant_type": form_data.grant_type,
-        "scopes": form_data.scopes,
     }
 
 

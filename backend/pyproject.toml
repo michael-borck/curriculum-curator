@@ -80,6 +80,9 @@ dependencies = [
     "fastapi-csrf-protect>=1.0.3",
     "psutil>=7.0.0",
     "pyspellchecker>=0.8.4",
+    # Security & HTML sanitization
+    "defusedxml>=0.7.1",
+    "bleach>=6.0.0",
     # Video transcript extraction
     "youtube-transcript-api>=0.6.1",
 ]

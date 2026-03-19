@@ -17,7 +17,9 @@ import { useAuthStore } from '../../stores/authStore';
 import { LLMProvider } from '../../types/llm';
 import { useConfirmDialog } from '../../components/ui';
 import type {
-  LLMConfig,
+  LLMConfigResponse,
+  LLMConfigFormData,
+  LLMConfigRequest,
   LLMTestResponse,
   TokenUsageStats,
 } from '../../types/llm';
@@ -30,8 +32,9 @@ import { LLMProviderFields } from '../../components/shared/LLMProviderFields';
 
 const LLMSettings: React.FC = () => {
   const confirm = useConfirmDialog();
-  const [configurations, setConfigurations] = useState<LLMConfig[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState<LLMConfig | null>(null);
+  const [configurations, setConfigurations] = useState<LLMConfigResponse[]>([]);
+  const [selectedConfig, setSelectedConfig] =
+    useState<LLMConfigResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -45,7 +48,7 @@ const LLMSettings: React.FC = () => {
   );
 
   // Form state for new/edit configuration
-  const [formData, setFormData] = useState<Partial<LLMConfig>>({
+  const [formData, setFormData] = useState<Partial<LLMConfigFormData>>({
     provider: LLMProvider.OPENAI,
     api_key: '',
     api_url: '',
@@ -195,10 +198,22 @@ const LLMSettings: React.FC = () => {
     setSuccess('');
 
     try {
+      // Extract only the fields the backend expects for create/update
+      const requestData: Partial<LLMConfigRequest> = {
+        provider: formData.provider,
+        api_key: formData.api_key || undefined,
+        api_url: formData.api_url || undefined,
+        bearer_token: formData.bearer_token || undefined,
+        model_name: formData.model_name || undefined,
+        temperature: formData.temperature,
+        max_tokens: formData.max_tokens,
+        is_default: formData.is_default,
+      };
+
       if (isEditing && selectedConfig?.id) {
         const updated = await llmApi.updateConfiguration(
           selectedConfig.id,
-          formData
+          requestData
         );
         setConfigurations(configs =>
           configs.map(c => (c.id === updated.id ? updated : c))
@@ -207,7 +222,7 @@ const LLMSettings: React.FC = () => {
         setSuccess('Configuration updated successfully');
       } else {
         const newConfig = await llmApi.createConfiguration(
-          formData as Omit<LLMConfig, 'id'>
+          requestData as LLMConfigRequest
         );
         setConfigurations([...configurations, newConfig]);
         setSelectedConfig(newConfig);
@@ -223,7 +238,7 @@ const LLMSettings: React.FC = () => {
     }
   };
 
-  const handleDeleteConfiguration = async (config: LLMConfig) => {
+  const handleDeleteConfiguration = async (config: LLMConfigResponse) => {
     if (!config.id) return;
 
     const ok = await confirm({
@@ -246,13 +261,24 @@ const LLMSettings: React.FC = () => {
     }
   };
 
-  const handleEditConfiguration = (config: LLMConfig) => {
+  const handleEditConfiguration = (config: LLMConfigResponse) => {
     setSelectedConfig(config);
-    setFormData(config);
+    setFormData({
+      provider: config.provider,
+      api_key: '',
+      api_url: config.api_url || '',
+      bearer_token: '',
+      model_name: config.model_name || '',
+      temperature: config.temperature,
+      max_tokens: config.max_tokens || 4096,
+      is_default: config.is_default,
+      api_key_preview: config.api_key_preview,
+      has_bearer_token: config.has_bearer_token,
+    });
     setIsEditing(true);
   };
 
-  const handleSetDefault = async (config: LLMConfig) => {
+  const handleSetDefault = async (config: LLMConfigResponse) => {
     if (!config.id) return;
 
     try {
@@ -289,7 +315,7 @@ const LLMSettings: React.FC = () => {
     setAvailableModels([]);
   };
 
-  const handleFormChange = (updates: Partial<LLMConfig>) => {
+  const handleFormChange = (updates: Partial<LLMConfigFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
 

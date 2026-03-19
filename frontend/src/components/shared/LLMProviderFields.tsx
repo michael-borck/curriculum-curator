@@ -7,13 +7,13 @@
 
 import { Key, Link, Shield, RefreshCw, Loader2 } from 'lucide-react';
 import { LLMProvider, PROVIDER_DISPLAY_NAMES } from '../../types/llm';
-import type { LLMConfig } from '../../types/llm';
+import type { LLMConfigFormData } from '../../types/llm';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface LLMProviderFieldsProps {
-  formData: Partial<LLMConfig>;
-  onChange: (updates: Partial<LLMConfig>) => void;
+  formData: Partial<LLMConfigFormData>;
+  onChange: (updates: Partial<LLMConfigFormData>) => void;
   availableModels: string[];
   onRefreshModels: () => void;
   loadingModels?: boolean | undefined;
@@ -81,7 +81,11 @@ export function LLMProviderFields({
               value={formData.api_key || ''}
               onChange={e => onChange({ api_key: e.target.value })}
               className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-              placeholder={`Enter your ${PROVIDER_DISPLAY_NAMES[formData.provider || LLMProvider.OPENAI] ?? 'provider'} API key`}
+              placeholder={
+                formData.api_key_preview
+                  ? `Current: ${formData.api_key_preview}`
+                  : `Enter your ${PROVIDER_DISPLAY_NAMES[formData.provider || LLMProvider.OPENAI] ?? 'provider'} API key`
+              }
             />
           </div>
         </div>
@@ -128,7 +132,11 @@ export function LLMProviderFields({
               value={formData.bearer_token || ''}
               onChange={e => onChange({ bearer_token: e.target.value })}
               className='pl-10 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500'
-              placeholder='Bearer token for protected Ollama instances'
+              placeholder={
+                formData.has_bearer_token
+                  ? 'Bearer token saved (leave empty to keep)'
+                  : 'Bearer token for protected Ollama instances'
+              }
             />
           </div>
           <p className='mt-1 text-sm text-gray-500'>

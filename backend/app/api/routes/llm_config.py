@@ -10,13 +10,14 @@ from app.core.database import get_db
 from app.models.llm_config import LLMConfiguration
 from app.models.user import User
 from app.schemas.llm_config import (
-    LLMConfig,
     LLMConfigCreate,
+    LLMConfigResponse,
     LLMConfigUpdate,
     LLMProvider,
     LLMTestRequest,
     LLMTestResponse,
     UserTokenStats,
+    mask_api_key,
 )
 from app.services.llm_service import llm_service
 
@@ -57,7 +58,7 @@ async def list_available_models(
     )
 
 
-@router.get("/configurations", response_model=list[LLMConfig])
+@router.get("/configurations", response_model=list[LLMConfigResponse])
 def get_user_configurations(
     current_user: User = Depends(deps.get_current_user),
     db: Session = Depends(get_db),
@@ -78,20 +79,20 @@ def get_user_configurations(
             "id": str(config.id),
             "user_id": str(config.user_id) if config.user_id else None,
             "provider": config.provider,
-            "api_key": config.api_key,
+            "api_key_preview": mask_api_key(config.api_key),
             "api_url": config.api_url,
-            "bearer_token": config.bearer_token,
+            "has_bearer_token": bool(config.bearer_token),
             "model_name": config.model_name,
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
             "is_default": config.is_default,
             "is_active": config.is_active,
         }
-        result.append(LLMConfig(**config_dict))
+        result.append(LLMConfigResponse(**config_dict))
     return result
 
 
-@router.get("/configurations/system", response_model=list[LLMConfig])
+@router.get("/configurations/system", response_model=list[LLMConfigResponse])
 def get_system_configurations(
     current_user: User = Depends(deps.get_current_admin_user),
     db: Session = Depends(get_db),
@@ -109,20 +110,20 @@ def get_system_configurations(
             "id": str(config.id),
             "user_id": str(config.user_id) if config.user_id else None,
             "provider": config.provider,
-            "api_key": config.api_key,
+            "api_key_preview": mask_api_key(config.api_key),
             "api_url": config.api_url,
-            "bearer_token": config.bearer_token,
+            "has_bearer_token": bool(config.bearer_token),
             "model_name": config.model_name,
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
             "is_default": config.is_default,
             "is_active": config.is_active,
         }
-        result.append(LLMConfig(**config_dict))
+        result.append(LLMConfigResponse(**config_dict))
     return result
 
 
-@router.get("/configurations/users", response_model=list[LLMConfig])
+@router.get("/configurations/users", response_model=list[LLMConfigResponse])
 def get_all_user_configurations(
     current_user: User = Depends(deps.get_current_admin_user),
     db: Session = Depends(get_db),
@@ -142,21 +143,21 @@ def get_all_user_configurations(
             "user_id": str(config.user_id) if config.user_id else None,
             "user_email": email,
             "provider": config.provider,
-            "api_key": config.api_key,
+            "api_key_preview": mask_api_key(config.api_key),
             "api_url": config.api_url,
-            "bearer_token": config.bearer_token,
+            "has_bearer_token": bool(config.bearer_token),
             "model_name": config.model_name,
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
             "is_default": config.is_default,
             "is_active": config.is_active,
         }
-        result.append(LLMConfig(**config_dict))
+        result.append(LLMConfigResponse(**config_dict))
 
     return result
 
 
-@router.post("/configurations", response_model=LLMConfig)
+@router.post("/configurations", response_model=LLMConfigResponse)
 def create_configuration(
     config: LLMConfigCreate,
     current_user: User = Depends(deps.get_current_user),
@@ -186,13 +187,13 @@ def create_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig(
+    return LLMConfigResponse(
         id=str(db_config.id),
         user_id=str(db_config.user_id) if db_config.user_id else None,
         provider=LLMProvider(db_config.provider),
-        api_key=db_config.api_key,
+        api_key_preview=mask_api_key(db_config.api_key),
         api_url=db_config.api_url,
-        bearer_token=db_config.bearer_token,
+        has_bearer_token=bool(db_config.bearer_token),
         model_name=db_config.model_name,
         temperature=db_config.temperature if db_config.temperature is not None else 0.7,
         max_tokens=db_config.max_tokens,
@@ -201,7 +202,7 @@ def create_configuration(
     )
 
 
-@router.post("/configurations/system", response_model=LLMConfig)
+@router.post("/configurations/system", response_model=LLMConfigResponse)
 def create_system_configuration(
     config: LLMConfigCreate,
     current_user: User = Depends(deps.get_current_admin_user),
@@ -230,13 +231,13 @@ def create_system_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig(
+    return LLMConfigResponse(
         id=str(db_config.id),
         user_id=str(db_config.user_id) if db_config.user_id else None,
         provider=LLMProvider(db_config.provider),
-        api_key=db_config.api_key,
+        api_key_preview=mask_api_key(db_config.api_key),
         api_url=db_config.api_url,
-        bearer_token=db_config.bearer_token,
+        has_bearer_token=bool(db_config.bearer_token),
         model_name=db_config.model_name,
         temperature=db_config.temperature if db_config.temperature is not None else 0.7,
         max_tokens=db_config.max_tokens,
@@ -245,7 +246,7 @@ def create_system_configuration(
     )
 
 
-@router.put("/configurations/{config_id}", response_model=LLMConfig)
+@router.put("/configurations/{config_id}", response_model=LLMConfigResponse)
 def update_configuration(
     config_id: str,
     config_update: LLMConfigUpdate,
@@ -282,13 +283,13 @@ def update_configuration(
     db.commit()
     db.refresh(db_config)
 
-    return LLMConfig(
+    return LLMConfigResponse(
         id=str(db_config.id),
         user_id=str(db_config.user_id) if db_config.user_id else None,
         provider=LLMProvider(db_config.provider),
-        api_key=db_config.api_key,
+        api_key_preview=mask_api_key(db_config.api_key),
         api_url=db_config.api_url,
-        bearer_token=db_config.bearer_token,
+        has_bearer_token=bool(db_config.bearer_token),
         model_name=db_config.model_name,
         temperature=db_config.temperature if db_config.temperature is not None else 0.7,
         max_tokens=db_config.max_tokens,

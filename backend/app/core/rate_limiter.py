@@ -83,7 +83,7 @@ class RateLimits:
         # Authentication endpoints (more restrictive)
         LOGIN = "5/minute"  # type: ignore  # 5 login attempts per minute
         REGISTER = "3/minute"  # type: ignore  # 3 registrations per minute
-        VERIFY_EMAIL = "10/minute"  # type: ignore  # 10 verification attempts per minute
+        VERIFY_EMAIL = "3/minute"  # type: ignore  # 3 verification attempts per minute
         RESEND_VERIFICATION = "2/minute"  # type: ignore  # 2 resend requests per minute
         FORGOT_PASSWORD = "3/minute"  # type: ignore  # 3 password reset requests per minute
         RESET_PASSWORD = "5/minute"  # type: ignore  # 5 password reset attempts per minute

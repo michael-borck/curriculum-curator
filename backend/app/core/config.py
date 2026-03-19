@@ -1,10 +1,11 @@
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Curriculum Curator"
-    DEBUG: bool = True
+    DEBUG: bool = False
     API_V1_STR: str = "/api/v1"
 
     # Testing
@@ -102,6 +103,12 @@ class Settings(BaseSettings):
     GOOGLE_CSE_ENGINE_ID: str | None = None
     BRAVE_SEARCH_API_KEY: str | None = None
     TAVILY_API_KEY: str | None = None
+
+    @model_validator(mode="after")
+    def validate_secret_key(self) -> "Settings":
+        if not self.DEBUG and self.SECRET_KEY == "dev-secret-key-change-in-production":
+            raise ValueError("SECRET_KEY must be changed from default in production")
+        return self
 
     class Config:
         env_file = ".env"

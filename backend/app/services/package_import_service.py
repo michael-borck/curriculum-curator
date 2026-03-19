@@ -21,8 +21,9 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from io import BytesIO
 from typing import TYPE_CHECKING
-from xml.etree import ElementTree as ET
+from xml.etree.ElementTree import Element as _Element  # type annotations only
 
+import defusedxml.ElementTree as ET  # noqa: N817
 from bs4 import BeautifulSoup
 
 from app.models.accreditation_mappings import (
@@ -298,7 +299,7 @@ class _ManifestData:
         self.raw_text: str = ""
 
 
-def _resolve_ns(tree: ET.Element) -> str:
+def _resolve_ns(tree: _Element) -> str:
     """Find the IMS namespace used in the manifest, or empty string."""
     for candidate in _IMS_NAMESPACES:
         if tree.find(f"{{{candidate}}}organizations") is not None:
@@ -306,7 +307,7 @@ def _resolve_ns(tree: ET.Element) -> str:
     return ""
 
 
-def _el_title(el: ET.Element, tag_fn: _TagFn) -> str:
+def _el_title(el: _Element, tag_fn: _TagFn) -> str:
     """Extract the <title> text of a manifest element, or 'Untitled'."""
     title_el = el.find(tag_fn("title"))
     if title_el is not None and title_el.text:
@@ -315,7 +316,7 @@ def _el_title(el: ET.Element, tag_fn: _TagFn) -> str:
 
 
 def _resolve_ref(
-    el: ET.Element,
+    el: _Element,
     resource_map: dict[str, tuple[str, str | None]],
 ) -> tuple[str | None, str | None]:
     """Resolve an element's identifierref to (href, type)."""
@@ -335,7 +336,7 @@ def _detect_category(title: str) -> str | None:
 
 
 def _walk_items(
-    tree: ET.Element,
+    tree: _Element,
     tag_fn: _TagFn,
     resource_map: dict[str, tuple[str, str | None]],
 ) -> list[tuple[str, list[tuple[str, str | None, str | None, str | None]]]]:
@@ -1290,6 +1291,17 @@ class PackageImportService:
             script.decompose()
 
         inner_html = body.decode_contents().strip()
+
+        import bleach  # noqa: PLC0415
+
+        allowed_tags = [
+            "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li",
+            "a", "strong", "em", "br", "table", "thead", "tbody", "tr", "th", "td",
+            "code", "pre", "blockquote", "img", "div", "span",
+        ]
+        allowed_attrs = {"a": ["href"], "img": ["src", "alt"], "*": ["class"]}
+        inner_html = bleach.clean(inner_html, tags=allowed_tags, attributes=allowed_attrs)
+
         return title, inner_html
 
     def _extract_material_type(self, filename: str) -> str:

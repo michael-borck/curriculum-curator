@@ -2,6 +2,7 @@
 Authentication helper utilities
 """
 
+import logging
 import secrets
 import string
 from datetime import datetime
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.models import EmailVerification, PasswordReset, User
 from app.services.email_service import email_service
+
+logger = logging.getLogger(__name__)
 
 
 class AuthHelpers:
@@ -59,9 +62,9 @@ class AuthHelpers:
             db.commit()
             return False, None
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"❌ Failed to create verification for {user.email}: {e}")
+            logger.exception(f"Failed to create verification for {user.email}")
             return False, None
 
     @staticmethod
@@ -106,9 +109,9 @@ class AuthHelpers:
             db.commit()
             return False, None
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"❌ Failed to create password reset for {user.email}: {e}")
+            logger.exception(f"Failed to create password reset for {user.email}")
             return False, None
 
     @staticmethod
@@ -165,9 +168,9 @@ class AuthHelpers:
 
             return True, user, None
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"❌ Error verifying code for {email}: {e}")
+            logger.exception(f"Error verifying code for {email}")
             return False, None, "Verification failed"
 
     @staticmethod
@@ -204,8 +207,8 @@ class AuthHelpers:
 
             return True, user, None
 
-        except Exception as e:
-            print(f"❌ Error verifying reset code for {email}: {e}")
+        except Exception:
+            logger.exception(f"Error verifying reset code for {email}")
             return False, None, "Verification failed"
 
     @staticmethod
@@ -233,9 +236,9 @@ class AuthHelpers:
 
             return False
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"❌ Error marking reset code as used: {e}")
+            logger.exception("Error marking reset code as used")
             return False
 
     @staticmethod
@@ -273,15 +276,15 @@ class AuthHelpers:
             reset_count = len(expired_resets)
 
             if ver_count > 0 or reset_count > 0:
-                print(
-                    f"🧹 Cleaned up {ver_count} expired verifications and {reset_count} expired resets"
+                logger.info(
+                    f"Cleaned up {ver_count} expired verifications and {reset_count} expired resets"
                 )
 
             return ver_count, reset_count
 
-        except Exception as e:
+        except Exception:
             db.rollback()
-            print(f"❌ Error cleaning expired codes: {e}")
+            logger.exception("Error cleaning expired codes")
             return 0, 0
 
 

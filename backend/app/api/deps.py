@@ -8,9 +8,8 @@ import logging
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -50,6 +49,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_current_user(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserResponse:
@@ -80,16 +80,23 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id: str | None = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        logger.exception("[AUTH] JWT decode failed")
-        raise credentials_exception from None
+    from app.core import security as security_module  # noqa: PLC0415
+
+    # Extract client IP for token IP-binding verification
+    client_ip: str | None = None
+    if request.client:
+        client_ip = request.client.host
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+
+    payload = security_module.decode_access_token(token, verify_ip=client_ip)
+    if payload is None:
+        raise credentials_exception
+
+    user_id: str | None = payload.get("sub")
+    if user_id is None:
+        raise credentials_exception
 
     user = user_repo.get_user_by_id(db, user_id)
     if user is None:

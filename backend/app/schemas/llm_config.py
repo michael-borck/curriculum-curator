@@ -57,6 +57,35 @@ class LLMConfig(LLMConfigBase):
         from_attributes = True
 
 
+def mask_api_key(key: str | None) -> str | None:
+    """Mask an API key for safe display, showing first/last 4 chars."""
+    if not key:
+        return None
+    if len(key) > 8:
+        return key[:4] + "..." + key[-4:]
+    return "****"
+
+
+class LLMConfigResponse(CamelModel):
+    """LLM configuration response with masked sensitive fields."""
+
+    id: str
+    user_id: str | None = None
+    user_email: str | None = None
+    provider: LLMProvider
+    api_key_preview: str | None = Field(None, description="Masked API key preview")
+    api_url: str | None = None
+    has_bearer_token: bool = False
+    model_name: str | None = None
+    temperature: float = 0.7
+    max_tokens: int | None = None
+    is_default: bool = False
+    is_active: bool = True
+
+    class Config:
+        from_attributes = True
+
+
 class LLMModelInfo(CamelModel):
     """Information about an available model"""
 

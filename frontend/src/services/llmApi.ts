@@ -4,7 +4,8 @@
 
 import api from './api';
 import type {
-  LLMConfig,
+  LLMConfigResponse,
+  LLMConfigRequest,
   LLMTestRequest,
   LLMTestResponse,
   TokenUsageStats,
@@ -46,16 +47,18 @@ class LLMApiService {
   /**
    * Get user's LLM configurations
    */
-  async getUserConfigurations(): Promise<LLMConfig[]> {
-    const response = await api.get<LLMConfig[]>('/llm-config/configurations');
+  async getUserConfigurations(): Promise<LLMConfigResponse[]> {
+    const response = await api.get<LLMConfigResponse[]>(
+      '/llm-config/configurations'
+    );
     return response.data;
   }
 
   /**
    * Get system-wide LLM configurations (admin only)
    */
-  async getSystemConfigurations(): Promise<LLMConfig[]> {
-    const response = await api.get<LLMConfig[]>(
+  async getSystemConfigurations(): Promise<LLMConfigResponse[]> {
+    const response = await api.get<LLMConfigResponse[]>(
       '/llm-config/configurations/system'
     );
     return response.data;
@@ -64,8 +67,10 @@ class LLMApiService {
   /**
    * Create a new LLM configuration
    */
-  async createConfiguration(config: Omit<LLMConfig, 'id'>): Promise<LLMConfig> {
-    const response = await api.post<LLMConfig>(
+  async createConfiguration(
+    config: LLMConfigRequest
+  ): Promise<LLMConfigResponse> {
+    const response = await api.post<LLMConfigResponse>(
       '/llm-config/configurations',
       config
     );
@@ -76,9 +81,9 @@ class LLMApiService {
    * Create a system-wide LLM configuration (admin only)
    */
   async createSystemConfiguration(
-    config: Omit<LLMConfig, 'id'>
-  ): Promise<LLMConfig> {
-    const response = await api.post<LLMConfig>(
+    config: LLMConfigRequest
+  ): Promise<LLMConfigResponse> {
+    const response = await api.post<LLMConfigResponse>(
       '/llm-config/configurations/system',
       config
     );
@@ -88,8 +93,8 @@ class LLMApiService {
   /**
    * Get all user configurations (admin only)
    */
-  async getAllUserConfigurations(): Promise<LLMConfig[]> {
-    const response = await api.get<LLMConfig[]>(
+  async getAllUserConfigurations(): Promise<LLMConfigResponse[]> {
+    const response = await api.get<LLMConfigResponse[]>(
       '/llm-config/configurations/users'
     );
     return response.data;
@@ -100,9 +105,9 @@ class LLMApiService {
    */
   async updateConfiguration(
     id: string,
-    config: Partial<LLMConfig>
-  ): Promise<LLMConfig> {
-    const response = await api.put<LLMConfig>(
+    config: Partial<LLMConfigRequest>
+  ): Promise<LLMConfigResponse> {
+    const response = await api.put<LLMConfigResponse>(
       `/llm-config/configurations/${id}`,
       config
     );

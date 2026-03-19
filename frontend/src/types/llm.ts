@@ -10,7 +10,39 @@ export enum LLMProvider {
   CUSTOM = 'custom',
 }
 
-export interface LLMConfig {
+/** Shape returned by the backend GET endpoints (secrets are redacted). */
+export interface LLMConfigResponse {
+  id?: string;
+  provider: LLMProvider;
+  api_key_preview: string | null;
+  api_url?: string;
+  has_bearer_token: boolean;
+  model_name?: string;
+  temperature: number;
+  max_tokens?: number;
+  is_default: boolean;
+  isActive?: boolean;
+  userId?: string | null;
+  user_email?: string | null;
+}
+
+/** Shape sent to the backend when creating / updating a config. */
+export interface LLMConfigRequest {
+  provider: LLMProvider;
+  api_key?: string | undefined;
+  api_url?: string | undefined;
+  bearer_token?: string | undefined;
+  model_name?: string | undefined;
+  temperature?: number | undefined;
+  max_tokens?: number | undefined;
+  is_default?: boolean | undefined;
+}
+
+/**
+ * Union used by form state — includes writable fields (api_key, bearer_token)
+ * plus read-only preview fields so we can populate placeholders from a response.
+ */
+export interface LLMConfigFormData {
   id?: string;
   provider: LLMProvider;
   api_key?: string;
@@ -20,9 +52,10 @@ export interface LLMConfig {
   temperature: number;
   max_tokens?: number;
   is_default: boolean;
-  isActive?: boolean;
-  userId?: string | null;
-  user_email?: string | null;
+  /** Populated from response — used as placeholder text when editing. */
+  api_key_preview?: string | null;
+  /** Populated from response — shows whether a token is already saved. */
+  has_bearer_token?: boolean;
 }
 
 export interface LLMTestRequest {

@@ -7,11 +7,12 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import psutil
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import and_, text
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.rate_limiter import RateLimits, limiter
 from app.models import LoginAttempt, SecurityLog, User, UserRole
 
 router = APIRouter()
@@ -31,7 +32,9 @@ async def health_check():
 
 
 @router.get("/health/detailed")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
 async def detailed_health_check(
+    request: Request,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -118,7 +121,9 @@ async def detailed_health_check(
 
 
 @router.get("/metrics")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
 async def get_metrics(
+    request: Request,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -188,7 +193,9 @@ async def get_metrics(
 
 
 @router.get("/alerts")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
 async def get_alerts(
+    request: Request,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -303,7 +310,9 @@ async def get_alerts(
 
 
 @router.post("/test-alert")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
 async def test_alert(
+    request: Request,
     alert_type: str = "test",
     current_user: User = Depends(deps.get_current_admin_user),
 ):

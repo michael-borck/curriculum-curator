@@ -2,6 +2,7 @@
 Security utilities for authentication and password handling
 """
 
+import time as _time
 import uuid
 import warnings
 from datetime import datetime, timedelta
@@ -17,6 +18,31 @@ warnings.filterwarnings("ignore", category=UserWarning, module="passlib")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# In-memory JTI blacklist for token revocation
+# Maps JTI → expiration timestamp; entries are cleaned up lazily
+_blacklisted_jtis: dict[str, float] = {}
+
+
+def blacklist_token(jti: str, exp: float) -> None:
+    """Add a token JTI to the blacklist. It will be cleaned up after expiry."""
+    _blacklisted_jtis[jti] = exp
+    # Lazy cleanup: remove expired entries
+    now = _time.time()
+    expired = [k for k, v in _blacklisted_jtis.items() if v < now]
+    for k in expired:
+        _blacklisted_jtis.pop(k, None)
+
+
+def is_token_blacklisted(jti: str) -> bool:
+    """Check if a token JTI has been blacklisted."""
+    if jti in _blacklisted_jtis:
+        # Check if it's still valid (not expired)
+        if _blacklisted_jtis[jti] >= _time.time():
+            return True
+        # Expired, clean it up
+        _blacklisted_jtis.pop(jti, None)
+    return False
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -114,6 +140,11 @@ def decode_access_token(token: str, verify_ip: str | None = None) -> dict | None
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
+
+        # Check if token has been revoked
+        jti = payload.get("jti", "")
+        if jti and is_token_blacklisted(jti):
+            return None
 
         # Verify IP binding if both token IP and verify IP are provided
         if verify_ip and payload.get("ip") and payload.get("ip") != verify_ip:

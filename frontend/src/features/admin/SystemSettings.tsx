@@ -100,7 +100,7 @@ const SystemSettings = () => {
       // Get unique providers that are configured
       const providerMap = new Map<LLMProvider, boolean>();
       configs.forEach(config => {
-        if (config.api_key || config.provider === 'ollama') {
+        if (config.api_key_preview || config.provider === 'ollama') {
           providerMap.set(
             config.provider as LLMProvider,
             config.is_default || false
