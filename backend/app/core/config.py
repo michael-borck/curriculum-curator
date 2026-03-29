@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     SEARXNG_URL: str = "http://localhost:8080"  # SearXNG instance URL
     SEARXNG_TIMEOUT: int = 30  # Search timeout in seconds
 
+    # Tier 1 extended: CORE API (free with registration, 10K/month)
+    CORE_API_KEY: str | None = None
+
     # Tier 3 Search APIs (user can also set per-account via research settings)
     GOOGLE_CSE_API_KEY: str | None = None
     GOOGLE_CSE_ENGINE_ID: str | None = None

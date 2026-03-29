@@ -39,8 +39,44 @@ export interface ListSourcesParams {
   pageSize?: number | undefined;
 }
 
+export interface SaveFromCaptureRequest {
+  url: string;
+  title: string;
+  description?: string | undefined;
+  doi?: string | undefined;
+  authors?: string[] | undefined;
+  publicationDate?: string | undefined;
+  publisher?: string | undefined;
+  journalName?: string | undefined;
+  volume?: string | undefined;
+  issue?: string | undefined;
+  pages?: string | undefined;
+  isbn?: string | undefined;
+  sourceType?: string | undefined;
+  contentText?: string | undefined;
+  academicScore?: number | undefined;
+}
+
+export interface CrossRefLookupResponse {
+  title?: string | undefined;
+  authors?: string[] | undefined;
+  publisher?: string | undefined;
+  journalName?: string | undefined;
+  volume?: string | undefined;
+  issue?: string | undefined;
+  pages?: string | undefined;
+  publicationDate?: string | undefined;
+  isbn?: string | undefined;
+}
+
 export const saveFromSearch = (data: SaveFromSearchRequest) =>
   api.post<ResearchSourceResponse>('/sources/from-search', data);
+
+export const saveFromCapture = (data: SaveFromCaptureRequest) =>
+  api.post<ResearchSourceResponse>('/sources/from-capture', data);
+
+export const crossrefLookup = (doi: string) =>
+  api.post<CrossRefLookupResponse>('/research/crossref-lookup', { doi });
 
 export const listSources = (params?: ListSourcesParams) =>
   api.get<ResearchSourceList>('/sources', { params });

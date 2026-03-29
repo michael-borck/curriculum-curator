@@ -45,6 +45,10 @@ export default [
         vi: 'readonly',
         React: 'readonly',
         __APP_VERSION__: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
       },
     },
     plugins: {

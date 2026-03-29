@@ -117,7 +117,7 @@ class SearchRouter:
 
         # Dispatch to the appropriate tier
         if tier == SearchTier.ACADEMIC:
-            return await self._search_academic(query, max_results), tier
+            return await self._search_academic(query, max_results, user_settings), tier
         if tier == SearchTier.GENERAL_WEB:
             return await self._search_tier3(
                 query, max_results, user_settings or {}
@@ -126,14 +126,34 @@ class SearchRouter:
             return await self._search_searxng(query, max_results), tier
 
         # Fallback
-        return await self._search_academic(query, max_results), SearchTier.ACADEMIC
+        return (
+            await self._search_academic(query, max_results, user_settings),
+            SearchTier.ACADEMIC,
+        )
 
     async def _search_academic(
-        self, query: str, max_results: int
+        self,
+        query: str,
+        max_results: int,
+        user_settings: dict[str, object] | None = None,
     ) -> list[SearchResult]:
-        """Tier 1: Academic search via OpenAlex + Semantic Scholar."""
+        """Tier 1: Academic search via OpenAlex + Semantic Scholar + CrossRef + CORE."""
+        # Check for CORE API key in user settings or system config
+        core_api_key: str | None = None
+        if user_settings:
+            api_keys = user_settings.get("searchApiKeys")
+            if isinstance(api_keys, dict):
+                key = api_keys.get("coreApiKey")
+                if isinstance(key, str) and key:
+                    core_api_key = key
+
+        if not core_api_key:
+            from app.core.config import settings  # noqa: PLC0415
+
+            core_api_key = settings.CORE_API_KEY
+
         works: list[AcademicWork] = await academic_search_service.search(
-            query, max_results
+            query, max_results, core_api_key=core_api_key
         )
         return academic_search_service.to_search_results(works)
 

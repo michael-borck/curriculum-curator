@@ -1,10 +1,16 @@
-import { useState } from 'react';
-import { Search, Link2, Bookmark } from 'lucide-react';
+import { useState, lazy, Suspense } from 'react';
+import { Search, Link2, Bookmark, Globe } from 'lucide-react';
 import SearchPanel from './SearchPanel';
 import UrlExtractPanel from './UrlExtractPanel';
 import SavedSourcesPanel from './SavedSourcesPanel';
 
-type Tab = 'search' | 'urls' | 'saved';
+// Lazy-load BrowsePanel since it's desktop-only and uses Electron webview
+const BrowsePanel = lazy(() => import('./BrowsePanel'));
+
+type Tab = 'search' | 'urls' | 'saved' | 'browse';
+
+const isDesktop = !!(window as unknown as { api?: { isDesktop?: boolean } }).api
+  ?.isDesktop;
 
 const ResearchPage = () => {
   const [activeTab, setActiveTab] = useState<Tab>('search');
@@ -44,6 +50,19 @@ const ResearchPage = () => {
             <Link2 className='w-4 h-4' />
             Import URLs
           </button>
+          {isDesktop && (
+            <button
+              onClick={() => setActiveTab('browse')}
+              className={`pb-3 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+                activeTab === 'browse'
+                  ? 'border-purple-600 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Globe className='w-4 h-4' />
+              Browse
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('saved')}
             className={`pb-3 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
@@ -62,6 +81,17 @@ const ResearchPage = () => {
       <div className='bg-white rounded-lg shadow-md p-6'>
         {activeTab === 'search' && <SearchPanel />}
         {activeTab === 'urls' && <UrlExtractPanel />}
+        {activeTab === 'browse' && (
+          <Suspense
+            fallback={
+              <div className='flex items-center justify-center h-64 text-gray-400'>
+                Loading browser...
+              </div>
+            }
+          >
+            <BrowsePanel />
+          </Suspense>
+        )}
         {activeTab === 'saved' && <SavedSourcesPanel />}
       </div>
     </div>

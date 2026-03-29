@@ -1,7 +1,8 @@
 """
-Academic Search Service — OpenAlex + Semantic Scholar clients with deduplication.
+Academic Search Service — multi-provider academic search with deduplication.
 
 Tier 1 of the tiered research architecture. Always available, no API keys needed.
+Providers: OpenAlex, Semantic Scholar, CrossRef, CORE (optional API key).
 """
 
 import asyncio
@@ -14,8 +15,9 @@ from app.services.web_search_service import SearchResult
 
 logger = logging.getLogger(__name__)
 
-# Polite pool identifier for OpenAlex
+# Polite pool identifiers
 _OPENALEX_MAILTO = "admin@curriculum-curator.app"
+_CROSSREF_MAILTO = "admin@curriculum-curator.app"
 
 
 @dataclass
@@ -205,34 +207,267 @@ class SemanticScholarClient:
             return []
 
 
+class CrossRefSearchClient:
+    """Client for the CrossRef API (free, no key, polite pool with mailto)."""
+
+    BASE_URL = "https://api.crossref.org"
+
+    async def search_works(
+        self, query: str, max_results: int = 20
+    ) -> list[AcademicWork]:
+        """Search CrossRef for works matching a query."""
+        params = {
+            "query": query,
+            "rows": min(max_results, 50),
+            "sort": "relevance",
+            "order": "desc",
+            "mailto": _CROSSREF_MAILTO,
+        }
+        url = f"{self.BASE_URL}/works"
+
+        try:
+            async with (
+                aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=15)
+                ) as session,
+                session.get(url, params=params) as response,
+            ):
+                if response.status != 200:
+                    logger.warning("CrossRef search returned status %d", response.status)
+                    return []
+
+                data = await response.json()
+                items = data.get("message", {}).get("items", [])
+                results: list[AcademicWork] = []
+
+                for item in items:
+                    # Title
+                    titles = item.get("title", [])
+                    title = titles[0] if titles else ""
+                    if not title:
+                        continue
+
+                    # DOI
+                    doi = item.get("DOI")
+
+                    # URL
+                    work_url = f"https://doi.org/{doi}" if doi else item.get("URL", "")
+
+                    # Authors
+                    authors: list[str] = []
+                    for author in item.get("author", [])[:5]:
+                        given = author.get("given", "")
+                        family = author.get("family", "")
+                        if given and family:
+                            authors.append(f"{given} {family}")
+                        elif family:
+                            authors.append(family)
+
+                    # Publication year
+                    pub_year = None
+                    for date_key in ("published-print", "published-online", "published"):
+                        date_parts = item.get(date_key, {}).get("date-parts", [[]])
+                        if date_parts and date_parts[0]:
+                            pub_year = date_parts[0][0]
+                            break
+
+                    # Source/venue
+                    container = item.get("container-title", [])
+                    source_name = container[0] if container else item.get("publisher")
+
+                    # Citation count
+                    citation_count = item.get("is-referenced-by-count")
+
+                    # Abstract (CrossRef sometimes includes it)
+                    abstract = item.get("abstract")
+                    if abstract:
+                        # Strip JATS XML tags if present
+                        import re  # noqa: PLC0415
+
+                        abstract = re.sub(r"<[^>]+>", "", abstract).strip()
+
+                    results.append(
+                        AcademicWork(
+                            title=title,
+                            url=work_url,
+                            doi=doi,
+                            abstract=abstract,
+                            authors=authors,
+                            publication_year=pub_year,
+                            source_name=source_name,
+                            citation_count=citation_count,
+                            provider="crossref",
+                        )
+                    )
+
+                return results
+
+        except Exception:
+            logger.exception("CrossRef search failed")
+            return []
+
+
+class CORESearchClient:
+    """Client for the CORE API (free with registration, 10K results/month)."""
+
+    BASE_URL = "https://api.core.ac.uk/v3"
+
+    def __init__(self, api_key: str | None = None) -> None:
+        self.api_key = api_key
+
+    async def search_works(
+        self, query: str, max_results: int = 20
+    ) -> list[AcademicWork]:
+        """Search CORE for open access works."""
+        if not self.api_key:
+            return []
+
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+        params = {
+            "q": query,
+            "limit": min(max_results, 100),
+        }
+        url = f"{self.BASE_URL}/search/works"
+
+        try:
+            async with (
+                aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=15),
+                    headers=headers,
+                ) as session,
+                session.get(url, params=params) as response,
+            ):
+                if response.status == 401:
+                    logger.warning("CORE API key is invalid or expired")
+                    return []
+                if response.status != 200:
+                    logger.warning("CORE search returned status %d", response.status)
+                    return []
+
+                data = await response.json()
+                results: list[AcademicWork] = []
+
+                for item in data.get("results", []):
+                    title = item.get("title", "")
+                    if not title:
+                        continue
+
+                    # DOI
+                    doi = item.get("doi")
+                    if doi and doi.startswith("https://doi.org/"):
+                        doi = doi[len("https://doi.org/") :]
+
+                    # URL: prefer download URL, then DOI link, then CORE page
+                    download_url = item.get("downloadUrl")
+                    work_url = (
+                        download_url
+                        or (f"https://doi.org/{doi}" if doi else None)
+                        or item.get("sourceFulltextUrls", [""])[0]
+                        or f"https://core.ac.uk/works/{item.get('id', '')}"
+                    )
+
+                    # Authors
+                    authors: list[str] = []
+                    for author in item.get("authors", [])[:5]:
+                        name = author.get("name") if isinstance(author, dict) else author
+                        if name:
+                            authors.append(str(name))
+
+                    # Year
+                    pub_year = item.get("yearPublished")
+
+                    # Abstract
+                    abstract = item.get("abstract")
+
+                    # Source
+                    source_name = item.get("publisher") or item.get("dataProvider")
+
+                    # Citation count (CORE doesn't always have this)
+                    citation_count = item.get("citationCount")
+
+                    results.append(
+                        AcademicWork(
+                            title=title,
+                            url=work_url,
+                            doi=doi,
+                            abstract=abstract,
+                            authors=authors,
+                            publication_year=pub_year,
+                            source_name=source_name,
+                            citation_count=citation_count,
+                            provider="core",
+                        )
+                    )
+
+                return results
+
+        except Exception:
+            logger.exception("CORE search failed")
+            return []
+
+
 class AcademicSearchService:
     """Coordinates academic search across providers with deduplication."""
 
     def __init__(self) -> None:
         self.openalex = OpenAlexClient()
         self.semantic_scholar = SemanticScholarClient()
+        self.crossref = CrossRefSearchClient()
+        self.core = CORESearchClient()
 
-    async def search(self, query: str, max_results: int = 20) -> list[AcademicWork]:
-        """Run both clients concurrently, deduplicate by DOI, rank by citations."""
-        openalex_results, s2_results = await asyncio.gather(
-            self.openalex.search_works(query, max_results),
-            self.semantic_scholar.search_papers(query, max_results),
-            return_exceptions=True,
+    async def search(
+        self,
+        query: str,
+        max_results: int = 20,
+        core_api_key: str | None = None,
+    ) -> list[AcademicWork]:
+        """Run all providers concurrently, deduplicate by DOI, rank by citations.
+
+        CORE is only queried if an API key is provided (free registration required).
+        """
+        # Build the list of coroutines to run
+        tasks: list[asyncio.Task[list[AcademicWork]]] = []
+
+        tasks.append(asyncio.ensure_future(self.openalex.search_works(query, max_results)))
+        tasks.append(
+            asyncio.ensure_future(self.semantic_scholar.search_papers(query, max_results))
+        )
+        tasks.append(
+            asyncio.ensure_future(self.crossref.search_works(query, max_results))
         )
 
-        # Handle exceptions gracefully
-        if isinstance(openalex_results, BaseException):
-            logger.warning("OpenAlex failed: %s", openalex_results)
-            openalex_results = []
-        if isinstance(s2_results, BaseException):
-            logger.warning("Semantic Scholar failed: %s", s2_results)
-            s2_results = []
+        # CORE: only if API key provided
+        if core_api_key:
+            core_client = CORESearchClient(api_key=core_api_key)
+            tasks.append(
+                asyncio.ensure_future(core_client.search_works(query, max_results))
+            )
 
-        # Deduplicate by DOI (prefer the entry with more info)
+        raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Flatten results, handling exceptions gracefully
+        provider_names = ["OpenAlex", "Semantic Scholar", "CrossRef"]
+        if core_api_key:
+            provider_names.append("CORE")
+
+        all_works_flat: list[AcademicWork] = []
+        for i, result in enumerate(raw_results):
+            if isinstance(result, BaseException):
+                logger.warning("%s failed: %s", provider_names[i], result)
+            else:
+                all_works_flat.extend(result)
+
+        return self._deduplicate_and_rank(all_works_flat, max_results)
+
+    @staticmethod
+    def _deduplicate_and_rank(
+        works: list[AcademicWork], max_results: int
+    ) -> list[AcademicWork]:
+        """Deduplicate by DOI (keep richest entry) and rank by citations."""
         seen_dois: dict[str, AcademicWork] = {}
         all_works: list[AcademicWork] = []
 
-        for work in [*openalex_results, *s2_results]:
+        for work in works:
             if work.doi:
                 doi_lower = work.doi.lower()
                 if doi_lower in seen_dois:

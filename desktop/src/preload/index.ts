@@ -3,6 +3,9 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Electron APIs exposed to renderer
 const api = {
+  // Desktop detection flag
+  isDesktop: true as const,
+
   // File export: native Save As dialog
   saveFile: (defaultName: string, data: Buffer | string): Promise<string | null> => {
     return ipcRenderer.invoke('save-file', defaultName, data)

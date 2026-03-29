@@ -9,6 +9,7 @@ const ResearchSettings = () => {
   const [googleCseEngineId, setGoogleCseEngineId] = useState('');
   const [braveSearchApiKey, setBraveSearchApiKey] = useState('');
   const [tavilyApiKey, setTavilyApiKey] = useState('');
+  const [coreApiKey, setCoreApiKey] = useState('');
   const [searxngUrl, setSearxngUrl] = useState('');
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -32,6 +33,7 @@ const ResearchSettings = () => {
           googleCseEngineId: googleCseEngineId || undefined,
           braveSearchApiKey: braveSearchApiKey || undefined,
           tavilyApiKey: tavilyApiKey || undefined,
+          coreApiKey: coreApiKey || undefined,
         },
         searxngUrl: searxngUrl || undefined,
       };
@@ -108,7 +110,7 @@ const ResearchSettings = () => {
             className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
           >
             <option value={1}>
-              Tier 1: Academic (OpenAlex + Semantic Scholar)
+              Tier 1: Academic (OpenAlex + Semantic Scholar + CrossRef + CORE)
             </option>
             <option value={3}>
               Tier 3: General Web (requires API keys below)
@@ -116,9 +118,36 @@ const ResearchSettings = () => {
             <option value={4}>Tier 4: SearXNG (requires instance URL)</option>
           </select>
           <p className='text-xs text-gray-500 mt-1'>
-            Tier 1 (Academic) is always available. Higher tiers require
-            additional configuration.
+            Tier 1 searches OpenAlex, Semantic Scholar, and CrossRef (always
+            available). Add a CORE API key below for broader coverage.
           </p>
+        </div>
+
+        {/* CORE API Key (Tier 1 enhancement) */}
+        <div>
+          <h3 className='font-medium mb-3'>CORE API Key (Tier 1)</h3>
+          <p className='text-xs text-gray-500 mb-3'>
+            Free with registration at{' '}
+            <a
+              href='https://core.ac.uk/services/api'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-blue-600 hover:underline'
+            >
+              core.ac.uk
+            </a>
+            . Adds 300M+ open access papers (theses, reports, institutional
+            repositories).
+          </p>
+          <div className='space-y-4'>
+            {apiKeyField(
+              'CORE API Key',
+              'coreApiKey',
+              coreApiKey,
+              setCoreApiKey,
+              'abc123...'
+            )}
+          </div>
         </div>
 
         {/* API Keys */}

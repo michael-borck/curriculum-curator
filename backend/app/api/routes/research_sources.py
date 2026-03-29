@@ -24,6 +24,7 @@ from app.models.research_source import (
     SourceType,
 )
 from app.repositories import content_repo, unit_repo
+from app.schemas.capture import CaptureSourceRequest
 from app.schemas.research_source import (
     AuthorSchema,
     BulkCitationRequest,
@@ -195,6 +196,66 @@ async def save_from_search(
 
     logger.info(
         f"Saved source from search: '{source.title}' for user {current_user.email}"
+    )
+    return source_to_response(source)
+
+
+@router.post(
+    "/from-capture",
+    response_model=ResearchSourceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def save_from_capture(
+    data: CaptureSourceRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+):
+    """
+    Save a research source captured from the embedded browser.
+
+    Accepts full citation metadata including DOI, authors, journal details.
+    """
+    # Parse free-form author strings into structured author dicts
+    authors_json = None
+    if data.authors:
+        author_dicts = []
+        for name in data.authors:
+            parts = name.strip().rsplit(" ", 1)
+            if len(parts) == 2:
+                author_dicts.append(
+                    {"first_name": parts[0], "last_name": parts[1]}
+                )
+            else:
+                author_dicts.append({"first_name": "", "last_name": parts[0]})
+        authors_json = json.dumps(author_dicts)
+
+    source = ResearchSource(
+        user_id=current_user.id,
+        url=data.url,
+        title=data.title,
+        source_type=data.source_type.value
+        if isinstance(data.source_type, SourceType)
+        else data.source_type,
+        authors_json=authors_json,
+        publication_date=data.publication_date,
+        publisher=data.publisher,
+        journal_name=data.journal_name,
+        volume=data.volume,
+        issue=data.issue,
+        pages=data.pages,
+        doi=data.doi,
+        isbn=data.isbn,
+        summary=data.description,
+        academic_score=data.academic_score or 0.0,
+        access_date=datetime.now().strftime("%Y-%m-%d"),
+    )
+
+    db.add(source)
+    db.commit()
+    db.refresh(source)
+
+    logger.info(
+        f"Saved source from capture: '{source.title}' for user {current_user.email}"
     )
     return source_to_response(source)
 

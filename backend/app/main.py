@@ -452,6 +452,13 @@ except ImportError as e:
     logger.warning(f"Failed to load research routes: {e}")
 
 try:
+    from app.api.routes import crossref
+
+    app.include_router(crossref.router, prefix="/api/research", tags=["crossref"])
+except ImportError as e:
+    logger.warning(f"Failed to load crossref routes: {e}")
+
+try:
     from app.api.routes import ollama
 
     app.include_router(ollama.router, prefix="/api/ollama", tags=["ollama"])

@@ -235,12 +235,36 @@ export interface SearchApiKeys {
   googleCseEngineId?: string | undefined;
   braveSearchApiKey?: string | undefined;
   tavilyApiKey?: string | undefined;
+  coreApiKey?: string | undefined;
 }
 
 export interface ResearchSettings {
   preferredTier: number;
   searchApiKeys?: SearchApiKeys | undefined;
   searxngUrl?: string | undefined;
+}
+
+// =============================================================================
+// =============================================================================
+// Phase 5: Captured Page Metadata (Embedded Browser)
+// =============================================================================
+
+export interface CapturedPageMetadata {
+  url: string;
+  title: string;
+  description?: string | undefined;
+  doi?: string | undefined;
+  authors?: string[] | undefined;
+  publicationDate?: string | undefined;
+  publisher?: string | undefined;
+  journalName?: string | undefined;
+  volume?: string | undefined;
+  issue?: string | undefined;
+  pages?: string | undefined;
+  isbn?: string | undefined;
+  contentText?: string | undefined;
+  academicScore?: number | undefined;
+  extractionError?: string | undefined;
 }
 
 // =============================================================================

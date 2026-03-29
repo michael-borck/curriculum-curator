@@ -63,7 +63,10 @@ dependencies = [
     # File handling
     "aiofiles>=23.2.1",
     # LLM Integration - LiteLLM provides unified interface for all providers
-    "litellm>=1.50.0",
+    # SECURITY: pinned to last known safe version (1.82.7/1.82.8 were backdoored
+    # in the TeamPCP supply chain attack of 2026-03-24). Do not upgrade past
+    # 1.82.6 until LiteLLM completes their supply-chain review.
+    "litellm>=1.50.0,<=1.82.6,!=1.82.7,!=1.82.8",
     "tiktoken>=0.5.2",  # Token counting
     # File Processing
     "python-docx>=1.1.0",
