@@ -203,6 +203,7 @@ async def test_deduplication_by_doi():
     with (
         patch.object(service.openalex, "search_works", return_value=[work_a, work_c]),
         patch.object(service.semantic_scholar, "search_papers", return_value=[work_b]),
+        patch.object(service.crossref, "search_works", return_value=[]),
     ):
         results = await service.search("test")
 
@@ -230,6 +231,7 @@ async def test_works_without_doi_not_deduplicated():
     with (
         patch.object(service.openalex, "search_works", return_value=[work_a]),
         patch.object(service.semantic_scholar, "search_papers", return_value=[work_b]),
+        patch.object(service.crossref, "search_works", return_value=[]),
     ):
         results = await service.search("test")
 
@@ -299,7 +301,7 @@ async def test_search_router_defaults_to_academic():
         _results, tier = await router.search("test query")
 
     assert tier == SearchTier.ACADEMIC
-    mock_academic.assert_called_once_with("test query", 20)
+    mock_academic.assert_called_once_with("test query", 20, None)
 
 
 @pytest.mark.asyncio
