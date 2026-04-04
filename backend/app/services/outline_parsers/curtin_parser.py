@@ -186,7 +186,7 @@ _ASSESS_TASK_RE = re.compile(
     r"(?:^|\n)\s*(\d+)\s*\n"              # task number
     r"((?:(?!\d{1,3}\s*%).)+?)\n"          # title (everything up to the line before weight)
     r"\s*(\d{1,3})\s*%\s*\n"              # weight (e.g. "40 %" or "60 %")
-    r"\s*(?:Week\s*:\s*([\d,\s]+))?",      # optional week(s)
+    r"\s*(?:Week\s*:\s*([\d, ]+))?",        # optional week(s) — no newlines
     re.IGNORECASE | re.DOTALL,
 )
 

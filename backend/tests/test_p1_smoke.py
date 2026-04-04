@@ -175,11 +175,15 @@ class TestUnitCRUD:
         assert resp.json()["status"] == "draft"
 
     def test_hard_delete_unit(self, client: TestClient) -> None:
+        from unittest.mock import patch
+
         created = _create_unit(client)
         unit_id = created["id"]
 
-        # Permanent delete
-        resp = client.delete(f"/api/units/{unit_id}", params={"permanent": True})
+        # Permanent delete requires LOCAL_MODE or admin role
+        with patch("app.api.routes.units.settings") as mock_settings:
+            mock_settings.LOCAL_MODE = True
+            resp = client.delete(f"/api/units/{unit_id}", params={"permanent": True})
         assert resp.status_code == 204
 
         resp = client.get(f"/api/units/{unit_id}")

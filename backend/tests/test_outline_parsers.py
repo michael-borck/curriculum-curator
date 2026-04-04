@@ -106,32 +106,48 @@ class TestBloomGuessing:
 _CURTIN_DOC = """\
 Curtin University
 Unit Outline
+curtin.edu.au
 
-COMP1001 Introduction to Programming
+COMP1001 (V.1) Introduction to Programming
 Credit Points: 25
-Semester: 1
-2026
+Semester 1, 2026
 
-Unit Description:
+Syllabus
 This unit introduces students to the fundamentals of programming using Python.
 
 Unit Learning Outcomes
-ULO1 Describe the basic concepts of programming
-ULO2 Apply programming techniques to solve simple problems
-ULO3 Design and implement small programs
+On successful completion of this unit student can:
+Graduate Capabilities addressed
+1
+Describe the basic concepts of programming
+2
+Apply programming techniques to solve simple problems
+3
+Design and implement small programs
 
 Assessment Summary
-Quiz 1 20%
-Final Exam 50%
-Project 30%
+1
+Quiz 1
+20 %
+Week:4
+2
+Final Exam
+50 %
+Week:14
+3
+Project
+30 %
+Week:12
 
 Teaching Schedule
 Week 1: Introduction to Python
 Week 2: Variables and Data Types
 Week 3: Control Structures
 
-Prescribed Text
-Python Crash Course by Eric Matthes, ISBN 978-1-59327-928-8
+Learning Resources
+Matthes, E. (2019). Python Crash Course. No Starch Press.
+Essential:Yes
+ISBN: 978-1-59327-928-8
 
 Academic Integrity
 Students must follow Curtin's Academic Integrity policy.
@@ -393,9 +409,9 @@ class TestApplyEndpoint:
         assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["code"] == "NEW101"
-        assert data["ulos_created"] == 2
-        assert data["weeks_created"] == 2
-        assert data["assessments_created"] == 2
+        assert data["ulosCreated"] == 2
+        assert data["weeksCreated"] == 2
+        assert data["assessmentsCreated"] == 2
 
         # Verify DB records
         unit = test_db.query(Unit).filter(Unit.code == "NEW101").first()
