@@ -117,7 +117,7 @@ test.describe("Curtin Outline Parser", () => {
 
     // Verify title contains "Artificial Intelligence"
     const titleInput = page.locator(
-      "input[placeholder*='title' i]",
+      "input[placeholder*='Introduction to Programming' i]",
     ).first();
     await expect(titleInput).toHaveValue(/Artificial Intelligence/i);
 
