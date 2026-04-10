@@ -42,9 +42,11 @@ import {
   Lightbulb,
   Download,
   History,
+  Upload,
   X,
   type LucideIcon,
 } from 'lucide-react';
+import PptxImportDialog from '../../features/import/PptxImportDialog';
 import axios from 'axios';
 import { materialsApi } from '../../services/unitStructureApi';
 import { useConfirmDialog } from '../../components/ui';
@@ -396,6 +398,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   const { globalStyle } = useTeachingStyleStore();
   const { canGenerate } = useAILevel();
   const userSector = useAuthStore(s => s.user?.educationSector);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [weekMaterials, setWeekMaterials] = useState<WeekMaterials | null>(
     null
   );
@@ -675,15 +678,33 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         </div>
 
         {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className='inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700'
-          >
-            <Plus className='w-4 h-4 mr-2' />
-            Add Material
-          </button>
+          <div className='flex items-center gap-2'>
+            <button
+              onClick={() => setShowImportDialog(true)}
+              className='inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50'
+              title='Import a PowerPoint deck as an editable material'
+            >
+              <Upload className='w-4 h-4 mr-2' />
+              Import PPTX
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className='inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700'
+            >
+              <Plus className='w-4 h-4 mr-2' />
+              Add Material
+            </button>
+          </div>
         )}
       </div>
+
+      <PptxImportDialog
+        isOpen={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        unitId={unitId}
+        weekNumber={weekNumber}
+        onImported={fetchMaterials}
+      />
 
       {showForm && (
         <div className='bg-white border rounded-lg p-6'>
