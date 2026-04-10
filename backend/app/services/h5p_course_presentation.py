@@ -12,7 +12,10 @@ import zipfile
 from io import BytesIO
 from typing import Any
 
-from app.services.content_json_renderer import render_content_json
+from app.services.content_json_renderer import (
+    render_content_json,
+    strip_speaker_notes,
+)
 from app.services.slide_splitter import split_at_slide_breaks
 
 # H5P library version dicts
@@ -56,7 +59,10 @@ class H5PCoursePresentationBuilder:
         Returns:
             BytesIO containing the .h5p ZIP archive.
         """
-        segments = split_at_slide_breaks(content_json)
+        # Strip speaker notes — H5P Course Presentation is student-facing
+        # (per ADR-064, notes are scaffolding for the educator only and must
+        # not appear in deliverables shown to students).
+        segments = split_at_slide_breaks(strip_speaker_notes(content_json))
 
         slides: list[dict[str, Any]] = []
         for seg in segments:

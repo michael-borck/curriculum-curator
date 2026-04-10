@@ -34,6 +34,18 @@ def _slide_break() -> dict[str, Any]:
     return {"type": "slideBreak"}
 
 
+def _notes(text: str) -> dict[str, Any]:
+    return {
+        "type": "speakerNotes",
+        "content": [
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": text}],
+            }
+        ],
+    }
+
+
 def _doc(*nodes: dict[str, Any]) -> dict[str, Any]:
     return {"type": "doc", "content": list(nodes)}
 
@@ -98,6 +110,123 @@ class TestSplitAtSlideBreaks:
             assert seg["type"] == "doc"
             assert isinstance(seg["content"], list)
             assert len(seg["content"]) > 0
+
+
+# ─── speaker notes attachment ────────────────────────────────────────
+
+
+class TestSpeakerNotesAttachment:
+    """Speaker notes must travel with the slide they describe.
+
+    The author can place the notes node either before or after the
+    slideBreak that closes a slide. The splitter normalises this by
+    moving any leading speakerNotes nodes back to the previous segment.
+    """
+
+    def test_notes_before_break_stay_with_slide(self) -> None:
+        # Canonical placement: notes before the slide break
+        doc = _doc(
+            _para("Slide 1"),
+            _notes("Speaker prompt for slide 1"),
+            _slide_break(),
+            _para("Slide 2"),
+        )
+        result = split_at_slide_breaks(doc)
+        assert len(result) == 2
+        # Slide 1 segment contains both the paragraph and the notes
+        seg1_types = [n["type"] for n in result[0]["content"]]
+        assert seg1_types == ["paragraph", "speakerNotes"]
+        # Slide 2 has only its paragraph
+        assert [n["type"] for n in result[1]["content"]] == ["paragraph"]
+
+    def test_notes_after_break_reattach_to_previous(self) -> None:
+        # Defensive placement: notes immediately after the slide break
+        # (where the editor cursor naturally lands when a break is inserted)
+        doc = _doc(
+            _para("Slide 1"),
+            _slide_break(),
+            _notes("Speaker prompt for slide 1"),
+            _para("Slide 2"),
+        )
+        result = split_at_slide_breaks(doc)
+        assert len(result) == 2
+        # Notes should have been moved to the slide 1 segment
+        seg1_types = [n["type"] for n in result[0]["content"]]
+        assert seg1_types == ["paragraph", "speakerNotes"]
+        # Slide 2 segment has only its paragraph (notes lifted out)
+        assert [n["type"] for n in result[1]["content"]] == ["paragraph"]
+
+    def test_multiple_notes_after_break_all_reattach(self) -> None:
+        # Multiple consecutive notes blocks (unusual but possible) should
+        # all migrate to the previous segment in order
+        doc = _doc(
+            _para("Slide 1"),
+            _slide_break(),
+            _notes("First note"),
+            _notes("Second note"),
+            _para("Slide 2"),
+        )
+        result = split_at_slide_breaks(doc)
+        assert len(result) == 2
+        seg1_types = [n["type"] for n in result[0]["content"]]
+        assert seg1_types == ["paragraph", "speakerNotes", "speakerNotes"]
+        # Order preserved
+        assert (
+            result[0]["content"][1]["content"][0]["content"][0]["text"]
+            == "First note"
+        )
+        assert (
+            result[0]["content"][2]["content"][0]["content"][0]["text"]
+            == "Second note"
+        )
+
+    def test_notes_after_leading_break_become_first_slide(self) -> None:
+        # If the document opens with a slideBreak followed by notes, the
+        # leading empty segment is filtered out and the notes have nowhere
+        # to migrate — they stay with the first real segment
+        doc = _doc(
+            _slide_break(),
+            _notes("Notes for slide 1"),
+            _para("Slide 1 body"),
+        )
+        result = split_at_slide_breaks(doc)
+        assert len(result) == 1
+        types = [n["type"] for n in result[0]["content"]]
+        assert types == ["speakerNotes", "paragraph"]
+
+    def test_notes_at_end_of_last_slide(self) -> None:
+        # Notes after the last slide's content (no trailing break) stay put
+        doc = _doc(
+            _para("Slide 1"),
+            _slide_break(),
+            _para("Slide 2"),
+            _notes("Notes for slide 2"),
+        )
+        result = split_at_slide_breaks(doc)
+        assert len(result) == 2
+        assert [n["type"] for n in result[1]["content"]] == [
+            "paragraph",
+            "speakerNotes",
+        ]
+
+    def test_notes_only_segment_does_not_create_phantom_slide(self) -> None:
+        # If a segment between two breaks contains only notes (which then
+        # migrate back), the now-empty segment should be filtered out
+        doc = _doc(
+            _para("Slide 1"),
+            _slide_break(),
+            _notes("Notes for slide 1"),
+            _slide_break(),
+            _para("Slide 2"),
+        )
+        result = split_at_slide_breaks(doc)
+        # Two slides, not three
+        assert len(result) == 2
+        assert [n["type"] for n in result[0]["content"]] == [
+            "paragraph",
+            "speakerNotes",
+        ]
+        assert [n["type"] for n in result[1]["content"]] == ["paragraph"]
 
 
 # ─── has_slide_breaks ────────────────────────────────────────────────

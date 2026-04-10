@@ -16,6 +16,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [020](020-ai-optional-user-empowerment.md) | **AI-Optional User Empowerment** | **Accepted** |
 | [037](037-privacy-first-byok-architecture.md) | **Privacy-First, Local-First, BYOK** | **Accepted** |
 | [040](040-ambient-context-pattern.md) | **Ambient Context — Best Guess + Human Override** | **Accepted** |
+| [064](064-rough-slides-as-feature.md) | **Rough Slides Are a Feature, Not a Limitation** | **Accepted** |
 
 > *"Assist any workflow, don't enforce"* - This principle informs all other architectural decisions.
 >
@@ -75,6 +76,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [061](061-transparent-import-reporting.md) | Transparent Import Reporting (No Silent Drops) | Accepted |
 | [062](062-education-sector-profiles.md) | Education Sector Profiles | Accepted |
 | [063](063-unit-outline-import-parser-system.md) | Unit Outline Import with Pluggable Parser System | Accepted |
+| [064](064-rough-slides-as-feature.md) | Rough Slides Are a Feature, Not a Limitation | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Accepted |
 
 ### Foundation

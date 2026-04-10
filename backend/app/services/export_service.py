@@ -270,20 +270,28 @@ class ExportService:
 
         doc_title = title or material.title or "Untitled"
 
-        # PPTX with slide breaks: split into segments with H1 titles
-        if (
-            fmt == ExportFormat.PPTX
-            and material.content_json
-            and has_slide_breaks(material.content_json)
-        ):
-            segments = split_at_slide_breaks(material.content_json)
-            parts: list[str] = []
-            for i, seg in enumerate(segments, 1):
-                # Extract first heading text as slide title, fallback to "Slide N"
-                slide_title = self._extract_heading_text(seg) or f"Slide {i}"
-                parts.append(f"<h1>{slide_title}</h1>")
-                parts.append(render_content_json(seg))
-            html_content = "\n".join(parts)
+        # PPTX export must preserve speaker notes — they round-trip via the
+        # pandoc render target which emits ``::: notes`` fenced divs that
+        # Pandoc converts to PowerPoint's speaker notes pane (per ADR-064).
+        # All other formats route through render_material_html which strips
+        # notes. The PPTX-with-slide-breaks path additionally splits at
+        # slideBreak nodes and emits one H1 per slide as the slide title.
+        if fmt == ExportFormat.PPTX and material.content_json:
+            if has_slide_breaks(material.content_json):
+                segments = split_at_slide_breaks(material.content_json)
+                parts: list[str] = []
+                for i, seg in enumerate(segments, 1):
+                    # Extract first heading text as slide title, fallback to "Slide N"
+                    slide_title = self._extract_heading_text(seg) or f"Slide {i}"
+                    parts.append(f"<h1>{slide_title}</h1>")
+                    parts.append(render_content_json(seg, target="pandoc"))
+                html_content = "\n".join(parts)
+            else:
+                html_content = render_content_json(
+                    material.content_json, target="pandoc"
+                )
+        elif fmt == ExportFormat.PPTX:
+            html_content = str(material.description or "")
         else:
             html_content = render_material_html(material)
 

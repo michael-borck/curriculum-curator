@@ -12,6 +12,7 @@ import { YoutubeNode } from './YoutubeNode';
 import { MermaidNode } from './MermaidNode';
 import { QuizQuestionNode } from './QuizQuestionNode';
 import { SlideBreakNode } from './SlideBreakNode';
+import { SpeakerNotesNode } from './SpeakerNotesNode';
 import { BranchingCardNode } from './BranchingCardNode';
 import { InteractiveVideoEmbedNode } from './InteractiveVideoEmbedNode';
 import { TranscriptSegmentNode } from './TranscriptSegmentNode';
@@ -277,6 +278,7 @@ const RichTextEditor = ({
       MermaidNode,
       QuizQuestionNode,
       SlideBreakNode,
+      SpeakerNotesNode,
       BranchingCardNode,
       InteractiveVideoEmbedNode,
       TranscriptSegmentNode,

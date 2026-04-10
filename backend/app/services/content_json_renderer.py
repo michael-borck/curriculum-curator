@@ -1,19 +1,30 @@
 """
-Server-side ProseMirror/TipTap JSON → HTML renderer.
+Server-side ProseMirror/TipTap JSON → HTML / Pandoc-markdown renderer.
 
-Walks the TipTap document tree and produces HTML strings for export.
+Walks the TipTap document tree and produces output strings for export.
 No npm dependency — the set of node types is finite and known.
+
+Two render targets are supported:
+- "html" (default): produces HTML for editor display and direct HTML export.
+- "pandoc": produces HTML with embedded Pandoc fenced divs (e.g. ``::: notes``)
+  so the output can be fed to Pandoc as input. Pandoc reads the HTML blocks
+  and honours the fenced divs as Pandoc-specific constructs (used to populate
+  the PowerPoint speaker notes pane on PPTX export).
 """
 
 import logging
 from html import escape
-from typing import Any
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
+RenderTarget = Literal["html", "pandoc"]
 
-def render_content_json(content_json: dict[str, Any]) -> str:
-    """Convert TipTap/ProseMirror JSON to HTML string.
+
+def render_content_json(
+    content_json: dict[str, Any], target: RenderTarget = "html"
+) -> str:
+    """Convert TipTap/ProseMirror JSON to a string in the requested target format.
 
     Returns empty string for empty or invalid input.
     """
@@ -24,21 +35,21 @@ def render_content_json(content_json: dict[str, Any]) -> str:
     if not isinstance(top_content, list):
         return ""
 
-    return _render_nodes(top_content)
+    return _render_nodes(top_content, target)
 
 
-def _render_nodes(nodes: list[dict[str, Any]]) -> str:
-    """Render a list of ProseMirror nodes to HTML."""
+def _render_nodes(nodes: list[dict[str, Any]], target: RenderTarget) -> str:
+    """Render a list of ProseMirror nodes to the target format."""
     parts: list[str] = []
     for node in nodes:
-        html = _render_node(node)
-        if html:
-            parts.append(html)
+        rendered = _render_node(node, target)
+        if rendered:
+            parts.append(rendered)
     return "".join(parts)
 
 
-def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
-    """Render a single ProseMirror node to HTML.
+def _render_node(node: dict[str, Any], target: RenderTarget) -> str:  # noqa: PLR0912
+    """Render a single ProseMirror node to the target format.
 
     Node types are dispatched via if/elif chain for clarity — each TipTap
     node type has its own rendering logic.
@@ -46,7 +57,7 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
     node_type = node.get("type", "")
     attrs = node.get("attrs", {})
     content = node.get("content", [])
-    children = _render_nodes(content) if content else ""
+    children = _render_nodes(content, target) if content else ""
 
     if node_type == "doc":
         result = children
@@ -81,6 +92,8 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
         result = "<hr>"
     elif node_type == "slideBreak":
         result = '<hr data-slide-break="" style="border:none;border-top:2px dashed #94a3b8;margin:1.5rem 0">'
+    elif node_type == "speakerNotes":
+        result = _render_speaker_notes(children, target)
     elif node_type == "text":
         text = escape(node.get("text", ""))
         result = _apply_marks(text, node.get("marks", []))
@@ -103,6 +116,59 @@ def _render_node(node: dict[str, Any]) -> str:  # noqa: PLR0912
         result = children
 
     return result
+
+
+def strip_speaker_notes(content_json: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of content_json with all speakerNotes nodes removed.
+
+    Per ADR-064, speaker notes only belong in PPTX exports (where they
+    populate the speaker notes pane). DOCX, PDF, HTML, IMSCC, and SCORM
+    exports must strip them before rendering — the slide is for delivery
+    in the room, the speaker notes are scaffolding for the educator, and
+    student-facing exports should contain neither.
+
+    Walks the document tree and rebuilds it without speakerNotes nodes.
+    The original content_json is not mutated.
+    """
+    if not content_json:
+        return content_json
+
+    def _strip(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        result: list[dict[str, Any]] = []
+        for node in nodes:
+            if node.get("type") == "speakerNotes":
+                continue
+            if "content" in node and isinstance(node["content"], list):
+                new_node = {**node, "content": _strip(node["content"])}
+                result.append(new_node)
+            else:
+                result.append(node)
+        return result
+
+    top_content = content_json.get("content")
+    if not isinstance(top_content, list):
+        return content_json
+
+    return {**content_json, "content": _strip(top_content)}
+
+
+def _render_speaker_notes(children: str, target: RenderTarget) -> str:
+    """Render a speakerNotes node.
+
+    HTML target: an <aside> block for editor display and HTML export.
+    Pandoc target: a ``::: notes`` fenced div that Pandoc converts to the
+    PowerPoint speaker notes pane on PPTX export. The blank lines around the
+    fenced div are required by Pandoc's markdown parser to recognise it as a
+    block-level construct rather than inline content.
+
+    Per ADR-064 the speakerNotes node only appears in PPTX exports — other
+    export targets strip them via ``strip_speaker_notes`` before rendering.
+    The HTML target rendering exists for editor display and is also used as
+    the inner content of the Pandoc fenced div.
+    """
+    if target == "pandoc":
+        return f"\n\n::: notes\n{children}\n:::\n\n"
+    return f'<aside data-type="speaker-notes">{children}</aside>'
 
 
 def _render_code_block(attrs: dict[str, Any], content: list[dict[str, Any]]) -> str:

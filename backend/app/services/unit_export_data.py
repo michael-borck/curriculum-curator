@@ -27,7 +27,10 @@ from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
-from app.services.content_json_renderer import render_content_json
+from app.services.content_json_renderer import (
+    render_content_json,
+    strip_speaker_notes,
+)
 
 MERMAID_CDN_SCRIPT = (
     '  <script type="module">'
@@ -90,9 +93,15 @@ def render_material_html(mat: "WeeklyMaterial") -> str:
 
     If the material has structured content_json (from the TipTap editor),
     render it to HTML. Otherwise fall back to the legacy description field.
+
+    Speaker notes are stripped before rendering. Per ADR-064, notes only
+    belong in PPTX exports (where Pandoc routes them to the speaker notes
+    pane). HTML, IMSCC, SCORM, DOCX, and PDF exports go through this helper
+    and must not surface notes — they are scaffolding for the educator's
+    delivery, not student-facing content.
     """
     if mat.content_json:
-        return render_content_json(mat.content_json)
+        return render_content_json(strip_speaker_notes(mat.content_json))
     return str(mat.description or "")
 
 
