@@ -393,6 +393,17 @@ except ImportError as e:
     logger.warning(f"Failed to load import_content routes: {e}")
 
 try:
+    from app.api.routes import material_import
+
+    app.include_router(
+        material_import.router,
+        prefix="/api/import/material",
+        tags=["material-import"],
+    )
+except ImportError as e:
+    logger.warning(f"Failed to load material_import routes: {e}")
+
+try:
     from app.api.routes import llm_config
 
     app.include_router(llm_config.router, prefix="/api/llm-config", tags=["llm-config"])
