@@ -112,6 +112,12 @@
 | 6.8 | As an **Enhancer**, I want to extract the theme (colours, fonts, layouts) from an imported PPTX and save it as an export template, so future PPTX exports use my existing branding. | P2 | **Done** — opt-in checkbox on Import Materials; strips content slides, keeps masters/layouts/theme (ADR-056) |
 | 6.9 | As an **Enhancer**, I want a generic LLM-powered outline parser that intelligently extracts structure from any unit outline document regardless of format or institution, using AI to identify unit details, outcomes, schedule, and assessments. | P2 | **Planned** — ADR-063 |
 | 6.10 | As an **Enhancer**, I want a purpose-built parser for my institution (e.g. Curtin University) that accurately extracts data from its standard unit outline format, giving higher accuracy than the generic parser. | P2 | **Planned** — ADR-063 |
+| 6.11 | As an **Enhancer**, I want PowerPoint imports to preserve slide structure (titles, bullet lists, tables, images, slide breaks) as editable structured content — not flattened to a wall of text — so I can refine my existing decks in the editor without losing their layout. | P2 | **Done** — `pptx_structural` parser via `/api/import/material/single/{preview,apply}`; supersedes the plain-text path from 6.6 (ADR-065 pending) |
+| 6.12 | As an **Enhancer**, I want PowerPoint speaker notes preserved as structured content during import so they survive round-trip back to PowerPoint's speaker notes pane. | P2 | **Done** — `speakerNotes` nodes emitted by `pptx_structural`, round-trip closed with the export pipeline (ADR-064) |
+| 6.13 | As an **Enhancer**, I want my PowerPoint upload to report what was extracted successfully and what was dropped (linked images, equations, deeply nested bullets), so I know what to verify before relying on the import. | P2 | **Done** — parser emits warnings via `MaterialParseResult.warnings`, surfaced in the apply response (per ADR-061) |
+| 6.14 | As an **Enhancer**, I want to choose between the structural PowerPoint parser (default) and any future format-specific alternatives at upload time, so I can pick the best parser for my source file. | P2 | **Done** — `parser_id` form field on `/preview` and `/apply`; `GET /api/import/material/parsers` lists available parsers with `isDefault` flagged |
+| 6.15 | As an **Enhancer**, I want to upload a folder or zip of materials and have the system group multiple formats of the same lecture (e.g. PPTX + PDF handout + reveal.js) into one canonical material with the rest attached as downloadable source files, so I can import my whole course folder without manual cleanup. | P2 | **Planned** — Phase 3 of `docs/structured-import-plan.md` (Mode B) |
+| 6.16 | As an **Enhancer**, I want PDF imports to default to plain paragraphs (honest about lost structure) with an opt-in "Improve with AI" action that uses an LLM to recover headings, lists, and tables when AI is enabled. | P2 | **Planned** — Phases 2 & 4 of `docs/structured-import-plan.md` |
 
 ## 7. Content Validation & Quality
 
@@ -164,6 +170,8 @@
 | 9.20 | As a **Creator**, I want to set a default export format per content type (e.g., "my quizzes default to LMS Native Quiz") so I don't have to choose every time I export. | P5 | **Planned** |
 | 9.21 | As a **Creator**, I want the system to warn me at export time if my content contains elements that the chosen format doesn't support (e.g., matching questions in a QTI export) and suggest an alternative format. | P5 | **Planned** |
 | 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Planned** |
+| 9.23 | As a **Creator**, I want my speaker notes from the editor to round-trip to PowerPoint's speaker notes pane on PPTX export, so I keep my delivery prompts when sharing the deck or re-importing it later. | P2 | **Done** — `speakerNotes` nodes route through Pandoc `::: notes` fenced divs (ADR-064) |
+| 9.24 | As a **Creator**, I want speaker notes automatically stripped from student-facing exports (HTML, PDF, DOCX, IMSCC, SCORM, H5P) so my delivery prompts never appear in materials students see. | P2 | **Done** — `strip_speaker_notes` helper applied centrally in `render_material_html` and `h5p_course_presentation` (ADR-064) |
 
 ## 10. Authentication & User Management
 
@@ -229,6 +237,8 @@
 | 15.9 | As a **Creator**, I want to generate an image prompt from my material content (with style options like realistic, sketch, diagram) so I can copy it into my preferred image tool. | P3 | **Done** — editor toolbar wand button opens slide-out panel; pick style + aspect ratio → LLM generates copy-paste prompt |
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
 | 15.8 | As a **Creator**, I want to embed YouTube/video links as rich previews in my materials. | P2 | **Done** — TipTap Video/YouTube nodes |
+| 15.10 | As a **Creator**, I want the editor to display speaker notes as a clearly distinct block beneath each slide, with a "+ Add speaker notes" affordance for empty slides and auto-scaffolding when I insert a slide break, so writing notes feels like a normal part of slide authoring rather than a hidden feature. | P2 | **Planned** — Phase 2 of `docs/speaker-notes-plan.md` |
+| 15.11 | As a **Creator**, I want a "Generate speaker notes with AI" action that drafts conversational notes from each slide's content (with a per-slide opt-out toggle so I can exclude slides I want to script myself), reviewed via propose/apply before anything commits. | P3 | **Planned** — Phase 3 of `docs/speaker-notes-plan.md` |
 
 ## 16. Desktop App & Distribution
 
