@@ -13,6 +13,7 @@ import json
 import logging
 import re
 import zipfile
+from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
@@ -30,6 +31,11 @@ from app.schemas.package_import import (
 )
 from app.services.file_import_service import FileImportService
 from app.services.import_task_store import ImportTask, create_task
+from app.services.material_parsers import get_default_for_format
+from app.services.material_parsers.persistence import (
+    persist_extracted_images,
+    rewrite_image_src,
+)
 from app.services.package_import_service import (
     UNIT_CODE_RE,
     PackageImportError,
@@ -45,7 +51,32 @@ from app.services.package_import_service import (
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
+    from app.services.material_parsers.base import MaterialParseResult
+
 logger = logging.getLogger(__name__)
+
+# Extensions handled by structured material parsers (per Phase 1 of
+# docs/structured-import-plan.md). Files with these extensions go through
+# the structural parser path; everything else falls back to the legacy
+# plain-text extractor until later phases ship parsers for them.
+_STRUCTURED_EXTENSIONS = {".pptx"}
+
+
+@dataclass
+class _ExtractedContent:
+    """Result of _extract_content — either legacy text or structured parse.
+
+    Exactly one of ``content_html`` or ``parsed`` will be populated. The
+    legacy plain-text path (PDF/DOCX/MD/TXT/HTML) sets ``content_html``;
+    the structured material parser path sets ``parsed`` with a full
+    MaterialParseResult so the persistence step can populate content_json
+    and write extracted images to git.
+    """
+
+    title: str
+    content_html: str | None = None
+    parsed: MaterialParseResult | None = None
+    warnings: list[str] = field(default_factory=list)
 
 # Extensions we can extract text from
 PROCESSABLE_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".txt", ".html", ".htm"}
@@ -360,6 +391,7 @@ class UnifiedImportService:
         zip_bytes: bytes,
         *,
         user_id: str,
+        user_email: str,
         db: Session,
         unit_code: str = "",
         unit_title: str = "",
@@ -371,6 +403,10 @@ class UnifiedImportService:
         ``file_edits`` is an optional list of per-file overrides from the
         preview UI (each dict has ``path``, and optional ``title``,
         ``week_number``, ``material_type``, ``detected_type``).
+
+        ``user_email`` is required for the structured-import path because
+        git commits for extracted images need an author. Both id and
+        email come from the authenticated user at the route layer.
         """
         task = create_task()
 
@@ -387,6 +423,7 @@ class UnifiedImportService:
                 task,
                 zip_bytes,
                 user_id=user_id,
+                user_email=user_email,
                 db=db,
                 unit_code=unit_code,
                 unit_title=unit_title,
@@ -412,6 +449,7 @@ class UnifiedImportService:
         zip_bytes: bytes,
         *,
         user_id: str,
+        user_email: str,
         db: Session,
         unit_code: str,
         unit_title: str,
@@ -451,7 +489,9 @@ class UnifiedImportService:
             task.unit_code = unit.code
             task.unit_title = unit.title
 
-            await self._process_files(task, zf, preview, outline, unit, db, edits)
+            await self._process_files(
+                task, zf, preview, outline, unit, db, edits, user_email
+            )
 
             db.commit()
             task.current_file = None
@@ -533,8 +573,16 @@ class UnifiedImportService:
         unit: Unit,
         db: Session,
         edits: dict[str, dict[str, object]],
+        user_email: str,
     ) -> None:
-        """Process each file in the preview, creating DB records."""
+        """Process each file in the preview, creating DB records.
+
+        Files dispatched to a structural material parser (currently
+        ``.pptx``) produce real ``content_json`` and extracted images
+        rather than the legacy plain-text ``description``. Other
+        formats keep the legacy text path until later phases ship
+        parsers for them.
+        """
         mat_order = 0
         week_numbers_seen: set[int] = set()
 
@@ -560,17 +608,34 @@ class UnifiedImportService:
                 task.processed_files += 1
                 continue
 
-            content_html, file_title = await self._extract_content(
+            extracted = await self._extract_content(
                 raw_bytes, file_item, file_title, task
             )
-            if content_html is None:
+            if extracted is None:
                 task.processed_files += 1
                 continue
 
+            file_title = extracted.title
             week = file_week or 1
+
+            # Surface parser warnings into the import task so the user
+            # can see what was dropped or simplified per ADR-061
+            for warning in extracted.warnings:
+                task.errors.append(f"{file_item.filename}: {warning}")
+
             if file_type == "outline":
-                outline.description = content_html[:10000]
+                if extracted.content_html is not None:
+                    outline.description = extracted.content_html[:10000]
+                # Structured parsers don't currently target outlines,
+                # but if one ever does we'd need a content_json field
+                # on UnitOutline — out of scope for Phase 1
             elif file_type == "assessment":
+                desc = extracted.content_html or None
+                if desc is None and extracted.parsed is not None:
+                    # Render structured content as a plain HTML fallback
+                    # for the assessment description field
+                    desc = "<p>Imported from structured material — "
+                    desc += "edit in the editor for full structure.</p>"
                 db.add(
                     Assessment(
                         unit_id=str(unit.id),
@@ -578,23 +643,37 @@ class UnifiedImportService:
                         type="summative",
                         category=mat_type or "other",
                         weight=0.0,
-                        description=content_html or None,
+                        description=desc,
                         due_week=week,
                         status="draft",
                     )
                 )
             else:
-                db.add(
-                    WeeklyMaterial(
-                        unit_id=str(unit.id),
-                        week_number=week,
+                # Material path. Two flows depending on whether the
+                # parser produced structured content or just plain text.
+                if extracted.parsed is not None:
+                    self._persist_structured_material(
+                        parsed=extracted.parsed,
                         title=file_title,
-                        type=mat_type,
-                        description=content_html,
+                        mat_type=mat_type,
+                        week=week,
                         order_index=mat_order,
-                        status="draft",
+                        unit=unit,
+                        db=db,
+                        user_email=user_email,
                     )
-                )
+                else:
+                    db.add(
+                        WeeklyMaterial(
+                            unit_id=str(unit.id),
+                            week_number=week,
+                            title=file_title,
+                            type=mat_type,
+                            description=extracted.content_html or "",
+                            order_index=mat_order,
+                            status="draft",
+                        )
+                    )
                 mat_order += 1
                 week_numbers_seen.add(week)
 
@@ -611,14 +690,72 @@ class UnifiedImportService:
                 )
             )
 
+    def _persist_structured_material(
+        self,
+        *,
+        parsed: MaterialParseResult,
+        title: str,
+        mat_type: str,
+        week: int,
+        order_index: int,
+        unit: Unit,
+        db: Session,
+        user_email: str,
+    ) -> None:
+        """Create a WeeklyMaterial from a structural parser result.
+
+        Mirrors the apply path in routes/material_import.py: create the
+        material to obtain its id, persist extracted images under the
+        material's git directory, then rewrite content_json image src
+        placeholders to canonical URLs and save.
+        """
+        material = WeeklyMaterial(
+            unit_id=str(unit.id),
+            week_number=week,
+            title=title,
+            type=mat_type,
+            description=None,
+            order_index=order_index,
+            status="draft",
+        )
+        db.add(material)
+        db.flush()  # populates material.id without committing the txn
+
+        try:
+            rewrites = persist_extracted_images(
+                images=parsed.images,
+                unit_id=str(unit.id),
+                material=material,
+                user_email=user_email,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to persist images for imported material %s — "
+                "saving content_json without image rewrites",
+                material.id,
+            )
+            rewrites = {}
+
+        material.content_json = rewrite_image_src(parsed.content_json, rewrites)
+
     async def _extract_content(
         self,
         raw_bytes: bytes,
         file_item: FilePreviewItem,
         file_title: str,
         task: ImportTask,
-    ) -> tuple[str | None, str]:
-        """Extract text/HTML from a single file. Returns (content, title) or (None, title) on error."""
+    ) -> _ExtractedContent | None:
+        """Extract content from a single file.
+
+        Files matching ``_STRUCTURED_EXTENSIONS`` (currently just .pptx)
+        are dispatched to the corresponding material parser, producing a
+        ``MaterialParseResult`` with structured content_json, extracted
+        images, and parser warnings. Other formats fall through to the
+        legacy plain-text extractor and return raw HTML/text.
+
+        Returns ``None`` if extraction failed; the caller should skip
+        the file and continue.
+        """
         ext = file_item.extension.lower()
         try:
             if ext in (".html", ".htm"):
@@ -628,23 +765,42 @@ class UnifiedImportService:
                     file_item.filename
                 ):
                     file_title = _title or file_title
-                return body, file_title
+                return _ExtractedContent(title=file_title, content_html=body)
 
-            if ext in (".pdf", ".docx", ".pptx", ".md", ".txt"):
+            if ext in _STRUCTURED_EXTENSIONS:
+                parser = get_default_for_format(ext)
+                parsed = await parser.parse(raw_bytes, file_item.filename)
+                # The parser's title (from the first slide) wins unless
+                # the manifest already gave us one
+                if not file_title or file_title == _title_from_filename(
+                    file_item.filename
+                ):
+                    file_title = parsed.title or file_title
+                return _ExtractedContent(
+                    title=file_title,
+                    parsed=parsed,
+                    warnings=list(parsed.warnings),
+                )
+
+            if ext in (".pdf", ".docx", ".md", ".txt"):
                 result = await self._file_svc.process_file(
                     raw_bytes, file_item.filename
                 )
                 if result.get("success"):
-                    return result.get("content", ""), file_title
+                    return _ExtractedContent(
+                        title=file_title,
+                        content_html=result.get("content", ""),
+                    )
                 task.errors.append(
-                    f"Failed to process {file_item.filename}: {result.get('error', 'unknown')}"
+                    f"Failed to process {file_item.filename}: "
+                    f"{result.get('error', 'unknown')}"
                 )
-                return None, file_title
+                return None
         except Exception as exc:
             task.errors.append(f"Error processing {file_item.filename}: {exc}")
-            return None, file_title
+            return None
 
-        return "", file_title
+        return _ExtractedContent(title=file_title, content_html="")
 
 
 # Module-level singleton

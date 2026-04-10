@@ -164,6 +164,7 @@ async def unified_apply(
         return unified_import_service.apply(
             contents,
             user_id=str(current_user.id),
+            user_email=current_user.email,
             db=db,
             unit_code=unit_code,
             unit_title=unit_title,
