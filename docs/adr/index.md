@@ -77,6 +77,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [062](062-education-sector-profiles.md) | Education Sector Profiles | Accepted |
 | [063](063-unit-outline-import-parser-system.md) | Unit Outline Import with Pluggable Parser System | Accepted |
 | [064](064-rough-slides-as-feature.md) | Rough Slides Are a Feature, Not a Limitation | Accepted |
+| [065](065-structured-material-import-architecture.md) | Structured Material Import with Pluggable Parser System | Accepted |
 | [013](013-git-backed-content-storage.md) | Git-Backed Content Storage | Accepted |
 
 ### Foundation

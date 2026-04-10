@@ -1,6 +1,6 @@
 # Structured Material Import — Architecture Plan
 
-**Status:** Planned
+**Status:** Phase 1 (foundation + PPTX + Mode A + bulk-import wiring) shipped 2026-04-10. Phases 2–5 still planned. Architecture formalised in [ADR-065](adr/065-structured-material-import-architecture.md).
 **Date:** 2026-04-10
 **Related:** [ADR-023](adr/023-file-import-processing-architecture.md), [ADR-042](adr/042-package-import-round-trip.md), [ADR-054](adr/054-import-provenance-round-trip-fidelity.md), [ADR-061](adr/061-transparent-import-reporting.md), [ADR-063](adr/063-unit-outline-import-parser-system.md), [ADR-038](adr/038-content-not-presentation.md), [ADR-064](adr/064-rough-slides-as-feature.md), [speaker-notes-plan.md](speaker-notes-plan.md)
 
@@ -504,8 +504,8 @@ Each ships independently; the registry pattern means adding a parser doesn't tou
 
 ### Phase 6 — Polish & docs
 
-- ADR for the structured material import architecture (let's call it ADR-065)
-- User stories in `docs/user-stories/`
+- ✅ [ADR-065](adr/065-structured-material-import-architecture.md) formalises the architecture (shipped 2026-04-10)
+- ✅ User stories 6.11–6.16, 9.23–9.24, 15.10–15.11 added to `docs/user-stories.md`
 - Update the import-related docs in `docs/guides/`
 - Audit `unified_import_service` for code that's now redundant; flag for cleanup or deprecate the plain-text fallback path entirely
 
