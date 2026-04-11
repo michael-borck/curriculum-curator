@@ -3,12 +3,13 @@ Common database types and utilities
 """
 
 import uuid
+from typing import Any
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.types import CHAR, TypeDecorator
 
 
-class GUID(TypeDecorator):
+class GUID(TypeDecorator[Any]):
     """Platform-independent GUID type.
 
     Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.

@@ -213,7 +213,7 @@ class GenerationResult(CamelModel):
 
 
 # Validation helper
-def get_json_schema_for_prompt(model_class: type[BaseModel]) -> dict:
+def get_json_schema_for_prompt(model_class: type[BaseModel]) -> dict[str, Any]:
     """
     Get JSON schema for including in LLM prompts
     Simplifies the schema for better LLM understanding

@@ -5,7 +5,7 @@ Handles all unit-related database queries using SQLAlchemy ORM.
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -48,7 +48,7 @@ def _unit_to_response(unit: Unit) -> UnitResponse:
 def create_unit(db: Session, data: UnitCreate, owner_id: str) -> UnitResponse:
     """Create a new unit"""
     # Handle year requirement - use current year if not provided
-    year = data.year if data.year else datetime.utcnow().year
+    year = data.year if data.year else datetime.now(UTC).year
 
     unit = Unit(
         id=str(uuid.uuid4()),
@@ -109,7 +109,7 @@ def update_unit(db: Session, unit_id: str, data: UnitUpdate) -> UnitResponse | N
             if hasattr(unit, key):
                 setattr(unit, key, actual_value)
 
-    unit.updated_at = datetime.utcnow()
+    unit.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(unit)
     return _unit_to_response(unit)
@@ -167,7 +167,7 @@ def soft_delete_unit(db: Session, unit_id: str) -> bool:
         return False
 
     unit.status = "archived"
-    unit.archived_at = datetime.utcnow()
+    unit.archived_at = datetime.now(UTC)
     db.commit()
     return True
 
@@ -180,7 +180,7 @@ def restore_unit(db: Session, unit_id: str) -> UnitResponse | None:
 
     unit.status = "draft"
     unit.archived_at = None
-    unit.updated_at = datetime.utcnow()
+    unit.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(unit)
     return _unit_to_response(unit)

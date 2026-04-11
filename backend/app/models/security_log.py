@@ -5,7 +5,7 @@ Security audit logging model for tracking security events
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any
 
@@ -213,7 +213,7 @@ class SecurityLog(Base):
             request_method=request_method,
             session_id=session_id,
             jwt_token_id=jwt_token_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             response_time_ms=str(response_time_ms) if response_time_ms else None,
             details=details or {},
             success=success,
@@ -249,7 +249,7 @@ class SecurityLog(Base):
         Returns:
             List of SecurityLog entries
         """
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
         query = db_session.query(cls).filter(cls.timestamp >= cutoff_time)
 
         if event_types:
@@ -269,7 +269,7 @@ class SecurityLog(Base):
     @classmethod
     def get_attack_summary(cls, db_session: Any, hours: int = 24) -> dict[str, Any]:
         """Get summary of potential attacks in the specified time period"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         attack_events = [
             SecurityEventType.BRUTE_FORCE_DETECTED.value,
@@ -311,7 +311,7 @@ class SecurityLog(Base):
     @classmethod
     def cleanup_old_logs(cls, db_session: Any, days_old: int = 90) -> int:
         """Clean up old security log entries"""
-        cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
         deleted_count = (
             db_session.query(cls)
             .filter(cls.timestamp < cutoff_date)

@@ -3,7 +3,7 @@ User data export functionality
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from io import BytesIO
 from zipfile import ZipFile
 
@@ -32,7 +32,7 @@ async def export_user_data(
 
     # Build export data
     export_data = {
-        "export_date": datetime.utcnow().isoformat(),
+        "export_date": datetime.now(UTC).isoformat(),
         "user": {
             "id": str(current_user.id),
             "email": current_user.email,

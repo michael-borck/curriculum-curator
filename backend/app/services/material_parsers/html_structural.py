@@ -27,7 +27,8 @@ import re
 from typing import Any, ClassVar
 from urllib.parse import unquote
 
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 
 from app.services.material_parsers.base import (
     ExtractedImage,

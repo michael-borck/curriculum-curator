@@ -4,6 +4,7 @@ CrossRef DOI lookup endpoint — free metadata enrichment for captured sources.
 
 import logging
 import re
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, status
@@ -27,7 +28,7 @@ def _normalise_doi(raw: str) -> str:
     return re.sub(r"^https?://(dx\.)?doi\.org/", "", raw.strip())
 
 
-def _parse_crossref_response(data: dict) -> CrossRefLookupResponse:
+def _parse_crossref_response(data: dict[str, Any]) -> CrossRefLookupResponse:
     """Extract the fields we care about from the CrossRef JSON."""
     msg = data.get("message", {})
 

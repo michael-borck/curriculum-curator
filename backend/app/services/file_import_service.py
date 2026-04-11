@@ -399,7 +399,7 @@ class FileImportService:
         # Simple HTML to text conversion
         return re.sub(r"<[^>]+>", "", html)
 
-    def _detect_content_type(self, content: str) -> tuple[str, float, dict]:
+    def _detect_content_type(self, content: str) -> tuple[str, float, dict[str, Any]]:
         """
         Detect the type of content based on patterns
 
@@ -742,7 +742,7 @@ class FileImportService:
             "tags": self._extract_tags(content),
         }
 
-    def _suggest_module(self, content: str, sections: list[dict]) -> str:
+    def _suggest_module(self, content: str, sections: list[dict[str, Any]]) -> str:
         """Suggest appropriate module based on content"""
         # Look for module/chapter indicators
         for section in sections:

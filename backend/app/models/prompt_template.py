@@ -5,7 +5,7 @@ Database model for storing customizable prompt templates
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -126,7 +126,7 @@ class PromptTemplate(Base):
     def increment_usage(self) -> None:
         """Increment usage counter and update last used timestamp"""
         self.usage_count = int(self.usage_count) + 1
-        self.last_used = datetime.utcnow()
+        self.last_used = datetime.now(UTC)
 
     def create_version(self, new_content: str, user_id: str) -> PromptTemplate:
         """Create a new version of this template"""

@@ -9,7 +9,7 @@ Measures pedagogical inclusivity across 4 dimensions:
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -274,7 +274,7 @@ class UDLService:
                 "sub_scores": sub,
                 "assessment_format_diversity": 0.0,
                 "grade": "F",
-                "calculated_at": datetime.utcnow(),
+                "calculated_at": datetime.now(UTC),
             }
 
         dims = ["representation", "engagement", "expression", "accessibility"]
@@ -308,7 +308,7 @@ class UDLService:
             "sub_scores": avg_sub,
             "assessment_format_diversity": round(assess_diversity, 2),
             "grade": score_to_grade(overall),
-            "calculated_at": datetime.utcnow(),
+            "calculated_at": datetime.now(UTC),
         }
 
     def _suggest_representation(
@@ -512,7 +512,7 @@ class UDLService:
         return {
             "unit_id": str(unit_id),
             "suggestions": suggestions,
-            "generated_at": datetime.utcnow(),
+            "generated_at": datetime.now(UTC),
         }
 
 

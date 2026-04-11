@@ -7,7 +7,7 @@ Handles all user-related database queries using SQLAlchemy ORM.
 import secrets
 import string
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -103,7 +103,7 @@ def update_user(db: Session, user_id: str, **fields) -> UserResponse | None:
         if hasattr(user, key):
             setattr(user, key, value)
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(user)
     return _user_to_response(user)
@@ -116,7 +116,7 @@ def update_password(db: Session, user_id: str, new_password: str) -> bool:
         return False
 
     user.password_hash = get_password_hash(new_password)
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db.commit()
     return True
 
@@ -128,7 +128,7 @@ def verify_user(db: Session, user_id: str) -> bool:
         return False
 
     user.is_verified = True
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db.commit()
     return True
 
@@ -167,7 +167,7 @@ def create_verification_code(
 
 def verify_email_code(db: Session, user_id: str, code: str) -> bool:
     """Verify email code and mark as used if valid"""
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     verification = (
         db.query(EmailVerification)
@@ -195,7 +195,7 @@ def create_password_reset_code(
 ) -> str:
     """Create 6-digit password reset code"""
     code = _generate_code(6)
-    expires_at = datetime.utcnow() + timedelta(minutes=expires_minutes)
+    expires_at = datetime.now(UTC) + timedelta(minutes=expires_minutes)
 
     # Invalidate any existing unused reset codes for this user
     db.query(PasswordReset).filter(
@@ -216,7 +216,7 @@ def create_password_reset_code(
 
 def verify_password_reset_code(db: Session, user_id: str, code: str) -> bool:
     """Verify password reset code (does not mark as used)"""
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     reset = (
         db.query(PasswordReset)

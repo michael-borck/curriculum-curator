@@ -3,7 +3,7 @@ Service for analytics and reporting
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -124,7 +124,7 @@ class AnalyticsService:
             "assessments": assessment_stats,
             "total_assessment_weight": total_weight,
             "weeks_with_content": weeks_with_content,
-            "last_updated": datetime.utcnow(),
+            "last_updated": datetime.now(UTC),
         }
 
     async def get_unit_progress(
@@ -487,7 +487,7 @@ class AnalyticsService:
             "unit_id": str(unit_id),
             "recommendations": recommendations,
             "source": source,
-            "generated_at": datetime.utcnow(),
+            "generated_at": datetime.now(UTC),
         }
 
         if source == "llm":
@@ -545,7 +545,7 @@ class AnalyticsService:
 
         export_data = {
             "unit_id": str(unit_id),
-            "export_date": datetime.utcnow().isoformat(),
+            "export_date": datetime.now(UTC).isoformat(),
             "format": export_format,
             "data": {
                 "overview": overview,
@@ -662,7 +662,7 @@ class AnalyticsService:
             "rating_method": rating_method,
             "sub_scores": sub_scores,
             "grade": score_to_grade(overall_score),
-            "calculated_at": datetime.utcnow(),
+            "calculated_at": datetime.now(UTC),
         }
 
     async def calculate_weekly_quality(
@@ -863,7 +863,7 @@ class AnalyticsService:
             "errors": errors,
             "warnings": warnings,
             "strict_mode": strict_mode,
-            "validated_at": datetime.utcnow(),
+            "validated_at": datetime.now(UTC),
         }
 
     async def get_unit_statistics(
@@ -952,7 +952,7 @@ class AnalyticsService:
                 "total_ulos": len(ulos),
                 "bloom_distribution": bloom_distribution,
             },
-            "generated_at": datetime.utcnow(),
+            "generated_at": datetime.now(UTC),
         }
 
     def _calculate_alignment_score(self, ulo: UnitLearningOutcome) -> float:
@@ -962,7 +962,7 @@ class AnalyticsService:
         return material_score + assessment_score
 
     def _generate_alignment_recommendations(
-        self, alignment_data: list[dict]
+        self, alignment_data: list[dict[str, Any]]
     ) -> list[str]:
         """Generate recommendations based on alignment data"""
         recommendations = []
@@ -979,7 +979,7 @@ class AnalyticsService:
 
         return recommendations[:5]  # Limit to top 5 recommendations
 
-    def _calculate_workload_variance(self, workload: list[dict]) -> float:
+    def _calculate_workload_variance(self, workload: list[dict[str, Any]]) -> float:
         """Calculate variance in weekly workload"""
         if not workload:
             return 0.0

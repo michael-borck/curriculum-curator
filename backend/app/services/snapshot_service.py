@@ -7,7 +7,7 @@ allowing users to track unit improvement over semesters.
 
 import json
 import logging
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -209,7 +209,7 @@ class SnapshotService:
                 "udl_star_rating": udl["star_rating"],
                 "udl_grade": udl["grade"],
                 "udl_sub_scores": udl["sub_scores"],
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
         else:
             found = self.get_snapshot(db, UUID(snapshot_b_id))

@@ -300,7 +300,7 @@ class CodeFormatter(RemediatorPlugin):
         # Replace code blocks without language
         return re.sub(r"```\n(.*?)```", replace_block, content, flags=re.DOTALL)
 
-    async def remediate(self, content: str, issues: list) -> PluginResult:
+    async def remediate(self, content: str, issues: list[Any]) -> PluginResult:
         """Format code blocks in content."""
         try:
             # Extract options from issues

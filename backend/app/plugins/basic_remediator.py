@@ -4,6 +4,7 @@ Automatically fixes simple content issues
 """
 
 import re
+from typing import Any
 
 from app.plugins.base import PluginResult, RemediatorPlugin
 
@@ -199,7 +200,7 @@ class BasicRemediator(RemediatorPlugin):
 
         return new_content, changes
 
-    async def remediate(self, content: str, issues: list) -> PluginResult:
+    async def remediate(self, content: str, issues: list[Any]) -> PluginResult:
         """Remediate content issues"""
         try:
             all_changes = []

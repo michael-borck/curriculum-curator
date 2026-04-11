@@ -5,7 +5,7 @@ Authentication helper utilities
 import logging
 import secrets
 import string
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -248,7 +248,7 @@ class AuthHelpers:
         Returns: (expired_verifications_removed, expired_resets_removed)
         """
         try:
-            current_time = datetime.utcnow()
+            current_time = datetime.now(UTC)
 
             # Remove expired verifications
             expired_verifications = (

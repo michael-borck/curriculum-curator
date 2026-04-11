@@ -5,6 +5,7 @@ Automatically generates and updates table of contents from document headings
 """
 
 import re
+from typing import Any
 
 from app.plugins.base import PluginResult, RemediatorPlugin
 
@@ -192,7 +193,7 @@ class TOCGenerator(RemediatorPlugin):
 
         return "\n".join(lines)
 
-    async def remediate(self, content: str, issues: list) -> PluginResult:
+    async def remediate(self, content: str, issues: list[Any]) -> PluginResult:
         """Generate or update table of contents."""
         try:
             # Parse configuration
@@ -233,7 +234,7 @@ class TOCGenerator(RemediatorPlugin):
                 message=f"TOC generation failed: {e!s}",
             )
 
-    def _parse_options(self, issues: list) -> dict:
+    def _parse_options(self, issues: list[Any]) -> dict[str, Any]:
         """Parse configuration options from issues."""
         options = {
             "max_depth": 3,
@@ -308,9 +309,9 @@ class TOCGenerator(RemediatorPlugin):
         self,
         new_content: str,
         action: str,
-        headings: list,
+        headings: list[Any],
         toc: str,
-        options: dict,
+        options: dict[str, Any],
     ) -> PluginResult:
         """Create successful result with metadata."""
         return PluginResult(

@@ -396,7 +396,7 @@ def get_template(template_name: str) -> PromptTemplate:
     return template_map[template_name]()
 
 
-def prepare_unit_structure_prompt(context: dict[str, Any], json_schema: dict) -> str:
+def prepare_unit_structure_prompt(context: dict[str, Any], json_schema: dict[str, Any]) -> str:
     """
     Prepare a complete prompt for unit structure generation
 

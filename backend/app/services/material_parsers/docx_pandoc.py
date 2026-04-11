@@ -73,7 +73,7 @@ class DocxPandocParser(MaterialParser):
         from app.services.export_service import ExportService  # noqa: PLC0415
 
         try:
-            pandoc_path = ExportService._resolve_binary("pandoc", "PANDOC_PATH")
+            pandoc_path = ExportService.resolve_binary("pandoc", "PANDOC_PATH")
         except FileNotFoundError as exc:
             msg = (
                 "DOCX import requires Pandoc, which is not available. "

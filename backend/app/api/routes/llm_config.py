@@ -276,7 +276,7 @@ def update_configuration(
             LLMConfiguration.id != config_id,
         ).update({"is_default": False})
 
-    update_data = config_update.dict(exclude_unset=True)
+    update_data = config_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_config, field, value)
 

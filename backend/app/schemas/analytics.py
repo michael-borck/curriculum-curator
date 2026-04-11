@@ -29,7 +29,7 @@ class ProgressReport(CamelModel):
     materials: dict[str, Any]
     assessments: dict[str, Any]
     overall_completion: float
-    incomplete_items: dict[str, list[dict]] | None = None
+    incomplete_items: dict[str, list[dict[str, Any]]] | None = None
 
 
 class CompletionReport(CamelModel):

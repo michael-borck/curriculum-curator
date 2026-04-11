@@ -3,7 +3,7 @@ Security logger service for tracking security events
 """
 
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Request
 
@@ -24,7 +24,7 @@ class SecurityLogger:
         user: "User | None" = None,
         success: bool = True,
         description: str | None = None,
-        details: dict | None = None,
+        details: dict[str, Any] | None = None,
         response_time_ms: int | None = None,
     ):
         """Log authentication-related events"""
@@ -55,7 +55,7 @@ class SecurityLogger:
         request: Request,
         severity: str = "warning",
         description: str | None = None,
-        details: dict | None = None,
+        details: dict[str, Any] | None = None,
         user: "User | None" = None,
         response_time_ms: int | None = None,
     ):
@@ -123,7 +123,7 @@ class SecurityLogger:
         admin_user,
         action: str,
         target_user_id: str | None = None,
-        details: dict | None = None,
+        details: dict[str, Any] | None = None,
     ):
         """Log administrative actions"""
         SecurityLog.log_event(
@@ -164,7 +164,7 @@ class SecurityLogger:
         return "Unknown"
 
     @staticmethod
-    def analyze_login_patterns(db, user_id: str, hours: int = 24) -> dict:
+    def analyze_login_patterns(db, user_id: str, hours: int = 24) -> dict[str, Any]:
         """Analyze login patterns for a specific user"""
         events = SecurityLog.get_recent_events(
             db_session=db,

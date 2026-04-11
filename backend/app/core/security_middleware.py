@@ -5,6 +5,7 @@ Security middleware for HTTP headers and request validation
 import time
 import uuid
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -66,7 +67,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "sync-xhr=()"
         )
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         # Process request
         start_time = time.time()
 
@@ -150,8 +151,8 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         self,
         app,
         max_request_size: int = 10 * 1024 * 1024,  # 10MB
-        blocked_user_agents: list | None = None,
-        blocked_paths: list | None = None,
+        blocked_user_agents: list[Any] | None = None,
+        blocked_paths: list[Any] | None = None,
         require_user_agent: bool = False,
         large_upload_paths: list[str] | None = None,
         large_upload_max_size: int = 500 * 1024 * 1024,  # 500MB
@@ -166,7 +167,7 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         self.blocked_paths = blocked_paths or []
         self.require_user_agent = require_user_agent
 
-    def _default_blocked_user_agents(self) -> list:
+    def _default_blocked_user_agents(self) -> list[Any]:
         """Default list of blocked user agents (basic bot protection)"""
         return [
             # Common malicious scanners
@@ -185,7 +186,7 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
             "wfuzz",
         ]
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         # Validate request before processing
         validation_error = await self._validate_request(request)
         if validation_error:
@@ -265,11 +266,11 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
     Middleware to handle trusted proxy headers safely
     """
 
-    def __init__(self, app, trusted_proxies: list | None = None):
+    def __init__(self, app, trusted_proxies: list[Any] | None = None):
         super().__init__(app)
         self.trusted_proxies = trusted_proxies or ["127.0.0.1", "::1"]
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
         # Validate and sanitize proxy headers
         self._process_proxy_headers(request)
         return await call_next(request)

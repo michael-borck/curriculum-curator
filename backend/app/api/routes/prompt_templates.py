@@ -7,7 +7,8 @@ per-user visibility toggles stored in teaching_preferences.
 
 import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -315,7 +316,7 @@ async def toggle_visibility(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    prefs: dict = user.teaching_preferences or {}  # pyright: ignore[reportExplicitAny]
+    prefs: dict[str, Any] = user.teaching_preferences or {}  # pyright: ignore[reportExplicitAny]
     hidden: list[str] = prefs.get("hidden_prompt_template_ids", [])
 
     is_hidden: bool
@@ -345,7 +346,7 @@ async def increment_usage(
         raise HTTPException(status_code=404, detail="Template not found")
 
     template.usage_count = int(template.usage_count) + 1
-    template.last_used = datetime.utcnow()
+    template.last_used = datetime.now(UTC)
     db.commit()
 
     return {"usage_count": template.usage_count}

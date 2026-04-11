@@ -39,22 +39,10 @@ class DocumentExporter(BaseExporter):
         )
         return ExportResult(buf=buf, filename=filename, media_type=media_type)
 
-    async def export_unit(
-        self,
-        unit_id: str,
-        db: Session,
-        **kwargs: Any,
-    ) -> ExportResult:
-        fmt: ExportFormat = kwargs.get("fmt", ExportFormat.HTML)
-        buf, filename, media_type = await self._service.export_unit(
-            unit_id=unit_id,
-            db=db,
-            fmt=fmt,
-            title=kwargs.get("title"),
-            author=kwargs.get("author"),
-            reference_doc=kwargs.get("reference_doc"),
-        )
-        return ExportResult(buf=buf, filename=filename, media_type=media_type)
+# Unit-level document export was removed during the pre-MVP Content
+# cleanup (the underlying export_service.export_unit iterated legacy
+# Content rows). If unit-level document export returns as a feature
+# it should iterate WeeklyMaterial rows instead.
 
 
 # Singleton

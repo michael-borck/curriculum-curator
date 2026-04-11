@@ -4,7 +4,6 @@ API endpoints for managing weekly materials
 
 import hashlib
 import mimetypes
-import re
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -34,6 +33,11 @@ from app.schemas.materials import (
     WeekMaterials,
 )
 from app.services.git_content_service import get_git_service
+from app.services.material_parsers.persistence import (
+    material_git_path,
+    material_images_dir,
+    sanitize_filename,
+)
 from app.services.materials_service import materials_service
 
 router = APIRouter()
@@ -426,11 +430,6 @@ async def apply_structure(
 # =============================================================================
 
 
-def _git_path_for_material(material: WeeklyMaterial) -> str:
-    """Build the Git-relative path for a material's description file."""
-    return f"weeks/week-{int(material.week_number):02d}/material-{material.id}.html"
-
-
 @router.get("/materials/{material_id}/history", response_model=MaterialHistory)
 async def get_material_history(
     material_id: UUID,
@@ -446,7 +445,7 @@ async def get_material_history(
         )
 
     git = get_git_service()
-    git_path = _git_path_for_material(material)
+    git_path = material_git_path(material)
     commits = git.get_history(str(material.unit_id), git_path, limit=limit)
 
     versions = [
@@ -476,7 +475,7 @@ async def get_material_at_version(
         )
 
     git = get_git_service()
-    git_path = _git_path_for_material(material)
+    git_path = material_git_path(material)
     try:
         body = git.get_content(str(material.unit_id), git_path, commit)
     except FileNotFoundError as exc:
@@ -503,7 +502,7 @@ async def get_material_diff(
         )
 
     git = get_git_service()
-    git_path = _git_path_for_material(material)
+    git_path = material_git_path(material)
     diff = git.diff(str(material.unit_id), git_path, old_commit, new_commit)
 
     return {
@@ -529,7 +528,7 @@ async def revert_material(
         )
 
     git = get_git_service()
-    git_path = _git_path_for_material(material)
+    git_path = material_git_path(material)
 
     try:
         old_body = git.get_content(str(material.unit_id), git_path, data.commit)
@@ -558,29 +557,14 @@ async def revert_material(
 # =============================================================================
 # Image Upload Endpoints
 # =============================================================================
-
-
-def _sanitize_filename(filename: str) -> str:
-    """Sanitize a filename to be safe for filesystem storage."""
-    p = Path(filename)
-    stem = p.stem
-    ext = p.suffix.lower()
-
-    # Replace non-alphanumeric chars (except hyphens/underscores) with hyphens
-    stem = re.sub(r"[^\w\-]", "-", stem)
-    # Collapse multiple hyphens
-    stem = re.sub(r"-+", "-", stem).strip("-")
-
-    if not stem:
-        stem = "image"
-
-    return f"{stem}{ext}"
-
-
-def _images_dir_for_material(material: WeeklyMaterial) -> str:
-    """Build the Git-relative path for a material's images directory."""
-    git_path = _git_path_for_material(material)
-    return f"{git_path}.images"
+#
+# Path helpers and filename sanitisation live in
+# ``services/material_parsers/persistence.py`` as public functions:
+#   - ``material_git_path(material)``
+#   - ``material_images_dir(material)``
+#   - ``sanitize_filename(filename)``
+# The route layer and the parser persistence layer both import from
+# that single source of truth.
 
 
 @router.post("/units/{unit_id}/materials/{material_id}/images")
@@ -627,11 +611,11 @@ async def upload_material_image(
         )
 
     # Sanitize filename
-    safe_name = _sanitize_filename(file.filename)
+    safe_name = sanitize_filename(file.filename)
 
     # Handle collisions by adding a short hash
     git = get_git_service()
-    images_dir = _images_dir_for_material(material)
+    images_dir = material_images_dir(material)
     existing = git.list_directory(str(unit_id), images_dir)
 
     if safe_name in existing:
@@ -675,7 +659,7 @@ async def list_material_images(
         )
 
     git = get_git_service()
-    images_dir = _images_dir_for_material(material)
+    images_dir = material_images_dir(material)
     filenames = git.list_directory(str(unit_id), images_dir)
 
     return [
@@ -709,7 +693,7 @@ async def serve_material_image(
         )
 
     git = get_git_service()
-    images_dir = _images_dir_for_material(material)
+    images_dir = material_images_dir(material)
     image_path = f"{images_dir}/{filename}"
 
     try:
@@ -750,7 +734,7 @@ async def delete_material_image(
         )
 
     git = get_git_service()
-    images_dir = _images_dir_for_material(material)
+    images_dir = material_images_dir(material)
     image_path = f"{images_dir}/{filename}"
 
     try:

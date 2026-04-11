@@ -276,28 +276,71 @@ venv = ".venv"
 pythonVersion = "3.12"
 pythonPlatform = "Linux"
 typeCheckingMode = "standard"
-# Import handling
+
+# ── Import handling ────────────────────────────────────────────────
 reportMissingImports = false
 reportMissingTypeStubs = false
-# Enable core type checks
+
+# ── Core type checks (keep these on — they catch real bugs) ───────
 reportGeneralTypeIssues = true
 reportArgumentType = true
 reportReturnType = true
 reportAttributeAccessIssue = true
 reportCallIssue = true
-# Keep some checks relaxed for SQLAlchemy compatibility
-reportUnknownParameterType = false
-reportUnknownMemberType = false
-reportUnknownArgumentType = false
-reportUnknownVariableType = false
-# Other checks
 reportOptionalMemberAccess = true
 reportOptionalSubscript = true
 reportUnusedVariable = true
 reportUnusedImport = true
 reportDuplicateImport = true
 reportPrivateUsage = true
-reportConstantRedefinition = true
 reportIncompatibleMethodOverride = true
 reportIncompatibleVariableOverride = true
 reportUnboundVariable = true
+
+# ── Relaxed for pragmatic Python / SQLAlchemy / FastAPI ───────────
+# reportAny / reportExplicitAny: triggered by every untyped attribute
+# access from python-pptx, pypdf, BeautifulSoup, etc. Noise without
+# signal — we deliberately use Any at boundaries with untyped libs.
+reportAny = false
+reportExplicitAny = false
+
+# reportCallInDefaultInitializer: warns on `def f(x=list())`. This is
+# a well-known Python gotcha with mutable defaults, but we use it
+# safely throughout and the pattern is idiomatic.
+reportCallInDefaultInitializer = false
+
+# reportUnannotatedClassAttribute: SQLAlchemy models use Mapped[...]
+# which doesn't count as an annotation to pyright. Noisy for no gain.
+reportUnannotatedClassAttribute = false
+
+# reportImplicitOverride: we don't use @override decorators throughout.
+reportImplicitOverride = false
+
+# reportUnusedParameter: FastAPI dependency-injected params look
+# "unused" but are load-bearing for the request lifecycle.
+reportUnusedParameter = false
+
+# reportUnusedCallResult: db.commit() and similar return values are
+# routinely discarded; flagging each one is noise.
+reportUnusedCallResult = false
+
+# reportMissingTypeArgument: prefer explicit `list[str]` / `dict[str, Any]`,
+# but we have many legitimate bare `list` / `dict` uses (ChatMessage
+# __init__, metadata bags, etc.) — left on to catch new cases but
+# treated as a warning rather than a hard error.
+reportMissingTypeArgument = "warning"
+
+# Unknown types from untyped libraries — same reasoning as reportAny.
+reportUnknownParameterType = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUnknownLambdaType = false
+
+# Constant redefinition (reassigning UPPER_CASE vars) — often a false
+# positive on config loading patterns. Downgraded to warning.
+reportConstantRedefinition = "warning"
+
+# reportDeprecated: stdlib warnings about datetime.utcnow() and similar.
+# Downgraded — the migration is a separate task, not blocking MVP.
+reportDeprecated = "warning"

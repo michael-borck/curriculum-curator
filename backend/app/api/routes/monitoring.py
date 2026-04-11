@@ -3,7 +3,7 @@ Monitoring and health check endpoints
 """
 
 import sys
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psutil
@@ -25,7 +25,7 @@ async def health_check():
     """
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "service": "curriculum-curator-backend",
         "version": "1.0.0",
     }
@@ -43,7 +43,7 @@ async def detailed_health_check(
     """
     health_status: dict[str, Any] = {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "checks": {},
         "metrics": {},
     }
@@ -93,7 +93,7 @@ async def detailed_health_check(
         }
 
         # Recent login attempts (last hour)
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(UTC) - timedelta(hours=1)
         recent_attempts = (
             db.query(LoginAttempt)
             .filter(LoginAttempt.attempted_at > one_hour_ago)
@@ -130,7 +130,7 @@ async def get_metrics(
     """
     Get application metrics for monitoring (admin only)
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     metrics: dict[str, Any] = {
         "timestamp": now.isoformat(),
@@ -203,7 +203,7 @@ async def get_alerts(
     Get active security alerts (admin only)
     """
     alerts = []
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     # Check for high failed login rate
     one_hour_ago = now - timedelta(hours=1)
@@ -322,7 +322,7 @@ async def test_alert(
     return {
         "status": "success",
         "message": f"Test alert of type '{alert_type}' generated",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "alert": {
             "level": "INFO",
             "type": alert_type,

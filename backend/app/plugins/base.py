@@ -8,7 +8,7 @@ class PluginResult(BaseModel):
     success: bool
     message: str
     data: dict[str, Any] | None = None
-    suggestions: list | None = None
+    suggestions: list[Any] | None = None
 
 
 class ValidatorPlugin(ABC):
@@ -43,5 +43,5 @@ class RemediatorPlugin(ABC):
         pass
 
     @abstractmethod
-    async def remediate(self, content: str, issues: list) -> PluginResult:
+    async def remediate(self, content: str, issues: list[Any]) -> PluginResult:
         """Remediate content based on identified issues"""

@@ -6,6 +6,7 @@ Endpoints for checking Ollama status, pulling models, and testing generation.
 
 import json
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -22,7 +23,7 @@ router = APIRouter()
 @router.get("/status")
 async def get_ollama_status(
     _current_user: UserResponse = Depends(get_current_active_user),
-) -> dict:
+) -> dict[str, Any]:
     """Check if Ollama is reachable and list installed models."""
     available = await ollama_service.check_status()
     models = await ollama_service.list_models() if available else []
@@ -38,14 +39,14 @@ async def get_ollama_status(
 @router.get("/recommend")
 async def get_recommendation(
     _current_user: UserResponse = Depends(get_current_active_user),
-) -> dict:
+) -> dict[str, Any]:
     """Get RAM-based model recommendation."""
     return ollama_service.recommend_model()
 
 
 @router.post("/pull")
 async def pull_model(
-    body: dict,
+    body: dict[str, Any],
     _current_user: UserResponse = Depends(get_current_active_user),
 ) -> StreamingResponse:
     """Stream model download progress as SSE."""
@@ -73,7 +74,7 @@ async def pull_model(
 async def delete_model(
     model_name: str,
     _current_user: UserResponse = Depends(get_current_active_user),
-) -> dict:
+) -> dict[str, Any]:
     """Delete an installed model."""
     success = await ollama_service.delete_model(model_name)
     if not success:
@@ -83,9 +84,9 @@ async def delete_model(
 
 @router.post("/test")
 async def test_generation(
-    body: dict,
+    body: dict[str, Any],
     _current_user: UserResponse = Depends(get_current_active_user),
-) -> dict:
+) -> dict[str, Any]:
     """Test generation with a model."""
     model_name = body.get("model")
     if not model_name:

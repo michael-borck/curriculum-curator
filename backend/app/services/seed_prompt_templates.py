@@ -7,6 +7,7 @@ Idempotent — checks by name before inserting. Called from main.py lifespan.
 import json
 import logging
 import uuid
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,7 @@ from app.models.prompt_template import PromptTemplate
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_TEMPLATES: list[dict] = [
+SYSTEM_TEMPLATES: list[dict[str, Any]] = [
     {
         "name": "Study Guide Creator",
         "description": "Generate a comprehensive study guide from lecture content or a topic.",

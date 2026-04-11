@@ -4,6 +4,7 @@ Cleans up messy markdown from copy-paste and inconsistent LLM output.
 """
 
 import re
+from typing import Any
 
 from app.plugins.base import PluginResult, RemediatorPlugin
 
@@ -306,7 +307,7 @@ class MarkdownCleanup(RemediatorPlugin):
 
         return content, changes
 
-    async def remediate(self, content: str, issues: list) -> PluginResult:
+    async def remediate(self, content: str, issues: list[Any]) -> PluginResult:
         """Apply all markdown cleanup fixes."""
         try:
             all_changes: list[str] = []

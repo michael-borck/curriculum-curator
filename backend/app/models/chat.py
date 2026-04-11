@@ -3,7 +3,7 @@ Chat models for "Chat with Course" functionality
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -109,7 +109,7 @@ class ChatSession(Base):
         """Check if session has activity in the last 24 hours"""
         if not self.last_activity_at:
             return False
-        time_diff = datetime.utcnow() - self.last_activity_at
+        time_diff = datetime.now(UTC) - self.last_activity_at
         return time_diff.days == 0
 
 

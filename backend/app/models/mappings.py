@@ -2,7 +2,7 @@
 Association tables for many-to-many relationships between entities
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Column,
@@ -30,7 +30,7 @@ material_ulo_mappings = Table(
         ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
         primary_key=True,
     ),
-    Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
+    Column("created_at", DateTime, nullable=False, default=lambda: datetime.now(UTC)),
     extend_existing=True,
 )
 
@@ -50,7 +50,7 @@ assessment_ulo_mappings = Table(
         ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
         primary_key=True,
     ),
-    Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
+    Column("created_at", DateTime, nullable=False, default=lambda: datetime.now(UTC)),
     extend_existing=True,
 )
 
@@ -73,6 +73,6 @@ assessment_material_links = Table(
         ForeignKey("weekly_materials.id", ondelete="CASCADE"),
         primary_key=True,
     ),
-    Column("created_at", DateTime, nullable=False, default=datetime.utcnow),
+    Column("created_at", DateTime, nullable=False, default=lambda: datetime.now(UTC)),
     extend_existing=True,
 )

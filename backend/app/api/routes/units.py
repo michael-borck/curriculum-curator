@@ -6,7 +6,7 @@ Uses SQLAlchemy ORM via unit_repo.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -162,7 +162,7 @@ async def quick_create(
     to the unit page with that week pre-expanded and the user ready to
     edit their new material inline.
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     content_type_value = (
         data.content_type.value
         if hasattr(data.content_type, "value")

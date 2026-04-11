@@ -3,7 +3,7 @@ Login attempt model for account security and lockout tracking
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Self
 
@@ -66,20 +66,20 @@ class LoginAttempt(Base):
         """Check if account is currently locked"""
         if not self.is_locked or not self.locked_until:
             return False
-        return datetime.utcnow() < self.locked_until
+        return datetime.now(UTC) < self.locked_until
 
     @property
     def lockout_expires_in_minutes(self) -> int:
         """Get minutes until lockout expires"""
         if not self.is_currently_locked or not self.locked_until:
             return 0
-        delta = self.locked_until - datetime.utcnow()
+        delta = self.locked_until - datetime.now(UTC)
         return max(0, int(delta.total_seconds() / 60))
 
     @property
     def time_since_last_attempt(self) -> timedelta:
         """Get time since last attempt"""
-        return datetime.utcnow() - self.last_attempt
+        return datetime.now(UTC) - self.last_attempt
 
     def record_success(self) -> None:
         """Record successful login and reset failure counters"""
@@ -89,16 +89,16 @@ class LoginAttempt(Base):
         self.is_locked = False
         self.locked_until = None
         self.lockout_reason = None
-        self.last_attempt = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.last_attempt = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
     def record_failure(self, reason: str = "Invalid credentials") -> None:
         """Record failed login attempt and apply lockout if needed"""
         self.attempt_type = LoginAttemptType.LOGIN_FAILED.value
         self.failed_attempts = int(self.failed_attempts) + 1
         self.consecutive_failures = int(self.consecutive_failures) + 1
-        self.last_attempt = datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.last_attempt = datetime.now(UTC)
+        self.updated_at = datetime.now(UTC)
 
         # Apply progressive lockout based on consecutive failures
         consecutive = int(self.consecutive_failures)
@@ -118,10 +118,10 @@ class LoginAttempt(Base):
         """Apply account lockout for specified duration"""
         lockout_duration = timedelta(minutes=minutes, hours=hours)
         self.is_locked = True
-        self.locked_until = datetime.utcnow() + lockout_duration
+        self.locked_until = datetime.now(UTC) + lockout_duration
         self.lockout_reason = reason or "Account locked due to security policy"
         self.attempt_type = LoginAttemptType.ACCOUNT_LOCKED.value
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
     def unlock_account(self, reason: str = "Manual unlock") -> None:
         """Manually unlock account"""
@@ -129,12 +129,12 @@ class LoginAttempt(Base):
         self.locked_until = None
         self.consecutive_failures = 0
         self.lockout_reason = f"Unlocked: {reason}"
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(UTC)
 
     @classmethod
     def cleanup_old_attempts(cls, db_session: Session, days_old: int = 30) -> int:
         """Clean up old login attempt records"""
-        cutoff_date = datetime.utcnow() - timedelta(days=days_old)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days_old)
         return (
             db_session.query(cls)
             .filter(cls.created_at < cutoff_date)
@@ -181,7 +181,7 @@ class LoginAttempt(Base):
         window_minutes: int = 15,
     ) -> bool:
         """Check if IP address should be rate limited based on recent attempts"""
-        cutoff_time = datetime.utcnow() - timedelta(minutes=window_minutes)
+        cutoff_time = datetime.now(UTC) - timedelta(minutes=window_minutes)
 
         attempt_count = (
             db_session.query(cls)
@@ -197,7 +197,7 @@ class LoginAttempt(Base):
         cls, db_session: Session, hours: int = 24
     ) -> list[Self]:
         """Get recent suspicious activity for monitoring"""
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
         return (
             db_session.query(cls)

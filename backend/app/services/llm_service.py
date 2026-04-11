@@ -59,7 +59,7 @@ class LLMService:
     # Core LLM Methods
     # =========================================================================
 
-    def _get_system_settings(self, db: Session) -> dict:
+    def _get_system_settings(self, db: Session) -> dict[str, Any]:
         """Get system-wide LLM settings from database"""
         settings_dict: dict[str, Any] = {}
         system_settings = (
@@ -83,7 +83,7 @@ class LLMService:
             settings_dict[setting.key] = setting.value
         return settings_dict
 
-    def _get_user_api_key(self, provider: str, user_config: dict) -> str | None:
+    def _get_user_api_key(self, provider: str, user_config: dict[str, Any]) -> str | None:
         """Extract API key from user config based on provider"""
         key_map = {
             "openai": "openai_api_key",
@@ -93,7 +93,7 @@ class LLMService:
         key_name = key_map.get(provider)
         return user_config.get(key_name) if key_name else None
 
-    def _get_system_api_key(self, provider: str, system_settings: dict) -> str | None:
+    def _get_system_api_key(self, provider: str, system_settings: dict[str, Any]) -> str | None:
         """Get system API key for provider"""
         provider_map = {
             "openai": ("system_openai_api_key", settings.OPENAI_API_KEY),
@@ -115,9 +115,17 @@ class LLMService:
         if not user or not getattr(user, "llm_config", None):
             return None, None, None
 
-        user_config = getattr(user, "llm_config", None)
-        if isinstance(user_config, str):
-            user_config = json.loads(user_config)
+        raw_config = getattr(user, "llm_config", None)
+        user_config: dict[str, Any] | None
+        if isinstance(raw_config, str):
+            user_config = json.loads(raw_config)
+        elif isinstance(raw_config, dict):
+            user_config = raw_config
+        else:
+            return None, None, None
+
+        if user_config is None:
+            return None, None, None
 
         provider = user_config.get("provider")
         if not provider or provider == "system":
@@ -1024,11 +1032,11 @@ Format as JSON."""
         self, db: Session, user_id: str, days: int = 30
     ) -> dict[str, Any]:
         """Get token usage statistics for a user."""
-        from datetime import datetime, timedelta  # noqa: PLC0415
+        from datetime import UTC, datetime, timedelta  # noqa: PLC0415
 
         from app.models.llm_config import TokenUsageLog  # noqa: PLC0415
 
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = datetime.now(UTC) - timedelta(days=days)
         logs = (
             db.query(TokenUsageLog)
             .filter(
@@ -1059,7 +1067,7 @@ Format as JSON."""
             "by_provider": by_provider,
             "by_model": by_model,
             "period_start": start_date.isoformat(),
-            "period_end": datetime.utcnow().isoformat(),
+            "period_end": datetime.now(UTC).isoformat(),
         }
 
 

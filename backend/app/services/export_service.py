@@ -106,17 +106,17 @@ class ExportService:
     @property
     def pandoc_path(self) -> str:
         if self._pandoc_path is None:
-            self._pandoc_path = self._resolve_binary("pandoc", "PANDOC_PATH")
+            self._pandoc_path = self.resolve_binary("pandoc", "PANDOC_PATH")
         return self._pandoc_path
 
     @property
     def typst_path(self) -> str:
         if self._typst_path is None:
-            self._typst_path = self._resolve_binary("typst", "TYPST_PATH")
+            self._typst_path = self.resolve_binary("typst", "TYPST_PATH")
         return self._typst_path
 
     @staticmethod
-    def _resolve_binary(name: str, env_var: str) -> str:
+    def resolve_binary(name: str, env_var: str) -> str:
         """Resolve binary path from env var, Electron resources, or system PATH."""
         # 1. Explicit env var
         env_path = os.getenv(env_var)

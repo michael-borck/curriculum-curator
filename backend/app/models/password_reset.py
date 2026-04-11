@@ -5,7 +5,7 @@ Password reset model for secure password recovery
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
@@ -54,7 +54,7 @@ class PasswordReset(Base):
         super().__init__(**kwargs)
         self.user_id = str(user_id) if isinstance(user_id, uuid.UUID) else user_id
         self.token = token
-        self.expires_at = datetime.utcnow() + timedelta(minutes=expires_minutes)
+        self.expires_at = datetime.now(UTC) + timedelta(minutes=expires_minutes)
 
     def __repr__(self) -> str:
         return (
@@ -66,7 +66,7 @@ class PasswordReset(Base):
         """Check if reset token has expired"""
         expires = self.expires_at
         if isinstance(expires, datetime):
-            return datetime.utcnow() > expires
+            return datetime.now(UTC) > expires
         return False
 
     @property

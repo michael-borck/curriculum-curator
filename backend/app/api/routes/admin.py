@@ -2,7 +2,7 @@
 Admin routes for user management and system configuration
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
@@ -252,7 +252,7 @@ async def get_user_statistics(
     users_by_role = {str(row[0]): int(row[1]) for row in role_counts}
 
     # Get recent registrations (last 7 days)
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    seven_days_ago = datetime.now(UTC) - timedelta(days=7)
     recent_registrations = (
         db.query(User).filter(User.created_at >= seven_days_ago).count()
     )

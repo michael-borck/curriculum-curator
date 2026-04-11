@@ -5,7 +5,8 @@ Security utilities for authentication and password handling
 import time as _time
 import uuid
 import warnings
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -56,7 +57,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    data: dict,
+    data: dict[str, Any],
     expires_delta: timedelta | None = None,
     client_ip: str | None = None,
     user_role: str | None = None,
@@ -76,7 +77,7 @@ def create_access_token(
         str: Encoded JWT token
     """
     to_encode = data.copy()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     # Set expiration
     if expires_delta:
@@ -110,7 +111,7 @@ def create_refresh_token(user_id: str, client_ip: str | None = None) -> str:
     Returns:
         str: Encoded refresh token
     """
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     expire = now + timedelta(days=7)  # Refresh tokens last 7 days
 
     payload = {
@@ -125,7 +126,7 @@ def create_refresh_token(user_id: str, client_ip: str | None = None) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def decode_access_token(token: str, verify_ip: str | None = None) -> dict | None:
+def decode_access_token(token: str, verify_ip: str | None = None) -> dict[str, Any] | None:
     """
     Decode and verify a JWT access token with enhanced security checks.
 
@@ -156,7 +157,7 @@ def decode_access_token(token: str, verify_ip: str | None = None) -> dict | None
 
 
 def validate_token_security(
-    payload: dict, client_ip: str | None = None
+    payload: dict[str, Any], client_ip: str | None = None
 ) -> tuple[bool, str]:
     """
     Validate JWT token security aspects.
@@ -172,7 +173,7 @@ def validate_token_security(
         return False, "Invalid token"
 
     # Check if token is expired (redundant but explicit)
-    now = datetime.utcnow().timestamp()
+    now = datetime.now(UTC).timestamp()
     if payload.get("exp", 0) < now:
         return False, "Token expired"
 
@@ -190,7 +191,7 @@ def validate_token_security(
     return True, ""
 
 
-def extract_token_info(payload: dict) -> dict:
+def extract_token_info(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Extract security-relevant information from token payload.
 

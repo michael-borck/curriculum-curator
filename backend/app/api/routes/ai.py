@@ -6,6 +6,7 @@ This is the unified AI endpoint - all LLM functionality is accessed through /api
 
 import json
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -412,7 +413,7 @@ async def generate_learning_path(
     learning_style: str | None = None,
     current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Generate personalized learning path with prerequisites, milestones, and resources."""
     try:
         return await llm_service.generate_learning_path(
@@ -435,7 +436,7 @@ async def detect_misconceptions(
     context: str | None = None,
     current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
-) -> dict:
+) -> dict[str, Any]:
     """Detect and explain student misconceptions with remediation suggestions."""
     try:
         return await llm_service.detect_misconceptions(
@@ -484,7 +485,7 @@ async def validate_content_with_ai(
     validation_type: str = "comprehensive",
     current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
-) -> dict:
+) -> dict[str, Any]:
     """
     Validate content using AI for quality checks.
 
@@ -572,7 +573,7 @@ async def get_provider_status(
 @router.get("/models")
 async def list_available_models(
     current_user: User = Depends(deps.get_current_active_user),
-) -> dict:
+) -> dict[str, Any]:
     """List available AI models and providers."""
     return {
         "providers": {

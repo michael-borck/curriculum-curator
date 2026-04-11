@@ -4,6 +4,7 @@ Supports Gmail, personal SMTP servers, Brevo, and other providers
 """
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -64,7 +65,7 @@ class SMTPConfig(BaseModel):
             return EmailProvider.DEV_MODE
         return v
 
-    def get_smtp_settings(self) -> dict:  # noqa: PLR0911
+    def get_smtp_settings(self) -> dict[str, Any]:  # noqa: PLR0911
         """Get SMTP settings based on provider"""
 
         if self.provider == EmailProvider.GMAIL:
@@ -241,7 +242,7 @@ class PersonalSMTPHelper:
         """
 
     @staticmethod
-    def test_common_providers(domain: str) -> dict:
+    def test_common_providers(domain: str) -> dict[str, Any]:
         """Get common SMTP settings for known domains"""
         domain = domain.lower()
 

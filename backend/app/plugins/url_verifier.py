@@ -158,7 +158,7 @@ class URLVerifier(ValidatorPlugin):
             "bot_blocked": False,
         }
 
-    def _validate_url_format(self, url: str, result: dict) -> Any:
+    def _validate_url_format(self, url: str, result: dict[str, Any]) -> Any:
         """Validate URL format and parse it."""
         try:
             parsed = urlparse(url)
@@ -175,7 +175,7 @@ class URLVerifier(ValidatorPlugin):
         return any(domain.endswith(trusted) for trusted in self._trusted_domains)
 
     async def _perform_http_verification(
-        self, client: httpx.AsyncClient, url: str, result: dict
+        self, client: httpx.AsyncClient, url: str, result: dict[str, Any]
     ) -> None:
         """Perform actual HTTP request verification."""
         try:
@@ -207,7 +207,7 @@ class URLVerifier(ValidatorPlugin):
         return await client.get(url, follow_redirects=True, timeout=self._timeout)
 
     def _process_response(
-        self, response: httpx.Response, url: str, result: dict
+        self, response: httpx.Response, url: str, result: dict[str, Any]
     ) -> None:
         """Process HTTP response and update result."""
         result["status_code"] = response.status_code
@@ -311,7 +311,7 @@ class URLVerifier(ValidatorPlugin):
 
         return None, None
 
-    def _handle_suspicious_url(self, url: str, result: dict) -> tuple[str, str]:
+    def _handle_suspicious_url(self, url: str, result: dict[str, Any]) -> tuple[str, str]:
         """Handle suspicious URL."""
         issue = f"Suspicious URL pattern: {url[:100]}..."
         suggestion = (
@@ -319,7 +319,7 @@ class URLVerifier(ValidatorPlugin):
         )
         return issue, suggestion
 
-    def _handle_bot_blocked_url(self, url: str, result: dict) -> tuple[str, str]:
+    def _handle_bot_blocked_url(self, url: str, result: dict[str, Any]) -> tuple[str, str]:
         """Handle bot-blocked URL."""
         issue = f"Bot detection: {url[:100]}... - {result['error']}"
 
@@ -339,7 +339,7 @@ class URLVerifier(ValidatorPlugin):
         return issue, suggestion
 
     def _handle_invalid_url(
-        self, url: str, context: str, result: dict
+        self, url: str, context: str, result: dict[str, Any]
     ) -> tuple[str, str]:
         """Handle invalid URL."""
         error = result.get("error", "")
@@ -377,7 +377,7 @@ class URLVerifier(ValidatorPlugin):
         # Default case
         return (f"Invalid URL: {url[:100]}... - {error}", "Verify and correct this URL")
 
-    def _handle_redirect(self, url: str, result: dict) -> tuple[str | None, str | None]:
+    def _handle_redirect(self, url: str, result: dict[str, Any]) -> tuple[str | None, str | None]:
         """Handle URL redirect."""
         redirect_url = result["redirect_url"]
 

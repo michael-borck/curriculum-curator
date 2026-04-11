@@ -20,7 +20,7 @@ import zipfile
 from collections.abc import Callable
 from datetime import UTC, datetime
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from xml.etree.ElementTree import Element as _Element  # type annotations only
 
 import defusedxml.ElementTree as ET  # noqa: N817
@@ -1221,7 +1221,7 @@ class PackageImportService:
         except zipfile.BadZipFile as e:
             raise PackageImportError(f"Invalid ZIP file: {e}") from e
 
-    def _read_meta(self, zf: zipfile.ZipFile) -> dict:
+    def _read_meta(self, zf: zipfile.ZipFile) -> dict[str, Any]:
         """Read and parse curriculum_curator_meta.json from the ZIP."""
         meta_name = "curriculum_curator_meta.json"
         if meta_name not in zf.namelist():
@@ -1230,7 +1230,7 @@ class PackageImportService:
             )
         try:
             raw = zf.read(meta_name).decode("utf-8")
-            meta: dict = json.loads(raw)
+            meta: dict[str, Any] = json.loads(raw)
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             raise PackageImportError(f"Failed to parse meta.json: {e}") from e
 
@@ -1238,7 +1238,7 @@ class PackageImportService:
             raise PackageImportError("meta.json is missing 'unit' data.")
         return meta
 
-    def _detect_format(self, zf: zipfile.ZipFile, meta: dict) -> str:
+    def _detect_format(self, zf: zipfile.ZipFile, meta: dict[str, Any]) -> str:
         """Detect whether this is IMSCC or SCORM from meta/manifest."""
         if meta.get("export_format") == "scorm_1.2":
             return "scorm_1.2"
@@ -1306,10 +1306,10 @@ class PackageImportService:
 
         return result
 
-    def _parse_assessment_html(self, html: str) -> dict:
+    def _parse_assessment_html(self, html: str) -> dict[str, Any]:
         """Parse an assessment HTML page back into a data dict."""
         soup = BeautifulSoup(html, "html.parser")
-        data: dict = {}
+        data: dict[str, Any] = {}
 
         h1 = soup.find("h1")
         data["title"] = h1.get_text(strip=True) if h1 else "Untitled Assessment"
@@ -1341,7 +1341,7 @@ class PackageImportService:
         return data
 
     @staticmethod
-    def _parse_assessment_table(table: object, data: dict) -> None:
+    def _parse_assessment_table(table: object, data: dict[str, Any]) -> None:
         """Extract assessment properties from the HTML property table."""
         prop_map: dict[str, str] = {
             "Type": "type",

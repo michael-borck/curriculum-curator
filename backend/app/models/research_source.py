@@ -4,7 +4,7 @@ Research Source model for storing and managing academic sources
 
 import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import (
@@ -119,10 +119,10 @@ class ResearchSource(Base):
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(UTC), nullable=False
     )
     updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime, onupdate=datetime.utcnow, nullable=True
+        DateTime, onupdate=lambda: datetime.now(UTC), nullable=True
     )
 
     # Relationships

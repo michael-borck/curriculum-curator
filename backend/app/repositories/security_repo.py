@@ -5,7 +5,8 @@ Handles login attempts, account lockouts, and security audit logs using SQLAlche
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -111,7 +112,7 @@ def record_login_failure(
             LoginAttempt.email == email,
         ).update({
             "is_locked": True,
-            "locked_until": datetime.utcnow() + timedelta(minutes=30),
+            "locked_until": datetime.now(UTC) + timedelta(minutes=30),
             "lockout_reason": "Account locked due to excessive failed attempts from multiple sources",
         })
         db.commit()
@@ -127,7 +128,7 @@ def check_account_lockout(
     Returns: (is_locked, lockout_reason, minutes_until_unlock)
     """
     email = email.lower().strip()
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
 
     # Check email-based lockout
     attempt = (
@@ -174,7 +175,7 @@ def log_security_event(
     description: str | None = None,
     severity: str = "info",
     success: str = "success",
-    details: dict | None = None,
+    details: dict[str, Any] | None = None,
     response_time_ms: int | None = None,
 ) -> SecurityLog:
     """Log a security event"""

@@ -25,18 +25,59 @@ into content_json before saving it.
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from app.api.routes.materials import (
-    _images_dir_for_material,
-    _sanitize_filename,
-)
 from app.services.git_content_service import get_git_service
 
 if TYPE_CHECKING:
     from app.models.weekly_material import WeeklyMaterial
     from app.services.material_parsers.base import ExtractedImage
+
+
+# ---------------------------------------------------------------------------
+# Git-path helpers for weekly materials
+#
+# These used to live as private helpers in routes/materials.py. Moved here
+# (and made public) so both the route layer and the parser persistence
+# layer import from one source of truth.
+# ---------------------------------------------------------------------------
+
+
+def material_git_path(material: WeeklyMaterial) -> str:
+    """Return the Git-relative path for a material's description file."""
+    return f"weeks/week-{int(material.week_number):02d}/material-{material.id}.html"
+
+
+def material_images_dir(material: WeeklyMaterial) -> str:
+    """Return the Git-relative path for a material's images directory."""
+    return f"{material_git_path(material)}.images"
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitise a filename to be safe for filesystem storage.
+
+    Non-alphanumeric chars (except hyphen/underscore) become hyphens,
+    hyphen runs collapse, and leading/trailing hyphens are stripped.
+    Empty stems fall back to ``"image"``.
+    """
+    p = Path(filename)
+    stem = p.stem
+    ext = p.suffix.lower()
+
+    stem = re.sub(r"[^\w\-]", "-", stem)
+    stem = re.sub(r"-+", "-", stem).strip("-")
+
+    if not stem:
+        stem = "image"
+
+    return f"{stem}{ext}"
+
+
+# ---------------------------------------------------------------------------
+# Parser-result persistence
+# ---------------------------------------------------------------------------
 
 
 def persist_extracted_images(
@@ -60,13 +101,13 @@ def persist_extracted_images(
         return {}
 
     git = get_git_service()
-    images_dir = _images_dir_for_material(material)
+    images_dir = material_images_dir(material)
     existing = set(git.list_directory(unit_id, images_dir))
     rewrites: dict[str, str] = {}
 
     for image in images:
         original_name = image.filename
-        safe_name = _sanitize_filename(original_name)
+        safe_name = sanitize_filename(original_name)
 
         if safe_name in existing:
             stem = Path(safe_name).stem
@@ -122,4 +163,10 @@ def rewrite_image_src(
     return _walk(content_json)
 
 
-__all__ = ["persist_extracted_images", "rewrite_image_src"]
+__all__ = [
+    "material_git_path",
+    "material_images_dir",
+    "persist_extracted_images",
+    "rewrite_image_src",
+    "sanitize_filename",
+]

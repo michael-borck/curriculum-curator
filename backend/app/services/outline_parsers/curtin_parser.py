@@ -79,7 +79,9 @@ def _extract_text_from_pdf(content: bytes) -> str:
         import pymupdf  # noqa: PLC0415
 
         doc = pymupdf.open(stream=content, filetype="pdf")
-        return "\n\n".join(page.get_text() for page in doc)
+        # pymupdf's get_text() is typed as returning Any — coerce to str
+        # explicitly so the join call has an iterable of real strings.
+        return "\n\n".join(str(page.get_text()) for page in doc)
     except ImportError:
         logger.warning("pymupdf not installed — falling back to pypdf (digits may be missing from Curtin PDFs)")
     except Exception:

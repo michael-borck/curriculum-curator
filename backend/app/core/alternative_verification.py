@@ -4,7 +4,8 @@ Alternative verification methods for restrictive environments
 
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 
 def generate_manual_verification_token(email: str) -> str:
@@ -12,7 +13,7 @@ def generate_manual_verification_token(email: str) -> str:
     # This creates a predictable token that admins can generate independently
     secret_salt = "CurriculumCurator2025"  # Change this for your deployment
     token_input = (
-        f"{email.lower()}{secret_salt}{datetime.utcnow().strftime('%Y-%m-%d')}"
+        f"{email.lower()}{secret_salt}{datetime.now(UTC).strftime('%Y-%m-%d')}"
     )
     return hashlib.sha256(token_input.encode()).hexdigest()[:8].upper()
 
@@ -39,12 +40,12 @@ class AlternativeVerification:
     """Handle alternative verification methods"""
 
     @staticmethod
-    def generate_verification_options(email: str) -> dict:
+    def generate_verification_options(email: str) -> dict[str, Any]:
         """Generate multiple verification options for users"""
         return {
             "manual_code": generate_manual_verification_token(email),
             "admin_code": generate_admin_override_code(email),
-            "valid_until": (datetime.utcnow() + timedelta(hours=24)).isoformat(),
+            "valid_until": (datetime.now(UTC) + timedelta(hours=24)).isoformat(),
             "instructions": {
                 "option1": "Enter the manual verification code shown below",
                 "option2": "Ask your administrator for an override code",

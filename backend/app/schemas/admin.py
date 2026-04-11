@@ -2,6 +2,8 @@
 Admin-related Pydantic schemas
 """
 
+from typing import Any
+
 from pydantic import Field
 
 from app.schemas.base import CamelModel
@@ -99,7 +101,7 @@ class AuditLogResponse(CamelModel):
     description: str | None
     severity: str
     timestamp: str
-    details: dict | None = None
+    details: dict[str, Any] | None = None
 
 
 class DatabaseBackupResponse(CamelModel):

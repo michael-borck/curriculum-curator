@@ -4,7 +4,7 @@ Admin configuration management endpoints
 
 import json
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -437,7 +437,7 @@ async def export_configurations(
 
     export_data = {
         "version": "1.0",
-        "exported_at": datetime.utcnow().isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "exported_by": admin_user.email,
         "configs": [],
     }
