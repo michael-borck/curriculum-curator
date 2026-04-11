@@ -108,9 +108,10 @@ class ImportApplyResponse(CamelModel):
 # =============================================================================
 
 
-_ALLOWED_EXTENSIONS = {"pptx"}
-"""File extensions accepted by Mode A in this phase. Expands as more
-parsers ship (per docs/structured-import-plan.md Phase 2)."""
+_ALLOWED_EXTENSIONS = {"pptx", "docx", "html", "htm", "md", "pdf"}
+"""File extensions accepted by Mode A. Each extension has a registered
+default parser in ``material_parsers/__init__.py``. Phase 5+ may add
+``ipynb`` and dialect specialisations (Marp, reveal.js, Quarto)."""
 
 
 def _normalise_extension(filename: str) -> str:
@@ -139,9 +140,8 @@ async def _read_and_parse(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"Unsupported format '.{ext}'. This phase supports: "
-                f"{', '.join(sorted(_ALLOWED_EXTENSIONS))}. "
-                "Other formats will be added in subsequent phases."
+                f"Unsupported format '.{ext}'. Supported: "
+                f"{', '.join(sorted(_ALLOWED_EXTENSIONS))}."
             ),
         )
 

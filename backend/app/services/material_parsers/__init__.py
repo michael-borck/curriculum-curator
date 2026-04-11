@@ -26,6 +26,11 @@ _registry_cache: dict[str, type[MaterialParser]] = {}
 # requires a registered parser with that id (or the lookup will raise).
 DEFAULT_PARSER_BY_FORMAT: dict[str, str] = {
     "pptx": "pptx_structural",
+    "docx": "docx_pandoc",
+    "html": "html_structural",
+    "htm": "html_structural",
+    "md": "md_structural",
+    "pdf": "pdf_paragraphs",
 }
 
 
@@ -33,12 +38,28 @@ def _build_registry() -> dict[str, type[MaterialParser]]:
     # Imports inside the function avoid circular imports during package init
     # and keep the registry lazy — adding a parser only requires editing
     # this function and DEFAULT_PARSER_BY_FORMAT above.
+    from app.services.material_parsers.docx_pandoc import (  # noqa: PLC0415
+        DocxPandocParser,
+    )
+    from app.services.material_parsers.html_structural import (  # noqa: PLC0415
+        HtmlStructuralParser,
+    )
+    from app.services.material_parsers.md_structural import (  # noqa: PLC0415
+        MdStructuralParser,
+    )
+    from app.services.material_parsers.pdf_paragraphs import (  # noqa: PLC0415
+        PdfParagraphsParser,
+    )
     from app.services.material_parsers.pptx_structural import (  # noqa: PLC0415
         PptxStructuralParser,
     )
 
     return {
         PptxStructuralParser.name: PptxStructuralParser,
+        DocxPandocParser.name: DocxPandocParser,
+        HtmlStructuralParser.name: HtmlStructuralParser,
+        MdStructuralParser.name: MdStructuralParser,
+        PdfParagraphsParser.name: PdfParagraphsParser,
     }
 
 

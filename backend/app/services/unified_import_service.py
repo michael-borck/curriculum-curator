@@ -55,11 +55,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Extensions handled by structured material parsers (per Phase 1 of
-# docs/structured-import-plan.md). Files with these extensions go through
-# the structural parser path; everything else falls back to the legacy
-# plain-text extractor until later phases ship parsers for them.
-_STRUCTURED_EXTENSIONS = {".pptx"}
+# Extensions handled by structured material parsers (per Phases 1 and 2
+# of docs/structured-import-plan.md). Files with these extensions go
+# through the structural parser path; everything else falls back to the
+# legacy plain-text extractor until later phases ship parsers for them.
+_STRUCTURED_EXTENSIONS = {".pptx", ".docx", ".html", ".htm", ".md", ".pdf"}
 
 
 @dataclass
@@ -747,26 +747,17 @@ class UnifiedImportService:
     ) -> _ExtractedContent | None:
         """Extract content from a single file.
 
-        Files matching ``_STRUCTURED_EXTENSIONS`` (currently just .pptx)
-        are dispatched to the corresponding material parser, producing a
-        ``MaterialParseResult`` with structured content_json, extracted
-        images, and parser warnings. Other formats fall through to the
-        legacy plain-text extractor and return raw HTML/text.
+        Files matching ``_STRUCTURED_EXTENSIONS`` (.pptx, .docx, .html,
+        .htm, .md, .pdf) are dispatched to the corresponding material
+        parser, producing a ``MaterialParseResult`` with structured
+        content_json, extracted images, and parser warnings. ``.txt``
+        files fall through to the legacy plain-text extractor.
 
         Returns ``None`` if extraction failed; the caller should skip
         the file and continue.
         """
         ext = file_item.extension.lower()
         try:
-            if ext in (".html", ".htm"):
-                html_text = raw_bytes.decode("utf-8", errors="replace")
-                _title, body = PackageImportService.extract_html_content(html_text)
-                if not file_title or file_title == _title_from_filename(
-                    file_item.filename
-                ):
-                    file_title = _title or file_title
-                return _ExtractedContent(title=file_title, content_html=body)
-
             if ext in _STRUCTURED_EXTENSIONS:
                 parser = get_default_for_format(ext)
                 parsed = await parser.parse(raw_bytes, file_item.filename)
@@ -782,7 +773,8 @@ class UnifiedImportService:
                     warnings=list(parsed.warnings),
                 )
 
-            if ext in (".pdf", ".docx", ".md", ".txt"):
+            if ext == ".txt":
+                # Legacy plain-text path for formats with no structured parser
                 result = await self._file_svc.process_file(
                     raw_bytes, file_item.filename
                 )

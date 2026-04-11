@@ -46,7 +46,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import PptxImportDialog from '../../features/import/PptxImportDialog';
+import MaterialImportDialog from '../../features/import/MaterialImportDialog';
 import axios from 'axios';
 import { materialsApi } from '../../services/unitStructureApi';
 import { useConfirmDialog } from '../../components/ui';
@@ -682,10 +682,10 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
             <button
               onClick={() => setShowImportDialog(true)}
               className='inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50'
-              title='Import a PowerPoint deck as an editable material'
+              title='Import a PowerPoint, Word, PDF, HTML, or Markdown file as an editable material'
             >
               <Upload className='w-4 h-4 mr-2' />
-              Import PPTX
+              Import File
             </button>
             <button
               onClick={() => setShowForm(true)}
@@ -698,7 +698,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         )}
       </div>
 
-      <PptxImportDialog
+      <MaterialImportDialog
         isOpen={showImportDialog}
         onClose={() => setShowImportDialog(false)}
         unitId={unitId}

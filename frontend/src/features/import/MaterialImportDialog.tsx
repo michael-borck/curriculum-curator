@@ -17,22 +17,23 @@ import {
 } from '../../services/materialImportApi';
 
 /**
- * PptxImportDialog — Mode A (single PPTX → existing unit) frontend.
+ * MaterialImportDialog — Mode A (single file → existing unit) frontend.
  *
  * Three-phase flow mirroring OutlineImport:
  *   upload → parsing → preview (review) → applying → done
  *
- * The user selects a .pptx file, the dialog calls /preview to parse it
- * without persisting, displays the result for review (parser used, title,
- * image count, warnings, content snippet), and on confirmation calls
- * /apply to create a WeeklyMaterial in the current week.
+ * The user selects a file (PPTX, DOCX, HTML, MD, or PDF), the dialog
+ * calls /preview to parse it without persisting, displays the result
+ * for review (parser used, title, image count, warnings, content
+ * snippet), and on confirmation calls /apply to create a WeeklyMaterial
+ * in the current week.
  *
  * Per the structured-import-plan, this is the foundation for Mode A.
  * Mode B (multi-file zip → existing unit) and Mode C (LMS package → new
  * unit) ship as separate UIs in later phases.
  */
 
-interface PptxImportDialogProps {
+interface MaterialImportDialogProps {
   isOpen: boolean;
   onClose: () => void;
   unitId: string;
@@ -42,7 +43,9 @@ interface PptxImportDialogProps {
 
 type Phase = 'upload' | 'parsing' | 'preview' | 'applying';
 
-const ALLOWED_EXTENSIONS = ['pptx'];
+const ALLOWED_EXTENSIONS = ['pptx', 'docx', 'html', 'htm', 'md', 'pdf'];
+const ACCEPT_ATTR = '.pptx,.docx,.html,.htm,.md,.pdf';
+const FORMAT_LABEL = 'PowerPoint, Word, PDF, HTML, or Markdown';
 const MAX_FILE_SIZE_MB = 50;
 
 const CATEGORY_OPTIONS = [
@@ -62,7 +65,7 @@ const TYPE_OPTIONS = [
   { value: 'reading', label: 'Reading' },
 ];
 
-const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
+const MaterialImportDialog: React.FC<MaterialImportDialogProps> = ({
   isOpen,
   onClose,
   unitId,
@@ -82,23 +85,35 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
   const [materialType, setMaterialType] = useState('lecture');
   const [category, setCategory] = useState('general');
 
-  // Load registered parsers when the dialog opens
+  // Load all registered parsers when the dialog opens. We don't filter
+  // here because we don't yet know which file the user will pick — once
+  // they do, we narrow to parsers supporting that format and auto-select
+  // the default.
   useEffect(() => {
     if (!isOpen) return;
-    listMaterialParsers('pptx')
-      .then(p => {
-        setParsers(p);
-        const defaultParser = p.find(x => x.isDefault) || p[0];
-        if (defaultParser) {
-          setSelectedParser(defaultParser.id);
-        }
-      })
+    listMaterialParsers()
+      .then(p => setParsers(p))
       .catch(() => {
-        // Soft fallback so the dialog still works if /parsers errors —
-        // the apply endpoint will use its own default
+        // Soft fallback: the apply endpoint will use its own default
+        // if the parsers list is unavailable
         setParsers([]);
       });
   }, [isOpen]);
+
+  // When a file is selected, narrow parsers to those supporting its
+  // format and auto-pick the default
+  useEffect(() => {
+    if (!file) {
+      setSelectedParser('');
+      return;
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const matching = parsers.filter(p => p.supportedFormats.includes(ext));
+    const defaultParser = matching.find(p => p.isDefault) || matching[0];
+    if (defaultParser) {
+      setSelectedParser(defaultParser.id);
+    }
+  }, [file, parsers]);
 
   // Reset all state when the dialog closes so reopening starts fresh
   const handleClose = useCallback(() => {
@@ -116,7 +131,7 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
   const validateFile = useCallback((f: File): string | null => {
     const ext = f.name.split('.').pop()?.toLowerCase() || '';
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      return `Unsupported file type: .${ext}. This phase supports PowerPoint (.pptx) only.`;
+      return `Unsupported file type: .${ext}. Supported: ${FORMAT_LABEL}.`;
     }
     const maxBytes = MAX_FILE_SIZE_MB * 1024 * 1024;
     if (f.size > maxBytes) {
@@ -166,7 +181,7 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
       const e = err as { response?: { data?: { detail?: string } } };
       setError(
         e.response?.data?.detail ||
-          'Failed to parse the file. Please check it is a valid PowerPoint document.'
+          'Failed to parse the file. Please check it is a valid document.'
       );
       setPhase('upload');
     }
@@ -203,7 +218,7 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title='Import PowerPoint'
+      title='Import Material'
       size='2xl'
       closeOnBackdrop={phase === 'upload'}
     >
@@ -211,8 +226,8 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
         {/* Persistent week-context note */}
         <div className='text-sm text-gray-600'>
           Importing into <span className='font-medium'>Week {weekNumber}</span>.
-          Slide structure, bullet points, tables, images, and speaker notes will
-          be preserved as editable content.
+          Headings, lists, tables, images, and (for slide formats) slide breaks
+          and speaker notes will be preserved as editable content.
         </div>
 
         {/* Error banner */}
@@ -281,13 +296,13 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
                 <div className='space-y-2'>
                   <Upload className='h-10 w-10 text-gray-400 mx-auto' />
                   <p className='text-gray-700 text-sm'>
-                    Drag and drop a .pptx file here, or{' '}
+                    Drag and drop a file here, or{' '}
                     <label className='text-blue-600 hover:text-blue-700 cursor-pointer underline'>
                       browse
                       <input
                         type='file'
                         className='hidden'
-                        accept='.pptx'
+                        accept={ACCEPT_ATTR}
                         onChange={e => {
                           const f = e.target.files?.[0];
                           if (f) handleFileSelect(f);
@@ -296,7 +311,7 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
                     </label>
                   </p>
                   <p className='text-xs text-gray-500'>
-                    PowerPoint (.pptx) only — max {MAX_FILE_SIZE_MB} MB
+                    {FORMAT_LABEL} — max {MAX_FILE_SIZE_MB} MB
                   </p>
                 </div>
               )}
@@ -321,10 +336,10 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
         {phase === 'parsing' && (
           <div className='py-12 text-center'>
             <Button loading variant='ghost' size='lg' disabled>
-              Parsing PowerPoint...
+              Parsing file...
             </Button>
             <p className='text-sm text-gray-500 mt-2'>
-              Extracting slides, text, images, and speaker notes.
+              Extracting structure, text, and any embedded images.
             </p>
           </div>
         )}
@@ -430,4 +445,4 @@ const PptxImportDialog: React.FC<PptxImportDialogProps> = ({
   );
 };
 
-export default PptxImportDialog;
+export default MaterialImportDialog;

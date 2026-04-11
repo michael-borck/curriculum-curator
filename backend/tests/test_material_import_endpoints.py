@@ -17,10 +17,13 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+from docx import Document
 from pptx import Presentation
 from pptx.util import Inches
 
 from app.models.weekly_material import WeeklyMaterial
+from app.services.material_parsers.docx_pandoc import DocxPandocParser
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -71,12 +74,18 @@ def _multi_slide_with_image_pptx() -> bytes:
 
 
 class TestParserListing:
-    def test_lists_pptx_parser(self, client: TestClient) -> None:
+    def test_lists_all_phase_2_parsers(self, client: TestClient) -> None:
         response = client.get("/api/import/material/parsers")
         assert response.status_code == 200
-        data = response.json()
-        ids = [p["id"] for p in data["parsers"]]
-        assert "pptx_structural" in ids
+        ids = {p["id"] for p in response.json()["parsers"]}
+        # Phase 1 + Phase 2 default parsers
+        assert ids >= {
+            "pptx_structural",
+            "docx_pandoc",
+            "html_structural",
+            "md_structural",
+            "pdf_paragraphs",
+        }
 
     def test_pptx_parser_metadata(self, client: TestClient) -> None:
         response = client.get("/api/import/material/parsers")
@@ -89,6 +98,24 @@ class TestParserListing:
         assert "pptx" in pptx["supportedFormats"]
         assert pptx["requiresAi"] is False
 
+    def test_phase_2_parsers_are_default_for_their_format(
+        self, client: TestClient
+    ) -> None:
+        response = client.get("/api/import/material/parsers")
+        parsers_by_id = {p["id"]: p for p in response.json()["parsers"]}
+        expected_defaults = {
+            "docx_pandoc": "docx",
+            "html_structural": "html",
+            "md_structural": "md",
+            "pdf_paragraphs": "pdf",
+        }
+        for parser_id, fmt in expected_defaults.items():
+            parser = parsers_by_id[parser_id]
+            assert fmt in parser["supportedFormats"]
+            assert parser["isDefault"] is True, (
+                f"{parser_id} should be the default for .{fmt}"
+            )
+
     def test_filter_by_format(self, client: TestClient) -> None:
         response = client.get("/api/import/material/parsers?format=pptx")
         assert response.status_code == 200
@@ -96,8 +123,8 @@ class TestParserListing:
         assert ids == ["pptx_structural"]
 
     def test_filter_by_unknown_format(self, client: TestClient) -> None:
-        response = client.get("/api/import/material/parsers?format=docx")
-        # No parser registered for docx in Phase 1
+        # ipynb has no registered parser yet (Phase 5+)
+        response = client.get("/api/import/material/parsers?format=ipynb")
         assert response.status_code == 200
         assert response.json()["parsers"] == []
 
@@ -347,3 +374,163 @@ class TestNotesRoundTrip:
         assert "Speak slowly here" in markdown
         assert "\n\n::: notes\n" in markdown  # blank-line padding for Pandoc
         assert "\n:::\n\n" in markdown
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: DOCX, HTML, MD, PDF via the apply endpoint
+# ---------------------------------------------------------------------------
+
+
+def _docx_bytes() -> bytes:
+    doc = Document()
+    doc.add_heading("Imported DOCX", level=1)
+    doc.add_paragraph("Body paragraph from a Word document.")
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+def _html_bytes() -> bytes:
+    return (
+        b"<html><body><h1>Imported HTML</h1>"
+        b"<p>Body paragraph from an HTML file.</p></body></html>"
+    )
+
+
+def _md_bytes() -> bytes:
+    return b"# Imported Markdown\n\nBody paragraph from a markdown file.\n"
+
+
+def _pdf_bytes() -> bytes:
+    import fitz
+
+    doc = fitz.open()
+    doc.set_metadata({"title": "Imported PDF"})
+    page = doc.new_page()
+    page.insert_text((72, 72), "Body paragraph from a PDF.", fontsize=12)
+    buf = io.BytesIO()
+    doc.save(buf)
+    doc.close()
+    buf.seek(0)
+    return buf.read()
+
+
+class TestPhase2FormatsApply:
+    """Each Phase 2 format should land in the DB as a structured
+    WeeklyMaterial via the Mode A apply endpoint, same as PPTX does."""
+
+    @pytest.mark.skipif(
+        not DocxPandocParser.is_available(),
+        reason="pandoc binary not available",
+    )
+    def test_docx_apply_creates_structured_material(
+        self, client: TestClient, test_unit: Unit, test_db: Session
+    ) -> None:
+        files = {"file": ("lecture.docx", _docx_bytes(), "application/octet-stream")}
+        response = client.post(
+            "/api/import/material/single/apply",
+            files=files,
+            data={
+                "unit_id": str(test_unit.id),
+                "week_number": 1,
+                "type": "lecture",
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["parserUsed"] == "docx_pandoc"
+        assert data["title"] == "Imported DOCX"
+
+        mat = (
+            test_db.query(WeeklyMaterial)
+            .filter(WeeklyMaterial.id == data["materialId"])
+            .first()
+        )
+        assert mat is not None
+        assert mat.content_json is not None
+        assert "Body paragraph" in str(mat.content_json)
+
+    def test_html_apply_creates_structured_material(
+        self, client: TestClient, test_unit: Unit, test_db: Session
+    ) -> None:
+        files = {"file": ("page.html", _html_bytes(), "text/html")}
+        response = client.post(
+            "/api/import/material/single/apply",
+            files=files,
+            data={
+                "unit_id": str(test_unit.id),
+                "week_number": 1,
+                "type": "reading",
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["parserUsed"] == "html_structural"
+        assert data["title"] == "Imported HTML"
+
+        mat = (
+            test_db.query(WeeklyMaterial)
+            .filter(WeeklyMaterial.id == data["materialId"])
+            .first()
+        )
+        assert mat is not None
+        assert mat.content_json is not None
+        assert "Body paragraph" in str(mat.content_json)
+
+    def test_md_apply_creates_structured_material(
+        self, client: TestClient, test_unit: Unit, test_db: Session
+    ) -> None:
+        files = {"file": ("notes.md", _md_bytes(), "text/markdown")}
+        response = client.post(
+            "/api/import/material/single/apply",
+            files=files,
+            data={
+                "unit_id": str(test_unit.id),
+                "week_number": 1,
+                "type": "reading",
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["parserUsed"] == "md_structural"
+        assert data["title"] == "Imported Markdown"
+
+    def test_pdf_apply_creates_structured_material(
+        self, client: TestClient, test_unit: Unit, test_db: Session
+    ) -> None:
+        files = {"file": ("paper.pdf", _pdf_bytes(), "application/pdf")}
+        response = client.post(
+            "/api/import/material/single/apply",
+            files=files,
+            data={
+                "unit_id": str(test_unit.id),
+                "week_number": 1,
+                "type": "reading",
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["parserUsed"] == "pdf_paragraphs"
+        assert data["title"] == "Imported PDF"
+
+        # PDF always surfaces the "structure not recovered" warning
+        assert any(
+            "plain paragraphs" in w.lower() for w in data["warnings"]
+        )
+
+    def test_unsupported_format_rejected(
+        self, client: TestClient, test_unit: Unit
+    ) -> None:
+        files = {"file": ("notes.txt", b"plain text content", "text/plain")}
+        response = client.post(
+            "/api/import/material/single/apply",
+            files=files,
+            data={
+                "unit_id": str(test_unit.id),
+                "week_number": 1,
+                "type": "reading",
+            },
+        )
+        assert response.status_code == 400
+        assert ".txt" in response.json()["detail"].lower()

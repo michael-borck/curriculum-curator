@@ -202,3 +202,174 @@ class TestUnifiedImportPptxStructured:
             assert "Delivery prompt for the lecturer" in markdown
         finally:
             git_content_service._git_service = original_singleton
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: mixed-format zip imports
+# ---------------------------------------------------------------------------
+
+
+def _html_for_zip() -> bytes:
+    return (
+        b"<html><body><h1>HTML Lecture</h1>"
+        b"<p>HTML body paragraph</p></body></html>"
+    )
+
+
+def _md_for_zip() -> bytes:
+    return b"# MD Lecture\n\nMD body paragraph\n"
+
+
+class TestUnifiedImportPhase2Formats:
+    """Bulk LMS imports must route every supported format through the
+    structural parser the same way single-file uploads do. Phase 1
+    covered PPTX; Phase 2 adds DOCX, HTML, MD, PDF."""
+
+    @pytest.mark.asyncio
+    async def test_html_in_zip_produces_structured_content_json(
+        self,
+        test_db: Session,
+        test_user: User,
+        tmp_path: Path,
+    ) -> None:
+        original_singleton = git_content_service._git_service
+        git_content_service._git_service = git_content_service.GitContentService(
+            repos_base=str(tmp_path)
+        )
+        try:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                zf.writestr("lecture_01.html", _html_for_zip())
+            buf.seek(0)
+
+            svc = UnifiedImportService()
+            svc.apply(
+                buf.read(),
+                user_id=str(test_user.id),
+                user_email=test_user.email,
+                db=test_db,
+                unit_code="HTML101",
+                unit_title="HTML Test",
+                duration_weeks=1,
+            )
+            await svc._bg_task
+
+            from app.models.unit import Unit
+
+            unit = test_db.query(Unit).filter(Unit.code == "HTML101").first()
+            assert unit is not None
+            mat = (
+                test_db.query(WeeklyMaterial)
+                .filter(WeeklyMaterial.unit_id == unit.id)
+                .first()
+            )
+            assert mat is not None
+            assert mat.content_json is not None, (
+                "HTML in bulk zip should produce structured content_json"
+            )
+            assert mat.content_json["type"] == "doc"
+            assert "HTML body paragraph" in str(mat.content_json)
+        finally:
+            git_content_service._git_service = original_singleton
+
+    @pytest.mark.asyncio
+    async def test_md_in_zip_produces_structured_content_json(
+        self,
+        test_db: Session,
+        test_user: User,
+        tmp_path: Path,
+    ) -> None:
+        original_singleton = git_content_service._git_service
+        git_content_service._git_service = git_content_service.GitContentService(
+            repos_base=str(tmp_path)
+        )
+        try:
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                zf.writestr("notes_01.md", _md_for_zip())
+            buf.seek(0)
+
+            svc = UnifiedImportService()
+            svc.apply(
+                buf.read(),
+                user_id=str(test_user.id),
+                user_email=test_user.email,
+                db=test_db,
+                unit_code="MD101",
+                unit_title="MD Test",
+                duration_weeks=1,
+            )
+            await svc._bg_task
+
+            from app.models.unit import Unit
+
+            unit = test_db.query(Unit).filter(Unit.code == "MD101").first()
+            assert unit is not None
+            mat = (
+                test_db.query(WeeklyMaterial)
+                .filter(WeeklyMaterial.unit_id == unit.id)
+                .first()
+            )
+            assert mat is not None
+            assert mat.content_json is not None
+            assert mat.content_json["type"] == "doc"
+            assert "MD body paragraph" in str(mat.content_json)
+        finally:
+            git_content_service._git_service = original_singleton
+
+    @pytest.mark.asyncio
+    async def test_mixed_format_zip_all_structured(
+        self,
+        test_db: Session,
+        test_user: User,
+        tmp_path: Path,
+    ) -> None:
+        """A zip containing PPTX + HTML + MD should produce three
+        structured WeeklyMaterials, all with content_json populated."""
+        original_singleton = git_content_service._git_service
+        git_content_service._git_service = git_content_service.GitContentService(
+            repos_base=str(tmp_path)
+        )
+        try:
+            pptx = _build_pptx("PPTX Lecture", "pptx body", "pptx notes")
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w") as zf:
+                zf.writestr("lecture_01.pptx", pptx)
+                zf.writestr("reading_01.html", _html_for_zip())
+                zf.writestr("notes_01.md", _md_for_zip())
+            buf.seek(0)
+
+            svc = UnifiedImportService()
+            svc.apply(
+                buf.read(),
+                user_id=str(test_user.id),
+                user_email=test_user.email,
+                db=test_db,
+                unit_code="MIX101",
+                unit_title="Mixed Unit",
+                duration_weeks=1,
+            )
+            await svc._bg_task
+
+            from app.models.unit import Unit
+
+            unit = test_db.query(Unit).filter(Unit.code == "MIX101").first()
+            assert unit is not None
+            materials = (
+                test_db.query(WeeklyMaterial)
+                .filter(WeeklyMaterial.unit_id == unit.id)
+                .all()
+            )
+            assert len(materials) == 3, (
+                f"expected 3 materials, got {len(materials)}"
+            )
+            # Every material in the mixed zip should have structured
+            # content_json — no legacy plain-text fallback for any format
+            for mat in materials:
+                assert mat.content_json is not None, (
+                    f"material '{mat.title}' has no content_json "
+                    "(should be structured)"
+                )
+                assert mat.content_json.get("type") == "doc"
+        finally:
+            git_content_service._git_service = original_singleton

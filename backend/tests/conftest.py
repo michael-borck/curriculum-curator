@@ -17,8 +17,14 @@ import pytest
 import requests
 
 # Ensure the import_content router can load even without PyMuPDF installed.
-# The router imports pdf_parser_service which does `import fitz` at module level.
-if "fitz" not in sys.modules:
+# The router imports pdf_parser_service which does `import fitz` at module
+# level. Only stub fitz when the real library is genuinely missing — a
+# bare `not in sys.modules` check stubs it even when it's installed but
+# not yet imported, which then poisons every test that needs real PDF
+# handling downstream.
+try:
+    import fitz  # noqa: F401
+except ImportError:
     sys.modules["fitz"] = MagicMock()
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
