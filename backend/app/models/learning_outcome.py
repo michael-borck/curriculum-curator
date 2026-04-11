@@ -16,7 +16,6 @@ from app.models.common import GUID
 if TYPE_CHECKING:
     from app.models.accreditation_mappings import ULOGraduateCapabilityMapping
     from app.models.assessment import Assessment
-    from app.models.content import Content
     from app.models.custom_alignment_framework import ULOFrameworkItemMapping
     from app.models.unit import Unit
     from app.models.unit_outline import UnitOutline
@@ -43,18 +42,9 @@ class BloomLevel(str, Enum):
     CREATE = "create"
 
 
-# Association table for content-outcome relationships
-# This must be defined before the models that reference it
-content_outcomes = Table(
-    "content_outcomes",
-    Base.metadata,
-    Column("content_id", GUID(), ForeignKey("contents.id", ondelete="CASCADE")),
-    Column(
-        "outcome_id",
-        GUID(),
-        ForeignKey("unit_learning_outcomes.id", ondelete="CASCADE"),
-    ),
-)
+# The content_outcomes association table was removed in the pre-MVP
+# cleanup along with the legacy Content model. Material-outcome mappings
+# live on the material_ulo_mappings association table (see app.models.mappings).
 
 
 class UnitLearningOutcome(Base):
@@ -132,11 +122,6 @@ class UnitLearningOutcome(Base):
     parent_outcome: Mapped["UnitLearningOutcome | None"] = relationship(
         remote_side=[id],
         backref="child_outcomes",
-    )
-
-    # Many-to-many with content
-    contents: Mapped[list["Content"]] = relationship(
-        secondary=content_outcomes, back_populates="learning_outcomes"
     )
 
     # Graduate Capability mappings

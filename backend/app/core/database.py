@@ -55,7 +55,6 @@ def init_db() -> None:
     """
     # Import all models to register them with Base.metadata
     # These imports have side effects (registering tables), so we use them here
-    from app.models.content import Content
     from app.models.email_verification import EmailVerification
     from app.models.email_whitelist import EmailWhitelist
     from app.models.login_attempt import LoginAttempt
@@ -67,7 +66,6 @@ def init_db() -> None:
 
     # Reference all models to satisfy linters (imports have side effects)
     _ = (
-        Content,
         EmailVerification,
         EmailWhitelist,
         LoginAttempt,

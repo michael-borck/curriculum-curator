@@ -18,15 +18,13 @@ from app.api.routes.export_templates import TemplateInfo
 from app.core.config import settings
 from app.models import (
     AssessmentPlan,
-    Content,
-    ContentCategory,
     Unit,
     UnitLearningOutcome,
     UnitOutline,
     User,
+    WeeklyMaterial,
     WeeklyTopic,
 )
-from app.models.enums import ContentType
 from app.schemas.user import UserResponse
 from app.services.document_analyzer_service import (
     document_analyzer_service,
@@ -362,92 +360,11 @@ async def create_unit_structure_from_pdf(
         )
 
 
-@router.post("/import/pdf/create-content/{unit_id}")
-async def create_content_from_pdf(
-    unit_id: str,
-    file: UploadFile = File(...),
-    content_type: ContentType = ContentType.SLIDES,
-    content_category: ContentCategory = ContentCategory.GENERAL,
-    week_number: int | None = None,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-):
-    """
-    Import PDF and create content item
-
-    Parameters:
-    - unit_id: Target unit for the content
-    - file: PDF file to import
-    - content_type: Type of content to create
-    - content_category: Category (pre/in/post class)
-    - week_number: Optional week number
-    """
-    # Verify unit exists and user has access
-    unit = (
-        db.query(Unit)
-        .filter(Unit.id == unit_id, Unit.owner_id == current_user.id)
-        .first()
-    )
-    if not unit:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Unit not found or access denied",
-        )
-
-    # Process PDF
-    contents = await file.read()
-    if len(contents) > 50 * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds 50MB limit",
-        )
-
-    try:
-        # Extract and convert to markdown
-        extracted_doc = await pdf_parser_service.extract_from_bytes(contents)
-        markdown_content = await pdf_parser_service.convert_to_markdown(extracted_doc)
-        pdf_filename = file.filename or "unnamed.pdf"
-
-        # Create content item
-        content = Content(
-            id=str(uuid.uuid4()),
-            unit_id=unit_id,
-            title=extracted_doc.metadata.title or pdf_filename.replace(".pdf", ""),
-            type=content_type.value,
-            content_markdown=markdown_content,
-            week_number=week_number,
-            content_category=content_category.value,
-            estimated_duration_minutes=extracted_doc.metadata.page_count
-            * 3,  # Rough estimate
-            generation_metadata={
-                "source": "pdf_import",
-                "filename": pdf_filename,
-                "extraction_method": extracted_doc.extraction_method,
-                "page_count": extracted_doc.metadata.page_count,
-            },
-        )
-        db.add(content)
-        db.commit()
-        db.refresh(content)
-
-        return {
-            "status": "success",
-            "message": "Content created successfully",
-            "content": {
-                "id": str(content.id),
-                "title": content.title,
-                "type": content.type,
-                "category": content.content_category,
-                "week_number": content.week_number,
-            },
-        }
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating content: {e!s}",
-        )
+# The /import/pdf/create-content/{unit_id} endpoint was removed in the
+# pre-MVP cleanup. Its behaviour (extract PDF → create a single content
+# item) is now covered by the structured material import at
+# /api/import/material/single/{preview,apply} which produces a
+# WeeklyMaterial via the pdf_paragraphs parser instead of a Content row.
 
 
 @router.get("/import/suggestions/{unit_id}")
@@ -495,7 +412,9 @@ async def get_import_suggestions(
         db.query(AssessmentPlan).filter(AssessmentPlan.unit_id == unit_id).count()
     )
 
-    content_count = db.query(Content).filter(Content.unit_id == unit_id).count()
+    material_count = (
+        db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).count()
+    )
 
     # Generate suggestions
     suggestions = []
@@ -548,13 +467,13 @@ async def get_import_suggestions(
             }
         )
 
-    if content_count < weekly_topics_count * 2:
+    if material_count < weekly_topics_count * 2:
         suggestions.append(
             {
                 "priority": "low",
-                "type": "content",
-                "title": "Add Course Content",
-                "description": f"Currently have {content_count} content items. Consider adding lecture notes, worksheets, and activities.",
+                "type": "materials",
+                "title": "Add Weekly Materials",
+                "description": f"Currently have {material_count} materials. Consider adding lecture notes, worksheets, and activities.",
                 "recommended_file_types": [
                     "Lecture slides",
                     "Tutorial guides",
@@ -563,22 +482,14 @@ async def get_import_suggestions(
             }
         )
 
-    # Check for specific content gaps
-    content_types = (
-        db.query(Content.type).filter(Content.unit_id == unit_id).distinct().all()
+    # Distinct material types currently in the unit
+    material_type_rows = (
+        db.query(WeeklyMaterial.type)
+        .filter(WeeklyMaterial.unit_id == unit_id)
+        .distinct()
+        .all()
     )
-    existing_types = [ct[0] for ct in content_types]
-
-    if ContentType.RESOURCE.value not in existing_types:
-        suggestions.append(
-            {
-                "priority": "high",
-                "type": "content",
-                "subtype": "resource",
-                "title": "Create Syllabus / Resource",
-                "description": "No resource content found. Consider adding a syllabus or reference document.",
-            }
-        )
+    existing_types = [mt[0] for mt in material_type_rows]
 
     return {
         "unit": {"id": unit_id, "name": unit.name},
@@ -587,8 +498,8 @@ async def get_import_suggestions(
             "outcomes_count": outcomes_count,
             "weekly_topics_count": weekly_topics_count,
             "assessments_count": assessments_count,
-            "content_count": content_count,
-            "content_types": existing_types,
+            "material_count": material_count,
+            "material_types": existing_types,
         },
         "suggestions": suggestions,
         "next_steps": [

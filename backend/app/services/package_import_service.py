@@ -32,17 +32,13 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
-from app.models.content import Content
-from app.models.enums import ContentType
 from app.models.learning_outcome import UnitLearningOutcome
-from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit
 from app.models.unit_outline import UnitOutline
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 from app.schemas.package_import import ImportPreview, ImportResult
 from app.services.lms_terminology import detect_lms_to_target, get_terminology
-from app.services.qti_service import qti_importer
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -1071,50 +1067,26 @@ class PackageImportService:
     # ------------------------------------------------------------------
 
     def _import_qti_questions(
-        self, zf: zipfile.ZipFile, unit_id: str, db: Session
+        self,
+        zf: zipfile.ZipFile,
+        unit_id: str,
+        db: Session,
     ) -> int:
-        """Scan ZIP for QTI files, parse questions, create Content + QuizQuestion rows.
+        """Stub — QTI quiz import was disabled when the legacy Content
+        model was removed in the pre-MVP cleanup.
 
-        Returns the total number of QuizQuestion rows created.
+        Historically this created Content QUIZ rows plus QuizQuestion
+        child rows from QTI XML files in the package. Modern quizzes
+        live inline as ``quizQuestion`` TipTap nodes inside a
+        ``WeeklyMaterial.content_json``, and the QTI parser has not been
+        ported to emit TipTap nodes yet — so round-trip IMSCC imports
+        now lose quiz fidelity.
+
+        See docs/code-audit-2026-04-11.md for context and the future
+        port plan (structured-import-plan.md Phase 5 may add a
+        dedicated QTI-to-material parser).
         """
-        try:
-            parsed = qti_importer.parse_qti_from_zip(zf)
-        except Exception:
-            logger.exception("Failed to parse QTI from ZIP")
-            return 0
-
-        total = 0
-        for filename, questions in parsed:
-            if not questions:
-                continue
-
-            # Create a Content row (type=quiz) for this question group
-            quiz_title = filename.rsplit("/", 1)[-1].removesuffix(".xml")
-            content = Content(
-                title=f"Imported Quiz: {quiz_title}",
-                type=ContentType.QUIZ.value,
-                unit_id=unit_id,
-                status="draft",
-            )
-            db.add(content)
-            db.flush()
-
-            for pq in questions:
-                qq = QuizQuestion(
-                    content_id=str(content.id),
-                    question_text=pq.question_text,
-                    question_type=pq.question_type,
-                    order_index=pq.order_index,
-                    options=pq.options if pq.options else None,
-                    correct_answers=pq.correct_answers if pq.correct_answers else None,
-                    answer_explanation=pq.answer_explanation,
-                    points=pq.points,
-                    feedback=pq.feedback,
-                )
-                db.add(qq)
-                total += 1
-
-        return total
+        return 0
 
     # ------------------------------------------------------------------
     # Canvas-specific helpers

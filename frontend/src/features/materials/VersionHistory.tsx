@@ -12,13 +12,26 @@ import {
   RotateCcw,
   AlertCircle,
 } from 'lucide-react';
-import { contentApi, type ContentVersion } from '../../services/contentApi';
 
 /**
- * Adapter interface so VersionHistory works with both Content and Material APIs.
+ * Version metadata returned by the history endpoint. Previously imported
+ * from the Content API types module; inlined here after Content was
+ * deleted so the component has no backend-specific dependencies.
+ */
+export interface VersionEntry {
+  commit: string;
+  date: string;
+  message: string;
+  authorEmail: string | null;
+}
+
+/**
+ * Adapter interface — the component is agnostic to which backend
+ * version API it talks to. Callers (e.g. WeeklyMaterialsManager)
+ * construct an adapter bound to a specific material id.
  */
 export interface VersionHistoryApi {
-  history(limit?: number): Promise<{ data: { versions: ContentVersion[] } }>;
+  history(limit?: number): Promise<{ data: { versions: VersionEntry[] } }>;
   versionBody(commit: string): Promise<{ data: { body: string } }>;
   diff(
     oldCommit: string,
@@ -28,20 +41,15 @@ export interface VersionHistoryApi {
 }
 
 interface VersionHistoryProps {
-  /** Provide unitId + contentId for the legacy Content API, OR provide an api adapter. */
-  unitId?: string;
-  contentId?: string;
-  api?: VersionHistoryApi;
+  api: VersionHistoryApi;
   onVersionRestore?: () => void;
 }
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({
-  unitId,
-  contentId,
-  api: externalApi,
+  api: adapter,
   onVersionRestore,
 }) => {
-  const [versions, setVersions] = useState<ContentVersion[]>([]);
+  const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
   const [expandedBody, setExpandedBody] = useState<string | null>(null);
@@ -54,22 +62,6 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const [viewMode, setViewMode] = useState<'timeline' | 'compare'>('timeline');
   const [diffText, setDiffText] = useState<string | null>(null);
   const [diffLoading, setDiffLoading] = useState(false);
-
-  // Build an adapter: either use the external api prop or fall back to contentApi
-  const adapter: VersionHistoryApi = React.useMemo(() => {
-    if (externalApi) return externalApi;
-    // Legacy content API path
-    return {
-      history: (limit?: number) =>
-        contentApi.history(unitId!, contentId!, limit),
-      versionBody: (commit: string) =>
-        contentApi.versionBody(unitId!, contentId!, commit),
-      diff: (oldCommit: string, newCommit?: string) =>
-        contentApi.diff(unitId!, contentId!, oldCommit, newCommit),
-      revert: (commit: string) =>
-        contentApi.revert(unitId!, contentId!, commit),
-    };
-  }, [externalApi, unitId, contentId]);
 
   const fetchHistory = useCallback(async () => {
     try {

@@ -24,7 +24,6 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.content import Content
 from app.models.unit import Unit
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
@@ -183,56 +182,6 @@ class ExportService:
         result["pptx_available"] = result["pandoc"]
 
         return result
-
-    async def export_content(
-        self,
-        content_id: str,
-        db: Session,
-        fmt: ExportFormat,
-        title: str | None = None,
-        author: str | None = None,
-        reference_doc: Path | None = None,
-    ) -> tuple[BytesIO, str, str]:
-        """
-        Export a single content item to the specified format.
-
-        Args:
-            content_id: The content ID to export.
-            db: Database session.
-            fmt: Target export format.
-            title: Optional title override (uses content.title if not provided).
-            author: Optional author name for the document metadata.
-
-        Returns:
-            Tuple of (BytesIO buffer, filename, media_type).
-
-        Raises:
-            ValueError: If the content is not found.
-            FileNotFoundError: If required binaries are not available.
-            RuntimeError: If the conversion fails.
-        """
-        content = db.query(Content).filter(Content.id == content_id).first()
-        if not content:
-            msg = f"Content {content_id} not found"
-            raise ValueError(msg)
-
-        doc_title = title or content.title or "Untitled"
-        markdown = content.content_markdown or content.content_html or ""
-
-        buf = self._convert(
-            markdown=markdown,
-            fmt=fmt,
-            title=doc_title,
-            author=author,
-            reference_doc=reference_doc,
-        )
-
-        slug = self._slugify(doc_title)
-        ext = FORMAT_EXTENSIONS[fmt]
-        filename = f"{slug}{ext}"
-        media_type = FORMAT_MEDIA_TYPES[fmt]
-
-        return buf, filename, media_type
 
     async def export_material(
         self,
@@ -408,89 +357,6 @@ class ExportService:
         filename = f"{unit_slug}_materials.zip"
 
         return zip_buf, filename
-
-    async def export_unit(
-        self,
-        unit_id: str,
-        db: Session,
-        fmt: ExportFormat,
-        title: str | None = None,
-        author: str | None = None,
-        reference_doc: Path | None = None,
-    ) -> tuple[BytesIO, str, str]:
-        """
-        Export an entire unit (all contents, ordered by week and order_index)
-        as a single document.
-
-        Args:
-            unit_id: The unit ID to export.
-            db: Database session.
-            fmt: Target export format.
-            title: Optional title override (uses unit title if not provided).
-            author: Optional author name for the document metadata.
-
-        Returns:
-            Tuple of (BytesIO buffer, filename, media_type).
-        """
-        unit = db.query(Unit).filter(Unit.id == unit_id).first()
-        if not unit:
-            msg = f"Unit {unit_id} not found"
-            raise ValueError(msg)
-
-        # Build combined markdown from all contents
-        contents = (
-            db.query(Content)
-            .filter(Content.unit_id == unit_id)
-            .order_by(Content.week_number, Content.order_index)
-            .all()
-        )
-
-        sections: list[str] = []
-
-        # Unit header
-        doc_title = title or unit.title or "Untitled Unit"
-        if unit.code:
-            doc_title = f"{unit.code} — {doc_title}"
-
-        if unit.description:
-            sections.append(unit.description)
-            sections.append("")
-
-        # Group by week
-        current_week: int | None = None
-        for c in contents:
-            week = c.week_number
-            if week is not None and week != current_week:
-                current_week = week
-                sections.append(f"# {unit.topic_label} {week}")
-                sections.append("")
-
-            # Content title as heading
-            heading_level = "##" if week is not None else "#"
-            sections.append(f"{heading_level} {c.title or 'Untitled'}")
-            sections.append("")
-
-            body = c.content_markdown or c.content_html or ""
-            if body.strip():
-                sections.append(body.strip())
-                sections.append("")
-
-        markdown = "\n".join(sections)
-
-        buf = self._convert(
-            markdown=markdown,
-            fmt=fmt,
-            title=doc_title,
-            author=author,
-            reference_doc=reference_doc,
-        )
-
-        slug = self._slugify(doc_title)
-        ext = FORMAT_EXTENSIONS[fmt]
-        filename = f"{slug}{ext}"
-        media_type = FORMAT_MEDIA_TYPES[fmt]
-
-        return buf, filename, media_type
 
     def _convert(
         self,

@@ -178,51 +178,9 @@ class ResearchSource(Base):
         self.tags_json = json.dumps(value) if value else None
 
 
-class ContentCitation(Base):
-    """
-    Links research sources to specific content items.
-
-    Tracks where citations are used in generated content.
-    """
-
-    __tablename__ = "content_citations"
-
-    # Primary key
-    id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
-    )
-
-    # Foreign keys
-    content_id: Mapped[str] = mapped_column(
-        GUID(), ForeignKey("contents.id"), nullable=False, index=True
-    )
-    source_id: Mapped[str] = mapped_column(
-        GUID(), ForeignKey("research_sources.id"), nullable=False, index=True
-    )
-
-    # Citation details
-    citation_style: Mapped[str] = mapped_column(
-        String(20), default=CitationStyle.APA7.value
-    )
-    citation_text: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )  # Formatted citation
-    in_text_citation: Mapped[str | None] = mapped_column(
-        String(200), nullable=True
-    )  # e.g., "(Smith, 2024)"
-
-    # Position in content (optional, for tracking citation location)
-    position_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    position_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
-    )
-
-    # Relationships
-    content = relationship("Content", back_populates="citations")
-    source = relationship("ResearchSource")
-
-    def __repr__(self) -> str:
-        return f"<ContentCitation {self.in_text_citation}>"
+# NOTE: The ContentCitation model was removed during the pre-MVP cleanup
+# together with the legacy Content ecosystem. It had a foreign key to the
+# contents table and tracked where research citations were used inside a
+# Content row. The feature had no frontend caller and the underlying
+# Content model is gone. If per-material citation tracking returns in
+# the future, the replacement should link to WeeklyMaterial, not Content.

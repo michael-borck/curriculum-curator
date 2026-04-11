@@ -7,7 +7,38 @@ from typing import Any
 
 from pydantic import Field
 
+from app.models.enums import ContentType
 from app.schemas.base import CamelModel
+
+
+class ContentGenerationRequest(CamelModel):
+    """Request schema for content generation via LLM.
+
+    Moved from schemas/content.py during the pre-MVP cleanup — the
+    legacy Content model was removed but this request schema is still
+    used by the AI generation endpoint to describe "generate me a piece
+    of content of type X with pedagogy Y." It has no runtime dependency
+    on the Content ORM model.
+    """
+
+    content_type: ContentType
+    pedagogy_style: str
+    topic: str | None = None
+    context: str | None = None
+    stream: bool = False
+    unit_id: str | None = Field(
+        default=None, description="Unit ID for Learning Design lookup"
+    )
+    design_id: str | None = Field(
+        default=None, description="Specific Learning Design ID"
+    )
+    pedagogy_override: str | None = Field(
+        default=None, description="Per-week pedagogy override"
+    )
+    week_number: int | None = Field(default=None, description="Week number for context")
+    source_material_ids: list[str] | None = Field(
+        default=None, description="IDs of existing materials to use as source context"
+    )
 
 
 class LLMProvider(str, Enum):

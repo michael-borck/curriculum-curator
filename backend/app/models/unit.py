@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from app.models.accreditation_mappings import UnitAoLMapping, UnitSDGMapping
     from app.models.assessment import Assessment
     from app.models.chat import ChatSession
-    from app.models.content import Content
     from app.models.custom_alignment_framework import CustomAlignmentFramework
     from app.models.learning_design import LearningDesign
     from app.models.learning_outcome import UnitLearningOutcome
@@ -136,9 +135,6 @@ class Unit(Base):
     created_by: Mapped["User"] = relationship(foreign_keys=[created_by_id])
     updated_by: Mapped["User | None"] = relationship(foreign_keys=[updated_by_id])
     learning_outcomes: Mapped[list["UnitLearningOutcome"]] = relationship(
-        back_populates="unit", cascade="all, delete-orphan"
-    )
-    contents: Mapped[list["Content"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
     chat_sessions: Mapped[list["ChatSession"]] = relationship(

@@ -25,7 +25,6 @@ from app.core.database import Base
 from app.models.common import GUID
 
 if TYPE_CHECKING:
-    from app.models.content import Content
     from app.models.learning_outcome import UnitLearningOutcome
     from app.models.unit import Unit
     from app.models.unit_outline import UnitOutline
@@ -143,16 +142,6 @@ class WeeklyTopic(Base):
         cascade="all, delete-orphan",
     )
 
-    contents: Mapped[list[Content]] = relationship(
-        "Content",
-        foreign_keys="Content.week_number",
-        primaryjoin=(
-            "and_(WeeklyTopic.unit_id==Content.unit_id, "
-            "WeeklyTopic.week_number==Content.week_number)"
-        ),
-        viewonly=True,
-    )
-
     def __repr__(self) -> str:
         title = str(self.topic_title)[:50] if self.topic_title else ""
         return f"<WeeklyTopic(id={self.id}, week={self.week_number}, title='{title}...', type='{self.week_type}')>"
@@ -184,10 +173,6 @@ class WeeklyTopic(Base):
     def has_post_class_content(self) -> bool:
         """Check if post-class content exists"""
         return bool(self.post_class_tasks)
-
-    def get_content_by_category(self, category: str) -> list[Content]:
-        """Get content items for a specific category (pre/in/post)"""
-        return [c for c in self.contents if c.content_category == category]
 
     def update_completion_status(self) -> None:
         """Update completion status based on content"""

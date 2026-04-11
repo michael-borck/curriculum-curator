@@ -1,8 +1,5 @@
 import { ReactNode, FormEvent, ChangeEvent, MouseEvent } from 'react';
 
-// Add Course as an alias for Unit for backwards compatibility
-export type Course = Unit;
-
 // AI Assistance Levels
 export type AIAssistLevel = 'none' | 'refine' | 'create';
 

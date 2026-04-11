@@ -353,16 +353,6 @@ except ImportError as e:
     logger.warning(f"Failed to load accreditation routes: {e}")
 
 try:
-    from app.api.routes import content
-
-    # Content routes are nested under units: /api/units/{unit_id}/content
-    app.include_router(
-        content.router, prefix="/api/units/{unit_id}/content", tags=["content"]
-    )
-except ImportError as e:
-    logger.warning(f"Failed to load content routes: {e}")
-
-try:
     from app.api.routes import designs
 
     app.include_router(designs.router, prefix="/api", tags=["designs"])

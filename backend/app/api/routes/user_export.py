@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api import deps
-from app.models import Content, Unit, User
+from app.models import Unit, User, WeeklyMaterial
 
 router = APIRouter()
 
@@ -43,8 +43,14 @@ async def export_user_data(
     }
 
     for unit in units:
-        # Get all content for this unit
-        contents = db.query(Content).filter(Content.unit_id == unit.id).all()
+        # Get all weekly materials for this unit (replaces the legacy
+        # Content-based export after the pre-MVP cleanup)
+        materials = (
+            db.query(WeeklyMaterial)
+            .filter(WeeklyMaterial.unit_id == unit.id)
+            .order_by(WeeklyMaterial.week_number, WeeklyMaterial.order_index)
+            .all()
+        )
 
         unit_data = {
             "id": str(unit.id),
@@ -60,25 +66,24 @@ async def export_user_data(
             "credit_points": unit.credit_points,
             "created_at": unit.created_at.isoformat(),
             "updated_at": unit.updated_at.isoformat(),
-            "contents": [],
+            "materials": [],
         }
 
-        for content in contents:
-            content_data = {
-                "id": str(content.id),
-                "title": content.title,
-                "type": content.type,
-                "status": content.status,
-                "order_index": content.order_index,
-                "content_markdown": content.content_markdown,
-                "summary": content.summary,
-                "estimated_duration_minutes": content.estimated_duration_minutes,
-                "difficulty_level": content.difficulty_level,
-                "learning_objectives": content.learning_objectives,
-                "created_at": content.created_at.isoformat(),
-                "updated_at": content.updated_at.isoformat(),
+        for material in materials:
+            material_data = {
+                "id": str(material.id),
+                "title": material.title,
+                "type": material.type,
+                "status": material.status,
+                "week_number": material.week_number,
+                "order_index": material.order_index,
+                "description": material.description,
+                "duration_minutes": material.duration_minutes,
+                "category": material.category,
+                "created_at": material.created_at.isoformat(),
+                "updated_at": material.updated_at.isoformat(),
             }
-            unit_data["contents"].append(content_data)
+            unit_data["materials"].append(material_data)
 
         export_data["courses"].append(unit_data)
 
@@ -107,18 +112,26 @@ async def export_user_data(
 ## Description
 {course["description"] or "No description provided."}
 
-## Contents
+## Materials
 """
-                for content in course["contents"]:
-                    course_readme += f"- {content['title']} ({content['type']})\n"
+                for material in course["materials"]:
+                    course_readme += (
+                        f"- Week {material['week_number']}: "
+                        f"{material['title']} ({material['type']})\n"
+                    )
 
                 zip_file.writestr(f"{course_dir}/README.md", course_readme)
 
-                # Individual content files
-                for content in course["contents"]:
-                    if content["content_markdown"]:
-                        filename = f"{course_dir}/{content['order_index']:02d}_{content['title'][:50]}.md"
-                        zip_file.writestr(filename, content["content_markdown"])
+                # Individual material files
+                for material in course["materials"]:
+                    if material["description"]:
+                        week = material["week_number"] or 0
+                        filename = (
+                            f"{course_dir}/week{week:02d}_"
+                            f"{material['order_index']:02d}_"
+                            f"{material['title'][:50]}.html"
+                        )
+                        zip_file.writestr(filename, material["description"])
 
         zip_buffer.seek(0)
         return StreamingResponse(

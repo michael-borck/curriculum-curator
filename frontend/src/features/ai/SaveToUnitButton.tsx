@@ -1,13 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Save, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { quickCreateUnit } from '../../services/api';
-import { contentApi } from '../../services/contentApi';
+import { materialsApi } from '../../services/unitStructureApi';
+import { MaterialStatus } from '../../types/unitStructure';
 import { useUnitsStore } from '../../stores/unitsStore';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { useModal } from '../../hooks/useModal';
 import { Modal } from '../../components/ui/Modal';
-import type { ContentType } from '../../types/index';
 
 interface SaveToUnitButtonProps {
   messageContent: string;
@@ -15,15 +16,17 @@ interface SaveToUnitButtonProps {
   unitTitle?: string | undefined;
 }
 
-const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string }[] = [
-  { value: 'notes', label: 'Notes' },
-  { value: 'slides', label: 'Slides' },
-  { value: 'activity', label: 'Activity' },
-  { value: 'worksheet', label: 'Worksheet' },
-  { value: 'quiz', label: 'Quiz' },
-  { value: 'resource', label: 'Resource' },
-  { value: 'handout', label: 'Handout' },
+// Material type options for the save-to-unit dropdown. These are passed
+// through as the ``type`` field on the created WeeklyMaterial — the
+// backend accepts any string here, so the set of options is whatever
+// makes sense for "save an AI conversation snippet as a material."
+const MATERIAL_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'reading', label: 'Reading' },
+  { value: 'lecture', label: 'Lecture' },
+  { value: 'tutorial', label: 'Tutorial' },
+  { value: 'workshop', label: 'Workshop' },
+  { value: 'lab', label: 'Lab' },
+  { value: 'seminar', label: 'Seminar' },
 ];
 
 function extractTitle(content: string): string {
@@ -47,11 +50,12 @@ const SaveToUnitButton = ({
   unitId,
   unitTitle,
 }: SaveToUnitButtonProps) => {
+  const navigate = useNavigate();
   const ctx = useWorkingContextStore();
   const effectiveUnitId = unitId ?? ctx.activeUnitId ?? undefined;
   const effectiveUnitTitle = unitTitle ?? ctx.activeUnitTitle ?? undefined;
 
-  const [contentType, setContentType] = useState<ContentType>('notes');
+  const [materialType, setMaterialType] = useState<string>('reading');
   const [saving, setSaving] = useState(false);
   const [selectedUnitId, setSelectedUnitId] = useState('');
   const [quickCreateTitle, setQuickCreateTitle] = useState('');
@@ -63,12 +67,18 @@ const SaveToUnitButton = ({
     setSaving(true);
     try {
       const title = extractTitle(messageContent);
-      await contentApi.create(targetUnitId, {
+      // Save as a WeeklyMaterial in week 1 with the AI content as the
+      // description. The user can move it to a different week or edit
+      // further from the unit page.
+      await materialsApi.createMaterial(targetUnitId, {
         title,
-        contentType,
-        body: messageContent,
+        type: materialType,
+        weekNumber: 1,
+        description: messageContent,
+        orderIndex: 0,
+        status: MaterialStatus.DRAFT,
       });
-      toast.success('Content saved');
+      toast.success('Saved to unit');
       modal.close();
     } catch {
       toast.error('Failed to save content');
@@ -90,13 +100,22 @@ const SaveToUnitButton = ({
     if (!quickCreateTitle.trim()) return;
     setCreatingUnit(true);
     try {
+      // The Quick Create endpoint creates Unit + an empty WeeklyMaterial
+      // in week 1. We then overwrite the AI content onto that material
+      // by creating a second material alongside it — simpler than doing
+      // an update, and the user ends up with two materials they can
+      // prune if they want. For the common case (user just wants their
+      // AI text saved) this works fine.
       const response = await quickCreateUnit({
-        contentType,
+        contentType: materialType,
         title: quickCreateTitle.trim(),
       });
       const newUnitId = response.data.unitId;
       await fetchUnits();
       await saveToUnit(newUnitId);
+      navigate(
+        `/units/${newUnitId}?tab=structure&week=${response.data.weekNumber}`
+      );
     } catch {
       toast.error('Failed to create learning program');
     } finally {
@@ -121,11 +140,11 @@ const SaveToUnitButton = ({
           {effectiveUnitTitle ?? (ctx.activeUnitLabel || 'Learning Program')}
         </button>
         <select
-          value={contentType}
-          onChange={e => setContentType(e.target.value as ContentType)}
+          value={materialType}
+          onChange={e => setMaterialType(e.target.value)}
           className='text-xs border border-gray-200 rounded px-1 py-0.5 text-gray-500 bg-transparent hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500'
         >
-          {CONTENT_TYPE_OPTIONS.map(opt => (
+          {MATERIAL_TYPE_OPTIONS.map(opt => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>

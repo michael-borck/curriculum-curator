@@ -14,8 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.repositories import content_repo, unit_repo, user_repo
-from app.schemas.content import ContentResponse
+from app.repositories import unit_repo, user_repo
 from app.schemas.unit import UnitResponse
 from app.schemas.user import UserResponse
 
@@ -174,36 +173,6 @@ def get_user_unit(
         )
 
     return unit
-
-
-def get_user_content(
-    content_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
-) -> ContentResponse:
-    """
-    Get content that belongs to the current user (via unit ownership).
-    Raises 404 if content not found or user doesn't own the parent unit.
-    """
-    content = content_repo.get_content_by_id(db, content_id)
-
-    if not content:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found",
-        )
-
-    # Check unit ownership
-    unit = unit_repo.get_unit_by_id(db, content.unit_id)
-    if not unit or (
-        unit.owner_id != current_user.id and current_user.role != ROLE_ADMIN
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found or access denied",
-        )
-
-    return content
 
 
 # Alias for path parameter usage

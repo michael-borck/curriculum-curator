@@ -23,8 +23,6 @@ from .assessment import (
 from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .common import GUID
-from .content import Content, ContentCategory, ContentStatus
-from .content_version import ContentVersion
 from .custom_alignment_framework import (
     CustomAlignmentFramework,
     FrameworkItem,
@@ -33,9 +31,6 @@ from .custom_alignment_framework import (
 from .email_verification import EmailVerification
 from .email_whitelist import EmailWhitelist
 from .enums import ContentType, SessionFormat
-
-# Generation tracking
-from .generation_history import GenerationHistory, GenerationType
 from .learning_design import DesignStatus, LearningDesign
 from .learning_outcome import (
     AssessmentLearningOutcome,
@@ -54,7 +49,7 @@ from .mappings import (
 from .password_reset import PasswordReset
 from .prompt_template import PromptTemplate, TemplateStatus, TemplateType
 from .quiz_question import QuestionType, QuizQuestion
-from .research_source import CitationStyle, ContentCitation, ResearchSource, SourceType
+from .research_source import CitationStyle, ResearchSource, SourceType
 from .security_log import SecurityEventType, SecurityLog
 from .system_config import ConfigCategory, SystemConfig
 from .system_settings import SystemSettings
@@ -64,9 +59,6 @@ from .task_list import TaskList, TaskStatus
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
 from .unit_outline import UnitOutline, UnitStructureStatus
 from .user import TeachingPhilosophy, User, UserRole
-
-# Validation and search models
-from .validation_result import ValidationResult, ValidationStatus
 from .weekly_material import MaterialStatus, WeeklyMaterial
 from .weekly_topic import WeeklyTopic, WeekType
 
@@ -102,24 +94,14 @@ __all__ = [
     "PedagogyType",
     "UnitLearningOutcome",
     "BloomLevel",
-    "Content",
     "ContentType",
-    "ContentStatus",
-    "ContentCategory",
-    "ContentVersion",
     "QuizQuestion",
     "QuestionType",
-    # Validation and search
-    "ValidationResult",
-    "ValidationStatus",
     # Chat functionality
     "ChatSession",
     "ChatMessage",
     "ChatRole",
     "ContextScope",
-    # Generation tracking
-    "GenerationHistory",
-    "GenerationType",
     # LLM Configuration
     "LLMConfiguration",
     "TokenUsageLog",
@@ -164,9 +146,8 @@ __all__ = [
     "PromptTemplate",
     "TemplateType",
     "TemplateStatus",
-    # Research sources and citations
+    # Research sources
     "ResearchSource",
-    "ContentCitation",
     "SourceType",
     "CitationStyle",
 ]

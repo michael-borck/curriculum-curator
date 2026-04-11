@@ -16,8 +16,6 @@ import DashboardPage from './pages/DashboardPage';
 import UnitPage from './pages/UnitPage';
 
 // Features
-import ContentCreator from './features/content/ContentCreator';
-import ContentView from './features/content/ContentView';
 import Login from './features/auth/Login';
 import Landing from './features/landing/Landing';
 import Download from './features/downloads/Download';
@@ -25,11 +23,9 @@ import AdminDashboard from './features/admin/AdminDashboard';
 import DesignCreator from './features/designs/DesignCreator';
 import DesignList from './features/designs/DesignList';
 import DesignDetail from './features/designs/DesignDetail';
-import ImportMaterials from './features/import/ImportMaterials';
 import PackageImport from './features/import/PackageImport';
 import OutlineImport from './features/import/OutlineImport';
 import ResearchPage from './features/research/ResearchPage';
-import MaterialDetail from './features/materials/MaterialDetail';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
 import AboutPage from './pages/AboutPage';
@@ -176,31 +172,12 @@ function App() {
                 element={<UnitStructureRedirect />}
               />
 
-              {/* Content Creation and Viewing */}
-              <Route path='/content/new' element={<ContentCreator />} />
-              <Route path='/create/:type' element={<ContentCreator />} />
-              <Route
-                path='/units/:unitId/content/:contentId'
-                element={<ContentView />}
-              />
-              <Route
-                path='/units/:unitId/content/:contentId/edit'
-                element={<ContentCreator />}
-              />
-
               {/* Import */}
-              <Route path='/import' element={<ImportMaterials />} />
               <Route path='/import/package' element={<PackageImport />} />
               <Route path='/import/outline' element={<OutlineImport />} />
 
               {/* Research */}
               <Route path='/research' element={<ResearchPage />} />
-
-              {/* Materials — legacy route kept for backward compat */}
-              <Route
-                path='/units/:unitId/materials/:contentId'
-                element={<MaterialDetail />}
-              />
 
               {/* Teaching Style - redirect to settings */}
               <Route

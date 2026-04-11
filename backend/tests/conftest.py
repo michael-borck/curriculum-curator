@@ -48,11 +48,9 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment, AssessmentType
-from app.models.content import Content
-from app.models.enums import ContentType
+from app.models.enums import ContentType  # noqa: F401
 from app.models.learning_design import DesignStatus, LearningDesign
 from app.models.learning_outcome import UnitLearningOutcome
-from app.models.quiz_question import QuestionType, QuizQuestion
 from app.models.weekly_material import WeeklyMaterial
 from app.models.weekly_topic import WeeklyTopic
 
@@ -493,59 +491,8 @@ def test_design(test_db: Session, test_unit: Unit) -> LearningDesign:
     return design
 
 
-@pytest.fixture
-def test_quiz_content(
-    test_db: Session, test_unit: Unit
-) -> tuple[Content, list[QuizQuestion]]:
-    """Insert a Content (type=quiz) with 3 QuizQuestion rows (MC, T/F, short answer)."""
-    content = Content(
-        id=str(uuid.uuid4()),
-        title="Test Quiz",
-        type=ContentType.QUIZ.value,
-        unit_id=test_unit.id,
-        status="draft",
-    )
-    test_db.add(content)
-    test_db.commit()
-    test_db.refresh(content)
-
-    q1 = QuizQuestion(
-        id=str(uuid.uuid4()),
-        content_id=content.id,
-        question_text="What is 2+2?",
-        question_type=QuestionType.MULTIPLE_CHOICE.value,
-        order_index=0,
-        options=["3", "4", "5", "6"],
-        correct_answers=["4"],
-        answer_explanation="Basic arithmetic.",
-        points=2.0,
-    )
-    test_db.add(q1)
-    test_db.commit()
-
-    q2 = QuizQuestion(
-        id=str(uuid.uuid4()),
-        content_id=content.id,
-        question_text="The sky is blue.",
-        question_type=QuestionType.TRUE_FALSE.value,
-        order_index=1,
-        options=["True", "False"],
-        correct_answers=["True"],
-        points=1.0,
-    )
-    test_db.add(q2)
-    test_db.commit()
-
-    q3 = QuizQuestion(
-        id=str(uuid.uuid4()),
-        content_id=content.id,
-        question_text="Name the capital of Australia.",
-        question_type=QuestionType.SHORT_ANSWER.value,
-        order_index=2,
-        correct_answers=["Canberra"],
-        points=1.0,
-    )
-    test_db.add(q3)
-    test_db.commit()
-
-    return content, [q1, q2, q3]
+# test_quiz_content fixture removed during the pre-MVP cleanup along
+# with the Content model. Modern quizzes live inline as quizQuestion
+# TipTap nodes inside WeeklyMaterial.content_json — see
+# tests/test_qti_content_json.py for the canonical inline quiz test
+# pattern.

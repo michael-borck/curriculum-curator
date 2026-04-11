@@ -141,6 +141,11 @@ class UnifiedImportService:
     def __init__(self) -> None:
         self._pkg_svc = PackageImportService()
         self._file_svc = FileImportService()
+        # Reference to the in-flight background import task. We hold it
+        # as an instance attribute purely to prevent the Python runtime
+        # from garbage-collecting the task before it finishes — we never
+        # await it here. ``None`` when no import is running.
+        self._bg_task: asyncio.Task[None] | None = None
 
     # ------------------------------------------------------------------
     # Analyze
@@ -418,7 +423,7 @@ class UnifiedImportService:
                     edits[path] = e
 
         # Keep a reference so the task isn't garbage-collected
-        self._bg_task: asyncio.Task[None] = asyncio.ensure_future(
+        self._bg_task = asyncio.ensure_future(
             self._run_import(
                 task,
                 zip_bytes,
@@ -564,7 +569,7 @@ class UnifiedImportService:
         db.flush()
         return unit, outline
 
-    async def _process_files(
+    async def _process_files(  # noqa: PLR0912
         self,
         task: ImportTask,
         zf: zipfile.ZipFile,
@@ -591,11 +596,18 @@ class UnifiedImportService:
 
             edit = edits.get(file_item.path, {})
             file_title = str(edit.get("title", file_item.title))
-            file_week: int | None = (
-                int(edit["week_number"])  # type: ignore[arg-type]
-                if "week_number" in edit and edit["week_number"] is not None
-                else file_item.week_number
-            )
+            # The edits dict comes from the preview UI as
+            # ``dict[str, object]``, so we narrow each field explicitly
+            # before using it. The type checker can't otherwise prove
+            # that ``week_number`` is int-convertible.
+            file_week: int | None
+            raw_week = edit.get("week_number") if "week_number" in edit else None
+            if raw_week is None:
+                file_week = file_item.week_number
+            elif isinstance(raw_week, (int, str, float)):
+                file_week = int(raw_week)
+            else:
+                file_week = file_item.week_number
             file_type = str(edit.get("detected_type", file_item.detected_type))
             mat_type = str(
                 edit.get("material_type", file_item.material_type or "resource")

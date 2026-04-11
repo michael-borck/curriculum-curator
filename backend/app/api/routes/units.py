@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.core.config import settings
 from app.models.unit import Unit
-from app.repositories import content_repo, unit_repo
-from app.schemas.content import ContentCreate, ContentType
+from app.repositories import unit_repo
+from app.schemas.materials import MaterialCreate
 from app.schemas.unit import (
     QuickCreateRequest,
     QuickCreateResponse,
@@ -155,10 +155,12 @@ async def quick_create(
     current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ):
     """
-    Quick-create content with an auto-generated lightweight unit.
+    Quick-create a material with an auto-generated lightweight unit.
 
-    Creates a minimal unit behind the scenes and an empty content item,
-    then returns both IDs so the frontend can navigate straight to the editor.
+    Creates a minimal unit behind the scenes plus a single WeeklyMaterial
+    in week 1, then returns the IDs so the frontend can navigate straight
+    to the unit page with that week pre-expanded and the user ready to
+    edit their new material inline.
     """
     now = datetime.utcnow()
     content_type_value = (
@@ -169,7 +171,7 @@ async def quick_create(
     content_type_label = content_type_value.replace("_", " ").title()
 
     # Generate title if not provided
-    content_title = data.title or f"{content_type_label} — {now.strftime('%d %b %Y')}"
+    material_title = data.title or f"{content_type_label} — {now.strftime('%d %b %Y')}"
     unit_title = f"Quick — {content_type_label} ({now.strftime('%d %b')})"
 
     # Generate unique code: QC-YYMMDDHHMMSS
@@ -192,28 +194,39 @@ async def quick_create(
     db.add(unit)
     db.flush()
 
-    # Create content item (this commits both unit and content)
-    content_data = ContentCreate(
-        title=content_title,
-        content_type=ContentType(content_type_value),
-        body="",
+    # Create a single WeeklyMaterial in week 1. The content_type selected
+    # in the Quick Create modal becomes the material's ``type`` field, so
+    # the inline editor opens with the right session format.
+    material_data = MaterialCreate(
+        week_number=1,
+        title=material_title,
+        type=content_type_value,
+        description=None,
         content_json=None,
-        week_number=None,
-        estimated_duration_minutes=None,
+        duration_minutes=None,
+        file_path=None,
+        material_metadata={"quick_create": True},
+        category="general",
+        order_index=0,
+        status="draft",
     )
-    content = content_repo.create_content(
-        db, unit_id=unit_id, data=content_data, user_email=current_user.email
+    material = await materials_service.create_material(
+        db=db,
+        unit_id=uuid.UUID(unit_id),
+        material_data=material_data,
+        user_email=current_user.email,
     )
 
     logger.info(
-        f"[QUICK_CREATE] Unit {unit_id} + content {content.id} for {current_user.email}"
+        f"[QUICK_CREATE] Unit {unit_id} + material {material.id} for {current_user.email}"
     )
 
     return QuickCreateResponse(
         unit_id=unit_id,
-        content_id=content.id,
+        material_id=str(material.id),
+        week_number=1,
         unit_title=unit_title,
-        content_title=content_title,
+        material_title=material_title,
         content_type=content_type_value,
     )
 

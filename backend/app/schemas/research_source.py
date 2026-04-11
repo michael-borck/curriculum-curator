@@ -144,41 +144,9 @@ class ReferenceListResponse(CamelModel):
     citations: list[CitationResponse]
 
 
-# ==================== Content Citation Schemas ====================
-
-
-class ContentCitationCreate(CamelModel):
-    """Schema for adding a citation to content."""
-
-    source_id: str = Field(..., description="ID of the research source")
-    citation_style: CitationStyle = Field(
-        default=CitationStyle.APA7, description="Citation style"
-    )
-    position_start: int | None = Field(
-        None, description="Start position in content text"
-    )
-    position_end: int | None = Field(None, description="End position in content text")
-
-
-class ContentCitationResponse(CamelModel):
-    """Schema for content citation response."""
-
-    id: str
-    content_id: str
-    source_id: str
-    citation_style: CitationStyle
-    citation_text: str | None = Field(None, description="Formatted full citation")
-    in_text_citation: str | None = Field(None, description="In-text citation text")
-    position_start: int | None = None
-    position_end: int | None = None
-    created_at: datetime
-
-    # Include source details for convenience
-    source_title: str | None = None
-    source_url: str | None = None
-
-
 # ==================== Search + Save Schemas ====================
+# (ContentCitation schemas removed in pre-MVP cleanup along with the
+# underlying model — see docs/code-audit-2026-04-11.md.)
 
 
 class SaveFromSearchRequest(CamelModel):

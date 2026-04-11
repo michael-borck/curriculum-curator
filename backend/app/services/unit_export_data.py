@@ -19,8 +19,6 @@ from app.models.accreditation_mappings import (
     UnitSDGMapping,
 )
 from app.models.assessment import Assessment
-from app.models.content import Content
-from app.models.enums import ContentType
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.quiz_question import QuizQuestion
 from app.models.unit import Unit
@@ -375,24 +373,10 @@ def gather_unit_export_data(unit_id: str, db: Session) -> UnitExportData:
         week = int(mat.week_number)
         materials_by_week.setdefault(week, []).append(mat)
 
-    # Quiz questions grouped by content ID
-    quiz_contents = (
-        db.query(Content)
-        .filter(Content.unit_id == unit_id, Content.type == ContentType.QUIZ.value)
-        .all()
-    )
+    # Quiz questions from editor content_json (quizQuestion TipTap nodes).
+    # Legacy per-Content quizzes (quiz_questions_by_content) were removed
+    # during the pre-MVP cleanup — modern quizzes are inline only.
     quiz_questions_by_content: dict[str, list[QuizQuestion]] = {}
-    for qc in quiz_contents:
-        questions = (
-            db.query(QuizQuestion)
-            .filter(QuizQuestion.content_id == qc.id)
-            .order_by(QuizQuestion.order_index)
-            .all()
-        )
-        if questions:
-            quiz_questions_by_content[str(qc.id)] = questions
-
-    # Quiz questions from editor content_json (quizQuestion TipTap nodes)
     quiz_questions_by_material: dict[str, list[QuizQuestion]] = {}
     for mat in weekly_materials:
         if mat.content_json:

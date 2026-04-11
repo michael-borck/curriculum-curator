@@ -10,8 +10,6 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_user_unit
-from app.models.content import Content
-from app.models.enums import ContentType
 from app.models.quiz_question import QuizQuestion
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
@@ -205,25 +203,14 @@ async def export_material_h5p_interactive_video(
 
 
 def _gather_all_questions(unit_id: str, db: Session) -> list[QuizQuestion]:
-    """Gather quiz questions from both DB Content rows and editor content_json."""
+    """Gather quiz questions from editor content_json in weekly materials.
+
+    Quizzes live inline as ``quizQuestion`` TipTap nodes inside
+    ``WeeklyMaterial.content_json``. The legacy Content QUIZ path was
+    removed during the pre-MVP cleanup.
+    """
     all_questions: list[QuizQuestion] = []
 
-    # DB-stored quiz questions
-    quiz_contents = (
-        db.query(Content)
-        .filter(Content.unit_id == unit_id, Content.type == ContentType.QUIZ.value)
-        .all()
-    )
-    for content in quiz_contents:
-        questions = (
-            db.query(QuizQuestion)
-            .filter(QuizQuestion.content_id == content.id)
-            .order_by(QuizQuestion.order_index)
-            .all()
-        )
-        all_questions.extend(questions)
-
-    # Editor content_json quiz nodes
     materials = db.query(WeeklyMaterial).filter(WeeklyMaterial.unit_id == unit_id).all()
     for mat in materials:
         if mat.content_json:

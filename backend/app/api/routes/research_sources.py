@@ -18,20 +18,15 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.research_source import (
-    CitationStyle,
-    ContentCitation,
     ResearchSource,
     SourceType,
 )
-from app.repositories import content_repo, unit_repo
 from app.schemas.capture import CaptureSourceRequest
 from app.schemas.research_source import (
     AuthorSchema,
     BulkCitationRequest,
     CitationRequest,
     CitationResponse,
-    ContentCitationCreate,
-    ContentCitationResponse,
     ReferenceListResponse,
     ResearchSourceCreate,
     ResearchSourceList,
@@ -526,187 +521,12 @@ async def format_reference_list(
 
 
 # =============================================================================
-# Content Citations
+# Content citation routes removed during pre-MVP cleanup (see
+# docs/code-audit-2026-04-11.md) — the ContentCitation model had a
+# foreign key to the legacy Content table and the frontend had no
+# caller for these endpoints. Reinstate with WeeklyMaterial references
+# if per-material citation tracking returns as a feature.
 # =============================================================================
-
-
-@router.post(
-    "/content/{content_id}/citations",
-    response_model=ContentCitationResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def add_citation_to_content(
-    content_id: str,
-    data: ContentCitationCreate,
-    db: Annotated[Session, Depends(deps.get_db)],
-    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
-):
-    """Add a citation from a research source to content."""
-    # Verify content ownership
-    content = content_repo.get_content_by_id(db, content_id)
-    if not content:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found",
-        )
-
-    unit = unit_repo.get_unit_by_id(db, content.unit_id)
-    if not unit or (unit.owner_id != current_user.id and current_user.role != "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found or access denied",
-        )
-
-    # Verify source ownership
-    source = (
-        db.query(ResearchSource)
-        .filter(
-            ResearchSource.id == data.source_id,
-            ResearchSource.user_id == current_user.id,
-        )
-        .first()
-    )
-
-    if not source:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Research source not found",
-        )
-
-    # Format citation
-    full_citation = citation_service.format_citation(source, data.citation_style)
-    in_text = citation_service.format_in_text_citation(source, data.citation_style)
-
-    # Create citation link
-    citation = ContentCitation(
-        content_id=content_id,
-        source_id=data.source_id,
-        citation_style=data.citation_style.value,
-        citation_text=full_citation,
-        in_text_citation=in_text,
-        position_start=data.position_start,
-        position_end=data.position_end,
-    )
-
-    db.add(citation)
-
-    # Update source usage
-    source.usage_count += 1
-    source.last_used_at = datetime.now()
-
-    db.commit()
-    db.refresh(citation)
-
-    return ContentCitationResponse(
-        id=str(citation.id),
-        content_id=content_id,
-        source_id=data.source_id,
-        citation_style=data.citation_style,
-        citation_text=full_citation,
-        in_text_citation=in_text,
-        position_start=data.position_start,
-        position_end=data.position_end,
-        created_at=citation.created_at,
-        source_title=source.title,
-        source_url=source.url,
-    )
-
-
-@router.get(
-    "/content/{content_id}/citations", response_model=list[ContentCitationResponse]
-)
-async def list_content_citations(
-    content_id: str,
-    db: Annotated[Session, Depends(deps.get_db)],
-    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
-):
-    """List all citations for a piece of content."""
-    # Verify content ownership
-    content = content_repo.get_content_by_id(db, content_id)
-    if not content:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found",
-        )
-
-    unit = unit_repo.get_unit_by_id(db, content.unit_id)
-    if not unit or (unit.owner_id != current_user.id and current_user.role != "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found or access denied",
-        )
-
-    citations = (
-        db.query(ContentCitation).filter(ContentCitation.content_id == content_id).all()
-    )
-
-    result = []
-    for cit in citations:
-        source = (
-            db.query(ResearchSource).filter(ResearchSource.id == cit.source_id).first()
-        )
-        result.append(
-            ContentCitationResponse(
-                id=str(cit.id),
-                content_id=content_id,
-                source_id=str(cit.source_id),
-                citation_style=CitationStyle(cit.citation_style),
-                citation_text=cit.citation_text,
-                in_text_citation=cit.in_text_citation,
-                position_start=cit.position_start,
-                position_end=cit.position_end,
-                created_at=cit.created_at,
-                source_title=source.title if source else None,
-                source_url=source.url if source else None,
-            )
-        )
-
-    return result
-
-
-@router.delete(
-    "/content/{content_id}/citations/{citation_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def remove_citation_from_content(
-    content_id: str,
-    citation_id: str,
-    db: Annotated[Session, Depends(deps.get_db)],
-    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
-):
-    """Remove a citation from content."""
-    # Verify content ownership
-    content = content_repo.get_content_by_id(db, content_id)
-    if not content:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found",
-        )
-
-    unit = unit_repo.get_unit_by_id(db, content.unit_id)
-    if not unit or (unit.owner_id != current_user.id and current_user.role != "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Content not found or access denied",
-        )
-
-    citation = (
-        db.query(ContentCitation)
-        .filter(
-            ContentCitation.id == citation_id,
-            ContentCitation.content_id == content_id,
-        )
-        .first()
-    )
-
-    if not citation:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Citation not found",
-        )
-
-    db.delete(citation)
-    db.commit()
 
 
 # =============================================================================

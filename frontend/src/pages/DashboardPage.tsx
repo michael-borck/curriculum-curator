@@ -397,7 +397,9 @@ const DashboardPage = () => {
       setQuickCreateTitle('');
       invalidate();
       fetchUnits();
-      navigate(`/units/${result.unitId}/content/${result.contentId}/edit`);
+      navigate(
+        `/units/${result.unitId}?tab=structure&week=${result.weekNumber}`
+      );
     } catch {
       toast.error('Failed to quick-create content');
     } finally {

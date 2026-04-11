@@ -1,26 +1,25 @@
 """
-Quiz question model for detailed quiz support
+Quiz question data class — used by the QTI and H5P export services
+to represent quiz questions extracted from TipTap content_json nodes.
+
+Historically this was a SQLAlchemy model with a foreign key to the
+legacy Content table. After the Content model was removed in the
+pre-MVP cleanup, it became a plain Python data class that lives
+entirely in memory — constructed on-the-fly from ``quizQuestion``
+TipTap nodes via ``extract_quiz_nodes`` in unit_export_data.py.
+
+The class shape is preserved so existing export code with
+``list[QuizQuestion]`` type hints doesn't need updating.
 """
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
-
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from app.core.database import Base
-from app.models.common import GUID
-
-if TYPE_CHECKING:
-    from app.models.content import Content
+from typing import Any
 
 
 class QuestionType(str, Enum):
-    """Question type enumeration"""
+    """Question type enumeration."""
 
     MULTIPLE_CHOICE = "multiple_choice"
     SHORT_ANSWER = "short_answer"
@@ -33,98 +32,83 @@ class QuestionType(str, Enum):
     SCENARIO = "scenario"
 
 
-class QuizQuestion(Base):
-    """Quiz question model for detailed quiz support"""
+class QuizQuestion:
+    """Plain-Python quiz question data class.
 
-    __tablename__ = "quiz_questions"
+    Duck-types the old SQLAlchemy model for the export path's attribute
+    reads (question_text, question_type, options, correct_answers,
+    answer_explanation, points, feedback, etc.) without any database
+    or session state. Instances are built on-the-fly from TipTap
+    ``quizQuestion`` nodes and never persisted.
+    """
 
-    id: Mapped[str] = mapped_column(
-        GUID(), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
-    )
+    def __init__(
+        self,
+        *,
+        question_id: str = "",
+        question_text: str = "",
+        question_type: str = "multiple_choice",
+        order_index: int = 0,
+        options: list[dict[str, Any]] | None = None,
+        correct_answers: list[Any] | None = None,
+        answer_explanation: str | None = None,
+        points: float = 1.0,
+        partial_credit: dict[str, Any] | None = None,
+        feedback: dict[str, Any] | None = None,
+        difficulty_level: str | None = None,
+        bloom_level: str | None = None,
+        learning_objective: str | None = None,
+        question_metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self.id = question_id
+        self.content_id = ""  # Legacy duck-typed field — always empty
+        self.question_text = question_text
+        self.question_type = question_type
+        self.order_index = order_index
+        self.options = options
+        self.correct_answers = correct_answers
+        self.answer_explanation = answer_explanation
+        self.points = points
+        self.partial_credit = partial_credit
+        self.feedback = feedback
+        self.difficulty_level = difficulty_level
+        self.bloom_level = bloom_level
+        self.learning_objective = learning_objective
+        self.question_metadata = question_metadata
 
-    # Basic question information
-    content_id: Mapped[str] = mapped_column(
-        GUID(), ForeignKey("contents.id"), nullable=False, index=True
-    )
-    question_text: Mapped[str] = mapped_column(Text, nullable=False)  # Markdown format
-    question_type: Mapped[str] = mapped_column(
-        String(20), nullable=False, index=True
-    )  # QuestionType enum
-    order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-
-    # Question options and answers (JSON format for flexibility)
-    options: Mapped[list[Any] | None] = mapped_column(
-        JSON, default=None
-    )  # List of options for MC questions
-    correct_answers: Mapped[list[Any] | None] = mapped_column(
-        JSON, default=None
-    )  # Correct answer(s)
-    answer_explanation: Mapped[str | None] = mapped_column(
-        Text, default=None
-    )  # Explanation in markdown
-
-    # Grading and feedback
-    points: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
-    partial_credit: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, default=None
-    )  # Partial credit rules
-    feedback: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, default=None
-    )  # Feedback for different answers
-
-    # Educational metadata
-    difficulty_level: Mapped[str | None] = mapped_column(String(20), default=None)
-    bloom_level: Mapped[str | None] = mapped_column(
-        String(20), default=None
-    )  # Associated Bloom's level
-    learning_objective: Mapped[str | None] = mapped_column(Text, default=None)
-
-    # Additional metadata
-    question_metadata: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, default=None
-    )  # Custom fields, settings
-
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-    # Relationships
-    content: Mapped[Content] = relationship("Content", back_populates="quiz_questions")
-
-    def __repr__(self) -> str:
-        question_text = str(self.question_text)
-        return f"<QuizQuestion(id={self.id}, type='{self.question_type}', text='{question_text[:50]}...')>"
+    # Property helpers (preserved from the SQLAlchemy version)
 
     @property
     def is_multiple_choice(self) -> bool:
-        """Check if question is multiple choice"""
-        return str(self.question_type) == QuestionType.MULTIPLE_CHOICE.value
+        """Check if question is multiple choice."""
+        return self.question_type == QuestionType.MULTIPLE_CHOICE.value
 
     @property
     def is_open_ended(self) -> bool:
-        """Check if question is open-ended (requires text response)"""
-        open_ended_types = [
+        """Check if question is open-ended (requires text response)."""
+        open_ended = {
             QuestionType.SHORT_ANSWER.value,
             QuestionType.LONG_ANSWER.value,
             QuestionType.CASE_STUDY.value,
             QuestionType.SCENARIO.value,
-        ]
-        return str(self.question_type) in open_ended_types
+        }
+        return self.question_type in open_ended
 
     @property
     def has_partial_credit(self) -> bool:
-        """Check if question supports partial credit"""
-        partial_credit = self.partial_credit
-        return partial_credit is not None and len(partial_credit) > 0
+        """Check if question supports partial credit."""
+        return self.partial_credit is not None and len(self.partial_credit) > 0
 
     @property
     def option_count(self) -> int:
-        """Get number of options for multiple choice questions"""
-        options = self.options
-        if not options or not isinstance(options, list):
+        """Get number of options for multiple choice questions."""
+        if not self.options or not isinstance(self.options, list):
             return 0
-        return len(options)
+        return len(self.options)
+
+    def __repr__(self) -> str:
+        text = str(self.question_text)
+        return (
+            f"<QuizQuestion(id={self.id}, type={self.question_type!r}, "
+            f"text={text[:50]!r}...)>"
+        )

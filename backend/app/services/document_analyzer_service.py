@@ -7,8 +7,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar
 
-from app.models import BloomLevel, ContentCategory, OutcomeType
+from app.models import BloomLevel, OutcomeType
 from app.models.enums import ContentType
+from app.models.weekly_material import MaterialCategory
 from app.services.pdf_parser_service import ExtractedDocument
 
 
@@ -845,7 +846,7 @@ class DocumentAnalyzerService:
                 {
                     "type": ContentType.RESOURCE.value,
                     "title": "Course Syllabus",
-                    "category": ContentCategory.GENERAL.value,
+                    "category": MaterialCategory.GENERAL.value,
                     "reason": "Unit outline detected - syllabus needed",
                 }
             )
@@ -857,7 +858,7 @@ class DocumentAnalyzerService:
                     "type": ContentType.SLIDES.value,
                     "title": f"Week {weekly.week_number}: {weekly.topic}",
                     "week_number": weekly.week_number,
-                    "category": ContentCategory.PRE_CLASS.value,
+                    "category": MaterialCategory.PRE_CLASS.value,
                     "reason": f"Lecture content for week {weekly.week_number}",
                 }
             )
@@ -868,7 +869,7 @@ class DocumentAnalyzerService:
                         "type": ContentType.WORKSHEET.value,
                         "title": f"Week {weekly.week_number} Activities",
                         "week_number": weekly.week_number,
-                        "category": ContentCategory.IN_CLASS.value,
+                        "category": MaterialCategory.IN_CLASS.value,
                         "reason": "In-class activities detected",
                     }
                 )
@@ -879,7 +880,7 @@ class DocumentAnalyzerService:
                 "type": ContentType.ASSIGNMENT.value,
                 "title": assessment.name,
                 "week_number": assessment.due_week,
-                "category": ContentCategory.POST_CLASS.value,
+                "category": MaterialCategory.POST_CLASS.value,
                 "reason": f"Assessment: {assessment.assessment_type}",
             }
             for assessment in analysis.assessments

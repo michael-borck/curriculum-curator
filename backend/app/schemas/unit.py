@@ -8,8 +8,8 @@ from typing import Any
 
 from pydantic import Field
 
+from app.models.enums import ContentType
 from app.schemas.base import CamelModel
-from app.schemas.content import ContentType
 
 
 # Define enums here instead of importing from models
@@ -111,19 +111,29 @@ class UnitResponse(CamelModel):
 
 
 class QuickCreateRequest(CamelModel):
-    """Schema for quick-creating content with an auto-generated unit"""
+    """Schema for quick-creating a material with an auto-generated unit.
+
+    ``content_type`` is used as the material ``type`` (lecture, worksheet,
+    etc.) — the field name is kept for backwards compatibility with the
+    frontend's existing request payload.
+    """
 
     content_type: ContentType
     title: str | None = Field(None, max_length=500)
 
 
 class QuickCreateResponse(CamelModel):
-    """Response from quick-create"""
+    """Response from quick-create.
+
+    Returns the created Unit + WeeklyMaterial so the frontend can navigate
+    straight to the unit page with the week expanded around the new material.
+    """
 
     unit_id: str
-    content_id: str
+    material_id: str
+    week_number: int
     unit_title: str
-    content_title: str
+    material_title: str
     content_type: str
 
 

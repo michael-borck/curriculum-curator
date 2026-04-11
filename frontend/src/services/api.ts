@@ -96,9 +96,6 @@ export const getUnits = (): Promise<ApiResponse<UnitListResponse>> =>
 export const getUnit = (id: string): Promise<ApiResponse<Unit>> =>
   api.get(`/units/${id}`);
 
-// Backwards compatibility aliases
-export const getCourses = getUnits;
-export const getCourse = getUnit;
 export const createUnit = (data: Partial<Unit>): Promise<ApiResponse<Unit>> =>
   api.post('/units/create', data);
 export const updateUnit = (
@@ -140,9 +137,10 @@ export interface QuickCreateRequest {
 
 export interface QuickCreateResponse {
   unitId: string;
-  contentId: string;
+  materialId: string;
+  weekNumber: number;
   unitTitle: string;
-  contentTitle: string;
+  materialTitle: string;
   contentType: string;
 }
 

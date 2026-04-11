@@ -33,11 +33,11 @@ from app.schemas.ai import (
     VisualPromptRequest,
     VisualPromptResponse,
 )
-from app.schemas.content import ContentGenerationRequest
 from app.schemas.llm import (
     ChatCompletionRequest,
     ChatMessage,
     ContentEnhanceRequest,
+    ContentGenerationRequest,
     ContentRemediationRequest,
     ContentTranslationRequest,
     ContentValidationRequest,
