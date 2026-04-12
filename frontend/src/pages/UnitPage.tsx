@@ -31,7 +31,7 @@ import {
 } from '../utils/downloadExport';
 import ULOManager from '../components/UnitStructure/ULOManager';
 import { AssessmentsManager } from '../components/UnitStructure/AssessmentsManager';
-import { UnitStructureDashboard } from '../components/UnitStructure/UnitStructureDashboard';
+import { UnitAnalytics } from '../components/UnitStructure/UnitAnalytics';
 import CoursePlanner from '../components/UnitStructure/CoursePlanner';
 import WeekAccordion from '../components/UnitStructure/WeekAccordion';
 import LearningOutcomeMap from '../components/UnitStructure/LearningOutcomeMap';
@@ -843,14 +843,7 @@ const UnitPage = () => {
             <AssessmentsManager unitId={unitId!} />
           )}
 
-          {activeTab === 'analytics' && (
-            <UnitStructureDashboard
-              unitId={unitId!}
-              unitName={unit.title}
-              durationWeeks={durationWeeks}
-              topicLabel={topicLabel}
-            />
-          )}
+          {activeTab === 'analytics' && <UnitAnalytics unitId={unitId!} />}
 
           {activeTab === 'quality' && (
             <div className='space-y-8'>
