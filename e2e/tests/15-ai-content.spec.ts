@@ -91,23 +91,4 @@ test.describe("AI Content", () => {
     ).toBeVisible({ timeout: 90000 });
   });
 
-  // ─── Content Generation via ContentCreator ─────────────────────────────────
-
-  test("ContentCreator has Generate button", async ({ page }) => {
-    await page.goto("/content/new");
-    await expect(page).toHaveURL(/\/content\/new/, { timeout: 5000 });
-
-    // The Generate button should be visible (AI level defaults to 'create')
-    const generateBtn = page.getByRole("button", { name: /generate/i }).first();
-    await expect(generateBtn).toBeVisible({ timeout: 5000 });
-  });
-
-  test("ContentCreator has Enhance button", async ({ page }) => {
-    await page.goto("/content/new");
-    await expect(page).toHaveURL(/\/content\/new/, { timeout: 5000 });
-
-    // Enhance button should exist (may be disabled until content is present)
-    const enhanceBtn = page.getByRole("button", { name: /enhance/i });
-    await expect(enhanceBtn).toBeVisible({ timeout: 5000 });
-  });
 });

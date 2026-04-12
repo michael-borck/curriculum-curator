@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useState, useEffect } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -16,7 +15,6 @@ import {
   Building,
   Monitor,
   ClipboardCheck,
-  Edit,
   Trash2,
   Copy,
   X,
@@ -25,13 +23,10 @@ import {
 } from 'lucide-react';
 import { materialsApi, analyticsApi } from '../../services/unitStructureApi';
 import { useConfirmDialog } from '../../components/ui';
-import {
-  MaterialResponse,
-  MaterialCategory,
-  WeekQualityScore,
-} from '../../types/unitStructure';
+import { MaterialResponse, WeekQualityScore } from '../../types/unitStructure';
 import { getFormatMeta } from '../../constants/sessionFormats';
 import StarRating from '../shared/StarRating';
+import { WeeklyMaterialsManager } from './WeeklyMaterialsManager';
 import toast from 'react-hot-toast';
 
 interface WeekAccordionProps {
@@ -40,7 +35,6 @@ interface WeekAccordionProps {
   topicLabel?: string | undefined;
   expandedWeek: number | null;
   onWeekToggle: (weekNumber: number) => void;
-  onAddMaterial: (weekNumber: number) => void;
   onAddWeek?: (() => void) | undefined;
   onDeleteWeek?: ((weekNumber: number) => void) | undefined;
   onApplyStructure?: ((mode: 'stubs' | 'categories') => void) | undefined;
@@ -80,60 +74,17 @@ function FormatIcon({
   return <Icon className={className} />;
 }
 
-const CATEGORY_ORDER: MaterialCategory[] = [
-  MaterialCategory.PRE_CLASS,
-  MaterialCategory.IN_CLASS,
-  MaterialCategory.POST_CLASS,
-  MaterialCategory.RESOURCES,
-];
-
-const CATEGORY_LABELS: Record<MaterialCategory, string> = {
-  [MaterialCategory.PRE_CLASS]: 'Pre-class',
-  [MaterialCategory.IN_CLASS]: 'In-class',
-  [MaterialCategory.POST_CLASS]: 'Post-class',
-  [MaterialCategory.RESOURCES]: 'Resources',
-  [MaterialCategory.GENERAL]: 'General',
-};
-
-const CATEGORY_COLORS: Record<MaterialCategory, string> = {
-  [MaterialCategory.PRE_CLASS]: 'text-amber-700 bg-amber-50 border-amber-200',
-  [MaterialCategory.IN_CLASS]: 'text-blue-700 bg-blue-50 border-blue-200',
-  [MaterialCategory.POST_CLASS]: 'text-green-700 bg-green-50 border-green-200',
-  [MaterialCategory.RESOURCES]: 'text-gray-600 bg-gray-50 border-gray-200',
-  [MaterialCategory.GENERAL]: 'text-gray-600 bg-gray-50 border-gray-200',
-};
-
-function groupByCategory(materials: MaterialResponse[]) {
-  const general: MaterialResponse[] = [];
-  const grouped = new Map<MaterialCategory, MaterialResponse[]>();
-
-  for (const m of materials) {
-    const cat = m.category;
-    if (!cat || cat === MaterialCategory.GENERAL) {
-      general.push(m);
-    } else {
-      const list = grouped.get(cat) || [];
-      list.push(m);
-      grouped.set(cat, list);
-    }
-  }
-
-  return { general, grouped };
-}
-
 export const WeekAccordion: React.FC<WeekAccordionProps> = ({
   unitId,
   durationWeeks,
   topicLabel = 'Week',
   expandedWeek,
   onWeekToggle,
-  onAddMaterial,
   onAddWeek,
   onDeleteWeek,
   onApplyStructure,
   onOpenAI,
 }) => {
-  const navigate = useNavigate();
   const confirm = useConfirmDialog();
   const [weeksData, setWeeksData] = useState<Map<number, WeekData>>(new Map());
   const [allMaterialsLoaded, setAllMaterialsLoaded] = useState(false);
@@ -160,38 +111,39 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     loadQuality();
   }, [unitId, durationWeeks]);
 
-  // Load all materials for the unit on mount to show counts
-  useEffect(() => {
-    const loadAllMaterials = async () => {
-      try {
-        const materials = await materialsApi.getMaterialsByUnit(unitId);
+  // Load all materials for the unit to show per-week counts in the collapsed
+  // header. Exposed as a callback so the manager can trigger a refresh after
+  // mutations, keeping the summary badges in sync with inline edits.
+  const loadAllMaterials = useCallback(async () => {
+    try {
+      const materials = await materialsApi.getMaterialsByUnit(unitId);
 
-        // Group by week
-        const weekMap = new Map<number, WeekData>();
-        for (let i = 1; i <= durationWeeks; i++) {
-          const weekMaterials = materials.filter(m => m.weekNumber === i);
-          const totalDuration = weekMaterials.reduce(
-            (sum, m) => sum + (m.durationMinutes || 0),
-            0
-          );
-          weekMap.set(i, {
-            weekNumber: i,
-            materials: weekMaterials,
-            totalDuration,
-            isLoading: false,
-            isLoaded: true,
-          });
-        }
-        setWeeksData(weekMap);
-        setAllMaterialsLoaded(true);
-      } catch (error) {
-        console.error('Error loading materials:', error);
-        toast.error('Failed to load materials');
+      const weekMap = new Map<number, WeekData>();
+      for (let i = 1; i <= durationWeeks; i++) {
+        const weekMaterials = materials.filter(m => m.weekNumber === i);
+        const totalDuration = weekMaterials.reduce(
+          (sum, m) => sum + (m.durationMinutes || 0),
+          0
+        );
+        weekMap.set(i, {
+          weekNumber: i,
+          materials: weekMaterials,
+          totalDuration,
+          isLoading: false,
+          isLoaded: true,
+        });
       }
-    };
-
-    loadAllMaterials();
+      setWeeksData(weekMap);
+      setAllMaterialsLoaded(true);
+    } catch (error) {
+      console.error('Error loading materials:', error);
+      toast.error('Failed to load materials');
+    }
   }, [unitId, durationWeeks]);
+
+  useEffect(() => {
+    loadAllMaterials();
+  }, [loadAllMaterials]);
 
   const formatDuration = (minutes: number): string => {
     if (minutes === 0) return '';
@@ -219,10 +171,6 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     };
   };
 
-  const handleMaterialClick = (materialId: string) => {
-    navigate(`/units/${unitId}/materials/${materialId}`);
-  };
-
   const handleDeleteWeekClick = async (
     e: React.MouseEvent,
     weekNumber: number,
@@ -242,73 +190,6 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
     }
 
     onDeleteWeek(weekNumber);
-  };
-
-  const renderMaterialRow = (material: MaterialResponse) => (
-    <div
-      key={material.id}
-      className='flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition cursor-pointer group'
-      onClick={() => handleMaterialClick(material.id)}
-    >
-      <div className='flex items-center gap-3'>
-        <span
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getFormatMeta(material.type).color}`}
-        >
-          <FormatIcon
-            iconName={getFormatMeta(material.type).icon}
-            className='w-3.5 h-3.5'
-          />
-          {getFormatMeta(material.type).label}
-        </span>
-        <span className='font-medium text-gray-900'>{material.title}</span>
-        {material.durationMinutes && (
-          <span className='text-sm text-gray-500 flex items-center gap-1'>
-            <Clock className='w-3 h-3' />
-            {material.durationMinutes}min
-          </span>
-        )}
-      </div>
-      <button
-        className='p-1.5 text-gray-400 hover:text-purple-600 opacity-0 group-hover:opacity-100 transition'
-        onClick={e => {
-          e.stopPropagation();
-          handleMaterialClick(material.id);
-        }}
-      >
-        <Edit className='w-4 h-4' />
-      </button>
-    </div>
-  );
-
-  const renderCategorizedMaterials = (materials: MaterialResponse[]) => {
-    const { general, grouped } = groupByCategory(materials);
-    const hasCategories = grouped.size > 0;
-
-    if (!hasCategories) {
-      // No categorized materials — render flat list
-      return materials.map(renderMaterialRow);
-    }
-
-    return (
-      <>
-        {/* Ungrouped (general) materials at the top */}
-        {general.map(renderMaterialRow)}
-
-        {/* Categorized sections */}
-        {CATEGORY_ORDER.filter(cat => grouped.has(cat)).map(cat => (
-          <div key={cat} className='mt-1'>
-            <div
-              className={`text-xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-t-md border-b ${CATEGORY_COLORS[cat]}`}
-            >
-              {CATEGORY_LABELS[cat]}
-            </div>
-            <div className='space-y-1 pt-1'>
-              {grouped.get(cat)!.map(renderMaterialRow)}
-            </div>
-          </div>
-        ))}
-      </>
-    );
   };
 
   if (!allMaterialsLoaded) {
@@ -446,36 +327,15 @@ export const WeekAccordion: React.FC<WeekAccordionProps> = ({
                 </div>
               </div>
 
-              {/* Expanded Content */}
+              {/* Expanded Content — full inline materials manager */}
               {isExpanded && (
                 <div className='border-t border-gray-200 p-4 bg-white'>
-                  {isEmpty ? (
-                    <div className='text-center py-6'>
-                      <p className='text-gray-500 mb-4'>
-                        No materials added for this week yet.
-                      </p>
-                      <button
-                        onClick={() => onAddMaterial(weekNumber)}
-                        className='inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition'
-                      >
-                        <Plus className='w-4 h-4' />
-                        Add Material
-                      </button>
-                    </div>
-                  ) : (
-                    <div className='space-y-2'>
-                      {renderCategorizedMaterials(weekData?.materials ?? [])}
-
-                      {/* Add more materials button */}
-                      <button
-                        onClick={() => onAddMaterial(weekNumber)}
-                        className='w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-purple-400 hover:text-purple-600 transition'
-                      >
-                        <Plus className='w-4 h-4' />
-                        Add Material
-                      </button>
-                    </div>
-                  )}
+                  <WeeklyMaterialsManager
+                    unitId={unitId}
+                    weekNumber={weekNumber}
+                    topicLabel={topicLabel}
+                    onMaterialsChanged={loadAllMaterials}
+                  />
                 </div>
               )}
             </div>

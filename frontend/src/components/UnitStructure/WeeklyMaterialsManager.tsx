@@ -80,6 +80,7 @@ interface WeeklyMaterialsManagerProps {
   unitId: string;
   weekNumber: number;
   topicLabel?: string | undefined;
+  onMaterialsChanged?: (() => void) | undefined;
 }
 
 interface MaterialFormData {
@@ -393,6 +394,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   unitId,
   weekNumber,
   topicLabel = 'Week',
+  onMaterialsChanged,
 }) => {
   const confirm = useConfirmDialog();
   const { globalStyle } = useTeachingStyleStore();
@@ -450,6 +452,11 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     }
   };
 
+  const refetchAfterMutation = async () => {
+    await fetchMaterials();
+    onMaterialsChanged?.();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -488,7 +495,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         toast.success('Material created successfully');
       }
 
-      await fetchMaterials();
+      await refetchAfterMutation();
       handleCancel();
     } catch (error) {
       toast.error(
@@ -529,7 +536,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     try {
       await materialsApi.deleteMaterial(id);
       toast.success('Material deleted successfully');
-      await fetchMaterials();
+      await refetchAfterMutation();
     } catch (error) {
       toast.error('Failed to delete material');
       console.error('Error deleting material:', error);
@@ -553,7 +560,9 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       await materialsApi.duplicateMaterial(material.id, weekNum);
       toast.success(`Material duplicated to ${topicLabel} ${weekNum}`);
       if (weekNum === weekNumber) {
-        await fetchMaterials();
+        await refetchAfterMutation();
+      } else {
+        onMaterialsChanged?.();
       }
     } catch (error) {
       toast.error('Failed to duplicate material');
@@ -703,7 +712,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         onClose={() => setShowImportDialog(false)}
         unitId={unitId}
         weekNumber={weekNumber}
-        onImported={fetchMaterials}
+        onImported={refetchAfterMutation}
       />
 
       {showForm && (
@@ -1089,7 +1098,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
               <VersionHistory
                 api={historyApi}
                 onVersionRestore={() => {
-                  fetchMaterials();
+                  refetchAfterMutation();
                 }}
               />
             </div>

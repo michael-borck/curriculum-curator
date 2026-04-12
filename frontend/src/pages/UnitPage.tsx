@@ -141,11 +141,6 @@ const UnitPage = () => {
     }
   };
 
-  const handleAddMaterial = (weekNumber: number) => {
-    // Navigate to content creator with week pre-selected
-    navigate(`/content/new?unit=${unitId}&week=${weekNumber}`);
-  };
-
   const handleAddWeek = async () => {
     if (!unitId || !unit) return;
     try {
@@ -777,7 +772,6 @@ const UnitPage = () => {
                 topicLabel={topicLabel}
                 expandedWeek={expandedWeek}
                 onWeekToggle={handleWeekToggle}
-                onAddMaterial={handleAddMaterial}
                 onAddWeek={handleAddWeek}
                 onDeleteWeek={handleDeleteWeek}
                 onApplyStructure={handleApplyStructure}

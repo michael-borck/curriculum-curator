@@ -17,11 +17,11 @@ test.describe("File Import", () => {
     await expect(page).toHaveURL(/\/import/, { timeout: 10000 });
   });
 
-  test("import page shows supported file types", async ({ page }) => {
-    await page.goto("/import");
+  test("package import page shows supported file types", async ({ page }) => {
+    await page.goto("/import/package");
 
     await expect(
-      page.getByText(/pdf|docx|pptx/i).first(),
+      page.getByText(/common cartridge|scorm|qti|imscc/i).first(),
     ).toBeVisible({ timeout: 5000 });
   });
 
