@@ -323,6 +323,61 @@ async def test_search_router_preferred_tier():
 
 
 # ──────────────────────────────────────────────────────────────
+# Search router — excluded domains filter
+# ──────────────────────────────────────────────────────────────
+
+
+def _mk_result(url: str):
+    from app.services.web_search_service import SearchResult
+
+    return SearchResult(title=url, url=url)
+
+
+def test_filter_excluded_drops_system_defaults():
+    results = [
+        _mk_result("https://www.youtube.com/watch?v=abc"),
+        _mk_result("https://arxiv.org/abs/1234.5678"),
+        _mk_result("https://m.youtube.com/watch?v=xyz"),
+        _mk_result("https://notyoutube.com/legit"),
+    ]
+    filtered = SearchRouter._filter_excluded(results, None)
+    urls = [r.url for r in filtered]
+    assert "https://arxiv.org/abs/1234.5678" in urls
+    assert "https://notyoutube.com/legit" in urls
+    assert not any("//www.youtube.com" in u or "//m.youtube.com" in u for u in urls)
+
+
+def test_filter_excluded_honours_user_settings():
+    results = [
+        _mk_result("https://example.com/post"),
+        _mk_result("https://keep.me/ok"),
+    ]
+    filtered = SearchRouter._filter_excluded(
+        results, {"excludedDomains": ["example.com"]}
+    )
+    assert [r.url for r in filtered] == ["https://keep.me/ok"]
+
+
+def test_filter_excluded_keeps_results_with_missing_hostname():
+    results = [_mk_result("not-a-url"), _mk_result("https://arxiv.org/abs/1")]
+    filtered = SearchRouter._filter_excluded(results, None)
+    assert len(filtered) == 2
+
+
+@pytest.mark.asyncio
+async def test_search_router_applies_excluded_filter():
+    router = SearchRouter()
+    raw = [
+        _mk_result("https://www.youtube.com/watch?v=1"),
+        _mk_result("https://arxiv.org/abs/1"),
+    ]
+    with patch.object(router, "_search_academic", return_value=raw):
+        results, _tier = await router.search("q")
+    assert len(results) == 1
+    assert results[0].url == "https://arxiv.org/abs/1"
+
+
+# ──────────────────────────────────────────────────────────────
 # HTTP endpoint tests (via TestClient)
 # ──────────────────────────────────────────────────────────────
 

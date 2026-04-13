@@ -106,6 +106,15 @@ class Settings(BaseSettings):
     GOOGLE_CSE_ENGINE_ID: str | None = None
     BRAVE_SEARCH_API_KEY: str | None = None
     TAVILY_API_KEY: str | None = None
+    SERPER_API_KEY: str | None = None
+
+    # Search quality filters — domains dropped from every tier's results.
+    # Override via env: EXCLUDED_SEARCH_DOMAINS="youtube.com,pinterest.com,example.com"
+    EXCLUDED_SEARCH_DOMAINS: list[str] = [
+        "youtube.com",
+        "pinterest.com",
+        "quora.com",
+    ]
 
     @model_validator(mode="after")
     def validate_secret_key(self) -> "Settings":

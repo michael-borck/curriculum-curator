@@ -9,6 +9,7 @@ Tier 4: SearXNG — user's own instance
 
 import logging
 from enum import IntEnum
+from urllib.parse import urlparse
 
 from app.services.academic_search_service import (
     AcademicWork,
@@ -117,19 +118,58 @@ class SearchRouter:
 
         # Dispatch to the appropriate tier
         if tier == SearchTier.ACADEMIC:
-            return await self._search_academic(query, max_results, user_settings), tier
-        if tier == SearchTier.GENERAL_WEB:
-            return await self._search_tier3(
+            results = await self._search_academic(query, max_results, user_settings)
+        elif tier == SearchTier.GENERAL_WEB:
+            results = await self._search_tier3(
                 query, max_results, user_settings or {}
-            ), tier
-        if tier == SearchTier.SEARXNG:
-            return await self._search_searxng(query, max_results), tier
+            )
+        elif tier == SearchTier.SEARXNG:
+            results = await self._search_searxng(query, max_results)
+        else:
+            results = await self._search_academic(query, max_results, user_settings)
+            tier = SearchTier.ACADEMIC
 
-        # Fallback
-        return (
-            await self._search_academic(query, max_results, user_settings),
-            SearchTier.ACADEMIC,
-        )
+        return self._filter_excluded(results, user_settings), tier
+
+    @staticmethod
+    def _filter_excluded(
+        results: list[SearchResult],
+        user_settings: dict[str, object] | None,
+    ) -> list[SearchResult]:
+        """Drop results whose hostname matches a system or user excluded domain.
+
+        Matches `hostname == domain` or `hostname.endswith("." + domain)` so that
+        blocking "youtube.com" also blocks "m.youtube.com" but NOT "notyoutube.com".
+        """
+        from app.core.config import settings  # noqa: PLC0415
+
+        excluded: set[str] = {
+            d.strip().lower().lstrip(".")
+            for d in (settings.EXCLUDED_SEARCH_DOMAINS or [])
+            if d and d.strip()
+        }
+        if user_settings:
+            user_excluded = user_settings.get("excludedDomains")
+            if isinstance(user_excluded, list):
+                excluded.update(
+                    d.strip().lower().lstrip(".")
+                    for d in user_excluded
+                    if isinstance(d, str) and d.strip()
+                )
+
+        if not excluded:
+            return results
+
+        filtered: list[SearchResult] = []
+        for r in results:
+            host = (urlparse(r.url).hostname or "").lower()
+            if not host:
+                filtered.append(r)
+                continue
+            if any(host == d or host.endswith("." + d) for d in excluded):
+                continue
+            filtered.append(r)
+        return filtered
 
     async def _search_academic(
         self,
