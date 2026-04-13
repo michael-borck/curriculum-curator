@@ -248,9 +248,13 @@ class SearchRouter:
         return await self._search_academic(query, max_results)
 
     async def _search_searxng(self, query: str, max_results: int) -> list[SearchResult]:
-        """Tier 4: SearXNG search using existing service."""
+        """Tier 4: SearXNG general web search (user's own instance)."""
         return await web_search_service.search(
-            query, max_results=max_results, academic_only=True
+            query,
+            max_results=max_results,
+            academic_only=False,
+            category="general",
+            time_range="",
         )
 
 

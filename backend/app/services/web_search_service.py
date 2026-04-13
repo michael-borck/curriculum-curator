@@ -2,15 +2,21 @@
 Web Search Service using SearXNG for academic content research
 """
 
+import asyncio
+import logging
+import random
 import re
+import time
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar, NoReturn
 from urllib.parse import urlencode
 
 import aiohttp
 
 from app.core.config import settings
 from app.services.llm_service import LLMService
+
+logger = logging.getLogger(__name__)
 
 
 class WebSearchError(Exception):
@@ -52,6 +58,19 @@ class SearchResult:
 
 class WebSearchService:
     """Service for web search and content extraction using SearXNG"""
+
+    # Politeness throttles shared across all instances in this process.
+    # Prevents hammering public SearXNG servers (common cause of 429s).
+    GLOBAL_RATE_LIMIT_S: float = 0.5
+    PER_SERVER_RATE_LIMIT_S: float = 2.0
+    _last_global_request: float = 0.0
+    # server_url → last request monotonic time
+    _request_tracker: ClassVar[dict[str, float]] = {}
+
+    # Retry policy for transient SearXNG failures (429, timeout, DNS flap).
+    SEARXNG_ENDPOINTS: ClassVar[tuple[str, ...]] = ("/search", "/")
+    SEARXNG_MAX_RETRIES: int = 3
+    SEARXNG_BACKOFF_CAP_S: float = 8.0
 
     def __init__(self, llm_service: LLMService | None = None):
         self.searxng_url = getattr(settings, "SEARXNG_URL", "http://localhost:8080")
@@ -137,92 +156,213 @@ class WebSearchService:
 
         return min(max(score, 0.0), 1.0)
 
+    def _searxng_headers(self) -> dict[str, str]:
+        """Browser-like headers to reduce bot-detection 429s from public SearXNG instances."""
+        return {
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": (
+                "application/json, text/html, application/xhtml+xml, "
+                "application/xml;q=0.9, */*;q=0.8"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Referer": self.searxng_url,
+            "Sec-Ch-Ua": (
+                '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"'
+            ),
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Linux"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+        }
+
+    async def _rate_limit_searxng(self, server_url: str) -> None:
+        """Enforce global + per-server politeness throttles before a SearXNG request."""
+        now = time.monotonic()
+
+        # Global throttle
+        global_wait = self.GLOBAL_RATE_LIMIT_S - (now - self._last_global_request)
+        if global_wait > 0:
+            await asyncio.sleep(global_wait)
+            now = time.monotonic()
+
+        # Per-server throttle
+        last = self._request_tracker.get(server_url, 0.0)
+        server_wait = self.PER_SERVER_RATE_LIMIT_S - (now - last)
+        if server_wait > 0:
+            await asyncio.sleep(server_wait)
+            now = time.monotonic()
+
+        WebSearchService._last_global_request = now
+        self._request_tracker[server_url] = now
+
+        # Prune tracker to prevent unbounded growth
+        if len(self._request_tracker) > 50:
+            kept = sorted(
+                self._request_tracker.items(), key=lambda kv: kv[1], reverse=True
+            )[:25]
+            self._request_tracker.clear()
+            self._request_tracker.update(kept)
+
+    async def _fetch_searxng(
+        self, query_params: dict[str, str | int], timeout: int
+    ) -> dict[str, Any]:
+        """Try each SearXNG endpoint with exponential backoff + jitter on 429/timeout.
+
+        Raises WebSearchError with a classified message on final failure.
+        """
+        await self._rate_limit_searxng(self.searxng_url)
+        qs = urlencode(query_params)
+        headers = self._searxng_headers()
+        last_err: Exception | None = None
+        last_status: int | None = None
+
+        for endpoint in self.SEARXNG_ENDPOINTS:
+            url = f"{self.searxng_url}{endpoint}?{qs}"
+
+            for attempt in range(self.SEARXNG_MAX_RETRIES + 1):
+                if attempt > 0:
+                    delay = min(
+                        (1.0 * (2 ** (attempt - 1))) + random.random(),
+                        self.SEARXNG_BACKOFF_CAP_S,
+                    )
+                    logger.info(
+                        "SearXNG retry %d for %s after %.2fs", attempt, endpoint, delay
+                    )
+                    await asyncio.sleep(delay)
+
+                try:
+                    async with (
+                        aiohttp.ClientSession(
+                            timeout=aiohttp.ClientTimeout(total=timeout)
+                        ) as session,
+                        session.get(url, headers=headers) as response,
+                    ):
+                        if response.status == 200:
+                            return await response.json()
+
+                        last_status = response.status
+                        if (
+                            response.status == 429
+                            and attempt < self.SEARXNG_MAX_RETRIES
+                        ):
+                            logger.warning("SearXNG 429 on %s, will retry", endpoint)
+                            continue
+                        # Non-retryable status: break inner loop, try next endpoint
+                        break
+
+                except TimeoutError as e:
+                    last_err = e
+                    if attempt < self.SEARXNG_MAX_RETRIES:
+                        continue
+                    break
+                except aiohttp.ClientError as e:
+                    last_err = e
+                    break
+
+        self._raise_classified(last_status, last_err)
+        raise WebSearchError("unreachable")  # pragma: no cover
+
+    def _raise_classified(
+        self, last_status: int | None, last_err: Exception | None
+    ) -> NoReturn:
+        """Raise WebSearchError with a specific message based on the failure mode."""
+        if last_status is not None:
+            raise WebSearchError(
+                f"SearXNG returned status {last_status} "
+                f"(tried {list(self.SEARXNG_ENDPOINTS)})"
+            )
+        if isinstance(last_err, TimeoutError):
+            raise WebSearchError(
+                "SearXNG request timed out — check that the instance is reachable"
+            ) from last_err
+        if last_err is None:
+            raise WebSearchError("SearXNG request failed with unknown error")
+
+        err_str = str(last_err).lower()
+        if any(tok in err_str for tok in ("certificate", "ssl", "tls", "cert_")):
+            raise WebSearchError(
+                f"SearXNG SSL/TLS error for {self.searxng_url}: {last_err}"
+            ) from last_err
+        if any(tok in err_str for tok in ("nodename", "name or service", "dns")):
+            raise WebSearchError(
+                f"Cannot resolve SearXNG host {self.searxng_url}: {last_err}"
+            ) from last_err
+        raise WebSearchError(f"SearXNG request failed: {last_err}") from last_err
+
     async def search(
         self,
         query: str,
         max_results: int = 10,
         academic_only: bool = True,
+        category: str = "science",
+        time_range: str = "year",
         timeout: int = 30,
     ) -> list[SearchResult]:
         """
-        Search using SearXNG instance
+        Search using SearXNG instance.
 
         Args:
             query: Search query string
             max_results: Maximum number of results to return
-            academic_only: Filter to academic sources only
+            academic_only: Filter to academic sources only (uses academic_score)
+            category: SearXNG category ("science" for academic, "general" for web)
+            time_range: SearXNG time range ("year", "month", "" for no limit)
             timeout: Request timeout in seconds
 
         Returns:
             List of SearchResult objects
         """
-        # Build SearXNG API URL
-        params = {
+        params: dict[str, str | int] = {
             "q": query,
             "format": "json",
             "language": "en",
-            "safesearch": 1,  # Moderate safe search
-            "categories": "science",  # Focus on science/academic
-            "time_range": "year",  # Last year only
+            "safesearch": 1,
         }
+        if category:
+            params["categories"] = category
+        if time_range:
+            params["time_range"] = time_range
 
-        search_url = f"{self.searxng_url}/search?{urlencode(params)}"
+        data = await self._fetch_searxng(params, timeout)
 
-        try:
-            async with (
-                aiohttp.ClientSession(
-                    timeout=aiohttp.ClientTimeout(total=timeout)
-                ) as session,
-                session.get(search_url) as response,
-            ):
-                if response.status != 200:
-                    raise WebSearchError(f"SearXNG returned status {response.status}")
+        results: list[SearchResult] = []
+        for item in data.get("results", [])[:max_results]:
+            title = item.get("title", "")
+            url = item.get("url", "")
+            content = item.get("content", "")
+            description = item.get("description", "")
 
-                data = await response.json()
+            academic_score = self._calculate_academic_score(url, title, content)
+            if academic_only and academic_score < 0.3:
+                continue
 
-                results = []
-                for item in data.get("results", [])[:max_results]:
-                    # Extract basic info
-                    title = item.get("title", "")
-                    url = item.get("url", "")
-                    content = item.get("content", "")
-                    description = item.get("description", "")
+            source = None
+            if url:
+                try:
+                    source = url.split("//")[-1].split("/")[0]
+                except (IndexError, AttributeError):
+                    source = url
 
-                    # Calculate academic score
-                    academic_score = self._calculate_academic_score(url, title, content)
-
-                    # Filter if academic_only is True
-                    if academic_only and academic_score < 0.3:
-                        continue
-
-                    # Extract source domain
-                    source = None
-                    if url:
-                        try:
-                            source = url.split("//")[-1].split("/")[0]
-                        except (IndexError, AttributeError):
-                            source = url
-
-                    # Extract published date if available
-                    published_date = item.get("publishedDate")
-
-                    result = SearchResult(
-                        title=title,
-                        url=url,
-                        content=content,
-                        description=description,
-                        source=source,
-                        published_date=published_date,
-                        academic_score=academic_score,
-                    )
-                    results.append(result)
-
-                return results
-
-        except TimeoutError as e:
-            raise WebSearchError("Search request timed out") from e
-        except Exception as e:
-            raise WebSearchError(f"Search failed: {e!s}") from e
+            results.append(
+                SearchResult(
+                    title=title,
+                    url=url,
+                    content=content,
+                    description=description,
+                    source=source,
+                    published_date=item.get("publishedDate"),
+                    academic_score=academic_score,
+                )
+            )
+        return results
 
     async def fetch_page_content(self, url: str, timeout: int = 30) -> str:
         """
