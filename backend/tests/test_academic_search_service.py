@@ -280,7 +280,8 @@ def test_tier_availability_default():
     available = {t.tier: t.available for t in tiers}
     assert available[SearchTier.ACADEMIC] is True
     assert available[SearchTier.LLM_NATIVE] is False
-    assert available[SearchTier.GENERAL_WEB] is False
+    # Tier 3 is always available via DuckDuckGo fallback
+    assert available[SearchTier.GENERAL_WEB] is True
 
 
 def test_tier_availability_with_api_keys():

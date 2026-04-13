@@ -3,7 +3,7 @@ Search Router — tiered search dispatch.
 
 Tier 1: Academic (OpenAlex + Semantic Scholar) — always available
 Tier 2: LLM-native web search — auto if provider configured (future)
-Tier 3: General web APIs (Google CSE, Brave, Tavily) — user adds key
+Tier 3: General web (Google CSE, Brave, Tavily + DuckDuckGo fallback) — keys optional
 Tier 4: SearXNG — user's own instance
 """
 
@@ -55,27 +55,9 @@ class SearchRouter:
             )
         )
 
-        # Tier 3: General web APIs — check for user API keys
-        user_settings = user_settings or {}
-        api_keys = user_settings.get("searchApiKeys")
-        has_tier3 = False
-        if isinstance(api_keys, dict):
-            has_tier3 = bool(
-                api_keys.get("googleCseApiKey")
-                or api_keys.get("braveSearchApiKey")
-                or api_keys.get("tavilyApiKey")
-            )
-
-        if has_tier3:
-            tiers.append(TierAvailability(SearchTier.GENERAL_WEB, True))
-        else:
-            tiers.append(
-                TierAvailability(
-                    SearchTier.GENERAL_WEB,
-                    False,
-                    "No web search API keys configured",
-                )
-            )
+        # Tier 3: General web — always available via DuckDuckGo fallback.
+        # Keyed providers (Google CSE, Brave, Tavily) are tried first if configured.
+        tiers.append(TierAvailability(SearchTier.GENERAL_WEB, True))
 
         # Tier 4: SearXNG — check for URL
         searxng_url = user_settings.get("searxngUrl") if user_settings else None
@@ -203,49 +185,61 @@ class SearchRouter:
         max_results: int,
         user_settings: dict[str, object],
     ) -> list[SearchResult]:
-        """Tier 3: General web API search. Tries available clients in order."""
-        api_keys = user_settings.get("searchApiKeys")
-        if not isinstance(api_keys, dict):
-            return await self._search_academic(query, max_results)
-
+        """Tier 3: General web search. Tries keyed providers in order, then
+        falls back to DuckDuckGo (always available, no key required)."""
         # Import tier3 clients lazily
         from app.services.tier3_search_clients import (  # noqa: PLC0415
             BraveSearchClient,
+            DuckDuckGoClient,
             GoogleCSEClient,
             TavilyClient,
         )
 
-        # Try Google CSE first
-        google_key = api_keys.get("googleCseApiKey")
-        google_engine = api_keys.get("googleCseEngineId")
-        if isinstance(google_key, str) and isinstance(google_engine, str):
-            try:
-                client = GoogleCSEClient()
-                return await client.search(
-                    query, google_key, google_engine, max_results
-                )
-            except Exception:
-                logger.exception("Google CSE search failed, trying next")
+        api_keys = user_settings.get("searchApiKeys")
+        if isinstance(api_keys, dict):
+            # Try Google CSE first
+            google_key = api_keys.get("googleCseApiKey")
+            google_engine = api_keys.get("googleCseEngineId")
+            if isinstance(google_key, str) and isinstance(google_engine, str):
+                try:
+                    results = await GoogleCSEClient().search(
+                        query, google_key, google_engine, max_results
+                    )
+                    if results:
+                        return results
+                except Exception:
+                    logger.exception("Google CSE search failed, trying next")
 
-        # Try Brave
-        brave_key = api_keys.get("braveSearchApiKey")
-        if isinstance(brave_key, str):
-            try:
-                client = BraveSearchClient()
-                return await client.search(query, brave_key, max_results)
-            except Exception:
-                logger.exception("Brave search failed, trying next")
+            # Try Brave
+            brave_key = api_keys.get("braveSearchApiKey")
+            if isinstance(brave_key, str):
+                try:
+                    results = await BraveSearchClient().search(
+                        query, brave_key, max_results
+                    )
+                    if results:
+                        return results
+                except Exception:
+                    logger.exception("Brave search failed, trying next")
 
-        # Try Tavily
-        tavily_key = api_keys.get("tavilyApiKey")
-        if isinstance(tavily_key, str):
-            try:
-                client = TavilyClient()
-                return await client.search(query, tavily_key, max_results)
-            except Exception:
-                logger.exception("Tavily search failed, falling back to academic")
+            # Try Tavily
+            tavily_key = api_keys.get("tavilyApiKey")
+            if isinstance(tavily_key, str):
+                try:
+                    results = await TavilyClient().search(
+                        query, tavily_key, max_results
+                    )
+                    if results:
+                        return results
+                except Exception:
+                    logger.exception("Tavily search failed, trying DuckDuckGo fallback")
 
-        return await self._search_academic(query, max_results)
+        # Final fallback: DuckDuckGo Lite scraping (no key required)
+        try:
+            return await DuckDuckGoClient().search(query, max_results)
+        except Exception:
+            logger.exception("DuckDuckGo fallback failed")
+            return []
 
     async def _search_searxng(self, query: str, max_results: int) -> list[SearchResult]:
         """Tier 4: SearXNG general web search (user's own instance)."""
