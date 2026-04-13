@@ -3,7 +3,7 @@ Search Router — tiered search dispatch.
 
 Tier 1: Academic (OpenAlex + Semantic Scholar) — always available
 Tier 2: LLM-native web search — auto if provider configured (future)
-Tier 3: General web (Google CSE, Brave, Tavily + DuckDuckGo fallback) — keys optional
+Tier 3: General web (Google CSE, Serper, Brave, Tavily + DuckDuckGo fallback) — keys optional
 Tier 4: SearXNG — user's own instance
 """
 
@@ -187,58 +187,101 @@ class SearchRouter:
     ) -> list[SearchResult]:
         """Tier 3: General web search. Tries keyed providers in order, then
         falls back to DuckDuckGo (always available, no key required)."""
-        # Import tier3 clients lazily
+        raw_keys = user_settings.get("searchApiKeys")
+        api_keys: dict[str, object] = raw_keys if isinstance(raw_keys, dict) else {}
+
+        for name, attempt in (
+            ("Google CSE", self._try_google_cse),
+            ("Serper", self._try_serper),
+            ("Brave", self._try_brave),
+            ("Tavily", self._try_tavily),
+        ):
+            results = await attempt(query, max_results, api_keys, name)
+            if results:
+                return results
+
+        # Final fallback: DuckDuckGo Lite (no key required)
         from app.services.tier3_search_clients import (  # noqa: PLC0415
-            BraveSearchClient,
             DuckDuckGoClient,
-            GoogleCSEClient,
-            TavilyClient,
         )
 
-        api_keys = user_settings.get("searchApiKeys")
-        if isinstance(api_keys, dict):
-            # Try Google CSE first
-            google_key = api_keys.get("googleCseApiKey")
-            google_engine = api_keys.get("googleCseEngineId")
-            if isinstance(google_key, str) and isinstance(google_engine, str):
-                try:
-                    results = await GoogleCSEClient().search(
-                        query, google_key, google_engine, max_results
-                    )
-                    if results:
-                        return results
-                except Exception:
-                    logger.exception("Google CSE search failed, trying next")
-
-            # Try Brave
-            brave_key = api_keys.get("braveSearchApiKey")
-            if isinstance(brave_key, str):
-                try:
-                    results = await BraveSearchClient().search(
-                        query, brave_key, max_results
-                    )
-                    if results:
-                        return results
-                except Exception:
-                    logger.exception("Brave search failed, trying next")
-
-            # Try Tavily
-            tavily_key = api_keys.get("tavilyApiKey")
-            if isinstance(tavily_key, str):
-                try:
-                    results = await TavilyClient().search(
-                        query, tavily_key, max_results
-                    )
-                    if results:
-                        return results
-                except Exception:
-                    logger.exception("Tavily search failed, trying DuckDuckGo fallback")
-
-        # Final fallback: DuckDuckGo Lite scraping (no key required)
         try:
             return await DuckDuckGoClient().search(query, max_results)
         except Exception:
             logger.exception("DuckDuckGo fallback failed")
+            return []
+
+    @staticmethod
+    async def _try_google_cse(
+        query: str,
+        max_results: int,
+        api_keys: dict[str, object],
+        name: str,
+    ) -> list[SearchResult]:
+        key = api_keys.get("googleCseApiKey")
+        engine = api_keys.get("googleCseEngineId")
+        if not (isinstance(key, str) and isinstance(engine, str) and key and engine):
+            return []
+        from app.services.tier3_search_clients import GoogleCSEClient  # noqa: PLC0415
+
+        try:
+            return await GoogleCSEClient().search(query, key, engine, max_results)
+        except Exception:
+            logger.exception("%s search failed, trying next", name)
+            return []
+
+    @staticmethod
+    async def _try_serper(
+        query: str,
+        max_results: int,
+        api_keys: dict[str, object],
+        name: str,
+    ) -> list[SearchResult]:
+        key = api_keys.get("serperApiKey")
+        if not (isinstance(key, str) and key):
+            return []
+        from app.services.tier3_search_clients import SerperClient  # noqa: PLC0415
+
+        try:
+            return await SerperClient().search(query, key, max_results)
+        except Exception:
+            logger.exception("%s search failed, trying next", name)
+            return []
+
+    @staticmethod
+    async def _try_brave(
+        query: str,
+        max_results: int,
+        api_keys: dict[str, object],
+        name: str,
+    ) -> list[SearchResult]:
+        key = api_keys.get("braveSearchApiKey")
+        if not (isinstance(key, str) and key):
+            return []
+        from app.services.tier3_search_clients import BraveSearchClient  # noqa: PLC0415
+
+        try:
+            return await BraveSearchClient().search(query, key, max_results)
+        except Exception:
+            logger.exception("%s search failed, trying next", name)
+            return []
+
+    @staticmethod
+    async def _try_tavily(
+        query: str,
+        max_results: int,
+        api_keys: dict[str, object],
+        name: str,
+    ) -> list[SearchResult]:
+        key = api_keys.get("tavilyApiKey")
+        if not (isinstance(key, str) and key):
+            return []
+        from app.services.tier3_search_clients import TavilyClient  # noqa: PLC0415
+
+        try:
+            return await TavilyClient().search(query, key, max_results)
+        except Exception:
+            logger.exception("%s search failed, trying next", name)
             return []
 
     async def _search_searxng(self, query: str, max_results: int) -> list[SearchResult]:

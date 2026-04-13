@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.tier3_search_clients import DuckDuckGoClient
+from app.services.tier3_search_clients import DuckDuckGoClient, SerperClient
 
 
 def _mock_response(status: int, text: str) -> MagicMock:
@@ -194,6 +194,141 @@ async def test_search_returns_empty_on_unparseable_html():
 
 
 # ──────────────────────────────────────────────────────────────
+# SerperClient
+# ──────────────────────────────────────────────────────────────
+
+
+def _json_response(status: int, data: dict[str, Any]) -> MagicMock:
+    response = MagicMock()
+    response.status = status
+    response.json = AsyncMock(return_value=data)
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=False)
+    return response
+
+
+@pytest.mark.asyncio
+async def test_serper_parses_organic_results():
+    client = SerperClient()
+    data = {
+        "organic": [
+            {
+                "title": "Quantum computing for educators",
+                "link": "https://arxiv.org/abs/2401.9999",
+                "snippet": "An introduction to quantum...",
+            },
+            {
+                "title": "ML curriculum design",
+                "link": "https://example.edu/ml",
+                "snippet": "Designing ML courses...",
+            },
+        ]
+    }
+    response = _json_response(200, data)
+
+    captured_payload: list[dict[str, Any]] = []
+    captured_headers: list[dict[str, str]] = []
+
+    def _factory(*_args: Any, **_kwargs: Any) -> MagicMock:
+        session = MagicMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=False)
+
+        def _post(
+            _url: str,
+            headers: dict[str, str] | None = None,
+            json: dict[str, Any] | None = None,
+            **_kw: Any,
+        ) -> MagicMock:
+            captured_headers.append(headers or {})
+            captured_payload.append(json or {})
+            return response
+
+        session.post = MagicMock(side_effect=_post)
+        return session
+
+    with patch("aiohttp.ClientSession", side_effect=_factory):
+        results = await client.search("quantum", api_key="test-key", max_results=5)
+
+    assert len(results) == 2
+    assert results[0].title == "Quantum computing for educators"
+    assert results[0].url == "https://arxiv.org/abs/2401.9999"
+    assert results[0].content == "An introduction to quantum..."
+    assert all(r.source == "serper" for r in results)
+
+    # Verify request shape
+    assert captured_headers[0]["X-API-KEY"] == "test-key"
+    assert captured_headers[0]["Content-Type"] == "application/json"
+    assert captured_payload[0] == {"q": "quantum", "num": 5}
+
+
+@pytest.mark.asyncio
+async def test_serper_returns_empty_on_non_200():
+    client = SerperClient()
+    response = _json_response(429, {})
+
+    def _factory(*_args: Any, **_kwargs: Any) -> MagicMock:
+        session = MagicMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=False)
+        session.post = MagicMock(return_value=response)
+        return session
+
+    with patch("aiohttp.ClientSession", side_effect=_factory):
+        results = await client.search("q", api_key="k")
+
+    assert results == []
+
+
+@pytest.mark.asyncio
+async def test_serper_returns_empty_on_network_error():
+    client = SerperClient()
+
+    def _factory(*_args: Any, **_kwargs: Any) -> MagicMock:
+        session = MagicMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=False)
+        session.post = MagicMock(side_effect=OSError("network unreachable"))
+        return session
+
+    with patch("aiohttp.ClientSession", side_effect=_factory):
+        results = await client.search("q", api_key="k")
+
+    assert results == []
+
+
+@pytest.mark.asyncio
+async def test_serper_caps_num_at_20():
+    """Serper API accepts up to 20 per request; larger max_results must be clamped."""
+    client = SerperClient()
+    response = _json_response(200, {"organic": []})
+
+    captured_payload: list[dict[str, Any]] = []
+
+    def _factory(*_args: Any, **_kwargs: Any) -> MagicMock:
+        session = MagicMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=False)
+
+        def _post(
+            _url: str,
+            headers: dict[str, str] | None = None,
+            json: dict[str, Any] | None = None,
+            **_kw: Any,
+        ) -> MagicMock:
+            captured_payload.append(json or {})
+            return response
+
+        session.post = MagicMock(side_effect=_post)
+        return session
+
+    with patch("aiohttp.ClientSession", side_effect=_factory):
+        await client.search("q", api_key="k", max_results=100)
+
+    assert captured_payload[0]["num"] == 20
+
+
+# ──────────────────────────────────────────────────────────────
 # Router integration
 # ──────────────────────────────────────────────────────────────
 
@@ -252,6 +387,43 @@ async def test_router_falls_back_to_ddg_when_keyed_returns_empty():
     assert results[0].url == "https://fallback.edu/x"
     mock_brave.assert_called_once()
     mock_ddg.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_router_tries_serper_before_brave():
+    from app.services.search_router import SearchRouter, SearchTier
+    from app.services.web_search_service import SearchResult
+
+    router = SearchRouter()
+
+    with (
+        patch(
+            "app.services.tier3_search_clients.SerperClient.search",
+            new_callable=AsyncMock,
+            return_value=[
+                SearchResult(title="serper hit", url="https://s.edu/x", source="serper")
+            ],
+        ) as mock_serper,
+        patch(
+            "app.services.tier3_search_clients.BraveSearchClient.search",
+            new_callable=AsyncMock,
+        ) as mock_brave,
+    ):
+        results, tier = await router.search(
+            "test",
+            preferred_tier=3,
+            user_settings={
+                "searchApiKeys": {
+                    "serperApiKey": "s",
+                    "braveSearchApiKey": "b",
+                }
+            },
+        )
+
+    assert tier == SearchTier.GENERAL_WEB
+    assert results[0].source == "serper"
+    mock_serper.assert_called_once()
+    mock_brave.assert_not_called()
 
 
 @pytest.mark.asyncio

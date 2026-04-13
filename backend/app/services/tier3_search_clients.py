@@ -1,5 +1,5 @@
 """
-Tier 3 Search Clients — Google CSE, Brave Search, Tavily, DuckDuckGo.
+Tier 3 Search Clients — Google CSE, Serper, Brave Search, Tavily, DuckDuckGo.
 
 All except DuckDuckGo require user-provided API keys. DuckDuckGo scrapes the
 lite HTML endpoint and needs no credentials — it's the always-available
@@ -65,6 +65,59 @@ class GoogleCSEClient:
 
         except Exception:
             logger.exception("Google CSE search failed")
+            return []
+
+
+class SerperClient:
+    """Serper.dev — single-key Google search proxy.
+
+    Lower friction than Google CSE (one key instead of key + engine ID) and
+    usually cheaper for low volumes.
+    """
+
+    BASE_URL = "https://google.serper.dev/search"
+
+    async def search(
+        self,
+        query: str,
+        api_key: str,
+        max_results: int = 10,
+    ) -> list[SearchResult]:
+        """Search via Serper.dev API."""
+        headers = {
+            "X-API-KEY": api_key,
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "q": query,
+            "num": min(max_results, 20),
+        }
+
+        try:
+            async with (
+                aiohttp.ClientSession(
+                    timeout=aiohttp.ClientTimeout(total=15)
+                ) as session,
+                session.post(self.BASE_URL, headers=headers, json=payload) as response,
+            ):
+                if response.status != 200:
+                    logger.warning("Serper returned status %d", response.status)
+                    return []
+
+                data = await response.json()
+                return [
+                    SearchResult(
+                        title=item.get("title", ""),
+                        url=item.get("link", ""),
+                        content=item.get("snippet"),
+                        description=item.get("snippet"),
+                        source="serper",
+                    )
+                    for item in data.get("organic", [])
+                ]
+
+        except Exception:
+            logger.exception("Serper search failed")
             return []
 
 
