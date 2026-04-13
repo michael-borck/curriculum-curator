@@ -7,10 +7,12 @@ const ResearchSettings = () => {
   const [preferredTier, setPreferredTier] = useState(1);
   const [googleCseApiKey, setGoogleCseApiKey] = useState('');
   const [googleCseEngineId, setGoogleCseEngineId] = useState('');
+  const [serperApiKey, setSerperApiKey] = useState('');
   const [braveSearchApiKey, setBraveSearchApiKey] = useState('');
   const [tavilyApiKey, setTavilyApiKey] = useState('');
   const [coreApiKey, setCoreApiKey] = useState('');
   const [searxngUrl, setSearxngUrl] = useState('');
+  const [excludedDomainsText, setExcludedDomainsText] = useState('');
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -26,16 +28,24 @@ const ResearchSettings = () => {
     setError(null);
     setSaved(false);
     try {
+      const excludedDomains = excludedDomainsText
+        .split(/[\n,]/)
+        .map(s => s.trim().toLowerCase())
+        .filter(s => s.length > 0);
+
       const settings: ResearchSettingsType = {
         preferredTier,
         searchApiKeys: {
           googleCseApiKey: googleCseApiKey || undefined,
           googleCseEngineId: googleCseEngineId || undefined,
+          serperApiKey: serperApiKey || undefined,
           braveSearchApiKey: braveSearchApiKey || undefined,
           tavilyApiKey: tavilyApiKey || undefined,
           coreApiKey: coreApiKey || undefined,
         },
         searxngUrl: searxngUrl || undefined,
+        excludedDomains:
+          excludedDomains.length > 0 ? excludedDomains : undefined,
       };
       await researchApi.saveResearchSettings(settings);
       setSaved(true);
@@ -113,7 +123,7 @@ const ResearchSettings = () => {
               Tier 1: Academic (OpenAlex + Semantic Scholar + CrossRef + CORE)
             </option>
             <option value={3}>
-              Tier 3: General Web (requires API keys below)
+              Tier 3: General Web (DuckDuckGo fallback, keys optional)
             </option>
             <option value={4}>Tier 4: SearXNG (requires instance URL)</option>
           </select>
@@ -156,8 +166,10 @@ const ResearchSettings = () => {
             General Web Search API Keys (Tier 3)
           </h3>
           <p className='text-xs text-gray-500 mb-3'>
-            Provide at least one to enable Tier 3 web search. Keys are stored
-            encrypted on the server.
+            All keys are optional. Keyed providers are tried in order (Google
+            CSE → Serper → Brave → Tavily); DuckDuckGo is used as a free
+            fallback when no provider returns results. Keys are stored on the
+            server.
           </p>
           <div className='space-y-4'>
             {apiKeyField(
@@ -175,6 +187,13 @@ const ResearchSettings = () => {
               'abc123...'
             )}
             {apiKeyField(
+              'Serper API Key',
+              'serperApiKey',
+              serperApiKey,
+              setSerperApiKey,
+              'Single-key Google proxy — sign up at serper.dev'
+            )}
+            {apiKeyField(
               'Brave Search API Key',
               'braveSearchApiKey',
               braveSearchApiKey,
@@ -189,6 +208,25 @@ const ResearchSettings = () => {
               'tvly-...'
             )}
           </div>
+        </div>
+
+        {/* Excluded Domains */}
+        <div>
+          <h3 className='font-medium mb-3'>Excluded Domains</h3>
+          <p className='text-xs text-gray-500 mb-3'>
+            Results from these domains are dropped from every tier. One per line
+            or comma-separated. Matches apply to subdomains too (e.g.
+            <code className='mx-1 px-1 bg-gray-100 rounded'>youtube.com</code>
+            also blocks{' '}
+            <code className='px-1 bg-gray-100 rounded'>m.youtube.com</code>).
+          </p>
+          <textarea
+            value={excludedDomainsText}
+            onChange={e => setExcludedDomainsText(e.target.value)}
+            rows={4}
+            className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm'
+            placeholder={'youtube.com\npinterest.com\nquora.com'}
+          />
         </div>
 
         {/* SearXNG */}

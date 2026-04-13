@@ -57,16 +57,34 @@ _TIER_NAMES: dict[SearchTier, str] = {
 # =============================================================================
 
 
+def _load_user_research_settings(
+    db: Session, user_id: str
+) -> dict[str, object] | None:
+    """Load the saved research settings dict from User.teaching_preferences.
+
+    Stored in camelCase (matches the router's expectations) because that's how
+    the PUT endpoint persists it.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not isinstance(user.teaching_preferences, dict):
+        return None
+    research = user.teaching_preferences.get("research")
+    return research if isinstance(research, dict) else None
+
+
 @router.post("/search", response_model=AcademicSearchResponse)
 async def search_academic(
     request: AcademicSearchRequest,
     current_user: UserResponse = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
 ):
     """Search academic databases (OpenAlex + Semantic Scholar)."""
+    user_settings = _load_user_research_settings(db, str(current_user.id))
     results, tier_used = await search_router.search(
         query=request.query,
         preferred_tier=request.preferred_tier,
         max_results=request.max_results,
+        user_settings=user_settings,
     )
 
     items = [

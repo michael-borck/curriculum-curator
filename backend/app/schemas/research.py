@@ -235,8 +235,10 @@ class SearchApiKeys(CamelModel):
 
     google_cse_api_key: str | None = None
     google_cse_engine_id: str | None = None
+    serper_api_key: str | None = None
     brave_search_api_key: str | None = None
     tavily_api_key: str | None = None
+    core_api_key: str | None = None
 
 
 class ResearchSettings(CamelModel):
@@ -245,3 +247,7 @@ class ResearchSettings(CamelModel):
     preferred_tier: int = Field(default=1, ge=1, le=4)
     search_api_keys: SearchApiKeys = Field(default_factory=SearchApiKeys)
     searxng_url: str | None = None
+    excluded_domains: list[str] = Field(
+        default_factory=list,
+        description="Domains to drop from every tier's results (e.g. youtube.com)",
+    )

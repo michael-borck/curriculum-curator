@@ -233,6 +233,7 @@ export interface ApplyReadingListResponse {
 export interface SearchApiKeys {
   googleCseApiKey?: string | undefined;
   googleCseEngineId?: string | undefined;
+  serperApiKey?: string | undefined;
   braveSearchApiKey?: string | undefined;
   tavilyApiKey?: string | undefined;
   coreApiKey?: string | undefined;
@@ -242,6 +243,7 @@ export interface ResearchSettings {
   preferredTier: number;
   searchApiKeys?: SearchApiKeys | undefined;
   searxngUrl?: string | undefined;
+  excludedDomains?: string[] | undefined;
 }
 
 // =============================================================================
