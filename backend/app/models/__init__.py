@@ -55,6 +55,7 @@ from .security_log import SecurityEventType, SecurityLog
 from .system_config import ConfigCategory, SystemConfig
 from .system_settings import SystemSettings
 from .task_list import TaskList, TaskStatus
+from .udl_audit import UDLAuditResponse
 
 # Core academic models
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
@@ -156,4 +157,6 @@ __all__ = [
     "ResearchSource",
     "SourceType",
     "CitationStyle",
+    # UDL Audit
+    "UDLAuditResponse",
 ]

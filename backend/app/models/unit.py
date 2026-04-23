@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from app.models.learning_outcome import UnitLearningOutcome
     from app.models.research_source import ResearchSource
     from app.models.task_list import TaskList
+    from app.models.udl_audit import UDLAuditResponse
     from app.models.unit_outline import UnitOutline
     from app.models.user import User
     from app.models.weekly_material import WeeklyMaterial
@@ -177,6 +178,11 @@ class Unit(Base):
 
     # Research sources
     research_sources: Mapped[list["ResearchSource"]] = relationship(
+        back_populates="unit", cascade="all, delete-orphan"
+    )
+
+    # UDL Audit responses
+    udl_audit_responses: Mapped[list["UDLAuditResponse"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
 
