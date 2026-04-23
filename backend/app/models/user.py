@@ -14,6 +14,7 @@ from app.core.database import Base
 from app.models.common import GUID
 
 if TYPE_CHECKING:
+    from app.models.clo_set import CLOSet
     from app.models.email_verification import EmailVerification
     from app.models.llm_config import LLMConfiguration, TokenUsageLog
     from app.models.password_reset import PasswordReset
@@ -109,6 +110,9 @@ class User(Base):
     )
     research_sources: Mapped[list["ResearchSource"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
+    )
+    clo_sets: Mapped[list["CLOSet"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:

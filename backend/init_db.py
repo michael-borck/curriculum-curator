@@ -17,6 +17,7 @@ from app.core.database import Base, SessionLocal, engine
 from app.core.security import get_password_hash
 
 # Import all models to register them with SQLAlchemy
+import app.models  # noqa: F401 — ensures all table metadata is registered
 from app.models import (
     PedagogyType,
     TeachingPhilosophy,

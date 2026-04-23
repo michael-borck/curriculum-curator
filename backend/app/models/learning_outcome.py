@@ -16,6 +16,7 @@ from app.models.common import GUID
 if TYPE_CHECKING:
     from app.models.accreditation_mappings import ULOGraduateCapabilityMapping
     from app.models.assessment import Assessment
+    from app.models.clo_set import ULOCLOItemMapping
     from app.models.custom_alignment_framework import ULOFrameworkItemMapping
     from app.models.unit import Unit
     from app.models.unit_outline import UnitOutline
@@ -131,6 +132,9 @@ class UnitLearningOutcome(Base):
 
     # Custom framework item mappings
     framework_item_mappings: Mapped[list["ULOFrameworkItemMapping"]] = relationship(
+        back_populates="ulo", cascade="all, delete-orphan"
+    )
+    clo_item_mappings: Mapped[list["ULOCLOItemMapping"]] = relationship(
         back_populates="ulo", cascade="all, delete-orphan"
     )
 

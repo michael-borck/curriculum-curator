@@ -6,6 +6,7 @@ Database models for Curriculum Curator
 # Authentication models
 # Import models in dependency order
 # New unit structure models
+from .clo_set import CLOItem, CLOSet, ULOCLOItemMapping, UnitCLOSetAssignment
 from .accreditation_mappings import (
     AoLCompetencyCode,
     AoLLevel,
@@ -68,6 +69,11 @@ __all__ = [
     "AnalyticsSnapshot",
     # Common types
     "GUID",
+    # CLO Sets
+    "CLOSet",
+    "CLOItem",
+    "UnitCLOSetAssignment",
+    "ULOCLOItemMapping",
     # Accreditation mappings
     "GraduateCapabilityCode",
     "AoLCompetencyCode",

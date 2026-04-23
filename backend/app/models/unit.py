@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.accreditation_mappings import UnitAoLMapping, UnitSDGMapping
     from app.models.assessment import Assessment
     from app.models.chat import ChatSession
+    from app.models.clo_set import UnitCLOSetAssignment
     from app.models.custom_alignment_framework import CustomAlignmentFramework
     from app.models.learning_design import LearningDesign
     from app.models.learning_outcome import UnitLearningOutcome
@@ -168,6 +169,9 @@ class Unit(Base):
         back_populates="unit", cascade="all, delete-orphan"
     )
     custom_frameworks: Mapped[list["CustomAlignmentFramework"]] = relationship(
+        back_populates="unit", cascade="all, delete-orphan"
+    )
+    clo_set_assignments: Mapped[list["UnitCLOSetAssignment"]] = relationship(
         back_populates="unit", cascade="all, delete-orphan"
     )
 
