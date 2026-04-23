@@ -13,6 +13,7 @@ import {
   Search,
   Download,
   HardDriveDownload,
+  GraduationCap,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -26,6 +27,7 @@ import type { SectorId } from '../../constants/sectorProfiles';
 import QualityRatingSettings from './QualityRatingSettings';
 import ResearchSettings from './ResearchSettings';
 import ExportTemplates from './ExportTemplates';
+import CLOSetManager from './CLOSetManager';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -160,6 +162,7 @@ const Settings = () => {
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'research', label: 'Research', icon: Search },
     { id: 'export', label: 'Export', icon: Download },
+    { id: 'clo-sets', label: 'CLO Sets', icon: GraduationCap },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
@@ -437,6 +440,12 @@ const Settings = () => {
           {activeTab === 'research' && <ResearchSettings />}
 
           {activeTab === 'export' && <ExportTemplates />}
+
+          {activeTab === 'clo-sets' && (
+            <div className='bg-white rounded-lg shadow-md p-6'>
+              <CLOSetManager />
+            </div>
+          )}
 
           {activeTab === 'plugins' && (
             <PluginsTab
