@@ -1,0 +1,124 @@
+{
+  "version": "3.0",
+  "source": "CAST UDL Guidelines 3.0 (2023) — https://udlguidelines.cast.org/",
+  "principles": [
+    {
+      "id": "representation",
+      "name": "Representation",
+      "tagline": "The \"what\" of learning",
+      "description": "Offer multiple means of presenting information and knowledge",
+      "guidelines": [
+        {
+          "id": "1",
+          "name": "Perception",
+          "description": "Options for perceiving information",
+          "checkpoints": [
+            { "id": "1.1", "name": "Offer options for customising the display of information" },
+            { "id": "1.2", "name": "Offer alternatives for auditory information" },
+            { "id": "1.3", "name": "Offer alternatives for visual information" }
+          ]
+        },
+        {
+          "id": "2",
+          "name": "Language and Symbols",
+          "description": "Options for comprehending language and symbols",
+          "checkpoints": [
+            { "id": "2.1", "name": "Clarify vocabulary and symbols" },
+            { "id": "2.2", "name": "Clarify syntax and structure" },
+            { "id": "2.3", "name": "Support decoding of text, mathematical notation, and symbols" },
+            { "id": "2.4", "name": "Address biases in the use of language and symbols" },
+            { "id": "2.5", "name": "Illustrate through multiple media" }
+          ]
+        },
+        {
+          "id": "3",
+          "name": "Building Knowledge",
+          "description": "Options for building knowledge",
+          "checkpoints": [
+            { "id": "3.1", "name": "Activate or supply background knowledge" },
+            { "id": "3.2", "name": "Highlight patterns, critical features, big ideas, and relationships" },
+            { "id": "3.3", "name": "Cultivate multiple ways of knowing and making meaning" },
+            { "id": "3.4", "name": "Maximise generalisation and transfer" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "action_expression",
+      "name": "Action and Expression",
+      "tagline": "The \"how\" of learning",
+      "description": "Offer multiple means for learners to express what they know",
+      "guidelines": [
+        {
+          "id": "4",
+          "name": "Interaction",
+          "description": "Options for interacting with content and environment",
+          "checkpoints": [
+            { "id": "4.1", "name": "Vary and honour the methods for response, navigation, and movement" },
+            { "id": "4.2", "name": "Optimise access to tools and assistive technologies" }
+          ]
+        },
+        {
+          "id": "5",
+          "name": "Expression and Communication",
+          "description": "Options for expressing and communicating",
+          "checkpoints": [
+            { "id": "5.1", "name": "Use multiple media for communication" },
+            { "id": "5.2", "name": "Use multiple tools for construction, composition, and creativity" },
+            { "id": "5.3", "name": "Support fluencies with graduated support and feedback" }
+          ]
+        },
+        {
+          "id": "6",
+          "name": "Executive Functions",
+          "description": "Options for executive functions",
+          "checkpoints": [
+            { "id": "6.1", "name": "Guide appropriate goal-setting" },
+            { "id": "6.2", "name": "Support planning and strategy development" },
+            { "id": "6.3", "name": "Facilitate managing information and resources" },
+            { "id": "6.4", "name": "Enhance capacity for monitoring progress" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "engagement",
+      "name": "Engagement",
+      "tagline": "The \"why\" of learning",
+      "description": "Offer multiple means of motivating and sustaining learner engagement",
+      "guidelines": [
+        {
+          "id": "7",
+          "name": "Welcoming Interests and Identities",
+          "description": "Options for welcoming learner interests and identities",
+          "checkpoints": [
+            { "id": "7.1", "name": "Optimise individual choice and autonomy" },
+            { "id": "7.2", "name": "Optimise relevance, value, and authenticity" },
+            { "id": "7.3", "name": "Nurture joy and play" }
+          ]
+        },
+        {
+          "id": "8",
+          "name": "Sustaining Effort and Persistence",
+          "description": "Options for sustaining effort and persistence",
+          "checkpoints": [
+            { "id": "8.1", "name": "Heighten salience of goals and objectives" },
+            { "id": "8.2", "name": "Vary demands and resources to optimise challenge" },
+            { "id": "8.3", "name": "Foster collaboration, interdependence, and collective learning" },
+            { "id": "8.4", "name": "Increase mastery-oriented feedback" }
+          ]
+        },
+        {
+          "id": "9",
+          "name": "Self Regulation",
+          "description": "Options for self regulation",
+          "checkpoints": [
+            { "id": "9.1", "name": "Promote awareness of self, learning community, and connections" },
+            { "id": "9.2", "name": "Support personal coping skills and strategies" },
+            { "id": "9.3", "name": "Develop self-assessment and reflection" }
+          ]
+        }
+      ]
+    }
+  ]
+}

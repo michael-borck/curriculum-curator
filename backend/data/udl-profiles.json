@@ -1,0 +1,51 @@
+[
+  {
+    "id": "inclusive-assessment-design",
+    "name": "Inclusive Assessment Design",
+    "description": "UDL checkpoints most relevant when designing assessments that are inclusive and equitable. Based on CAST UDL Guidelines 3.0.",
+    "checkpoints": [
+      {
+        "checkpointId": "4.1",
+        "assessmentTypes": ["presentation", "viva", "discussion", "quiz", "practical_assessment", "skills_demonstration"],
+        "contextNote": "For oral and interactive assessments — consider how students can vary their response mode, timing, and physical environment.",
+        "harmfulPractice": "Enforce one-size-fits-all classroom positioning, student placement, sit/stand, response parameters. Prevent additional presentation time for those with Accessibility Plans.",
+        "helpfulPractice": "Allow students to adjust their physical environment (e.g. flexible seating, classroom positioning, and lighting), and embed flexibility in their means of presentation and response (including digitally) (e.g. rate, timing, speed)."
+      },
+      {
+        "checkpointId": "2.4",
+        "assessmentTypes": ["presentation", "viva", "discussion", "paper", "assignment", "reflection", "journal"],
+        "contextNote": "Consider linguistic diversity and cultural bias in assessment language and instructions.",
+        "harmfulPractice": "No consideration of ableist or discriminatory language. Not identifying how culture may influence presentation content and delivery.",
+        "helpfulPractice": "Acknowledge the different cultures in the room, recognise students presenting in a second+ language, enable closed captioning."
+      },
+      {
+        "checkpointId": "8.3",
+        "assessmentTypes": ["presentation", "discussion", "project", "peer_review", "participation"],
+        "contextNote": "For collaborative assessments — explicitly scaffold group learning, shared goals, and interdependence.",
+        "harmfulPractice": "Failure to address how students can ask for help; ignoring practices of socially shared regulation of learning.",
+        "helpfulPractice": "Establish group agreements for collaboration; identify team roles, expectations, and collaborative learning goals; intentionally develop communities of learning."
+      },
+      {
+        "checkpointId": "3.3",
+        "assessmentTypes": ["assignment", "journal", "portfolio", "paper", "reflection", "case_study"],
+        "contextNote": "Support diverse ways of knowing and making meaning in analytical tasks.",
+        "harmfulPractice": "Implying (i.e. not explicit) effective sequences to scaffold learning; Ignoring holistic and interconnected indigenous knowledge systems.",
+        "helpfulPractice": "Progressive disclosure of chunked information to best explore different media; support a diversity of cognitive approaches to enhance comprehension."
+      },
+      {
+        "checkpointId": "5.2",
+        "assessmentTypes": ["assignment", "journal", "portfolio", "paper", "reflection", "project", "case_study"],
+        "contextNote": "Enable diverse analytical and creative tools, including responsible AI use.",
+        "harmfulPractice": "Preventing students from using emerging and innovative tools; failing to teach the foundational and underlying principles that transfer across tools.",
+        "helpfulPractice": "Enable a diversity of analytical and reflective tools; develop competencies of students for responsible use of Gen-AI; evaluate students' critique of tools and synthesis across traditional and contemporary."
+      },
+      {
+        "checkpointId": "7.3",
+        "assessmentTypes": ["journal", "portfolio", "reflection", "project", "assignment"],
+        "contextNote": "Build in space for imagination, experimentation, and creative engagement.",
+        "harmfulPractice": "Preventing time for imagination, experimentation, and wonder; allowing play to occur without self-regulation; limiting broad sensory and temporal engagement.",
+        "helpfulPractice": "Foster a mindset of playfulness; require experimentation across physical and digital spaces; incorporate requirements for a diverse range of artistic experiences (e.g. music, film, visual, digital, AI-generated, etc.)."
+      }
+    ]
+  }
+]
