@@ -353,6 +353,14 @@ except ImportError as e:
     logger.warning(f"Failed to load accreditation routes: {e}")
 
 try:
+    from app.api.routes import clo_sets
+
+    app.include_router(clo_sets.router, prefix="/api/clo-sets", tags=["clo-sets"])
+    logger.info("✅ CLO Sets routes loaded successfully")
+except ImportError as e:
+    logger.warning(f"Failed to load clo_sets routes: {e}")
+
+try:
     from app.api.routes import designs
 
     app.include_router(designs.router, prefix="/api", tags=["designs"])
