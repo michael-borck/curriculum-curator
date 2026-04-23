@@ -6,7 +6,6 @@ Database models for Curriculum Curator
 # Authentication models
 # Import models in dependency order
 # New unit structure models
-from .clo_set import CLOItem, CLOSet, ULOCLOItemMapping, UnitCLOSetAssignment
 from .accreditation_mappings import (
     AoLCompetencyCode,
     AoLLevel,
@@ -23,6 +22,7 @@ from .assessment import (
 )
 from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
+from .clo_set import CLOItem, CLOSet, ULOCLOItemMapping, UnitCLOSetAssignment
 from .common import GUID
 from .custom_alignment_framework import (
     CustomAlignmentFramework,

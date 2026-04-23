@@ -12,12 +12,11 @@ from pathlib import Path
 # Add backend directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Import all models to register them with SQLAlchemy
+import app.models  # noqa: F401 — ensures all table metadata is registered
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.security import get_password_hash
-
-# Import all models to register them with SQLAlchemy
-import app.models  # noqa: F401 — ensures all table metadata is registered
 from app.models import (
     PedagogyType,
     TeachingPhilosophy,
