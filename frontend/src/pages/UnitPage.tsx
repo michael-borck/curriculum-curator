@@ -39,6 +39,7 @@ import GraduateCapabilitiesPanel from '../components/UnitStructure/GraduateCapab
 import AoLMappingPanel from '../components/UnitStructure/AoLMappingPanel';
 import SDGMappingPanel from '../components/UnitStructure/SDGMappingPanel';
 import CustomFrameworkPanel from '../components/UnitStructure/CustomFrameworkPanel';
+import CLOMappingPanel from '../components/UnitStructure/CLOMappingPanel';
 import AddFrameworkDialog from '../components/UnitStructure/AddFrameworkDialog';
 import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
@@ -478,6 +479,7 @@ const UnitPage = () => {
   const showAolMapping = features.aolMapping ?? true;
   const showSdgMapping = features.sdgMapping ?? true;
   const showCustomFrameworks = features.customFrameworks ?? true;
+  const showCloMapping = features.cloMapping ?? true;
 
   return (
     <div className='min-h-full'>
@@ -836,6 +838,7 @@ const UnitPage = () => {
               )}
               {showAolMapping && <AoLMappingPanel unitId={unitId!} />}
               {showSdgMapping && <SDGMappingPanel unitId={unitId!} />}
+              {showCloMapping && <CLOMappingPanel unitId={unitId!} />}
             </div>
           )}
 
