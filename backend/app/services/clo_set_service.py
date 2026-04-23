@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.clo_set import CLOItem, CLOSet, ULOCLOItemMapping, UnitCLOSetAssignment
 from app.models.learning_outcome import OutcomeType, UnitLearningOutcome
+from app.models.user import User
 from app.schemas.clo_sets import (
     CLOItemCreate,
     CLOItemUpdate,
@@ -222,7 +223,7 @@ class CLOSetService:
     # ── AI suggestions ────────────────────────────────────────
 
     async def suggest_clo_mappings(
-        self, db: Session, unit_id: UUID, user: object, db_for_llm: Session
+        self, db: Session, unit_id: UUID, user: User, db_for_llm: Session
     ) -> list[CLOSuggestionPair]:
         """Ask the LLM to match ULOs to CLO items for this unit."""
         ulos = list(
