@@ -361,6 +361,16 @@ except ImportError as e:
     logger.warning(f"Failed to load clo_sets routes: {e}")
 
 try:
+    from app.api.routes import udl_audit
+
+    app.include_router(
+        udl_audit.router, prefix="/api/udl-audit", tags=["udl-audit"]
+    )
+    logger.info("✅ UDL Audit routes loaded successfully")
+except ImportError as e:
+    logger.warning(f"Failed to load udl_audit routes: {e}")
+
+try:
     from app.api.routes import designs
 
     app.include_router(designs.router, prefix="/api", tags=["designs"])
