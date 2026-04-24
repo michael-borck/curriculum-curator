@@ -184,6 +184,14 @@ class UDLAuditService:
                 generated_at=datetime.now(UTC),
             )
 
+        guidelines = _load_guidelines()
+        checkpoint_names: dict[str, str] = {
+            cp["id"]: cp["name"]
+            for principle in guidelines["principles"]
+            for guideline in principle["guidelines"]
+            for cp in guideline["checkpoints"]
+        }
+
         profile = _profile_by_id(profile_id)
         profile_checkpoints = {cp["checkpointId"]: cp for cp in (profile or {}).get("checkpoints", [])}
 
@@ -192,7 +200,7 @@ class UDLAuditService:
 
         checkpoint_blocks = []
         for cp_id in needs_work_ids:
-            name = _checkpoint_name(cp_id)
+            name = checkpoint_names.get(cp_id, cp_id)
             profile_cp = profile_checkpoints.get(cp_id, {})
             helpful = profile_cp.get("helpfulPractice", "")
             context_note = profile_cp.get("contextNote", "")
