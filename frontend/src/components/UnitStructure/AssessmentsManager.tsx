@@ -38,6 +38,7 @@ import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { useAuthStore } from '../../stores/authStore';
 import { getCategoryMeta } from '../../constants/assessmentCategories';
 import { AssessmentCategoryCombobox } from '../shared/AssessmentCategoryCombobox';
+import UDLAuditModal from './UDLAuditModal';
 
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   Presentation,
@@ -63,6 +64,7 @@ function CategoryIcon({
 
 interface AssessmentsManagerProps {
   unitId: string;
+  showUdlAudit?: boolean | undefined;
 }
 
 interface AssessmentFormData {
@@ -82,10 +84,13 @@ interface AssessmentFormData {
 
 const AssessmentCard: React.FC<{
   assessment: AssessmentResponse;
+  unitId: string;
+  showUdlAudit: boolean;
   onEdit: (assessment: AssessmentResponse) => void;
   onDelete: (id: string) => void;
-}> = ({ assessment, onEdit, onDelete }) => {
+}> = ({ assessment, unitId, showUdlAudit, onEdit, onDelete }) => {
   const topicLabel = useWorkingContextStore(s => s.activeTopicLabel) || 'Week';
+  const [showAudit, setShowAudit] = useState(false);
   const typeColor =
     assessment.type === AssessmentType.FORMATIVE
       ? 'bg-green-100 text-green-800'
@@ -176,6 +181,15 @@ const AssessmentCard: React.FC<{
         </div>
 
         <div className='flex items-center space-x-2 ml-4'>
+          {showUdlAudit && (
+            <button
+              onClick={() => setShowAudit(true)}
+              className='p-1 text-gray-400 hover:text-teal-600'
+              title='UDL Audit'
+            >
+              <ClipboardCheck className='w-4 h-4' />
+            </button>
+          )}
           <button
             onClick={() => onEdit(assessment)}
             className='p-1 text-gray-400 hover:text-blue-600'
@@ -192,12 +206,22 @@ const AssessmentCard: React.FC<{
           </button>
         </div>
       </div>
+      {showAudit && (
+        <UDLAuditModal
+          unitId={unitId}
+          assessmentId={assessment.id}
+          assessmentTitle={assessment.title}
+          assessmentCategory={assessment.category}
+          onClose={() => setShowAudit(false)}
+        />
+      )}
     </div>
   );
 };
 
 export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
   unitId,
+  showUdlAudit = false,
 }) => {
   const confirm = useConfirmDialog();
   const userSector = useAuthStore(s => s.user?.educationSector);
@@ -719,6 +743,8 @@ export const AssessmentsManager: React.FC<AssessmentsManagerProps> = ({
             <AssessmentCard
               key={assessment.id}
               assessment={assessment}
+              unitId={unitId}
+              showUdlAudit={showUdlAudit}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

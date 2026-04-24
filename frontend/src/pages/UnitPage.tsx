@@ -845,7 +845,7 @@ const UnitPage = () => {
           )}
 
           {activeTab === 'assessments' && (
-            <AssessmentsManager unitId={unitId!} />
+            <AssessmentsManager unitId={unitId!} showUdlAudit={showUdlAudit} />
           )}
 
           {activeTab === 'analytics' && <UnitAnalytics unitId={unitId!} />}
