@@ -45,6 +45,7 @@ import AIAssistant from '../features/ai/AIAssistant';
 import UnitScaffoldReview from '../components/UnitStructure/UnitScaffoldReview';
 import { QualityDashboard } from '../components/UnitStructure/QualityDashboard';
 import { UDLDashboard } from '../components/UnitStructure/UDLDashboard';
+import UDLAuditPanel from '../components/UnitStructure/UDLAuditPanel';
 import UnitSettings from '../components/UnitStructure/UnitSettings';
 import AILevelBadge from '../components/shared/AILevelBadge';
 import { aiApi, type ScaffoldUnitResponse } from '../services/aiApi';
@@ -480,6 +481,7 @@ const UnitPage = () => {
   const showSdgMapping = features.sdgMapping ?? true;
   const showCustomFrameworks = features.customFrameworks ?? true;
   const showCloMapping = features.cloMapping ?? true;
+  const showUdlAudit = features.udlAudit ?? false;
 
   return (
     <div className='min-h-full'>
@@ -862,6 +864,7 @@ const UnitPage = () => {
                 topicLabel={topicLabel}
                 visibleDimensions={unit.unitMetadata?.features?.udlMetrics}
               />
+              {showUdlAudit && <UDLAuditPanel unitId={unitId!} />}
             </div>
           )}
 

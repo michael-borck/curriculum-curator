@@ -99,6 +99,7 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
   const [customFrameworks, setCustomFrameworks] = useState(
     existingFeatures.customFrameworks ?? true
   );
+  const [udlAudit, setUdlAudit] = useState(existingFeatures.udlAudit ?? false);
 
   // Quality metric visibility
   const existingQualityMetrics = existingFeatures.qualityMetrics ?? {};
@@ -166,6 +167,7 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
         aolMapping: aolMapping,
         sdgMapping: sdgMapping,
         customFrameworks: customFrameworks,
+        udlAudit: udlAudit,
         qualityMetrics,
         udlMetrics,
       };
@@ -345,6 +347,19 @@ const UnitSettings: React.FC<UnitSettingsProps> = ({ unit, onSave }) => {
             description='Spread of assessments across the semester'
             checked={qAssessmentDistribution}
             onChange={setQAssessmentDistribution}
+          />
+        </div>
+
+        {/* UDL Audit */}
+        <h4 className='text-sm font-semibold text-gray-700 mb-2 mt-6'>
+          UDL Audit
+        </h4>
+        <div className='divide-y divide-gray-100'>
+          <ToggleSwitch
+            label='UDL Audit Panel'
+            description='Reflective self-assessment against UDL checkpoints in the Quality tab'
+            checked={udlAudit}
+            onChange={setUdlAudit}
           />
         </div>
 
