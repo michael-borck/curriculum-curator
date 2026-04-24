@@ -58,6 +58,7 @@ export interface UnitFeatures {
   sdgMapping?: boolean | undefined;
   customFrameworks?: boolean | undefined;
   cloMapping?: boolean | undefined;
+  udlAudit?: boolean | undefined;
   qualityMetrics?: QualityMetricVisibility | undefined;
   udlMetrics?: UDLMetricVisibility | undefined;
 }

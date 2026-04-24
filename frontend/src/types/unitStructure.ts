@@ -747,3 +747,101 @@ export interface ULOItemMappingCreate {
 export interface BulkULOItemMappingCreate {
   mappings: ULOItemMappingCreate[];
 }
+
+// ── UDL Audit ──────────────────────────────────────────────────
+
+export type UDLAuditResponseValue =
+  | 'doing_well'
+  | 'needs_work'
+  | 'not_applicable'
+  | 'skipped';
+
+export interface UDLCheckpointEntry {
+  checkpointId: string;
+  response: UDLAuditResponseValue;
+  notes?: string | undefined;
+}
+
+export interface UDLAuditBatchUpsert {
+  profileId: string;
+  assessmentId: string; // "" = unit-level
+  responses: UDLCheckpointEntry[];
+}
+
+export interface UDLAuditResponseItem {
+  id: string;
+  unitId: string;
+  profileId: string;
+  checkpointId: string;
+  assessmentId: string;
+  response: UDLAuditResponseValue;
+  notes?: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UDLAuditSummary {
+  unitId: string;
+  profileId: string;
+  assessmentId: string;
+  totalCheckpoints: number;
+  doingWell: number;
+  needsWork: number;
+  notApplicable: number;
+  skipped: number;
+}
+
+export interface UDLAuditAISuggestion {
+  checkpointId: string;
+  checkpointName: string;
+  suggestion: string;
+}
+
+export interface UDLAuditAISuggestionsResponse {
+  unitId: string;
+  profileId: string;
+  assessmentId: string;
+  suggestions: UDLAuditAISuggestion[];
+  generatedAt: string;
+}
+
+export interface UDLProfileCheckpoint {
+  checkpointId: string;
+  assessmentTypes: string[];
+  contextNote: string;
+  harmfulPractice: string;
+  helpfulPractice: string;
+}
+
+export interface UDLProfile {
+  id: string;
+  name: string;
+  description: string;
+  checkpoints: UDLProfileCheckpoint[];
+}
+
+export interface UDLGuidelineCheckpoint {
+  id: string;
+  name: string;
+}
+
+export interface UDLGuideline {
+  id: string;
+  name: string;
+  description: string;
+  checkpoints: UDLGuidelineCheckpoint[];
+}
+
+export interface UDLPrinciple {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  guidelines: UDLGuideline[];
+}
+
+export interface UDLGuidelinesData {
+  version: string;
+  source: string;
+  principles: UDLPrinciple[];
+}
