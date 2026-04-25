@@ -19,10 +19,10 @@ classifiers = [
     "Intended Audience :: Education",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Framework :: FastAPI",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     # Core FastAPI dependencies
     "fastapi>=0.109.0",
@@ -57,6 +57,10 @@ dependencies = [
     "markdown>=3.5.1",  # Markdown processing
     "beautifulsoup4>=4.12.2",  # HTML parsing for converted content
     "lxml>=4.9.3",  # XML/HTML parser
+    # Curtin integration
+    "outline-dl>=0.2.1",
+    "course-dl>=0.3.1",
+    "playwright>=1.40.0",
     # Configuration & Validation
     "pydantic>=2.5.3",
     "pydantic-settings>=2.1.0",
