@@ -24,6 +24,7 @@ from .assessment_plan import AssessmentMode, AssessmentPlan, AssessmentType
 from .chat import ChatMessage, ChatRole, ChatSession, ContextScope
 from .clo_set import CLOItem, CLOSet, ULOCLOItemMapping, UnitCLOSetAssignment
 from .common import GUID
+from .curtin_job import CurtinExportJob
 from .custom_alignment_framework import (
     CustomAlignmentFramework,
     FrameworkItem,
@@ -70,6 +71,8 @@ __all__ = [
     "AnalyticsSnapshot",
     # Common types
     "GUID",
+    # Curtin Integration
+    "CurtinExportJob",
     # CLO Sets
     "CLOSet",
     "CLOItem",
