@@ -594,6 +594,13 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load transcript routes: {e}")
 
+try:
+    from app.api.routes import curtin_import
+
+    app.include_router(curtin_import.router)
+except ImportError as e:
+    logger.warning(f"Failed to load curtin_import routes: {e}")
+
 
 # Remove the root API endpoint - let static files handle it
 

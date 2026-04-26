@@ -64,3 +64,78 @@ def test_forgerock_login_succeeds() -> None:
     )
     mock_page.fill.assert_any_call("input[name='callback_1']", "user")
     mock_page.fill.assert_any_call("input[type='password']", "pass")
+
+
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from app.main import app
+from app.models.user import User
+from app.api.deps import get_current_active_user, get_db
+
+client = TestClient(app)
+
+
+def _override_deps(test_db: Session, test_user: User) -> None:
+    app.dependency_overrides[get_db] = lambda: test_db
+    app.dependency_overrides[get_current_active_user] = lambda: test_user
+
+
+def _clear_deps() -> None:
+    app.dependency_overrides.clear()
+
+
+def test_get_curtin_settings_returns_defaults(test_db: Session, test_user: User) -> None:
+    """GET /api/curtin/settings returns defaults when no curtin prefs stored."""
+    _override_deps(test_db, test_user)
+    try:
+        r = client.get("/api/curtin/settings")
+        assert r.status_code == 200
+        data = r.json()
+        assert data["litecUrl"] == "https://litec.curtin.edu.au/outline.cfm"
+        assert data["blackboardUrl"] == "https://lms.curtin.edu.au/"
+        assert data["campus"] == "Bentley Perth Campus"
+        assert data["curtinUsername"] == ""
+    finally:
+        _clear_deps()
+
+
+def test_put_curtin_settings_persists(test_db: Session, test_user: User) -> None:
+    """PUT /api/curtin/settings saves and GET returns the updated values."""
+    _override_deps(test_db, test_user)
+    try:
+        r = client.put(
+            "/api/curtin/settings",
+            json={
+                "curtinUsername": "jsmith",
+                "curtinPassword": "secret",
+                "litecUrl": "https://litec.curtin.edu.au/outline.cfm",
+                "blackboardUrl": "https://lms.curtin.edu.au/",
+                "campus": "Bentley Perth Campus",
+            },
+        )
+        assert r.status_code == 200
+        r2 = client.get("/api/curtin/settings")
+        assert r2.json()["curtinUsername"] == "jsmith"
+    finally:
+        _clear_deps()
+
+
+def test_outline_download_rejects_missing_credentials(test_db: Session, test_user: User) -> None:
+    """POST /api/curtin/outline/download returns 400 when no credentials set."""
+    _override_deps(test_db, test_user)
+    try:
+        r = client.post("/api/curtin/outline/download", json={"unitCode": "COMP1000"})
+        assert r.status_code == 400
+        assert "credentials" in r.json()["detail"].lower()
+    finally:
+        _clear_deps()
+
+
+def test_course_build_rejects_missing_credentials(test_db: Session, test_user: User) -> None:
+    """POST /api/curtin/course/build returns 400 when no credentials set."""
+    _override_deps(test_db, test_user)
+    try:
+        r = client.post("/api/curtin/course/build", json={"courseName": "COMP1000"})
+        assert r.status_code == 400
+    finally:
+        _clear_deps()
