@@ -1,7 +1,12 @@
 """Tests for Curtin integration service and routes."""
 
+import pytest
+from unittest.mock import MagicMock
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
 from app.models.curtin_job import CurtinExportJob
-from app.schemas.curtin import CurtinSettings, CurtinJobResponse
+from app.schemas.curtin import CurtinSettings
+from app.services.curtin_service import CurtinServiceError, _forgerock_login
 
 
 def test_curtin_job_model_exists() -> None:
@@ -23,13 +28,6 @@ def test_curtin_settings_camel_alias() -> None:
     d = s.model_dump(by_alias=True)
     assert "curtinUsername" in d
     assert "curtinPassword" in d
-
-
-import pytest
-from unittest.mock import MagicMock
-from playwright.sync_api import TimeoutError as PlaywrightTimeout
-
-from app.services.curtin_service import _forgerock_login, CurtinServiceError
 
 
 def test_forgerock_login_raises_on_username_field_not_found() -> None:
