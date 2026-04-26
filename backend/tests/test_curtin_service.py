@@ -23,3 +23,46 @@ def test_curtin_settings_camel_alias() -> None:
     d = s.model_dump(by_alias=True)
     assert "curtinUsername" in d
     assert "curtinPassword" in d
+
+
+import pytest
+from unittest.mock import MagicMock
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+from app.services.curtin_service import _forgerock_login, CurtinServiceError
+
+
+def test_forgerock_login_raises_on_username_field_not_found() -> None:
+    """_forgerock_login raises CurtinServiceError when SSO field is absent."""
+    mock_page = MagicMock()
+    mock_page.wait_for_selector.side_effect = PlaywrightTimeout("timeout")
+
+    with pytest.raises(CurtinServiceError, match="Could not find SSO username field"):
+        _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+
+
+def test_forgerock_login_raises_on_wrong_redirect() -> None:
+    """_forgerock_login raises CurtinServiceError when login redirects away from curtin.edu.au."""
+    mock_page = MagicMock()
+    mock_page.wait_for_selector.return_value = None  # field found
+    mock_page.url = "https://unexpected-domain.com/error"
+
+    with pytest.raises(CurtinServiceError, match="Login may have failed"):
+        _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+
+
+def test_forgerock_login_succeeds() -> None:
+    """_forgerock_login completes without error on happy path."""
+    mock_page = MagicMock()
+    mock_page.wait_for_selector.return_value = None
+    mock_page.url = "https://litec.curtin.edu.au/outline.cfm"
+
+    _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+
+    mock_page.goto.assert_called_once_with(
+        "https://litec.curtin.edu.au/outline.cfm",
+        wait_until="networkidle",
+        timeout=30000,
+    )
+    mock_page.fill.assert_any_call("input[name='callback_1']", "user")
+    mock_page.fill.assert_any_call("input[type='password']", "pass")
