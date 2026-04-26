@@ -1,16 +1,38 @@
 """Tests for Curtin integration service and routes."""
 
 import pytest
-from unittest.mock import MagicMock
+from fastapi.testclient import TestClient
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
+from sqlalchemy.orm import Session
+from unittest.mock import MagicMock
 
+from app.api.deps import get_current_active_user, get_db
+from app.main import app
 from app.models.curtin_job import CurtinExportJob
+from app.models.user import User
 from app.schemas.curtin import CurtinSettings
 from app.services.curtin_service import CurtinServiceError, _forgerock_login
+
+client = TestClient(app)
+
+
+def _override_deps(test_db: Session, test_user: User) -> None:
+    app.dependency_overrides[get_db] = lambda: test_db
+    app.dependency_overrides[get_current_active_user] = lambda: test_user
+
+
+def _clear_deps() -> None:
+    app.dependency_overrides.clear()
+
+
+# ── Model tests ───────────────────────────────────────────────────────────────
 
 
 def test_curtin_job_model_exists() -> None:
     assert CurtinExportJob.__tablename__ == "curtin_export_jobs"
+
+
+# ── Schema tests ──────────────────────────────────────────────────────────────
 
 
 def test_curtin_settings_defaults() -> None:
@@ -30,6 +52,9 @@ def test_curtin_settings_camel_alias() -> None:
     assert "curtinPassword" in d
 
 
+# ── Service tests ─────────────────────────────────────────────────────────────
+
+
 def test_forgerock_login_raises_on_username_field_not_found() -> None:
     """_forgerock_login raises CurtinServiceError when SSO field is absent."""
     mock_page = MagicMock()
@@ -42,7 +67,7 @@ def test_forgerock_login_raises_on_username_field_not_found() -> None:
 def test_forgerock_login_raises_on_wrong_redirect() -> None:
     """_forgerock_login raises CurtinServiceError when login redirects away from curtin.edu.au."""
     mock_page = MagicMock()
-    mock_page.wait_for_selector.return_value = None  # field found
+    mock_page.wait_for_selector.return_value = None
     mock_page.url = "https://unexpected-domain.com/error"
 
     with pytest.raises(CurtinServiceError, match="Login may have failed"):
@@ -66,22 +91,7 @@ def test_forgerock_login_succeeds() -> None:
     mock_page.fill.assert_any_call("input[type='password']", "pass")
 
 
-from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
-from app.main import app
-from app.models.user import User
-from app.api.deps import get_current_active_user, get_db
-
-client = TestClient(app)
-
-
-def _override_deps(test_db: Session, test_user: User) -> None:
-    app.dependency_overrides[get_db] = lambda: test_db
-    app.dependency_overrides[get_current_active_user] = lambda: test_user
-
-
-def _clear_deps() -> None:
-    app.dependency_overrides.clear()
+# ── Route tests ───────────────────────────────────────────────────────────────
 
 
 def test_get_curtin_settings_returns_defaults(test_db: Session, test_user: User) -> None:
