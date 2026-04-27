@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Upload,
   Package,
@@ -41,6 +41,15 @@ import { useTaskProgress } from '../../hooks/useTaskProgress';
 import type { TaskStatus } from '../../services/taskApi';
 
 type Phase = 'upload' | 'preview' | 'processing' | 'done' | 'failed';
+
+interface CurtinFileState {
+  name: string;
+  data: ArrayBuffer;
+}
+
+interface LocationState {
+  curtinFile?: CurtinFileState;
+}
 
 const LMS_LABELS: Record<string, string> = {
   canvas: 'Canvas',
@@ -121,6 +130,7 @@ function formatBytes(bytes: number): string {
 
 export default function PackageImport() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [phase, setPhase] = useState<Phase>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<UnifiedImportPreview | null>(null);
@@ -179,6 +189,20 @@ export default function PackageImport() {
       }
     }, 500);
   }, [unitCode]);
+
+  // Pre-seed file from CurtinImport navigation state
+  useEffect(() => {
+    const state = location.state as LocationState | null;
+    if (state?.curtinFile) {
+      const { name, data } = state.curtinFile;
+      const file = new File([new Uint8Array(data)], name, {
+        type: 'application/zip',
+      });
+      handleFile(file);
+    }
+    // Only run on mount — handleFile is stable (useCallback with no deps that change on mount)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFile = useCallback(async (f: File) => {
     setFile(f);

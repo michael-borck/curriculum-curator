@@ -25,6 +25,7 @@ import DesignList from './features/designs/DesignList';
 import DesignDetail from './features/designs/DesignDetail';
 import PackageImport from './features/import/PackageImport';
 import OutlineImport from './features/import/OutlineImport';
+import CurtinImport from './features/import/CurtinImport';
 import ResearchPage from './features/research/ResearchPage';
 import AIAssistant from './features/ai/AIAssistant';
 import Settings from './features/settings/Settings';
@@ -175,6 +176,7 @@ function App() {
               {/* Import */}
               <Route path='/import/package' element={<PackageImport />} />
               <Route path='/import/outline' element={<OutlineImport />} />
+              <Route path='/import/curtin' element={<CurtinImport />} />
 
               {/* Research */}
               <Route path='/research' element={<ResearchPage />} />
