@@ -4,14 +4,14 @@ import pytest
 from fastapi.testclient import TestClient
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from sqlalchemy.orm import Session
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.api.deps import get_current_active_user, get_db
 from app.main import app
 from app.models.curtin_job import CurtinExportJob
 from app.models.user import User
 from app.schemas.curtin import CurtinSettings
-from app.services.curtin_service import CurtinServiceError, _forgerock_login
+from app.services.curtin_service import CurtinServiceError, NotReadyError, _forgerock_login
 
 client = TestClient(app)
 
@@ -147,5 +147,52 @@ def test_course_build_rejects_missing_credentials(test_db: Session, test_user: U
     try:
         r = client.post("/api/curtin/course/build", json={"courseName": "COMP1000"})
         assert r.status_code == 400
+    finally:
+        _clear_deps()
+
+
+# ── NotReadyError subclass test ───────────────────────────────────────────────
+
+
+def test_not_ready_error_is_curtin_service_error_subclass() -> None:
+    """NotReadyError must be a CurtinServiceError so generic handlers still catch it."""
+    err = NotReadyError("Archive not ready yet")
+    assert isinstance(err, CurtinServiceError)
+    assert isinstance(err, RuntimeError)
+
+
+def test_course_download_returns_409_when_not_ready(test_db: Session, test_user: User) -> None:
+    """POST /api/curtin/course/download/{job_id} returns 409 when archive not ready."""
+    from app.models.curtin_job import CurtinExportJob
+
+    # Seed credentials so the credentials check passes
+    test_user.teaching_preferences = {
+        "curtin": {
+            "curtin_username": "jsmith",
+            "curtin_password": "secret",
+            "litec_url": "https://litec.curtin.edu.au/outline.cfm",
+            "blackboard_url": "https://lms.curtin.edu.au/",
+            "campus": "Bentley Perth Campus",
+        }
+    }
+    # Seed a job row
+    job = CurtinExportJob(
+        user_id=str(test_user.id),
+        course_name="COMP1000",
+        status="triggered",
+    )
+    test_db.add(job)
+    test_db.commit()
+    test_db.refresh(job)
+
+    _override_deps(test_db, test_user)
+    try:
+        with patch(
+            "app.api.routes.curtin_import.curtin_service.download_course_archive",
+            side_effect=NotReadyError("Archive not ready yet"),
+        ):
+            r = client.post(f"/api/curtin/course/download/{job.id}")
+            assert r.status_code == 409
+            assert "not ready" in r.json()["detail"].lower()
     finally:
         _clear_deps()

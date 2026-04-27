@@ -18,6 +18,10 @@ class CurtinServiceError(RuntimeError):
     """Raised for expected failures (bad credentials, not found, not ready)."""
 
 
+class NotReadyError(CurtinServiceError):
+    """Raised when a Blackboard export is still building."""
+
+
 def _forgerock_login(
     page: Any,
     url: str,
@@ -192,7 +196,7 @@ def _download_archive_sync(
                 label = targets[0]["name"]
                 status = results.get(label, "unknown")
                 if status == "not ready":
-                    raise CurtinServiceError("not_ready")
+                    raise NotReadyError("Archive not ready yet")
                 if status not in ("ok", "skipped"):
                     raise CurtinServiceError(
                         f"Archive download failed for '{label}': {status}"
@@ -202,7 +206,7 @@ def _download_archive_sync(
                     if f.suffix in (".zip", ".imscc")
                 ]
                 if not files:
-                    raise CurtinServiceError("not_ready")
+                    raise NotReadyError("Archive not ready yet")
                 f = files[0]
                 return f.name, f.read_bytes()
         finally:

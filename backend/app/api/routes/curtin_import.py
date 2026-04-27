@@ -16,7 +16,7 @@ from app.schemas.curtin import (
     CurtinSettings,
 )
 from app.services import curtin_service
-from app.services.curtin_service import CurtinServiceError
+from app.services.curtin_service import CurtinServiceError, NotReadyError
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,10 @@ def _require_credentials(cfg: CurtinSettings) -> None:
 def get_settings(
     current_user: User = Depends(deps.get_current_active_user),
 ) -> CurtinSettings:
-    return _load_settings(current_user)
+    cfg = _load_settings(current_user)
+    # Never return the stored password — the frontend treats empty string as "no change"
+    cfg.curtin_password = ""
+    return cfg
 
 
 @router.put("/settings", response_model=CurtinSettings)
@@ -56,9 +59,16 @@ def update_settings(
     db: Session = Depends(deps.get_db),
 ) -> CurtinSettings:
     prefs = dict(current_user.teaching_preferences or {})
-    prefs["curtin"] = data.model_dump()
+    existing = prefs.get("curtin", {}) if isinstance(prefs.get("curtin"), dict) else {}
+    payload = data.model_dump()
+    # Preserve stored password when client sends empty string (display-only clear)
+    if not payload.get("curtin_password"):
+        payload["curtin_password"] = existing.get("curtin_password", "")
+    prefs["curtin"] = payload
     current_user.teaching_preferences = prefs
     db.commit()
+    # Return with password masked
+    data.curtin_password = ""
     return data
 
 
@@ -189,12 +199,12 @@ async def download_course_archive(
             cfg.curtin_password,
             cfg.blackboard_url,
         )
+    except NotReadyError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Archive not ready yet — Blackboard is still building it. Wait 15-30 minutes and try again.",
+        ) from exc
     except CurtinServiceError as exc:
-        if str(exc) == "not_ready":
-            raise HTTPException(
-                status_code=409,
-                detail="Archive not ready yet — Blackboard is still building it. Wait 15-30 minutes and try again.",
-            ) from exc
         job.status = "failed"
         job.error_message = str(exc)
         db.commit()
