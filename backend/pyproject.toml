@@ -127,6 +127,7 @@ curriculum-curator = "app.main:main"
 dev = [
     "basedpyright>=1.31.1",
     "ruff>=0.12.8",
+    "pymupdf>=1.23.8",  # Required for PDF parser tests (optional for desktop packaging only)
     "types-passlib>=1.7.7.20250602",
     "types-python-jose>=3.5.0.20250531",
     "types-pyyaml>=6.0.12.20250915",
