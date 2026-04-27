@@ -14,6 +14,7 @@ import {
   Download,
   HardDriveDownload,
   GraduationCap,
+  Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -27,6 +28,7 @@ import type { SectorId } from '../../constants/sectorProfiles';
 import QualityRatingSettings from './QualityRatingSettings';
 import ResearchSettings from './ResearchSettings';
 import ExportTemplates from './ExportTemplates';
+import CurtinSettings from './CurtinSettings';
 import CLOSetManager from './CLOSetManager';
 
 const Settings = () => {
@@ -163,6 +165,7 @@ const Settings = () => {
     { id: 'research', label: 'Research', icon: Search },
     { id: 'export', label: 'Export', icon: Download },
     { id: 'clo-sets', label: 'CLO Sets', icon: GraduationCap },
+    { id: 'curtin', label: 'Curtin', icon: Building2 },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
   ];
 
@@ -446,6 +449,8 @@ const Settings = () => {
               <CLOSetManager />
             </div>
           )}
+
+          {activeTab === 'curtin' && <CurtinSettings />}
 
           {activeTab === 'plugins' && (
             <PluginsTab
