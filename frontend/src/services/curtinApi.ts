@@ -1,3 +1,5 @@
+import { AxiosError } from 'axios';
+
 import api from './api';
 
 // =============================================================================
@@ -58,7 +60,10 @@ export const downloadOutline = async (
       /filename[^;=\n]*=(?:(['"]).*?\1|[^;\n]*)/
     );
     if (match?.[0]) {
-      filename = match[0].split('=')[1].replace(/['"]/g, '').trim();
+      const parts = match[0].split('=');
+      if (parts.length > 1 && parts[1]) {
+        filename = parts[1].replace(/['"]/g, '').trim();
+      }
     }
   }
 
@@ -86,7 +91,7 @@ export const listCourseJobs = async (): Promise<CurtinJobResponse[]> => {
   return res.data;
 };
 
-interface NotReadyError {
+export interface NotReadyError {
   notReady: true;
 }
 
@@ -118,14 +123,7 @@ export const downloadCourseArchive = async (
       data: res.data,
     };
   } catch (error) {
-    // Check if this is a 409 Not Ready error
-    if (
-      error instanceof Error &&
-      'response' in error &&
-      error.response instanceof Object &&
-      'status' in error.response &&
-      error.response.status === 409
-    ) {
+    if (error instanceof AxiosError && error.response?.status === 409) {
       throw { notReady: true } as NotReadyError;
     }
     throw error;
