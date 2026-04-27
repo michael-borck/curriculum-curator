@@ -48,7 +48,7 @@ async def main():
     print(f"  Parser:        {result.parser_used}")
 
     if result.warnings:
-        print(f"\n  ⚠ Warnings:")
+        print("\n  ⚠ Warnings:")
         for w in result.warnings:
             print(f"    - {w}")
 

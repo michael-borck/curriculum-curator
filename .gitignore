@@ -47,6 +47,9 @@ tmp/
 
 # Data directories (persistent volumes)
 data/
+# Exception: commit UDL reference data files
+!data/udl-guidelines.json
+!data/udl-profiles.json
 
 # Backup files
 *.bak

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Common Cartridge Import</title>
+  <style>
+
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid #1a1a1a;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Common Cartridge Import</h1>
+</header>
+<h1 id="common-cartridge-import-how-it-works">Common Cartridge Import —
+How It Works</h1>
+<p>This document explains how Curriculum Curator imports IMS Common
+Cartridge (IMSCC) packages. It covers the format, the backend processing
+pipeline, the frontend UX flow, and the design decisions behind the
+implementation. Written for developers building similar
+functionality.</p>
+<h2 id="background">Background</h2>
+<p><a href="https://www.imsglobal.org/activity/common-cartridge">IMS
+Common Cartridge</a> is the de facto interoperability standard for
+packaging educational content across LMS platforms (Canvas, Moodle,
+Blackboard, Brightspace). An <code>.imscc</code> file is a ZIP archive
+containing:</p>
+<ul>
+<li><code>imsmanifest.xml</code> — an XML manifest describing the
+content structure and resources</li>
+<li>Resource files (HTML pages, images, QTI quiz XML, etc.) in
+subdirectories</li>
+</ul>
+<p>The app supports CC versions 1.1, 1.2, and 1.3, as well as SCORM 1.2
+packages. The import also accepts plain <code>.zip</code> files
+containing documents (PDF, DOCX, PPTX, HTML, TXT, MD).</p>
+<h3 id="manifest-structure">Manifest structure</h3>
+<pre><code>manifest
+├── metadata (schema version, Dublin Core via LOM)
+├── organizations
+│   └── organization (structure=&quot;rooted-hierarchy&quot;)
+│       └── item (root)
+│           ├── item (Week 1 / Module 1)
+│           │   ├── item → resource (lecture.html)
+│           │   └── item → resource (activity.html)
+│           ├── item (Week 2 / Module 2)
+│           │   └── ...
+│           └── ...
+└── resources
+    ├── resource type=&quot;webcontent&quot; href=&quot;week01/lecture.html&quot;
+    ├── resource type=&quot;imsqti_xmlv1p2&quot; href=&quot;quizzes/quiz1.xml&quot;
+    └── ...</code></pre>
+<h3 id="ims-namespace-handling">IMS namespace handling</h3>
+<p>Real-world IMSCC packages use different XML namespace URIs depending
+on the CC version and exporting LMS. The parser tries these namespaces
+in order until it finds the one used by the package:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Namespace URI</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http://www.imsglobal.org/xsd/imsccv1p1/imscp_v1p1</code></td>
+<td>CC v1.1</td>
+</tr>
+<tr>
+<td><code>http://www.imsglobal.org/xsd/imsccv1p2/imscp_v1p2</code></td>
+<td>CC v1.2</td>
+</tr>
+<tr>
+<td><code>http://www.imsglobal.org/xsd/imsccv1p3/imscp_v1p3</code></td>
+<td>CC v1.3</td>
+</tr>
+<tr>
+<td><code>http://www.imsglobal.org/xsd/imscp_v1p1</code></td>
+<td>Generic IMS Content Packaging</td>
+</tr>
+<tr>
+<td><code>http://www.adlnet.org/xsd/adlcp_rootv1p2</code></td>
+<td>SCORM 1.2</td>
+</tr>
+</tbody>
+</table>
+<p>If none match, it falls back to no-namespace parsing. This is
+important because strict schema validation would reject valid packages
+from many LMS platforms.</p>
+<hr />
+<h2 id="two-import-modes">Two Import Modes</h2>
+<h3 id="round-trip-import">1. Round-trip import</h3>
+<p>If the ZIP contains a <code>curriculum_curator_meta.json</code> file,
+the package was previously exported from this app. The metadata file
+preserves everything the IMS spec can’t represent:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;version&quot;</span><span class="fu">:</span> <span class="st">&quot;2.0&quot;</span><span class="fu">,</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;exported_from&quot;</span><span class="fu">:</span> <span class="st">&quot;curriculum-curator&quot;</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;exported_at&quot;</span><span class="fu">:</span> <span class="st">&quot;2026-02-24T10:00:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;unit&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;pedagogy_type&quot;</span><span class="fu">:</span> <span class="st">&quot;inquiry-based&quot;</span><span class="fu">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;difficulty_level&quot;</span><span class="fu">:</span> <span class="st">&quot;intermediate&quot;</span><span class="fu">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;teaching_philosophy&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;learning_outcomes&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="st">&quot;ULO1&quot;</span><span class="fu">,</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;description&quot;</span><span class="fu">:</span> <span class="st">&quot;...&quot;</span><span class="fu">,</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;bloom_level&quot;</span><span class="fu">:</span> <span class="st">&quot;analyze&quot;</span><span class="fu">,</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;graduate_capabilities&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;GC1&quot;</span><span class="ot">,</span> <span class="st">&quot;GC3&quot;</span><span class="ot">]</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;materials&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="st">&quot;uuid&quot;</span><span class="fu">,</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;week_number&quot;</span><span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Welcome Reading&quot;</span><span class="fu">,</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;reading&quot;</span><span class="fu">,</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;category&quot;</span><span class="fu">:</span> <span class="st">&quot;pre_class&quot;</span><span class="fu">,</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;order_index&quot;</span><span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;ulo_ids&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;uuid-ulo1&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;assessment_ids&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;uuid-assess1&quot;</span><span class="ot">]</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;assessments&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;weekly_topics&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;aol_mappings&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;sdg_mappings&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Round-trip mode restores the full data model with no heuristics:
+pedagogy, learning outcomes with Bloom’s levels, material categories
+(<code>pre_class</code>/<code>in_class</code>/<code>post_class</code>),
+material-to-ULO links, assessment details, accreditation mappings, and
+weekly topics.</p>
+<h3 id="generic-import-from-an-lms">2. Generic import (from an LMS)</h3>
+<p>For packages exported from Canvas, Moodle, Blackboard, or
+Brightspace, the app infers structure using heuristics since these
+packages only contain the standard IMS manifest and HTML content.</p>
+<hr />
+<h2 id="backend-processing-pipeline">Backend Processing Pipeline</h2>
+<h3 id="step-1-format-detection">Step 1: Format detection</h3>
+<pre><code>Is &quot;imsmanifest.xml&quot; present?
+├── Yes → Does it contain &quot;adlnet.org&quot; or &quot;ADL SCORM&quot;?
+│   ├── Yes → SCORM 1.2
+│   └── No  → IMSCC
+└── No  → Plain ZIP (process individual files)</code></pre>
+<h3 id="step-2-round-trip-detection">Step 2: Round-trip detection</h3>
+<pre><code>Is &quot;curriculum_curator_meta.json&quot; present in the ZIP?
+├── Yes → Round-trip mode (restore full metadata)
+└── No  → Generic mode (use heuristics)</code></pre>
+<h3 id="step-3-lms-source-detection">Step 3: LMS source detection</h3>
+<p>For generic imports, the source LMS is identified by scanning the
+manifest text and ZIP contents:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Detected LMS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“canvas” or “instructure” in manifest</td>
+<td>Canvas</td>
+</tr>
+<tr>
+<td><code>course_settings/module_meta.xml</code> exists</td>
+<td>Canvas</td>
+</tr>
+<tr>
+<td>“moodle” in manifest</td>
+<td>Moodle</td>
+</tr>
+<tr>
+<td>“blackboard” in manifest</td>
+<td>Blackboard</td>
+</tr>
+<tr>
+<td>“brightspace” or “d2l” in manifest</td>
+<td>Brightspace</td>
+</tr>
+</tbody>
+</table>
+<p>Knowing the source LMS enables platform-specific handling — for
+example, Blackboard exports use “content areas” (like “Course
+Information”, “Course Materials”, “Assignments”) instead of weekly
+modules. The importer detects these and warns the user that the
+structure differs from weekly organisation.</p>
+<h3 id="step-4-manifest-parsing">Step 4: Manifest parsing</h3>
+<p>The <code>imsmanifest.xml</code> is parsed to extract:</p>
+<ol type="1">
+<li><strong>Organization hierarchy</strong> — the tree of
+<code>&lt;item&gt;</code> elements representing the content structure
+(modules/weeks containing resources)</li>
+<li><strong>Resource map</strong> — <code>&lt;resource&gt;</code>
+elements mapping identifiers to file paths and types
+(<code>webcontent</code>, <code>imsqti_xmlv1p2</code>, etc.)</li>
+<li><strong>Metadata</strong> — unit title, description from LOM
+metadata</li>
+</ol>
+<p>Top-level items in the organization are treated as weeks/modules.
+Their child items are the individual content resources.</p>
+<h3 id="step-5-content-classification">Step 5: Content
+classification</h3>
+<p>Each manifest item is classified as either an
+<strong>assessment</strong> or a <strong>material</strong>:</p>
+<p><strong>Assessment detection</strong> — title keywords
+(case-insensitive): - <code>quiz</code>, <code>exam</code>,
+<code>test</code>, <code>assignment</code>, <code>midterm</code>,
+<code>final</code>, <code>assessment</code> - Additionally, resource
+type <code>imsqti_xmlv1p2</code> is always an assessment</p>
+<p><strong>Material type inference</strong> — from title/filename
+keywords: - <code>lecture</code>, <code>reading</code>,
+<code>video</code>, <code>discussion</code>, <code>activity</code>,
+<code>handout</code>, <code>case study</code>, <code>notes</code></p>
+<p><strong>Material category inference</strong> — from sub-headers or
+folder names: - <code>pre-class</code> / <code>before class</code> →
+<code>pre_class</code> - <code>in-class</code> /
+<code>during class</code> → <code>in_class</code> -
+<code>post-class</code> / <code>after class</code> →
+<code>post_class</code> - <code>resources</code>,
+<code>general</code></p>
+<p><strong>Week number extraction</strong> — from directory paths
+matching <code>week(\d{2})/</code> (e.g.,
+<code>week01/lecture.html</code> → week 1).</p>
+<h3 id="step-6-content-extraction">Step 6: Content extraction</h3>
+<ul>
+<li><strong>HTML resources</strong>: Cleaned via BeautifulSoup — script
+tags removed, <code>&lt;h1&gt;</code> extracted as title, content
+sanitised</li>
+<li><strong>QTI quizzes</strong>: Parsed by a dedicated QTI service into
+structured quiz question records (question text, answer choices, correct
+answer, question type)</li>
+<li><strong>Documents</strong> (PDF, DOCX, PPTX, HTML, TXT, MD):
+Processed by file import services that extract text content</li>
+<li><strong><code>$IMS-CC-FILEBASE$</code> tokens</strong>: Canvas uses
+<code>%24IMS-CC-FILEBASE%24</code> for internal file references — these
+are resolved to actual file paths in the ZIP</li>
+</ul>
+<h3 id="step-7-database-record-creation">Step 7: Database record
+creation</h3>
+<p>All records are created in a single transaction:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Record type</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Unit</code></td>
+<td>Manifest metadata + defaults (or round-trip metadata)</td>
+</tr>
+<tr>
+<td><code>WeeklyTopic</code></td>
+<td>Organization hierarchy (one per top-level item)</td>
+</tr>
+<tr>
+<td><code>WeeklyMaterial</code></td>
+<td>Resource files classified as materials</td>
+</tr>
+<tr>
+<td><code>Assessment</code></td>
+<td>Resource files classified as assessments</td>
+</tr>
+<tr>
+<td><code>Content</code></td>
+<td>Extracted HTML/text content for each material</td>
+</tr>
+<tr>
+<td><code>UnitLearningOutcome</code></td>
+<td>Round-trip metadata only (not in standard CC)</td>
+</tr>
+<tr>
+<td><code>QuizQuestion</code></td>
+<td>QTI quiz XML parsing</td>
+</tr>
+<tr>
+<td>Accreditation mappings</td>
+<td>Round-trip metadata only</td>
+</tr>
+</tbody>
+</table>
+<p>For generic imports, sensible defaults are applied: inquiry-based
+pedagogy, intermediate difficulty, 6 credit points.</p>
+<h3 id="step-8-import-provenance">Step 8: Import provenance</h3>
+<p>When importing from an LMS, the original CC identifiers and manifest
+structure are stored as JSON on the <code>Unit</code> model
+(<code>import_provenance</code> field). This enables
+<strong>provenance-aware re-export</strong>: if the user edits content
+and exports back to the same LMS, the original CC identifiers are reused
+so the LMS treats it as an update to the existing course shell rather
+than a brand new course.</p>
+<hr />
+<h2 id="skipped-content-reporting">Skipped Content Reporting</h2>
+<p>Not everything in a CC package can be imported. The app follows a
+<strong>no silent drops</strong> policy — every item is accounted for in
+the import report, categorised as:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+<th>User action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Action needed</strong></td>
+<td>Videos (need a streaming URL)</td>
+<td>User provides the URL</td>
+</tr>
+<tr>
+<td><strong>Not supported</strong></td>
+<td>LTI tool links, rubrics, access control</td>
+<td>Feature doesn’t exist in the app</td>
+</tr>
+<tr>
+<td><strong>Not applicable</strong></td>
+<td>Announcements, discussion boards, student groups</td>
+<td>LMS-specific, no equivalent</td>
+</tr>
+</tbody>
+</table>
+<p>Images, external links, and discussion prompts are imported where
+possible. Items that genuinely can’t be imported are surfaced at import
+time, not discovered later at export time.</p>
+<hr />
+<h2 id="api-endpoints">API Endpoints</h2>
+<p>There are two sets of endpoints. The <strong>unified</strong>
+endpoints are the current preferred path.</p>
+<h3 id="unified-endpoints-recommended">Unified endpoints
+(recommended)</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/import/unified/analyze</code></td>
+<td>Upload a ZIP/IMSCC, get a full file preview</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/import/unified/apply</code></td>
+<td>Apply the import (returns a <code>task_id</code> for progress
+polling)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/import/unified/status/{task_id}</code></td>
+<td>Poll background task progress</td>
+</tr>
+</tbody>
+</table>
+<h3 id="legacy-endpoints">Legacy endpoints</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/import/package/analyze</code></td>
+<td>Preview a package without saving</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/import/package/create</code></td>
+<td>Import and create all records</td>
+</tr>
+</tbody>
+</table>
+<h3 id="analyze-response">Analyze response</h3>
+<p>The analyze endpoint returns a preview with:</p>
+<ul>
+<li><code>packageType</code>: <code>imscc</code>, <code>scorm</code>,
+<code>plain_zip</code>, or <code>round_trip</code></li>
+<li><code>sourceLms</code>: <code>canvas</code>, <code>moodle</code>,
+<code>blackboard</code>, <code>brightspace</code>, or
+<code>null</code></li>
+<li><code>isRoundTrip</code>: whether
+<code>curriculum_curator_meta.json</code> was found</li>
+<li><code>unitCode</code>, <code>unitTitle</code>: extracted or inferred
+values (editable by user)</li>
+<li><code>durationWeeks</code>: number of weeks detected</li>
+<li><code>files[]</code>: list of processable files with
+<code>path</code>, <code>filename</code>, <code>extension</code>,
+<code>detectedType</code> (material/assessment/outline),
+<code>weekNumber</code>, <code>title</code>, <code>sizeBytes</code></li>
+<li><code>skippedFiles[]</code>: list of items that won’t be imported,
+each with <code>reason</code>, <code>contentType</code>,
+<code>category</code></li>
+<li><code>detectedContentAreas</code>: Blackboard-specific content area
+names (if applicable)</li>
+</ul>
+<h3 id="apply-request">Apply request</h3>
+<p>Accepts the file again plus optional overrides:</p>
+<ul>
+<li><code>unit_code</code>, <code>unit_title</code>: user-edited
+values</li>
+<li><code>duration_weeks</code>: number of weeks for the unit</li>
+</ul>
+<p>Returns a <code>task_id</code>. The import runs as a background task,
+trackable via SSE (Server-Sent Events) or polling.</p>
+<h3 id="task-progress">Task progress</h3>
+<p>The status endpoint returns:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;task_id&quot;</span><span class="fu">:</span> <span class="st">&quot;abc-123&quot;</span><span class="fu">,</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;running&quot;</span><span class="fu">,</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;total_files&quot;</span><span class="fu">:</span> <span class="dv">15</span><span class="fu">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;processed_files&quot;</span><span class="fu">:</span> <span class="dv">8</span><span class="fu">,</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;current_file&quot;</span><span class="fu">:</span> <span class="st">&quot;week03/lecture_databases.html&quot;</span><span class="fu">,</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;unit_id&quot;</span><span class="fu">:</span> <span class="kw">null</span><span class="fu">,</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;unit_code&quot;</span><span class="fu">:</span> <span class="st">&quot;ICT100&quot;</span><span class="fu">,</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;unit_title&quot;</span><span class="fu">:</span> <span class="st">&quot;Introduction to IT&quot;</span><span class="fu">,</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;errors&quot;</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">,</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;skipped_items&quot;</span><span class="fu">:</span> <span class="ot">[]</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<hr />
+<h2 id="frontend-ux-flow">Frontend UX Flow</h2>
+<p>The import UI (<code>PackageImport.tsx</code>) has four phases:</p>
+<h3 id="upload">1. Upload</h3>
+<p>Drag-and-drop zone or file picker. Accepts <code>.imscc</code> and
+<code>.zip</code> files (up to 500 MB). On file selection, the analyze
+endpoint is called immediately.</p>
+<h3 id="preview">2. Preview</h3>
+<p>After analysis completes, the user sees:</p>
+<ul>
+<li><strong>Package badges</strong>: package type (IMSCC/SCORM/ZIP),
+source LMS (Canvas/Moodle/etc.), round-trip indicator</li>
+<li><strong>Editable fields</strong>: unit code and title (pre-filled
+from the package, with duplicate code detection)</li>
+<li><strong>Summary stats</strong>: material count, assessment count,
+processable count, skipped count</li>
+<li><strong>File table</strong>: every processable file with editable
+columns for type (material/assessment/outline), week number, and
+title</li>
+<li><strong>Skipped files</strong>: expandable section grouped by
+category (action needed / not supported / not applicable)</li>
+<li><strong>LMS-specific warnings</strong>: e.g., Blackboard
+content-area structure explanation</li>
+</ul>
+<p>The user can adjust classifications and week assignments before
+proceeding.</p>
+<h3 id="processing">3. Processing</h3>
+<p>A spinner with a progress bar, powered by background task tracking
+via SSE. Shows the current file being processed and the overall progress
+fraction.</p>
+<h3 id="done">4. Done</h3>
+<p>Success summary showing the unit code/title, file count, any errors,
+and skipped items. A button navigates to the newly created unit.</p>
+<hr />
+<h2 id="key-files">Key Files</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>backend/app/services/package_import_service.py</code></td>
+<td>Core IMSCC/SCORM parsing, classification, and DB record
+creation</td>
+</tr>
+<tr>
+<td><code>backend/app/services/unified_import_service.py</code></td>
+<td>Unified import orchestrator (handles IMSCC, SCORM, and plain
+ZIP)</td>
+</tr>
+<tr>
+<td><code>backend/app/services/qti_service.py</code></td>
+<td>QTI quiz XML parser</td>
+</tr>
+<tr>
+<td><code>backend/app/services/lms_terminology.py</code></td>
+<td>LMS-specific keyword sets for classification</td>
+</tr>
+<tr>
+<td><code>backend/app/services/import_task_store.py</code></td>
+<td>In-memory background task tracking</td>
+</tr>
+<tr>
+<td><code>backend/app/api/routes/package_import.py</code></td>
+<td>API endpoints</td>
+</tr>
+<tr>
+<td><code>backend/app/schemas/package_import.py</code></td>
+<td>Pydantic request/response schemas</td>
+</tr>
+<tr>
+<td><code>frontend/src/features/import/PackageImport.tsx</code></td>
+<td>Import UI component</td>
+</tr>
+<tr>
+<td><code>frontend/src/hooks/useTaskProgress.ts</code></td>
+<td>SSE-based task progress hook</td>
+</tr>
+</tbody>
+</table>
+<h2 id="design-decisions-adrs">Design Decisions (ADRs)</h2>
+<p>These Architecture Decision Records document the reasoning behind the
+implementation:</p>
+<ul>
+<li><strong>ADR-030</strong>: IMS Common Cartridge export — chose CC
+v1.1 for broadest LMS compatibility,
+<code>curriculum_curator_meta.json</code> for round-trip metadata, zero
+external dependencies</li>
+<li><strong>ADR-042</strong>: Package import with round-trip detection —
+dual-mode import (round-trip vs generic), heuristic classification,
+namespace iteration strategy</li>
+<li><strong>ADR-043</strong>: In-memory import task store — background
+task tracking for long-running imports without requiring a task queue
+like Celery</li>
+<li><strong>ADR-054</strong>: Import provenance for round-trip fidelity
+— storing CC identifiers on the Unit model so re-exports preserve LMS
+course structure, meta.json v2 with per-material metadata,
+Canvas-specific enhancements</li>
+<li><strong>ADR-061</strong>: Transparent import reporting — no silent
+drops policy, categorised skipped items, surfacing issues at import
+time</li>
+</ul>
+<h2 id="lessons-learned">Lessons Learned</h2>
+<ol type="1">
+<li><p><strong>Don’t do strict schema validation.</strong> Real-world
+LMS exports frequently deviate from the IMS spec. Strict XSD validation
+would reject valid packages from Canvas and Moodle. Lenient parsing with
+namespace fallbacks is essential.</p></li>
+<li><p><strong>Heuristic classification is imperfect.</strong> A
+material titled “Test Your Knowledge” gets classified as an assessment.
+Letting the user review and adjust classifications in the preview step
+mitigates this.</p></li>
+<li><p><strong>Round-trip metadata belongs in a separate file, not in
+manifest extensions.</strong> Embedding custom metadata as IMS manifest
+extensions risks breaking LMS import of the package. A separate JSON
+file is invisible to LMSs that don’t understand it.</p></li>
+<li><p><strong>Store import provenance.</strong> If users edit content
+and re-export to the same LMS, reusing the original CC identifiers means
+the LMS treats it as an update rather than a new course. This requires
+storing the original manifest structure.</p></li>
+<li><p><strong>Report everything at import time.</strong> Users
+discovering missing content at export time (weeks later) erodes trust.
+Categorising skipped items as “action needed” / “not supported” / “not
+applicable” sets clear expectations upfront.</p></li>
+<li><p><strong>LMS-specific handling is worth it.</strong> Canvas,
+Blackboard, and Moodle all structure their exports differently.
+Detecting the source LMS and applying platform-specific parsing logic
+(e.g., Blackboard content areas, Canvas <code>module_meta.xml</code>)
+significantly improves import quality.</p></li>
+</ol>
+</body>
+</html>

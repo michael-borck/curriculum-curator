@@ -169,6 +169,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_OWNER: ${{ github.repository_owner }}
+          CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MACOS_CERTIFICATE || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'mac' && secrets.MACOS_CERTIFICATE_PWD || '' }}
+          APPLE_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.platform == 'mac' && secrets.APPLE_ID_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ matrix.platform == 'mac' && secrets.APPLE_TEAM_ID || '' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
