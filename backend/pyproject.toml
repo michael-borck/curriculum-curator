@@ -27,12 +27,12 @@ dependencies = [
     # Core FastAPI dependencies
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
-    "python-multipart>=0.0.6",
+    "python-multipart>=0.0.26",
     # Essential uvicorn dependencies
     "click>=8.1.7",
     "h11>=0.14.0",
     "httptools>=0.6.1",
-    "python-dotenv>=1.0.0",
+    "python-dotenv>=1.2.2",
     "pyyaml>=6.0.2",
     "watchfiles>=0.21.0",
     "websockets>=12.0",
@@ -41,7 +41,7 @@ dependencies = [
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
     "bcrypt<4.0",  # Pinned to 3.x for passlib compatibility - avoids __about__ error
-    "cryptography>=42.0.0",
+    "cryptography>=46.0.7",
     "slowapi>=0.1.9", # Rate limiting
     "redis>=5.0.1", # Rate limiting storage (optional)
     # Database
@@ -49,14 +49,14 @@ dependencies = [
     "alembic>=1.13.1",
     # Document Processing
     "PyPDF2>=3.0.1",  # PDF processing
-    "pypdf>=3.17.0",  # Modern PDF processing (replacement for PyPDF2)
+    "pypdf>=6.10.2",  # Modern PDF processing (replacement for PyPDF2)
     "pdfplumber>=0.10.3",  # Advanced PDF text extraction
     # pymupdf moved to [pdf-advanced] optional extra for PyInstaller compatibility
     "python-docx>=1.1.0",  # DOCX processing
     "python-pptx>=0.6.23",  # PPTX processing
     "markdown>=3.5.1",  # Markdown processing
     "beautifulsoup4>=4.12.2",  # HTML parsing for converted content
-    "lxml>=4.9.3",  # XML/HTML parser
+    "lxml>=6.1.0",  # XML/HTML parser
     # Curtin integration
     "outline-dl>=0.2.1",
     "course-dl>=0.3.1",
@@ -67,21 +67,21 @@ dependencies = [
     # File handling
     "aiofiles>=23.2.1",
     # LLM Integration - LiteLLM provides unified interface for all providers
-    # SECURITY: pinned to last known safe version (1.82.7/1.82.8 were backdoored
-    # in the TeamPCP supply chain attack of 2026-03-24). Do not upgrade past
-    # 1.82.6 until LiteLLM completes their supply-chain review.
-    "litellm>=1.50.0,<=1.82.6,!=1.82.7,!=1.82.8",
+    # SECURITY: 1.82.7 and 1.82.8 were backdoored in the TeamPCP supply chain
+    # attack of 2026-03-24. Those two versions are permanently excluded. The
+    # <=1.82.6 ceiling has been removed now that 1.83.x addresses new CVEs
+    # (CVE-2026-35029, CVE-2026-35030, GHSA-69x8-hrgq-fjj8, GHSA-xqmj-j6mv-4862).
+    "litellm>=1.83.7,!=1.82.7,!=1.82.8",
     "tiktoken>=0.5.2",  # Token counting
     # File Processing
     "python-docx>=1.1.0",
     "python-pptx>=0.6.23",
     "markdown>=3.5.1",
-    "PyPDF2>=3.0.1",
     # Email functionality
     "fastapi-mail>=1.4.1",
     # HTTP client for external APIs
     "httpx>=0.25.2",
-    "requests>=2.32.0",
+    "requests>=2.33.0",
     # Typing extensions
     "typing-extensions>=4.9.0",
     "fastapi-csrf-protect>=1.0.3",
@@ -127,12 +127,13 @@ curriculum-curator = "app.main:main"
 dev = [
     "basedpyright>=1.31.1",
     "ruff>=0.12.8",
-    "pymupdf>=1.23.8",  # Required for PDF parser tests (optional for desktop packaging only)
+    "pymupdf>=1.26.7",  # Required for PDF parser tests (optional for desktop packaging only)
     "types-passlib>=1.7.7.20250602",
     "types-python-jose>=3.5.0.20250531",
     "types-pyyaml>=6.0.12.20250915",
     "types-redis>=4.6.0.20241004",
     "types-requests>=2.32.4.20250913",
+    "pip-audit>=2.10.0",
 ]
 
 # Ruff configuration
