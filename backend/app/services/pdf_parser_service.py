@@ -105,6 +105,23 @@ class PDFParserService:
         """
         self.errors = []
 
+        # Early encryption check — all three backends silently return empty
+        # text for encrypted PDFs, so catch it here before wasting effort.
+        try:
+            _probe = PdfReader(io.BytesIO(pdf_bytes))
+            if _probe.is_encrypted:
+                return ExtractedDocument(
+                    metadata=PDFMetadata(is_encrypted=True, page_count=0),
+                    pages=[],
+                    full_text="",
+                    extraction_method="none",
+                    extraction_errors=[
+                        "PDF is password-protected. Decrypt the file and re-upload."
+                    ],
+                )
+        except Exception:
+            pass  # Let the extraction method handle genuinely corrupt files
+
         # Determine best extraction method if auto
         if method == ExtractionMethod.AUTO:
             method = self._determine_best_method(pdf_bytes)

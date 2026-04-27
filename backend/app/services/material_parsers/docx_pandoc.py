@@ -127,7 +127,25 @@ class DocxPandocParser(MaterialParser):
                 msg = f"Pandoc DOCX conversion failed: {result.stderr.strip()}"
                 raise RuntimeError(msg)
 
+            if not output_path.exists():
+                msg = (
+                    "Pandoc did not produce output — the document may be "
+                    "corrupt or in an unsupported format."
+                )
+                raise RuntimeError(msg)
+
             markdown_text = output_path.read_text(encoding="utf-8")
+
+            if not markdown_text.strip():
+                msg = (
+                    "Pandoc produced empty output — the document may be "
+                    "encrypted, password-protected, or empty."
+                )
+                raise RuntimeError(msg)
+
+            # Surface any Pandoc warnings (non-fatal stderr on exit 0)
+            if result.stderr.strip():
+                warnings.append(f"Pandoc: {result.stderr.strip()}")
 
             # Collect any extracted media files into ExtractedImage entries.
             # Pandoc emits image references in the markdown like

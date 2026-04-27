@@ -70,6 +70,12 @@ class PdfParagraphsParser(MaterialParser):
 
         document = await pdf_parser_service.extract_from_bytes(file_content)
 
+        # Fail loudly on encrypted PDFs rather than creating an empty material
+        if document.metadata and document.metadata.is_encrypted:
+            raise ValueError(
+                "PDF is password-protected. Decrypt the file and re-upload."
+            )
+
         # Title preference: PDF metadata title → first non-empty paragraph
         # → filename stem
         doc_title: str | None = None
