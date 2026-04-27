@@ -33,7 +33,7 @@ function triggerBrowserDownload(
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function formatDate(iso: string): string {
@@ -308,7 +308,12 @@ function CourseSection() {
           state: { curtinFile: { name: filename, data } },
         });
       } catch (err: unknown) {
-        if (err && typeof err === 'object' && 'notReady' in err) {
+        if (
+          err &&
+          typeof err === 'object' &&
+          'notReady' in err &&
+          (err as { notReady?: boolean }).notReady === true
+        ) {
           setJobError({
             id: job.id,
             message: 'Export not ready yet. Check back in 15-30 minutes.',
