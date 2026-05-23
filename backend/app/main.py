@@ -220,7 +220,11 @@ app.add_middleware(
     RequestValidationMiddleware,
     max_request_size=10 * 1024 * 1024,  # 10MB limit
     require_user_agent=False,  # Set to True for stricter validation
-    large_upload_paths=["/api/import/package", "/api/import/unified", "/api/content/import"],
+    large_upload_paths=[
+        "/api/import/package",
+        "/api/import/unified",
+        "/api/content/import",
+    ],
     large_upload_max_size=500 * 1024 * 1024,  # 500MB for IMSCC/SCORM packages
 )
 
@@ -363,9 +367,7 @@ except ImportError as e:
 try:
     from app.api.routes import udl_audit
 
-    app.include_router(
-        udl_audit.router, prefix="/api/udl-audit", tags=["udl-audit"]
-    )
+    app.include_router(udl_audit.router, prefix="/api/udl-audit", tags=["udl-audit"])
     logger.info("✅ UDL Audit routes loaded successfully")
 except ImportError as e:
     logger.warning(f"Failed to load udl_audit routes: {e}")
@@ -387,7 +389,9 @@ except ImportError as e:
 try:
     from app.api.routes import background_tasks
 
-    app.include_router(background_tasks.router, prefix="/api", tags=["background-tasks"])
+    app.include_router(
+        background_tasks.router, prefix="/api", tags=["background-tasks"]
+    )
 except ImportError as e:
     logger.warning(f"Failed to load background_tasks routes: {e}")
 
@@ -485,20 +489,6 @@ except ImportError as e:
     logger.warning(f"Failed to load ollama routes: {e}")
 
 try:
-    from app.api.routes import imscc_export
-
-    app.include_router(imscc_export.router, prefix="/api", tags=["imscc-export"])
-except ImportError as e:
-    logger.warning(f"Failed to load imscc_export routes: {e}")
-
-try:
-    from app.api.routes import scorm_export
-
-    app.include_router(scorm_export.router, prefix="/api", tags=["scorm-export"])
-except ImportError as e:
-    logger.warning(f"Failed to load scorm_export routes: {e}")
-
-try:
     from app.api.routes import package_import
 
     app.include_router(package_import.router, prefix="/api", tags=["package-import"])
@@ -546,32 +536,11 @@ except ImportError as e:
     logger.warning(f"Failed to load document_export routes: {e}")
 
 try:
-    from app.api.routes import html_export
-
-    app.include_router(html_export.router, prefix="/api", tags=["html-export"])
-except ImportError as e:
-    logger.warning(f"Failed to load html_export routes: {e}")
-
-try:
     from app.api.routes import material_export
 
     app.include_router(material_export.router, prefix="/api", tags=["material-export"])
 except ImportError as e:
     logger.warning(f"Failed to load material_export routes: {e}")
-
-try:
-    from app.api.routes import qti_export
-
-    app.include_router(qti_export.router, prefix="/api", tags=["qti-export"])
-except ImportError as e:
-    logger.warning(f"Failed to load qti_export routes: {e}")
-
-try:
-    from app.api.routes import h5p_export
-
-    app.include_router(h5p_export.router, prefix="/api", tags=["h5p-export"])
-except ImportError as e:
-    logger.warning(f"Failed to load h5p_export routes: {e}")
 
 try:
     from app.api.routes import export_preview
@@ -586,6 +555,16 @@ try:
     app.include_router(package_export.router, prefix="/api", tags=["package-export"])
 except ImportError as e:
     logger.warning(f"Failed to load package_export routes: {e}")
+
+# Generic export dispatch over the ExportRegistry. Registered AFTER the specific
+# export GET routes (/export/materials, /export/preview) so those win the path
+# match against the catch-all /export/{export_format}.
+try:
+    from app.api.routes import export as export_routes
+
+    app.include_router(export_routes.router, prefix="/api", tags=["export"])
+except ImportError as e:
+    logger.warning(f"Failed to load export routes: {e}")
 
 try:
     from app.api.routes import transcript
