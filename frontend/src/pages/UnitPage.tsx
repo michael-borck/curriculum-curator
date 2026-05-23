@@ -399,7 +399,7 @@ const UnitPage = () => {
   };
 
   const handleExport = async (
-    format: 'imscc' | 'scorm' | 'html' | 'qti' | 'h5p'
+    format: 'imscc' | 'scorm' | 'html' | 'qti' | 'h5p_question_set'
   ) => {
     if (!unitId) return;
     setExportMenuOpen(false);
@@ -408,7 +408,7 @@ const UnitPage = () => {
       scorm: 'SCORM 1.2',
       html: 'HTML',
       qti: 'QTI 2.1',
-      h5p: 'H5P Quiz',
+      h5p_question_set: 'H5P Quiz',
     };
     const label = labelMap[format] ?? format;
     try {
@@ -609,7 +609,7 @@ const UnitPage = () => {
                     </button>
                     <button
                       className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('h5p')}
+                      onClick={() => handleExport('h5p_question_set')}
                     >
                       Interactive Quiz (H5P)
                     </button>
