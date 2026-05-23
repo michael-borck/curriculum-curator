@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from app.services.export.base import (
@@ -25,7 +26,9 @@ class ScormExporter(BaseExporter):
     async def export_unit(
         self, unit_id: str, db: Session, options: ExportOptions
     ) -> ExportResult:
-        buf, filename = scorm_export_service.export_unit(
+        # Offload the synchronous, zip-building export off the event loop.
+        buf, filename = await asyncio.to_thread(
+            scorm_export_service.export_unit,
             unit_id,
             db,
             target_lms=options.target_lms or TargetLMS.GENERIC,
