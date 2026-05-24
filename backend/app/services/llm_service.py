@@ -195,7 +195,7 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
-    ) -> AsyncGenerator[str, None] | str:
+    ) -> AsyncGenerator[str] | str:
         """Generate text from a prompt with optional streaming."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
@@ -206,7 +206,7 @@ class LLMService:
             )
             if stream:
 
-                async def error_gen() -> AsyncGenerator[str, None]:
+                async def error_gen() -> AsyncGenerator[str]:
                     yield error_msg
 
                 return error_gen()
@@ -220,7 +220,7 @@ class LLMService:
         try:
             if stream:
 
-                async def stream_gen() -> AsyncGenerator[str, None]:
+                async def stream_gen() -> AsyncGenerator[str]:
                     response = await acompletion(
                         model=model,
                         messages=messages,
@@ -261,7 +261,7 @@ class LLMService:
             error_msg = f"Error generating text: {e!s}"
             if stream:
 
-                async def error_gen() -> AsyncGenerator[str, None]:
+                async def error_gen() -> AsyncGenerator[str]:
                     yield error_msg
 
                 return error_gen()
@@ -274,7 +274,7 @@ class LLMService:
         content_type: str,
         user: User | None = None,
         db: Session | None = None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[str]:
         """Generate educational content using LLM with streaming"""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
