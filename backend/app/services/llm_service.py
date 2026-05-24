@@ -83,7 +83,9 @@ class LLMService:
             settings_dict[setting.key] = setting.value
         return settings_dict
 
-    def _get_user_api_key(self, provider: str, user_config: dict[str, Any]) -> str | None:
+    def _get_user_api_key(
+        self, provider: str, user_config: dict[str, Any]
+    ) -> str | None:
         """Extract API key from user config based on provider"""
         key_map = {
             "openai": "openai_api_key",
@@ -93,7 +95,9 @@ class LLMService:
         key_name = key_map.get(provider)
         return user_config.get(key_name) if key_name else None
 
-    def _get_system_api_key(self, provider: str, system_settings: dict[str, Any]) -> str | None:
+    def _get_system_api_key(
+        self, provider: str, system_settings: dict[str, Any]
+    ) -> str | None:
         """Get system API key for provider"""
         provider_map = {
             "openai": ("system_openai_api_key", settings.OPENAI_API_KEY),
@@ -195,7 +199,7 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
-    ) -> AsyncGenerator[str, None] | str:
+    ) -> AsyncGenerator[str] | str:
         """Generate text from a prompt with optional streaming."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
@@ -206,7 +210,7 @@ class LLMService:
             )
             if stream:
 
-                async def error_gen() -> AsyncGenerator[str, None]:
+                async def error_gen() -> AsyncGenerator[str]:
                     yield error_msg
 
                 return error_gen()
@@ -220,7 +224,7 @@ class LLMService:
         try:
             if stream:
 
-                async def stream_gen() -> AsyncGenerator[str, None]:
+                async def stream_gen() -> AsyncGenerator[str]:
                     response = await acompletion(
                         model=model,
                         messages=messages,
@@ -240,7 +244,14 @@ class LLMService:
                             if hasattr(delta, "content") and delta.content:
                                 yield delta.content
                     if final_chunk:
-                        self._log_usage(final_chunk, model, provider or "unknown", "generate_text_stream", user, db)
+                        self._log_usage(
+                            final_chunk,
+                            model,
+                            provider or "unknown",
+                            "generate_text_stream",
+                            user,
+                            db,
+                        )
 
                 return stream_gen()
 
@@ -254,14 +265,16 @@ class LLMService:
                 stream=False,
             )
             result = cast("Any", response)
-            self._log_usage(result, model, provider or "unknown", "generate_text", user, db)
+            self._log_usage(
+                result, model, provider or "unknown", "generate_text", user, db
+            )
             return result.choices[0].message.content or ""
 
         except Exception as e:
             error_msg = f"Error generating text: {e!s}"
             if stream:
 
-                async def error_gen() -> AsyncGenerator[str, None]:
+                async def error_gen() -> AsyncGenerator[str]:
                     yield error_msg
 
                 return error_gen()
@@ -274,7 +287,7 @@ class LLMService:
         content_type: str,
         user: User | None = None,
         db: Session | None = None,
-    ) -> AsyncGenerator[str, None]:
+    ) -> AsyncGenerator[str]:
         """Generate educational content using LLM with streaming"""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
@@ -312,7 +325,14 @@ class LLMService:
                     if hasattr(delta, "content") and delta.content:
                         yield delta.content
             if final_chunk:
-                self._log_usage(final_chunk, model, provider or "unknown", "generate_content", user, db)
+                self._log_usage(
+                    final_chunk,
+                    model,
+                    provider or "unknown",
+                    "generate_content",
+                    user,
+                    db,
+                )
         except Exception as e:
             yield f"Error generating content: {e!s}"
 
@@ -336,16 +356,59 @@ class LLMService:
 {styles.get(style, "")}
 Create content that aligns with this pedagogical approach."""
 
-    async def generate_structured_content(
+    def _build_structured_messages(
         self,
         prompt: str,
         response_model: type[BaseModel],
+        system_prompt: str | None,
+        inject_schema: bool,
+    ) -> list[dict[str, str]]:
+        """Build the system+user messages for a structured-content request."""
+        if inject_schema:
+            json_schema = response_model.model_json_schema()
+            enhanced_prompt = f"""{prompt}
+
+IMPORTANT: You must respond with valid JSON that matches this exact schema:
+{json.dumps(json_schema, indent=2)}
+
+Provide ONLY the JSON object, no additional text or markdown formatting."""
+        else:
+            enhanced_prompt = prompt
+
+        return [
+            {
+                "role": "system",
+                "content": system_prompt
+                or "You are an expert curriculum designer. Always respond with valid JSON.",
+            },
+            {"role": "user", "content": enhanced_prompt},
+        ]
+
+    async def generate_structured_content[T: BaseModel](
+        self,
+        prompt: str,
+        response_model: type[T],
         user: User | None = None,
         db: Session | None = None,
         temperature: float = 0.7,
         max_retries: int = 3,
-    ) -> tuple[BaseModel | None, str | None]:
-        """Generate structured content with JSON output and Pydantic validation."""
+        system_prompt: str | None = None,
+        inject_schema: bool = True,
+        max_tokens: int | None = None,
+    ) -> tuple[T | None, str | None]:
+        """Generate structured content with JSON output and Pydantic validation.
+
+        Args:
+            system_prompt: Override the default system prompt. Endpoints with
+                injection-hardened system prompts (e.g. ``<user_data>`` defences)
+                pass their own here so adoption doesn't discard them.
+            inject_schema: When True (default) the response model's JSON schema is
+                appended to the prompt. Set False when the caller's prompt already
+                specifies the exact JSON shape, to avoid a duplicate/conflicting
+                schema block.
+            max_tokens: Optional output token cap for large structures (e.g. a
+                full unit scaffold).
+        """
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
         if not provider or (not api_key and provider != "ollama"):
@@ -354,21 +417,9 @@ Create content that aligns with this pedagogical approach."""
                 "(OpenAI, Anthropic, or Gemini) or configure a local Ollama server."
             )
 
-        json_schema = response_model.model_json_schema()
-        enhanced_prompt = f"""{prompt}
-
-IMPORTANT: You must respond with valid JSON that matches this exact schema:
-{json.dumps(json_schema, indent=2)}
-
-Provide ONLY the JSON object, no additional text or markdown formatting."""
-
-        messages = [
-            {
-                "role": "system",
-                "content": "You are an expert curriculum designer. Always respond with valid JSON.",
-            },
-            {"role": "user", "content": enhanced_prompt},
-        ]
+        messages = self._build_structured_messages(
+            prompt, response_model, system_prompt, inject_schema
+        )
 
         for attempt in range(max_retries):
             try:
@@ -384,10 +435,18 @@ Provide ONLY the JSON object, no additional text or markdown formatting."""
                     api_base=api_base,
                     temperature=current_temp,
                     response_format=response_format,
+                    max_tokens=max_tokens,
                 )
 
                 result = cast("Any", response)
-                self._log_usage(result, model, provider or "unknown", "generate_structured", user, db)
+                self._log_usage(
+                    result,
+                    model,
+                    provider or "unknown",
+                    "generate_structured",
+                    user,
+                    db,
+                )
                 content = result.choices[0].message.content or ""
 
                 # Clean markdown formatting if present
@@ -940,14 +999,9 @@ Format as JSON."""
 
                 base_url = api_url or "http://localhost:11434"
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        f"{base_url}/api/tags", timeout=10.0
-                    )
+                    response = await client.get(f"{base_url}/api/tags", timeout=10.0)
                     if response.status_code == 200:
-                        return [
-                            m["name"]
-                            for m in response.json().get("models", [])
-                        ]
+                        return [m["name"] for m in response.json().get("models", [])]
             except Exception:
                 pass
             return []
@@ -969,7 +1023,9 @@ Format as JSON."""
         }
         if provider:
             return static_models.get(provider, [])
-        return [m for provider_models in static_models.values() for m in provider_models]
+        return [
+            m for provider_models in static_models.values() for m in provider_models
+        ]
 
     async def test_connection(
         self,

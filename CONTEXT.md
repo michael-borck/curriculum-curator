@@ -22,6 +22,17 @@ These two shapes recur across the architecture-deepening work (`docs/architectur
 - **Planning vs execution** — `format_resolver` + `export/preview` *plan* (which targets apply to which material); the `ExportRegistry` *executes* (produce the bytes). They now share one export format key vocabulary, so the old hidden frontend translation (`h5p_question_set` → `h5p`) disappears.
 - **Package orchestration** — `POST .../export/package` builds a whole-unit IMSCC/SCORM cartridge with per-material target overrides. It is *not* an adapter; it is a batch orchestrator that dispatches through the `ExportRegistry` (by package type) and keeps its own async/task machinery.
 
+## AI generation subsystem
+
+Candidate #2 (design locked in grill). Deepen the existing seam rather than add a new orchestrator layer — the deep retry/validate engine already exists.
+
+- **`generate_structured_content`** — the deep generation engine (ADR-045): renders a prompt, calls the LLM, strips fences, parses JSON, validates against a Pydantic model, and **retries with temperature decay + error-feedback re-prompts**, returning `(result | None, error | None)`. Being made flexible: accept a **custom `system_prompt`** (so endpoints keep their injection-hardened prompts) and an **`inject_schema` flag** (schema comes from the response model by default, so prompts no longer hand-write it).
+- **Strict-with-retry contract** — JSON endpoints validate against their response model; malformed/incomplete output re-prompts, then surfaces a clean error. Replaces the lenient `.get()`-with-defaults construction. Tolerance is encoded in the model (`Optional` fields + defaults), not hand-coded per route. Each model is shaped (required vs optional) during migration.
+- **`CurriculumContextBuilder`** — one seam for "build the AI context" (design + pedagogy + week + source materials), replacing the scattered `get_design_context` / `_enrich_with_week_context` / `_inject_source_materials` / `build_pedagogy_instruction` stitching across ~7 endpoints. **This is candidate #4, delivered as part of #2.**
+- **`ai_prompts/` package** — generation prompts live as code (a hardened system-prompt constant + a `render_*` function per endpoint), co-located with their response models. Not the Jinja2 library (ADR-046) and not the runtime-editable DB templates (ADR-058) — those serve user-facing content prompts, a separate concern.
+- **Leaky endpoints in scope** — the 9 in `ai.py` that hand-roll prompt assembly + JSON parse + retry + error-string sniffing: `validate-content`, `generate-schedule`, `validate`, `remediate`, `scaffold-unit`, `fill-gap`, `visual-prompt`, `generate-video-interaction`, `suggest-interaction-points`. The 12 clean delegating endpoints stay as-is.
+- **Error contract** — `generate_text` returns error *strings* (callers string-sniff `"Error generating text:"`). JSON endpoints stop using it; they go through `generate_structured_content`'s `(result, error)` tuple.
+
 ## Cross-cutting access
 
 - **`get_user_material`** — (to be added in `api/deps.py`) a dependency that loads a `WeeklyMaterial`, verifies the caller owns its Unit, and 404s otherwise — mirroring the existing `get_user_unit`. Closes the material-scope access gap and is the first slice of candidate #3 (resource-ownership seam).

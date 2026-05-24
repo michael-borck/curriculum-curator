@@ -73,7 +73,7 @@ class OllamaService:
             "available_ram_gb": round(mem.available / (1024**3), 1),
         }
 
-    async def pull_model(self, model_name: str) -> AsyncGenerator[dict[str, Any], None]:
+    async def pull_model(self, model_name: str) -> AsyncGenerator[dict[str, Any]]:
         """Stream model download progress from Ollama POST /api/pull."""
         async with (
             self._client(timeout=None) as client,

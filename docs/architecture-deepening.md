@@ -16,9 +16,9 @@ Grill-one → implement-one → verify → next (interleaved), **not** grill-all
 | # | Candidate | Strength | Status |
 |---|-----------|----------|--------|
 | 1 | Export dispatch registry | Strong | ● implemented + verified (branch `refactor/export-registry`) |
-| 2 | AI generation orchestrator | Strong | ☐ not started |
+| 2 | AI generation orchestrator | Strong | ● implemented + verified (branch `refactor/ai-generation-orchestrator`) |
 | 3 | Resource-ownership seam | Strong | ☐ not started |
-| 4 | Curriculum context builder | Worth exploring | ☐ not started |
+| 4 | Curriculum context builder | Worth exploring | ● delivered as part of #2 (CurriculumContextBuilder) |
 | 5 | Import extraction seam | Worth exploring | ☐ not started |
 | 6 | H5P collapse | Worth exploring | ☐ not started |
 
@@ -74,6 +74,18 @@ Three real frictions (grounded, not the report's vague "shallow routes"): (a) **
 **Wins:** locality — prompt+parse+retry in one module · leverage — 20 endpoints share one path · ADR-045 retry actually gets used · fence-stripping written once.
 
 **ADR note:** Aligns with ADR-045 (structured retry) and ADR-046 (Jinja2 prompts), which are accepted but currently bypassed. This makes them bind, not contradicts them.
+
+### Implemented (staged commits on `refactor/ai-generation-orchestrator`)
+
+1. **Engine** — `generate_structured_content` gained `system_prompt` (preserve injection-hardened prompts), `inject_schema` (caller supplies schema), `max_tokens`, and PEP-695 generics (callers get their exact type, no casts). The deep ADR-045 retry/validate loop now actually gets used.
+2. **`CurriculumContextBuilder`** (candidate #4) — `services/curriculum_context.py`; `build_context()` → `CurriculumContext.as_block()`/`prepend_to()`. `/generate`'s 3 stitches → 1 call.
+3+4. **All 6 JSON endpoints migrated** (scaffold-unit, generate-schedule, validate, visual-prompt, generate-video-interaction, suggest-interaction-points) — strict Pydantic + retry; prompts in `services/ai_prompts/`; dropped the duplicated fence-strip/`json.loads`/retry/error-string-sniff.
+5. **Tests** — `test_generate_structured.py` (7) + `test_curriculum_context.py` (12); updated `test_ai_video_interactions.py` to the new seam.
+6. **3 text endpoints** (remediate, fill-gap, validate-content) — prompts relocated to `ai_prompts/`; fixed fill-gap returning error strings as content.
+
+**Bugs fixed along the way:** `WeeklyTopic.title` → `.topic_title` (latent `AttributeError` in week context); fill-gap error-string leak.
+
+**Verification:** ruff + basedpyright clean across `app/`; **842 passed, 24 skipped, 0 failed**. `generate_text` remains for genuinely streaming/text paths; the JSON leak is gone.
 
 ## 3 · Generalise the resource-ownership dependency — **Strong**
 
