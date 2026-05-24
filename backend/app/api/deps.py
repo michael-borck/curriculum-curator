@@ -36,7 +36,7 @@ ROLE_LECTURER = "lecturer"
 ROLE_STUDENT = "student"
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """Get SQLAlchemy database session"""
     if SessionLocal is None:
         raise RuntimeError("Database not configured")
