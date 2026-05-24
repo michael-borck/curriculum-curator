@@ -49,16 +49,22 @@ from app.schemas.llm import (
     ValidationResult,
 )
 from app.services.ai_prompts import (
+    FILL_GAP_SYSTEM,
+    REMEDIATE_SYSTEM,
     SCAFFOLD_UNIT_SYSTEM,
     SCHEDULE_SYSTEM,
     SUGGEST_POINTS_SYSTEM,
+    VALIDATE_CONTENT_SYSTEM,
     VALIDATE_SYSTEM,
     VIDEO_INTERACTION_SYSTEM,
     VISUAL_PROMPT_SYSTEM,
     ValidationCheck,
+    render_fill_gap_prompt,
+    render_remediate_prompt,
     render_scaffold_unit_prompt,
     render_schedule_prompt,
     render_suggest_points_prompt,
+    render_validate_content_prompt,
     render_validation_prompt,
     render_video_interaction_prompt,
     render_visual_prompt,
@@ -452,21 +458,10 @@ async def validate_content_with_ai(
 
     Types: comprehensive, factual, consistency, completeness
     """
-    prompt = f"""Validate the following content for {validation_type} quality:
-
-{content}
-
-Check for:
-1. Factual accuracy
-2. Internal consistency
-3. Completeness of coverage
-4. Logical flow
-5. Appropriate difficulty level
-
-Return findings as JSON with keys: issues, suggestions, score"""
+    prompt = render_validate_content_prompt(content, validation_type)
 
     messages = [
-        ChatMessage(role="system", content="You are an expert content validator."),
+        ChatMessage(role="system", content=VALIDATE_CONTENT_SYSTEM),
         ChatMessage(role="user", content=prompt),
     ]
 
@@ -711,39 +706,8 @@ async def remediate_content(
 
     Streams the remediated content back to the client.
     """
-    if request.remediation_type == "readability":
-        prompt = f"""Improve the readability of the following content for university undergraduate students.
-Use Australian/British spelling. Make sentences clearer and more accessible.
-Preserve the educational intent and technical accuracy.
-
-Original content:
-{request.content}
-
-Return ONLY the improved content, no explanations."""
-
-    elif request.remediation_type == "structure":
-        prompt = f"""Reorganize the following educational content to follow a standard structure:
-1. Learning Objectives (2-3 clear objectives)
-2. Introduction
-3. Main Content with clear sections
-4. Summary/Key Takeaways
-
-Preserve the educational content and meaning.
-
-Original content:
-{request.content}
-
-Return ONLY the restructured content, no explanations."""
-
-    elif request.custom_prompt:
-        prompt = f"""{request.custom_prompt}
-
-Content to improve:
-{request.content}
-
-Return ONLY the improved content."""
-
-    else:
+    prompt = render_remediate_prompt(request)
+    if prompt is None:
         raise HTTPException(
             status_code=400, detail="Invalid remediation type or missing custom prompt"
         )
@@ -751,7 +715,7 @@ Return ONLY the improved content."""
     async def stream_response():
         result = await llm_service.generate_text(
             prompt=prompt,
-            system_prompt="You are an expert educational content editor.",
+            system_prompt=REMEDIATE_SYSTEM,
             user=current_user,
             db=db,
             stream=True,
@@ -824,29 +788,24 @@ async def fill_gap(
 
     gap_type can be: ulo, material, assessment
     """
-    # Inject Learning Design context
-    design_ctx = None
-    if request.unit_id or request.design_id:
-        design_ctx = await get_design_context(db, request.unit_id, request.design_id)
-
-    gap_prompts = {
-        "ulo": "Generate a well-written Unit Learning Outcome (ULO) description. Use Bloom's taxonomy verbs. Be specific and measurable.",
-        "material": "Generate a brief content outline for a teaching material. Include key topics, activities, and learning objectives.",
-        "assessment": "Suggest an assessment item including: title, description, type (quiz/assignment/project/exam), and recommended weight.",
-    }
-
-    base_prompt = gap_prompts.get(request.gap_type, gap_prompts["material"])
-    context = f"\n\nAdditional context: {request.context}" if request.context else ""
-    design_block = f"\n\n{design_ctx}" if design_ctx else ""
+    context = await build_context(
+        db, unit_id=request.unit_id, design_id=request.design_id
+    )
+    design_block = f"\n\n{context.design_spec}" if context.design_spec else ""
+    prompt = render_fill_gap_prompt(request, design_block)
 
     result = await llm_service.generate_text(
-        prompt=f"{base_prompt}{context}{design_block}",
-        system_prompt="You are an expert university curriculum designer helping fill gaps in a unit structure.",
+        prompt=prompt,
+        system_prompt=FILL_GAP_SYSTEM,
         user=current_user,
         db=db,
     )
 
     content = result if isinstance(result, str) else str(result)
+    # generate_text returns error strings rather than raising — surface them as 502
+    # instead of returning the error text as the generated content.
+    if content.startswith(("Error generating text:", "No AI provider")):
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=content)
 
     return FillGapResponse(
         gap_type=request.gap_type,
