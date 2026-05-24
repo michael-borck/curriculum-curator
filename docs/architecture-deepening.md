@@ -16,9 +16,9 @@ Grill-one → implement-one → verify → next (interleaved), **not** grill-all
 | # | Candidate | Strength | Status |
 |---|-----------|----------|--------|
 | 1 | Export dispatch registry | Strong | ● implemented + verified (branch `refactor/export-registry`) |
-| 2 | AI generation orchestrator | Strong | ☐ not started |
+| 2 | AI generation orchestrator | Strong | ◐ grilled — design locked (branch `refactor/ai-generation-orchestrator`) |
 | 3 | Resource-ownership seam | Strong | ☐ not started |
-| 4 | Curriculum context builder | Worth exploring | ☐ not started |
+| 4 | Curriculum context builder | Worth exploring | ↳ absorbed into #2 (CurriculumContextBuilder) |
 | 5 | Import extraction seam | Worth exploring | ☐ not started |
 | 6 | H5P collapse | Worth exploring | ☐ not started |
 
