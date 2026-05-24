@@ -15,7 +15,7 @@ Grill-one → implement-one → verify → next (interleaved), **not** grill-all
 
 | # | Candidate | Strength | Status |
 |---|-----------|----------|--------|
-| 1 | Export dispatch registry | Strong | ◐ grilled — design locked, see below |
+| 1 | Export dispatch registry | Strong | ● implemented + verified (branch `refactor/export-registry`) |
 | 2 | AI generation orchestrator | Strong | ☐ not started |
 | 3 | Resource-ownership seam | Strong | ☐ not started |
 | 4 | Curriculum context builder | Worth exploring | ☐ not started |
@@ -49,6 +49,19 @@ Three real frictions (grounded, not the report's vague "shallow routes"): (a) **
 - **Scope:** registry covers single-format content exports **and** `package_export` is rewired to dispatch through it. Out of scope (unchanged): `export/preview`, `export/availability`, `/user/export/data`, `export_templates`.
 - **HTTP shape:** two thin generic routes — `GET /units/{unit_id}/export/{format}` (`Depends(get_user_unit)`) and `GET /materials/{material_id}/export/{format}` (`Depends(get_user_material)`), one optional `target_lms` query. `registry.supports(format, scope)` → clean 404/422 on unsupported pairs.
 - **Frontend blast radius (small):** GET path uses short names in only ~4 spots (`downloadExport.ts` URL + `fallbackMap`, quick-export buttons in `UnitPage.tsx`/`DashboardPage.tsx`); the dialog/package flow already uses canonical names. No frontend code calls material-scope export endpoints (UI-unused; tests/e2e only).
+
+### Implemented (6 staged commits on `refactor/export-registry`)
+
+1. `ExportRegistry` + `BaseExporter`/`ExportResult`/`ExportOptions`/`ExportScope` in `services/export/`; one adapter per format (scorm, imscc, qti, h5p×4, html, pdf/docx/pptx). Adapters gather their own data and build their own filename/media_type.
+2. `get_user_material` in `api/deps.py`.
+3. Two generic routes (`api/routes/export.py`) replace 5 per-format route files; registry exceptions → 404/422/503/500; route order keeps `/export/materials`, `/export/preview`, `/export/package` ahead of the catch-all.
+4. `package_export` dispatches through the registry; scorm/imscc adapters offload via `asyncio.to_thread`.
+5. Frontend `h5p` → `h5p_question_set` (canonical).
+6. `tests/test_export_registry.py` — 24 tests (capability matrix, dispatch errors, real exports, route auth via `get_user_material`, route precedence).
+
+**Verification:** ruff + basedpyright clean on all touched backend files; 77 export tests pass (24 new + 53 existing); full suite 859 passed. Known non-blockers: (a) 13 `test_integration.py` auth tests need a live server (pre-existing, fail identically on `main`); (b) 6 pre-existing ruff `default-type-args` errors in `llm_service.py`/`ollama_service.py` (untouched); (c) frontend type-check/lint baseline broken (missing `@types/react` in `node_modules` — run `./frontend.sh`); my frontend edits add 0 new tsc errors.
+
+**Env note:** run backend tests via `.venv/bin/python -m pytest` after `uv sync --extra dev` (installs pytest into the project venv with the working FastAPI). `uv run pytest` uses a shared base env whose FastAPI breaks the `client` fixture's annotation resolution.
 
 ## 2 · Pull generation logic out of `ai.py` behind a service seam — **Strong**
 
