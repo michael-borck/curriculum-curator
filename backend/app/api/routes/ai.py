@@ -18,12 +18,10 @@ from app.models.system_settings import SystemSettings
 from app.schemas.ai import (
     FillGapRequest,
     FillGapResponse,
-    GenerateVideoInteractionOption,
     GenerateVideoInteractionRequest,
     GenerateVideoInteractionResponse,
     ScaffoldUnitRequest,
     ScaffoldUnitResponse,
-    SuggestedInteraction,
     SuggestInteractionPointsRequest,
     SuggestInteractionPointsResponse,
     VisualPromptRequest,
@@ -53,10 +51,19 @@ from app.schemas.llm import (
 from app.services.ai_prompts import (
     SCAFFOLD_UNIT_SYSTEM,
     SCHEDULE_SYSTEM,
+    SUGGEST_POINTS_SYSTEM,
+    VALIDATE_SYSTEM,
+    VIDEO_INTERACTION_SYSTEM,
+    VISUAL_PROMPT_SYSTEM,
+    ValidationCheck,
     render_scaffold_unit_prompt,
     render_schedule_prompt,
+    render_suggest_points_prompt,
+    render_validation_prompt,
+    render_video_interaction_prompt,
+    render_visual_prompt,
 )
-from app.services.curriculum_context import build_context, build_week_context
+from app.services.curriculum_context import build_context
 from app.services.design_context import (
     build_pedagogy_instruction,
     get_design_context,
@@ -121,31 +128,6 @@ router = APIRouter()
 # =============================================================================
 # Helpers
 # =============================================================================
-
-
-def _enrich_with_week_context(
-    db: Session, unit_id: str, week_number: int, topic: str
-) -> str:
-    """Prepend the weekly context block (topic + existing materials) to ``topic``.
-
-    Thin shim over ``curriculum_context.build_week_context``. The remaining
-    callers are migrated to ``build_context()`` in stage 3, after which this is
-    removed.
-    """
-    block = build_week_context(db, unit_id, week_number)
-    return f"{block}\n\n{topic}" if block else topic
-
-
-def _strip_markdown_fences(text: str) -> str:
-    """Strip markdown code fences from LLM JSON responses."""
-    text = text.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    return text.strip()
 
 
 # =============================================================================
@@ -661,102 +643,48 @@ async def validate_content(
     results: list[ValidationResult] = []
 
     for validation_type in request.validation_types:
-        if validation_type == "readability":
-            prompt = f"""Analyze the readability of the following educational content for university undergraduate students.
-
-Content:
-{request.content}
-
-Evaluate:
-1. Is the language clear and accessible?
-2. Are sentences well-structured and not overly complex?
-3. Is technical terminology appropriately introduced and explained?
-4. Does it use Australian/British English conventions?
-
-Return JSON with:
-{{
-  "passed": true/false,
-  "score": 0-100,
-  "message": "brief assessment",
-  "suggestions": ["suggestion1", "suggestion2"]
-}}"""
-
-        elif validation_type == "structure":
-            prompt = f"""Analyze the structure of the following educational content.
-
-Content:
-{request.content}
-
-Evaluate:
-1. Does it have a logical flow and organization?
-2. Are there clear sections (intro, body, conclusion)?
-3. Are learning objectives or key points clearly stated?
-4. Does it include appropriate examples or explanations?
-
-Return JSON with:
-{{
-  "passed": true/false,
-  "score": 0-100,
-  "message": "brief assessment",
-  "suggestions": ["suggestion1", "suggestion2"]
-}}"""
-
-        else:
+        prompt = render_validation_prompt(validation_type, request.content)
+        if prompt is None:
             continue
 
-        try:
-            result = await llm_service.generate_text(
-                prompt=prompt,
-                system_prompt="You are an expert educational content reviewer. Always respond with valid JSON only.",
-                user=current_user,
-                db=db,
-                temperature=0.3,
-            )
+        check, error = await llm_service.generate_structured_content(
+            prompt=prompt,
+            response_model=ValidationCheck,
+            system_prompt=VALIDATE_SYSTEM,
+            inject_schema=False,
+            user=current_user,
+            db=db,
+            temperature=0.3,
+        )
 
-            response_text = (
-                result
-                if isinstance(result, str)
-                else "".join([chunk async for chunk in result])
-            )
-
-            # Clean JSON
-            response_text = response_text.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text[7:]
-            if response_text.startswith("```"):
-                response_text = response_text[3:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
-            response_text = response_text.strip()
-
-            data = json.loads(response_text)
-
-            remediation_prompt = None
-            if not data.get("passed", True):
-                if validation_type == "readability":
-                    remediation_prompt = "Improve the readability for university undergraduate students. Use clearer language, shorter sentences, and Australian/British spelling."
-                elif validation_type == "structure":
-                    remediation_prompt = "Reorganize for better structure with clear sections: Learning Objectives, Content Body, Summary. Add transitions between sections."
-
-            results.append(
-                ValidationResult(
-                    validator_name=validation_type.title(),
-                    passed=data.get("passed", True),
-                    message=data.get("message", "Validation complete"),
-                    score=data.get("score"),
-                    suggestions=data.get("suggestions"),
-                    remediation_prompt=remediation_prompt,
-                )
-            )
-
-        except Exception as e:
+        # Per-type graceful degradation: one type failing doesn't fail the request.
+        if error or check is None:
             results.append(
                 ValidationResult(
                     validator_name=validation_type.title(),
                     passed=False,
-                    message=f"Validation error: {e!s}",
+                    message=f"Validation error: {error or 'no result'}",
                 )
             )
+            continue
+
+        remediation_prompt = None
+        if not check.passed:
+            if validation_type == "readability":
+                remediation_prompt = "Improve the readability for university undergraduate students. Use clearer language, shorter sentences, and Australian/British spelling."
+            elif validation_type == "structure":
+                remediation_prompt = "Reorganize for better structure with clear sections: Learning Objectives, Content Body, Summary. Add transitions between sections."
+
+        results.append(
+            ValidationResult(
+                validator_name=validation_type.title(),
+                passed=check.passed,
+                message=check.message,
+                score=check.score,
+                suggestions=check.suggestions,
+                remediation_prompt=remediation_prompt,
+            )
+        )
 
     overall_passed = all(r.passed for r in results)
     overall_score = (
@@ -966,69 +894,24 @@ async def generate_visual_prompt(
             detail=f"Invalid aspect ratio. Must be one of: {', '.join(sorted(VISUAL_PROMPT_ASPECT_RATIOS))}",
         )
 
-    context_line = f"\nPurpose: {request.context}" if request.context else ""
+    prompt = render_visual_prompt(request)
 
-    prompt = f"""Generate a detailed image-generation prompt based on the following educational content.
-
-Style: {request.style}
-Aspect ratio: {request.aspect_ratio}{context_line}
-
-Educational content:
-{request.content}
-
-Return a JSON object with exactly these keys:
-{{
-  "prompt": "A detailed, vivid image generation prompt (1-3 sentences). Be specific about composition, colours, mood, and subject matter. Make it tool-agnostic (works with Midjourney, DALL-E, Stable Diffusion, etc.).",
-  "negative_prompt": "A comma-separated list of things to avoid (e.g. text, watermarks, blurry, low quality).",
-  "style_notes": "1-2 sentences of practical tips for generating this style of image (e.g. recommended tools, settings, or modifiers)."
-}}
-
-Return ONLY valid JSON, no markdown fences or extra text."""
-
-    try:
-        result = await llm_service.generate_text(
-            prompt=prompt,
-            system_prompt=(
-                "You are an expert visual prompt engineer for AI image generation tools. "
-                "You create detailed, effective prompts that produce high-quality educational imagery. "
-                "Always respond with valid JSON only."
-            ),
-            user=current_user,
-            db=db,
-            temperature=0.8,
-        )
-
-        response_text = (
-            result
-            if isinstance(result, str)
-            else "".join([chunk async for chunk in result])
-        )
-
-        # Clean markdown formatting if present
-        response_text = response_text.strip()
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-
-        parsed = json.loads(response_text)
-
-        return VisualPromptResponse(
-            prompt=parsed.get("prompt", ""),
-            negative_prompt=parsed.get("negative_prompt", ""),
-            style_notes=parsed.get("style_notes", ""),
-        )
-
-    except json.JSONDecodeError as e:
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=VisualPromptResponse,
+        system_prompt=VISUAL_PROMPT_SYSTEM,
+        inject_schema=False,
+        user=current_user,
+        db=db,
+        temperature=0.8,
+    )
+    if error or result is None:
+        logger.error("Visual prompt generation failed: %s", error)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse AI response as JSON: {e}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Visual prompt generation failed",
         )
-    except Exception as e:
-        raise _llm_error_response(e, "Visual prompt generation")
+    return result
 
 
 # =============================================================================
@@ -1060,103 +943,34 @@ async def generate_video_interaction(
             detail=f"Invalid question_type. Must be one of: {', '.join(sorted(VALID_QUESTION_TYPES))}",
         )
 
-    # Build context
-    context_parts: list[str] = []
-
-    design_ctx = None
-    if request.unit_id or request.design_id:
-        design_ctx = await get_design_context(
-            db, request.unit_id or "", request.design_id
-        )
-    if design_ctx:
-        context_parts.append(design_ctx)
-
-    if request.week_number and request.unit_id:
-        enriched = _enrich_with_week_context(
-            db, request.unit_id, request.week_number, ""
-        )
-        if enriched.strip():
-            context_parts.append(enriched.strip())
-
-    context_block = "\n".join(context_parts)
+    context = await build_context(
+        db,
+        unit_id=request.unit_id,
+        design_id=request.design_id,
+        week_number=request.week_number,
+    )
+    context_block = context.as_block(separator="\n")
     context_section = (
         f"\n\nEducational context:\n{context_block}" if context_block else ""
     )
+    prompt = render_video_interaction_prompt(request, context_section)
 
-    prompt = f"""Generate a {request.question_type.replace("_", " ")} quiz question based on the following video transcript segment.
-
-Difficulty: {request.difficulty}
-{context_section}
-
-Transcript segment:
-{request.segment_text}
-
-Return a JSON object with this exact structure:
-{{
-  "question_text": "The question to ask the student",
-  "question_type": "{request.question_type}",
-  "options": [
-    {{"text": "Option text", "correct": true}},
-    {{"text": "Option text", "correct": false}}
-  ],
-  "feedback": "Feedback shown after answering",
-  "explanation": "Detailed explanation of the correct answer",
-  "points": 1
-}}
-
-Requirements:
-- For multiple_choice: provide 4 options, exactly 1 correct
-- For true_false: provide 2 options ("True" and "False"), exactly 1 correct
-- For multi_select: provide 4 options, 2-3 correct
-- For short_answer or fill_in_blank: provide 1 option with the expected answer, marked correct
-- The question should test understanding of the transcript content
-- Use Australian/British English
-- Return ONLY valid JSON, no markdown fences or extra text"""
-
-    try:
-        result = await llm_service.generate_text(
-            prompt=prompt,
-            system_prompt=(
-                "You are an expert educational video interaction designer. "
-                "You create engaging quiz questions that test student comprehension of video content. "
-                "Always respond with valid JSON only."
-            ),
-            user=current_user,
-            db=db,
-            temperature=0.7,
-        )
-
-        response_text = (
-            result
-            if isinstance(result, str)
-            else "".join([chunk async for chunk in result])
-        )
-
-        response_text = _strip_markdown_fences(response_text)
-        parsed = json.loads(response_text)
-
-        return GenerateVideoInteractionResponse(
-            question_text=parsed.get("question_text", ""),
-            question_type=parsed.get("question_type", request.question_type),
-            options=[
-                GenerateVideoInteractionOption(
-                    text=o.get("text", ""),
-                    correct=o.get("correct", False),
-                )
-                for o in parsed.get("options", [])
-            ],
-            feedback=parsed.get("feedback", ""),
-            explanation=parsed.get("explanation", ""),
-            points=parsed.get("points", 1),
-        )
-
-    except json.JSONDecodeError as e:
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=GenerateVideoInteractionResponse,
+        system_prompt=VIDEO_INTERACTION_SYSTEM,
+        inject_schema=False,
+        user=current_user,
+        db=db,
+        temperature=0.7,
+    )
+    if error or result is None:
+        logger.error("Video interaction generation failed: %s", error)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse AI response as JSON: {e}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Video interaction generation failed",
         )
-    except Exception as e:
-        raise _llm_error_response(e, "Video interaction generation")
+    return result
 
 
 @router.post(
@@ -1169,25 +983,13 @@ async def suggest_interaction_points(
     db: Session = Depends(deps.get_db),
 ) -> SuggestInteractionPointsResponse:
     """Scan a full transcript and suggest interaction points with generated questions."""
-    # Build context
-    context_parts: list[str] = []
-
-    design_ctx = None
-    if request.unit_id or request.design_id:
-        design_ctx = await get_design_context(
-            db, request.unit_id or "", request.design_id
-        )
-    if design_ctx:
-        context_parts.append(design_ctx)
-
-    if request.week_number and request.unit_id:
-        enriched = _enrich_with_week_context(
-            db, request.unit_id, request.week_number, ""
-        )
-        if enriched.strip():
-            context_parts.append(enriched.strip())
-
-    context_block = "\n".join(context_parts)
+    context = await build_context(
+        db,
+        unit_id=request.unit_id,
+        design_id=request.design_id,
+        week_number=request.week_number,
+    )
+    context_block = context.as_block(separator="\n")
     context_section = (
         f"\n\nEducational context:\n{context_block}" if context_block else ""
     )
@@ -1196,96 +998,21 @@ async def suggest_interaction_points(
     transcript_lines = "\n".join(
         f"[{s.start:.1f}s - {s.end:.1f}s] {s.text}" for s in request.transcript_segments
     )
+    prompt = render_suggest_points_prompt(request, context_section, transcript_lines)
 
-    prompt = f"""Analyze the following video transcript and identify the {request.max_interactions} best points to insert quiz interactions.
-
-Look for:
-- Key concept introductions or transitions
-- Important definitions or facts
-- Points where student comprehension should be checked
-- Natural pauses or topic shifts
-{context_section}
-
-Transcript:
-{transcript_lines}
-
-Return a JSON object with this exact structure:
-{{
-  "interactions": [
-    {{
-      "time": 45.0,
-      "question_text": "The question to ask",
-      "question_type": "multiple_choice",
-      "options": [
-        {{"text": "Option A", "correct": true}},
-        {{"text": "Option B", "correct": false}},
-        {{"text": "Option C", "correct": false}},
-        {{"text": "Option D", "correct": false}}
-      ],
-      "feedback": "Feedback shown after answering",
-      "explanation": "Why the correct answer is correct",
-      "points": 1
-    }}
-  ]
-}}
-
-Requirements:
-- Return at most {request.max_interactions} interactions
-- Space them evenly through the transcript
-- Use a mix of question types (multiple_choice, true_false, multi_select)
-- Each interaction time must fall within the transcript time range
-- Use Australian/British English
-- Return ONLY valid JSON, no markdown fences or extra text"""
-
-    try:
-        result = await llm_service.generate_text(
-            prompt=prompt,
-            system_prompt=(
-                "You are an expert educational video interaction designer. "
-                "You analyze video transcripts to identify key learning moments and create "
-                "engaging quiz questions. Always respond with valid JSON only."
-            ),
-            user=current_user,
-            db=db,
-            temperature=0.7,
-        )
-
-        response_text = (
-            result
-            if isinstance(result, str)
-            else "".join([chunk async for chunk in result])
-        )
-
-        response_text = _strip_markdown_fences(response_text)
-        parsed = json.loads(response_text)
-
-        interactions_data = parsed.get("interactions", [])
-
-        return SuggestInteractionPointsResponse(
-            interactions=[
-                SuggestedInteraction(
-                    time=i.get("time", 0.0),
-                    question_text=i.get("question_text", ""),
-                    question_type=i.get("question_type", "multiple_choice"),
-                    options=[
-                        GenerateVideoInteractionOption(
-                            text=o.get("text", ""),
-                            correct=o.get("correct", False),
-                        )
-                        for o in i.get("options", [])
-                    ],
-                    feedback=i.get("feedback", ""),
-                    explanation=i.get("explanation", ""),
-                    points=i.get("points", 1),
-                )
-                for i in interactions_data
-            ]
-        )
-
-    except json.JSONDecodeError as e:
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=SuggestInteractionPointsResponse,
+        system_prompt=SUGGEST_POINTS_SYSTEM,
+        inject_schema=False,
+        user=current_user,
+        db=db,
+        temperature=0.7,
+    )
+    if error or result is None:
+        logger.error("Interaction suggestion failed: %s", error)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse AI response as JSON: {e}",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Interaction suggestion failed",
         )
-    except Exception as e:
-        raise _llm_error_response(e, "Interaction suggestion")
+    return result
