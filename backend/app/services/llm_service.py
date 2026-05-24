@@ -336,6 +336,34 @@ class LLMService:
 {styles.get(style, "")}
 Create content that aligns with this pedagogical approach."""
 
+    def _build_structured_messages(
+        self,
+        prompt: str,
+        response_model: type[BaseModel],
+        system_prompt: str | None,
+        inject_schema: bool,
+    ) -> list[dict[str, str]]:
+        """Build the system+user messages for a structured-content request."""
+        if inject_schema:
+            json_schema = response_model.model_json_schema()
+            enhanced_prompt = f"""{prompt}
+
+IMPORTANT: You must respond with valid JSON that matches this exact schema:
+{json.dumps(json_schema, indent=2)}
+
+Provide ONLY the JSON object, no additional text or markdown formatting."""
+        else:
+            enhanced_prompt = prompt
+
+        return [
+            {
+                "role": "system",
+                "content": system_prompt
+                or "You are an expert curriculum designer. Always respond with valid JSON.",
+            },
+            {"role": "user", "content": enhanced_prompt},
+        ]
+
     async def generate_structured_content(
         self,
         prompt: str,
@@ -344,8 +372,20 @@ Create content that aligns with this pedagogical approach."""
         db: Session | None = None,
         temperature: float = 0.7,
         max_retries: int = 3,
+        system_prompt: str | None = None,
+        inject_schema: bool = True,
     ) -> tuple[BaseModel | None, str | None]:
-        """Generate structured content with JSON output and Pydantic validation."""
+        """Generate structured content with JSON output and Pydantic validation.
+
+        Args:
+            system_prompt: Override the default system prompt. Endpoints with
+                injection-hardened system prompts (e.g. ``<user_data>`` defences)
+                pass their own here so adoption doesn't discard them.
+            inject_schema: When True (default) the response model's JSON schema is
+                appended to the prompt. Set False when the caller's prompt already
+                specifies the exact JSON shape, to avoid a duplicate/conflicting
+                schema block.
+        """
         model, provider, api_key, api_base = self._get_llm_config(user, db)
 
         if not provider or (not api_key and provider != "ollama"):
@@ -354,21 +394,9 @@ Create content that aligns with this pedagogical approach."""
                 "(OpenAI, Anthropic, or Gemini) or configure a local Ollama server."
             )
 
-        json_schema = response_model.model_json_schema()
-        enhanced_prompt = f"""{prompt}
-
-IMPORTANT: You must respond with valid JSON that matches this exact schema:
-{json.dumps(json_schema, indent=2)}
-
-Provide ONLY the JSON object, no additional text or markdown formatting."""
-
-        messages = [
-            {
-                "role": "system",
-                "content": "You are an expert curriculum designer. Always respond with valid JSON.",
-            },
-            {"role": "user", "content": enhanced_prompt},
-        ]
+        messages = self._build_structured_messages(
+            prompt, response_model, system_prompt, inject_schema
+        )
 
         for attempt in range(max_retries):
             try:
