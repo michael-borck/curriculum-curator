@@ -15,8 +15,6 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import User
 from app.models.system_settings import SystemSettings
-from app.models.weekly_material import WeeklyMaterial
-from app.models.weekly_topic import WeeklyTopic
 from app.schemas.ai import (
     FillGapRequest,
     FillGapResponse,
@@ -56,6 +54,7 @@ from app.schemas.llm import (
     SummaryGenerationRequest,
     ValidationResult,
 )
+from app.services.curriculum_context import build_context, build_week_context
 from app.services.design_context import (
     build_pedagogy_instruction,
     get_design_context,
@@ -71,24 +70,47 @@ def _llm_error_response(e: Exception, operation: str) -> HTTPException:
     error_lower = error_msg.lower()
 
     # Authentication / API key issues
-    if any(kw in error_lower for kw in ("auth", "api key", "api_key", "unauthorized", "invalid key")):
-        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"{operation}: invalid or missing API key")
+    if any(
+        kw in error_lower
+        for kw in ("auth", "api key", "api_key", "unauthorized", "invalid key")
+    ):
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"{operation}: invalid or missing API key",
+        )
 
     # Rate limiting
-    if any(kw in error_lower for kw in ("rate limit", "rate_limit", "too many requests", "429")):
-        return HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=f"{operation}: rate limited by provider")
+    if any(
+        kw in error_lower
+        for kw in ("rate limit", "rate_limit", "too many requests", "429")
+    ):
+        return HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"{operation}: rate limited by provider",
+        )
 
     # Connection / availability issues
-    if any(kw in error_lower for kw in ("connect", "timeout", "unreachable", "refused", "503", "502")):
-        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"{operation}: LLM provider unavailable")
+    if any(
+        kw in error_lower
+        for kw in ("connect", "timeout", "unreachable", "refused", "503", "502")
+    ):
+        return HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"{operation}: LLM provider unavailable",
+        )
 
     # Input validation
     if isinstance(e, (ValueError, TypeError)):
-        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{operation}: {error_msg}")
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{operation}: {error_msg}"
+        )
 
     # Unexpected errors — log and return 500
     logger.exception("%s failed unexpectedly", operation)
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{operation} failed: {error_msg}")
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"{operation} failed: {error_msg}",
+    )
 
 
 router = APIRouter()
@@ -102,33 +124,14 @@ router = APIRouter()
 def _enrich_with_week_context(
     db: Session, unit_id: str, week_number: int, topic: str
 ) -> str:
-    """Prepend weekly topic title and existing material names to the prompt."""
-    weekly_topic = (
-        db.query(WeeklyTopic)
-        .filter(
-            WeeklyTopic.unit_id == unit_id,
-            WeeklyTopic.week_number == week_number,
-        )
-        .first()
-    )
-    weekly_materials = (
-        db.query(WeeklyMaterial)
-        .filter(
-            WeeklyMaterial.unit_id == unit_id,
-            WeeklyMaterial.week_number == week_number,
-        )
-        .all()
-    )
-    parts: list[str] = []
-    if weekly_topic and weekly_topic.title:
-        parts.append(f"Week {week_number} Topic: <user_data>{weekly_topic.title}</user_data>")
-    if weekly_materials:
-        titles = [m.title for m in weekly_materials if m.title]
-        if titles:
-            parts.append(f"Existing materials for this week: {', '.join(titles)}")
-    if parts:
-        return "\n".join(parts) + "\n\n" + topic
-    return topic
+    """Prepend the weekly context block (topic + existing materials) to ``topic``.
+
+    Thin shim over ``curriculum_context.build_week_context``. The remaining
+    callers are migrated to ``build_context()`` in stage 3, after which this is
+    removed.
+    """
+    block = build_week_context(db, unit_id, week_number)
+    return f"{block}\n\n{topic}" if block else topic
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -141,22 +144,6 @@ def _strip_markdown_fences(text: str) -> str:
     if text.endswith("```"):
         text = text[:-3]
     return text.strip()
-
-
-def _inject_source_materials(db: Session, material_ids: list[str], topic: str) -> str:
-    """Fetch material descriptions and inject as a source context block."""
-    source_materials = (
-        db.query(WeeklyMaterial).filter(WeeklyMaterial.id.in_(material_ids[:5])).all()
-    )
-    if not source_materials:
-        return topic
-    source_block = "=== SOURCE MATERIALS ===\n"
-    for mat in source_materials:
-        source_block += f"\n--- <user_data>{mat.title}</user_data> ---\n"
-        if mat.description:
-            source_block += f"<user_data>{mat.description}</user_data>\n"
-    source_block += "=== END SOURCE MATERIALS ===\n\n"
-    return source_block + topic
 
 
 # =============================================================================
@@ -174,25 +161,15 @@ async def generate_content(
     try:
         topic: str = request.topic or request.context or "General educational content"
 
-        # Inject Learning Design context
-        design_ctx = None
-        if request.unit_id or request.design_id:
-            design_ctx = await get_design_context(
-                db, request.unit_id or "", request.design_id
-            )
-
-        if design_ctx:
-            topic = f"{design_ctx}\n\n{topic}"
-
-        # Enrich with weekly context when week_number is provided
-        if request.week_number and request.unit_id:
-            topic = _enrich_with_week_context(
-                db, request.unit_id, request.week_number, topic
-            )
-
-        # Inject source materials when provided
-        if request.source_material_ids:
-            topic = _inject_source_materials(db, request.source_material_ids, topic)
+        # Assemble the curriculum context (design spec + week + source materials)
+        context = await build_context(
+            db,
+            unit_id=request.unit_id,
+            design_id=request.design_id,
+            week_number=request.week_number,
+            source_material_ids=request.source_material_ids,
+        )
+        topic = context.prepend_to(topic)
 
         # Use pedagogy override or design-aware pedagogy
         pedagogy = request.pedagogy_override or request.pedagogy_style
@@ -978,7 +955,9 @@ Requirements:
     )
 
     # Check for LLM error (generate_text returns error strings instead of raising)
-    if isinstance(result, str) and result.startswith(("Error generating text:", "No AI provider")):
+    if isinstance(result, str) and result.startswith(
+        ("Error generating text:", "No AI provider")
+    ):
         logger.error("Scaffold LLM error: %s", result)
         raise HTTPException(status_code=502, detail=result)
 
@@ -999,7 +978,10 @@ Requirements:
         else:
             raise TypeError("Expected string from LLM")
     except (json.JSONDecodeError, TypeError) as e:
-        logger.exception("Scaffold JSON parse error. Raw LLM output: %s", result[:500] if isinstance(result, str) else result)
+        logger.exception(
+            "Scaffold JSON parse error. Raw LLM output: %s",
+            result[:500] if isinstance(result, str) else result,
+        )
         raise HTTPException(
             status_code=500,
             detail=f"Failed to parse AI response as structured JSON: {e}",
@@ -1236,7 +1218,9 @@ async def generate_video_interaction(
             context_parts.append(enriched.strip())
 
     context_block = "\n".join(context_parts)
-    context_section = f"\n\nEducational context:\n{context_block}" if context_block else ""
+    context_section = (
+        f"\n\nEducational context:\n{context_block}" if context_block else ""
+    )
 
     prompt = f"""Generate a {request.question_type.replace("_", " ")} quiz question based on the following video transcript segment.
 
@@ -1343,12 +1327,13 @@ async def suggest_interaction_points(
             context_parts.append(enriched.strip())
 
     context_block = "\n".join(context_parts)
-    context_section = f"\n\nEducational context:\n{context_block}" if context_block else ""
+    context_section = (
+        f"\n\nEducational context:\n{context_block}" if context_block else ""
+    )
 
     # Format transcript with timestamps
     transcript_lines = "\n".join(
-        f"[{s.start:.1f}s - {s.end:.1f}s] {s.text}"
-        for s in request.transcript_segments
+        f"[{s.start:.1f}s - {s.end:.1f}s] {s.text}" for s in request.transcript_segments
     )
 
     prompt = f"""Analyze the following video transcript and identify the {request.max_interactions} best points to insert quiz interactions.
