@@ -71,9 +71,9 @@ def build_week_context(db: Session, unit_id: str, week_number: int) -> str | Non
         .all()
     )
     parts: list[str] = []
-    if weekly_topic and weekly_topic.title:
+    if weekly_topic and weekly_topic.topic_title:
         parts.append(
-            f"Week {week_number} Topic: <user_data>{weekly_topic.title}</user_data>"
+            f"Week {week_number} Topic: <user_data>{weekly_topic.topic_title}</user_data>"
         )
     titles = [m.title for m in weekly_materials if m.title]
     if titles:
