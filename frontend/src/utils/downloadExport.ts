@@ -32,7 +32,7 @@ export async function downloadExport(
     scorm: 'export.zip',
     html: 'export.html',
     qti: 'export_qti.zip',
-    h5p: 'export_quiz.h5p',
+    h5p_question_set: 'export_quiz.h5p',
   };
   const filename = filenameMatch?.[1] ?? fallbackMap[format] ?? 'export.bin';
 

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.models.weekly_material import WeeklyMaterial
 from app.repositories import unit_repo, user_repo
 from app.schemas.unit import UnitResponse
 from app.schemas.user import UserResponse
@@ -36,7 +37,7 @@ ROLE_LECTURER = "lecturer"
 ROLE_STUDENT = "student"
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:
     """Get SQLAlchemy database session"""
     if SessionLocal is None:
         raise RuntimeError("Database not configured")
@@ -177,3 +178,35 @@ def get_user_unit(
 
 # Alias for path parameter usage
 get_user_unit_by_path = get_user_unit
+
+
+def get_user_material(
+    material_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
+) -> WeeklyMaterial:
+    """
+    Get a weekly material whose owning unit belongs to the current user.
+
+    Mirrors :func:`get_user_unit`: loads the material, verifies the caller owns
+    its unit (admins bypass), and 404s otherwise. Closes the material-scope
+    access gap on the export routes.
+    """
+    not_found = HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Material not found or access denied",
+    )
+
+    material = db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+    if material is None:
+        raise not_found
+
+    unit = unit_repo.get_unit_by_id(db, str(material.unit_id))
+    if not unit or (
+        unit.owner_id != current_user.id and current_user.role != ROLE_ADMIN
+    ):
+        raise not_found
+    if unit.status == "archived":
+        raise not_found
+
+    return material

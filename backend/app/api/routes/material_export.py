@@ -1,5 +1,8 @@
 """
-API endpoints for exporting individual materials and bulk material ZIP archives.
+API endpoint for bulk material ZIP archive export.
+
+Single-material document export moved to the unified export route
+(``GET /materials/{material_id}/export/{format}`` via the ExportRegistry).
 """
 
 import logging
@@ -21,47 +24,6 @@ from app.services.export_service import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-@router.get("/materials/{material_id}/export")
-async def export_material(
-    material_id: str,
-    db: Annotated[Session, Depends(get_db)],
-    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
-    fmt: ExportFormat = Query(ExportFormat.HTML, alias="format"),
-) -> StreamingResponse:
-    """Export a single material as HTML, PDF, DOCX, or PPTX."""
-    reference_doc = get_user_template_path(
-        current_user.id, fmt, current_user.teaching_preferences
-    )
-    try:
-        buf, filename, media_type = await export_service.export_material(
-            material_id=material_id,
-            db=db,
-            fmt=fmt,
-            reference_doc=reference_doc,
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from e
-    except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e),
-        ) from e
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
-        ) from e
-
-    return StreamingResponse(
-        buf,
-        media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 @router.get("/units/{unit_id}/export/materials")

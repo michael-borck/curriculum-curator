@@ -1,15 +1,36 @@
 """
 Export service package.
 
-Provides a unified interface for exporting unit content to various formats:
-- Document formats (HTML, PDF, DOCX, PPTX) via Pandoc + Typst
-- QTI quiz packages (1.2 and 2.1)
-- LMS packages (IMSCC, SCORM)
-- H5P interactive content (future)
-
-All exporters extend BaseExporter and return ExportResult.
+The export seam: every format is an adapter (extending ``BaseExporter``,
+returning ``ExportResult``) registered in the ``export_registry``. Routes
+dispatch through the registry by (format key, scope); adding a format means
+writing one adapter and one registration line.
 """
 
-from app.services.export.base import BaseExporter, ExportResult
+from app.services.export.base import (
+    BaseExporter,
+    ExportContentError,
+    ExportOptions,
+    ExportResult,
+    ExportScope,
+    ExportUnsupportedError,
+)
+from app.services.export.registry import (
+    ExportRegistry,
+    UnknownExportFormatError,
+    UnsupportedExportScopeError,
+    export_registry,
+)
 
-__all__ = ["BaseExporter", "ExportResult"]
+__all__ = [
+    "BaseExporter",
+    "ExportContentError",
+    "ExportOptions",
+    "ExportRegistry",
+    "ExportResult",
+    "ExportScope",
+    "ExportUnsupportedError",
+    "UnknownExportFormatError",
+    "UnsupportedExportScopeError",
+    "export_registry",
+]
