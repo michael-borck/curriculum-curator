@@ -6,9 +6,7 @@ slide-break-delimited content. Each slide contains a single H5P.AdvancedText
 element with the rendered HTML for that segment.
 """
 
-import json
 import uuid
-import zipfile
 from io import BytesIO
 from typing import Any
 
@@ -16,6 +14,7 @@ from app.services.content_json_renderer import (
     render_content_json,
     strip_speaker_notes,
 )
+from app.services.h5p_packaging import build_manifest, pack_h5p
 from app.services.slide_splitter import split_at_slide_breaks
 
 # H5P library version dicts
@@ -73,14 +72,12 @@ class H5PCoursePresentationBuilder:
             slides.append(slide)
 
         content = self._build_content_json(slides)
-        h5p_json = self._build_h5p_json(title)
-
-        buf = BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("h5p.json", json.dumps(h5p_json, indent=2))
-            zf.writestr("content/content.json", json.dumps(content, indent=2))
-        buf.seek(0)
-        return buf
+        manifest = build_manifest(
+            title,
+            "H5P.CoursePresentation",
+            [_COURSE_PRESENTATION_LIB, _ADVANCED_TEXT_LIB],
+        )
+        return pack_h5p(content, manifest)
 
     def _build_slide(self, html: str, keyword: str) -> dict[str, Any]:
         """Build a single slide with an AdvancedText element."""
@@ -138,19 +135,6 @@ class H5PCoursePresentationBuilder:
                 "hideKeywords": "Hide sidebar navigation",
                 "showKeywords": "Show sidebar navigation",
             },
-        }
-
-    def _build_h5p_json(self, title: str) -> dict[str, Any]:
-        """Build the h5p.json manifest."""
-        return {
-            "title": title,
-            "mainLibrary": "H5P.CoursePresentation",
-            "language": "en",
-            "embedTypes": ["div", "iframe"],
-            "preloadedDependencies": [
-                _COURSE_PRESENTATION_LIB,
-                _ADVANCED_TEXT_LIB,
-            ],
         }
 
 

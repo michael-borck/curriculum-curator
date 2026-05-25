@@ -8,12 +8,11 @@ Supported platforms: YouTube, Vimeo.
 Echo360 and other platforms raise ValueError (caller handles fallback).
 """
 
-import json
 import uuid
-import zipfile
 from io import BytesIO
 from typing import Any
 
+from app.services.h5p_packaging import build_manifest, pack_h5p
 from app.services.h5p_service import (
     _MULTI_CHOICE_LIB,  # pyright: ignore[reportPrivateUsage]
     _TYPE_MAP,  # pyright: ignore[reportPrivateUsage]
@@ -98,14 +97,10 @@ class H5PInteractiveVideoBuilder:
         content_json = self._build_content_json(
             video_url, mime_type, video_title, h5p_interactions
         )
-        h5p_json = self._build_h5p_json(title)
-
-        buf = BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("h5p.json", json.dumps(h5p_json, indent=2))
-            zf.writestr("content/content.json", json.dumps(content_json, indent=2))
-        buf.seek(0)
-        return buf
+        manifest = build_manifest(
+            title, "H5P.InteractiveVideo", [_INTERACTIVE_VIDEO_LIB]
+        )
+        return pack_h5p(content_json, manifest)
 
     def _build_interactions(
         self, interactions: list[dict[str, Any]]
@@ -158,16 +153,6 @@ class H5PInteractiveVideoBuilder:
                     "interactions": interactions,
                 },
             },
-        }
-
-    def _build_h5p_json(self, title: str) -> dict[str, Any]:
-        """Build the h5p.json manifest."""
-        return {
-            "title": title,
-            "mainLibrary": "H5P.InteractiveVideo",
-            "language": "en",
-            "embedTypes": ["div", "iframe"],
-            "preloadedDependencies": [_INTERACTIVE_VIDEO_LIB],
         }
 
 
