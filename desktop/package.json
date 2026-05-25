@@ -18,7 +18,8 @@
     "electron-updater": "^6.8.3"
   },
   "overrides": {
-    "minimatch@>=10.0.0 <10.2.3": "10.2.3"
+    "minimatch@>=10.0.0 <10.2.3": "10.2.3",
+    "ip-address": "^10.1.1"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
