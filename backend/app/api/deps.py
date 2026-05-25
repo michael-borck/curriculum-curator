@@ -296,13 +296,14 @@ def get_user_design(
 
 def require_unit_owner(
     db: Session, unit_id: str, current_user: UserResponse
-) -> None:
-    """Verify the current user owns ``unit_id`` (admins bypass), else 404.
+) -> Unit:
+    """Verify the current user owns ``unit_id`` (admins bypass), else 404; return it.
 
-    For body-based creates where the unit_id is in the request body, not the
-    path, so it can't be a route-level dependency.
+    For handlers where the unit_id is in the request body (not the path), so it
+    can't be a route-level dependency. Callers using it purely as a guard can
+    ignore the return value.
     """
-    load_owned_or_404(
+    return load_owned_or_404(
         db, Unit, unit_id, current_user, detail="Unit not found or access denied"
     )
 

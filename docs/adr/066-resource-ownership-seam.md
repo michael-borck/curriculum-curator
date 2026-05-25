@@ -62,6 +62,20 @@ owner query-filtering** (`WHERE user_id = me`) — there is no single id to load
 and filtering is the correct, already-gap-free pattern there (`clo_sets`,
 `research_sources`).
 
+**Deliberately left inline** (the seam is a poor fit, not an oversight):
+
+- **`units.py`** — its six checks are already uniform and correct, and they
+  intentionally do *not* reject archived units (the `restore` endpoint operates
+  *on* archived units; `GET`/`DELETE`/the archived list need them too). The
+  archived-rejecting `get_user_unit` would break `restore`. Consolidating would
+  require a second parallel owner-only dependency for marginal dedup of
+  already-correct code, so units.py keeps its inline checks.
+- **`prompt_templates.py`** — access is governed by **visibility tiers**
+  (`is_system` / `is_public` / owner, per ADR-058), not plain ownership. The
+  seam only models "owner or admin"; forcing it would break public/system
+  template access. Its `403`s ("you can't edit a *system* template") are a
+  legitimate forbidden, not an existence leak.
+
 ## Consequences
 
 ### Positive
