@@ -8,11 +8,11 @@ The package contains only content.json + h5p.json — the H5P player JS/CSS
 is managed by the LMS (Moodle, WordPress, etc.).
 """
 
-import json
 import uuid
-import zipfile
 from io import BytesIO
 from typing import Any
+
+from app.services.h5p_packaging import build_manifest, pack_h5p
 
 # H5P library version dicts
 _BRANCHING_SCENARIO_LIB: dict[str, Any] = {
@@ -68,14 +68,12 @@ class H5PBranchingScenarioBuilder:
         end_screens = self._build_end_screens(ending_cards)
 
         content_json = self._build_content_json(title, content_nodes, end_screens)
-        h5p_json = self._build_h5p_json(title)
-
-        buf = BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("h5p.json", json.dumps(h5p_json, indent=2))
-            zf.writestr("content/content.json", json.dumps(content_json, indent=2))
-        buf.seek(0)
-        return buf
+        manifest = build_manifest(
+            title,
+            "H5P.BranchingScenario",
+            [_BRANCHING_SCENARIO_LIB, _ADVANCED_TEXT_LIB, _BRANCHING_QUESTION_LIB],
+        )
+        return pack_h5p(content_json, manifest)
 
     def _build_advanced_text(
         self,
@@ -87,7 +85,11 @@ class H5PBranchingScenarioBuilder:
         """Build an H5P.AdvancedText content node for a content card."""
         card_title = str(card.get("cardTitle", ""))
         card_content = str(card.get("cardContent", ""))
-        text = f"<h2>{card_title}</h2><p>{card_content}</p>" if card_title else f"<p>{card_content}</p>"
+        text = (
+            f"<h2>{card_title}</h2><p>{card_content}</p>"
+            if card_title
+            else f"<p>{card_content}</p>"
+        )
 
         # Determine nextContentId: sequential to next card, or -1 if last
         next_id = index + 1 if index < len(content_cards) - 1 else -1
@@ -113,17 +115,23 @@ class H5PBranchingScenarioBuilder:
         """Build an H5P.BranchingQuestion content node for a branch card."""
         card_title = str(card.get("cardTitle", ""))
         card_content = str(card.get("cardContent", ""))
-        question_text = f"<h2>{card_title}</h2><p>{card_content}</p>" if card_title else f"<p>{card_content}</p>"
+        question_text = (
+            f"<h2>{card_title}</h2><p>{card_content}</p>"
+            if card_title
+            else f"<p>{card_content}</p>"
+        )
 
         choices: list[dict[str, Any]] = card.get("choices", [])
         alternatives: list[dict[str, Any]] = []
         for choice in choices:
             target_card_id = str(choice.get("targetCardId", ""))
             next_content_id = card_index.get(target_card_id, -1)
-            alternatives.append({
-                "text": str(choice.get("text", "")),
-                "nextContentId": next_content_id,
-            })
+            alternatives.append(
+                {
+                    "text": str(choice.get("text", "")),
+                    "nextContentId": next_content_id,
+                }
+            )
 
         return {
             "type": {
@@ -135,7 +143,10 @@ class H5PBranchingScenarioBuilder:
                     },
                 },
                 "subContentId": str(uuid.uuid4()),
-                "metadata": {"contentType": "Branching Question", "title": card_title or "Decision"},
+                "metadata": {
+                    "contentType": "Branching Question",
+                    "title": card_title or "Decision",
+                },
             },
             "showContentTitle": bool(card_title),
             "contentTitle": card_title,
@@ -193,20 +204,6 @@ class H5PBranchingScenarioBuilder:
                     "scoreText": "Your score:",
                 },
             },
-        }
-
-    def _build_h5p_json(self, title: str) -> dict[str, Any]:
-        """Build the h5p.json manifest."""
-        return {
-            "title": title,
-            "mainLibrary": "H5P.BranchingScenario",
-            "language": "en",
-            "embedTypes": ["div", "iframe"],
-            "preloadedDependencies": [
-                _BRANCHING_SCENARIO_LIB,
-                _ADVANCED_TEXT_LIB,
-                _BRANCHING_QUESTION_LIB,
-            ],
         }
 
 

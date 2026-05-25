@@ -6,20 +6,39 @@ The package contains only content.json + h5p.json — the H5P player JS/CSS
 is managed by the LMS (Moodle, WordPress, etc.).
 """
 
-import json
 import uuid
-import zipfile
 from io import BytesIO
 from typing import Any, ClassVar
 
 from app.models.quiz_question import QuizQuestion
+from app.services.h5p_packaging import build_manifest, pack_h5p
 
 # H5P library version dicts (module-level to avoid ClassVar complexity)
-_QUESTION_SET_LIB: dict[str, Any] = {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 20}
-_MULTI_CHOICE_LIB: dict[str, Any] = {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16}
-_TRUE_FALSE_LIB: dict[str, Any] = {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 8}
-_ESSAY_LIB: dict[str, Any] = {"machineName": "H5P.Essay", "majorVersion": 1, "minorVersion": 5}
-_BLANKS_LIB: dict[str, Any] = {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
+_QUESTION_SET_LIB: dict[str, Any] = {
+    "machineName": "H5P.QuestionSet",
+    "majorVersion": 1,
+    "minorVersion": 20,
+}
+_MULTI_CHOICE_LIB: dict[str, Any] = {
+    "machineName": "H5P.MultiChoice",
+    "majorVersion": 1,
+    "minorVersion": 16,
+}
+_TRUE_FALSE_LIB: dict[str, Any] = {
+    "machineName": "H5P.TrueFalse",
+    "majorVersion": 1,
+    "minorVersion": 8,
+}
+_ESSAY_LIB: dict[str, Any] = {
+    "machineName": "H5P.Essay",
+    "majorVersion": 1,
+    "minorVersion": 5,
+}
+_BLANKS_LIB: dict[str, Any] = {
+    "machineName": "H5P.Blanks",
+    "majorVersion": 1,
+    "minorVersion": 14,
+}
 
 # Question type → H5P library mapping
 _TYPE_MAP: dict[str, dict[str, Any]] = {
@@ -67,14 +86,16 @@ class H5PQuestionSetBuilder:
             h5p_questions.append(h5p_item)
 
         content_json = self._build_content_json(h5p_questions)
-        h5p_json = self._build_h5p_json(title, used_libs)
-
-        buf = BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("h5p.json", json.dumps(h5p_json, indent=2))
-            zf.writestr("content/content.json", json.dumps(content_json, indent=2))
-        buf.seek(0)
-        return buf
+        dependencies = [
+            _QUESTION_SET_LIB,
+            *(
+                lib
+                for lib in used_libs.values()
+                if lib["machineName"] != "H5P.QuestionSet"
+            ),
+        ]
+        manifest = build_manifest(title, "H5P.QuestionSet", dependencies)
+        return pack_h5p(content_json, manifest)
 
     def _build_question(
         self,
@@ -87,7 +108,9 @@ class H5PQuestionSetBuilder:
         label = _TYPE_LABELS.get(q_type, "Multiple Choice")
 
         if q_type in ("multiple_choice", "multi_select"):
-            params = self._build_multi_choice(q, single_answer=(q_type == "multiple_choice"))
+            params = self._build_multi_choice(
+                q, single_answer=(q_type == "multiple_choice")
+            )
         elif q_type == "true_false":
             params = self._build_true_false(q)
         elif q_type == "short_answer":
@@ -107,7 +130,9 @@ class H5PQuestionSetBuilder:
             },
         }
 
-    def _build_multi_choice(self, q: QuizQuestion, *, single_answer: bool) -> dict[str, Any]:
+    def _build_multi_choice(
+        self, q: QuizQuestion, *, single_answer: bool
+    ) -> dict[str, Any]:
         """Build H5P.MultiChoice params."""
         options = q.options or []
         correct_set = set(q.correct_answers or [])
@@ -115,11 +140,17 @@ class H5PQuestionSetBuilder:
         answers: list[dict[str, Any]] = []
         for opt in options:
             opt_text = str(opt.get("text", "")) if isinstance(opt, dict) else str(opt)
-            answers.append({
-                "text": f"<p>{opt_text}</p>",
-                "correct": opt_text in correct_set,
-                "tipsAndFeedback": {"tip": "", "chosenFeedback": "", "notChosenFeedback": ""},
-            })
+            answers.append(
+                {
+                    "text": f"<p>{opt_text}</p>",
+                    "correct": opt_text in correct_set,
+                    "tipsAndFeedback": {
+                        "tip": "",
+                        "chosenFeedback": "",
+                        "notChosenFeedback": "",
+                    },
+                }
+            )
 
         params: dict[str, Any] = {
             "question": f"<p>{q.question_text}</p>",
@@ -139,7 +170,9 @@ class H5PQuestionSetBuilder:
         }
 
         if q.answer_explanation:
-            params["overallFeedback"] = [{"from": 0, "to": 100, "feedback": q.answer_explanation}]
+            params["overallFeedback"] = [
+                {"from": 0, "to": 100, "feedback": q.answer_explanation}
+            ]
 
         return params
 
@@ -229,7 +262,9 @@ class H5PQuestionSetBuilder:
         }
 
         if q.answer_explanation:
-            params["overallFeedback"] = [{"from": 0, "to": 100, "feedback": q.answer_explanation}]
+            params["overallFeedback"] = [
+                {"from": 0, "to": 100, "feedback": q.answer_explanation}
+            ]
 
         return params
 
@@ -260,25 +295,6 @@ class H5PQuestionSetBuilder:
                 "answeredText": "Answered",
                 "currentQuestionText": "Current question",
             },
-        }
-
-    def _build_h5p_json(
-        self,
-        title: str,
-        used_libs: dict[str, dict[str, Any]],
-    ) -> dict[str, Any]:
-        """Build the h5p.json manifest."""
-        dependencies = [_QUESTION_SET_LIB]
-        dependencies.extend(
-            lib for lib in used_libs.values() if lib["machineName"] != "H5P.QuestionSet"
-        )
-
-        return {
-            "title": title,
-            "mainLibrary": "H5P.QuestionSet",
-            "language": "en",
-            "embedTypes": ["div", "iframe"],
-            "preloadedDependencies": dependencies,
         }
 
 

@@ -19,8 +19,8 @@ Grill-one → implement-one → verify → next (interleaved), **not** grill-all
 | 2 | AI generation orchestrator | Strong | ● implemented + verified (branch `refactor/ai-generation-orchestrator`) |
 | 3 | Resource-ownership seam | Strong | ● implemented + verified (branch `refactor/ownership-seam`) — ADR-066 |
 | 4 | Curriculum context builder | Worth exploring | ● delivered as part of #2 (CurriculumContextBuilder) |
-| 5 | Import extraction seam | Worth exploring | ☐ not started |
-| 6 | H5P collapse | Worth exploring | ☐ not started |
+| 5 | Import extraction seam | Worth exploring | ↳ already addressed — seam exists, see note below |
+| 6 | H5P collapse | Worth exploring | ● implemented + verified (branch `refactor/h5p-collapse`) |
 
 Status legend: ☐ not started · ◐ grilled (design agreed) · ● implemented + verified
 
@@ -130,6 +130,15 @@ Grounding reframed this from "tidy boilerplate" to a **security fix**: six route
 
 **ADR note:** Stays inside ADR-063/ADR-065 — the two pluggable parser systems (outline vs material) remain separate seams; this does *not* merge them. It only unifies the extraction return shape.
 
+### Finding (2026-05-25): already addressed — the report mis-scoped this
+
+Grounding showed the premise no longer holds:
+- The extraction **return is already unified** — `_extract_content` returns one `_ExtractedContent` (text XOR `MaterialParseResult`), and `material_parsers/` is already a clean registry (ADR-065) covering pdf/docx/pptx/md/html. The "two incompatible shapes" are already wrapped.
+- The legacy `process_file` is **not retirable** — it's live via `process_zip_file`, which powers the **zip-analysis endpoint** (`import_content.py`), a separate feature with different (analysis, not persistence) semantics the material registry doesn't replace. Only `.txt` still uses the legacy path inside unified import.
+- `batch_process` is dead (no callers) — minor removable cruft.
+
+So the only available wins are small (fold `.txt` into the registry; delete dead `batch_process`); fully unifying the zip-analysis flow is a separate, larger refactor. **Skipped** — the seam already exists. (Decided with the user.)
+
 ## 6 · Collapse the four H5P builders into one deep module — **Worth exploring**
 
 **Files:** `services/h5p_service.py` · `h5p_branching_service.py` · `h5p_course_presentation.py` · `h5p_interactive_video_service.py`
@@ -139,6 +148,17 @@ Grounding reframed this from "tidy boilerplate" to a **security fix**: six route
 **Solution:** One `H5PBuilder.build(content_type, …)` with the manifest/zip layers shared internally and the four variants as private methods behind one interface.
 
 **Wins:** locality — H5P packaging in one module · shared manifest/zip written once · interface shrinks, variants go private · one fixture tests all four · becomes the single `h5p` adapter for #1.
+
+### Implemented (branch `refactor/h5p-collapse`)
+
+Grounding refined the shape: the duplication was only the **manifest** (`_build_h5p_json` ×4, varying just in `mainLibrary` + `preloadedDependencies`) and the **byte-identical zip-pack** in each `build()`. The per-variant content logic is genuinely different (correct, not duplication). So rather than merge into one big class (the report's sketch — more churn, no added depth, would change the #1 export adapters), the shared packaging was extracted:
+
+- New `services/h5p_packaging.py`: `build_manifest(title, main_library, deps)` + `pack_h5p(content_json, manifest)`.
+- All four builders delegate to it and keep their variant logic; `_build_h5p_json` and the inline zip code deleted; `import zipfile`/`json` dropped where now unused.
+- Each builder's `build()` interface is unchanged → the four export adapters (#1) are untouched.
+- `test_h5p_packaging.py` proves the manifest shape + valid zip; the export-registry tests exercise all four builders end-to-end.
+
+**Verification:** ruff + basedpyright clean; 881 passed.
 
 ---
 
