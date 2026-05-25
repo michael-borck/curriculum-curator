@@ -27,7 +27,11 @@ from app.services.assessments_service import assessments_service
 router = APIRouter()
 
 
-@router.post("/units/{unit_id}/assessments", response_model=AssessmentResponse)
+@router.post(
+    "/units/{unit_id}/assessments",
+    response_model=AssessmentResponse,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def create_assessment(
     unit_id: UUID,
     assessment_data: AssessmentCreate,
@@ -72,7 +76,11 @@ async def create_assessment(
         ) from e
 
 
-@router.get("/units/{unit_id}/assessments", response_model=list[AssessmentResponse])
+@router.get(
+    "/units/{unit_id}/assessments",
+    response_model=list[AssessmentResponse],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_assessments(
     unit_id: UUID,
     assessment_type: str | None = Query(None, alias="type"),
@@ -128,7 +136,11 @@ async def get_unit_assessments(
     ]
 
 
-@router.get("/assessments/{assessment_id}", response_model=AssessmentWithOutcomes)
+@router.get(
+    "/assessments/{assessment_id}",
+    response_model=AssessmentWithOutcomes,
+    dependencies=[Depends(deps.get_user_assessment)],
+)
 async def get_assessment(
     assessment_id: UUID,
     include_outcomes: bool = Query(False),
@@ -210,7 +222,11 @@ async def get_assessment(
     return response
 
 
-@router.put("/assessments/{assessment_id}", response_model=AssessmentResponse)
+@router.put(
+    "/assessments/{assessment_id}",
+    response_model=AssessmentResponse,
+    dependencies=[Depends(deps.get_user_assessment)],
+)
 async def update_assessment(
     assessment_id: UUID,
     assessment_data: AssessmentUpdate,
@@ -261,7 +277,10 @@ async def update_assessment(
         ) from e
 
 
-@router.delete("/assessments/{assessment_id}")
+@router.delete(
+    "/assessments/{assessment_id}",
+    dependencies=[Depends(deps.get_user_assessment)],
+)
 async def delete_assessment(
     assessment_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -283,7 +302,9 @@ async def delete_assessment(
 
 
 @router.get(
-    "/units/{unit_id}/assessments/grade-distribution", response_model=GradeDistribution
+    "/units/{unit_id}/assessments/grade-distribution",
+    response_model=GradeDistribution,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_grade_distribution(
     unit_id: UUID,
@@ -297,7 +318,10 @@ async def get_grade_distribution(
     )
 
 
-@router.get("/units/{unit_id}/assessments/validate-weights")
+@router.get(
+    "/units/{unit_id}/assessments/validate-weights",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def validate_assessment_weights(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -311,7 +335,9 @@ async def validate_assessment_weights(
 
 
 @router.get(
-    "/units/{unit_id}/assessments/timeline", response_model=list[AssessmentTimeline]
+    "/units/{unit_id}/assessments/timeline",
+    response_model=list[AssessmentTimeline],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_assessment_timeline(
     unit_id: UUID,
@@ -360,7 +386,10 @@ async def get_assessment_timeline(
     ]
 
 
-@router.get("/units/{unit_id}/assessments/workload")
+@router.get(
+    "/units/{unit_id}/assessments/workload",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_assessment_workload(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -374,7 +403,9 @@ async def get_assessment_workload(
 
 
 @router.put(
-    "/assessments/{assessment_id}/mappings", response_model=AssessmentWithOutcomes
+    "/assessments/{assessment_id}/mappings",
+    response_model=AssessmentWithOutcomes,
+    dependencies=[Depends(deps.get_user_assessment)],
 )
 async def update_assessment_mappings(
     assessment_id: UUID,
@@ -448,7 +479,9 @@ async def update_assessment_mappings(
 
 
 @router.put(
-    "/assessments/{assessment_id}/materials", response_model=AssessmentWithOutcomes
+    "/assessments/{assessment_id}/materials",
+    response_model=AssessmentWithOutcomes,
+    dependencies=[Depends(deps.get_user_assessment)],
 )
 async def update_assessment_materials(
     assessment_id: UUID,

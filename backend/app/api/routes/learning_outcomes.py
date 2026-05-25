@@ -29,7 +29,11 @@ router = APIRouter()
 
 
 # Unit Learning Outcomes (ULOs)
-@router.post("/units/{unit_id}/ulos", response_model=ULOResponse)
+@router.post(
+    "/units/{unit_id}/ulos",
+    response_model=ULOResponse,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def create_ulo(
     unit_id: UUID,
     ulo_data: ULOCreate,
@@ -61,7 +65,11 @@ async def create_ulo(
         ) from e
 
 
-@router.get("/units/{unit_id}/ulos", response_model=list[ULOWithMappings])
+@router.get(
+    "/units/{unit_id}/ulos",
+    response_model=list[ULOWithMappings],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_ulos(
     unit_id: UUID,
     include_mappings: bool = False,
@@ -94,7 +102,11 @@ async def get_unit_ulos(
     return result
 
 
-@router.get("/ulos/{ulo_id}", response_model=ULOResponse)
+@router.get(
+    "/ulos/{ulo_id}",
+    response_model=ULOResponse,
+    dependencies=[Depends(deps.get_user_ulo)],
+)
 async def get_ulo(
     ulo_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -121,7 +133,11 @@ async def get_ulo(
     )
 
 
-@router.put("/ulos/{ulo_id}", response_model=ULOResponse)
+@router.put(
+    "/ulos/{ulo_id}",
+    response_model=ULOResponse,
+    dependencies=[Depends(deps.get_user_ulo)],
+)
 async def update_ulo(
     ulo_id: UUID,
     ulo_data: ULOUpdate,
@@ -159,7 +175,10 @@ async def update_ulo(
         ) from e
 
 
-@router.delete("/ulos/{ulo_id}")
+@router.delete(
+    "/ulos/{ulo_id}",
+    dependencies=[Depends(deps.get_user_ulo)],
+)
 async def delete_ulo(
     ulo_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -183,7 +202,11 @@ async def delete_ulo(
         ) from e
 
 
-@router.post("/units/{unit_id}/ulos/reorder", response_model=list[ULOResponse])
+@router.post(
+    "/units/{unit_id}/ulos/reorder",
+    response_model=list[ULOResponse],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def reorder_ulos(
     unit_id: UUID,
     reorder_data: OutcomeReorder,
@@ -218,7 +241,11 @@ async def reorder_ulos(
         ) from e
 
 
-@router.post("/units/{unit_id}/ulos/bulk", response_model=list[ULOResponse])
+@router.post(
+    "/units/{unit_id}/ulos/bulk",
+    response_model=list[ULOResponse],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def bulk_create_ulos(
     unit_id: UUID,
     bulk_data: BulkULOCreate,
@@ -254,7 +281,10 @@ async def bulk_create_ulos(
         ) from e
 
 
-@router.get("/units/{unit_id}/ulos/coverage")
+@router.get(
+    "/units/{unit_id}/ulos/coverage",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_ulo_coverage(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -265,7 +295,11 @@ async def get_ulo_coverage(
 
 
 # Local Learning Outcomes (LLOs) - Material-specific
-@router.post("/materials/{material_id}/outcomes", response_model=LLOResponse)
+@router.post(
+    "/materials/{material_id}/outcomes",
+    response_model=LLOResponse,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def add_material_outcome(
     material_id: UUID,
     outcome_data: LLOCreate,
@@ -296,7 +330,11 @@ async def add_material_outcome(
 
 
 # Assessment Learning Outcomes (ALOs)
-@router.post("/assessments/{assessment_id}/outcomes", response_model=ALOResponse)
+@router.post(
+    "/assessments/{assessment_id}/outcomes",
+    response_model=ALOResponse,
+    dependencies=[Depends(deps.get_user_assessment)],
+)
 async def add_assessment_outcome(
     assessment_id: UUID,
     outcome_data: ALOCreate,

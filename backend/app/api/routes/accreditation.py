@@ -57,6 +57,7 @@ router = APIRouter()
 @router.get(
     "/ulos/{ulo_id}/graduate-capabilities",
     response_model=list[GraduateCapabilityMappingResponse],
+    dependencies=[Depends(deps.get_user_ulo)],
 )
 async def get_ulo_graduate_capabilities(
     ulo_id: UUID,
@@ -102,6 +103,7 @@ async def get_ulo_graduate_capabilities(
 @router.post(
     "/ulos/{ulo_id}/graduate-capabilities",
     response_model=GraduateCapabilityMappingResponse,
+    dependencies=[Depends(deps.get_user_ulo)],
 )
 async def add_ulo_graduate_capability(
     ulo_id: UUID,
@@ -161,6 +163,7 @@ async def add_ulo_graduate_capability(
 @router.put(
     "/ulos/{ulo_id}/graduate-capabilities",
     response_model=list[GraduateCapabilityMappingResponse],
+    dependencies=[Depends(deps.get_user_ulo)],
 )
 async def update_ulo_graduate_capabilities(
     ulo_id: UUID,
@@ -218,7 +221,10 @@ async def update_ulo_graduate_capabilities(
     ]
 
 
-@router.delete("/ulos/{ulo_id}/graduate-capabilities/{capability_code}")
+@router.delete(
+    "/ulos/{ulo_id}/graduate-capabilities/{capability_code}",
+    dependencies=[Depends(deps.get_user_ulo)],
+)
 async def remove_ulo_graduate_capability(
     ulo_id: UUID,
     capability_code: str,
@@ -249,7 +255,11 @@ async def remove_ulo_graduate_capability(
 # ============= AoL Mappings (Unit-level) =============
 
 
-@router.get("/units/{unit_id}/aol-mappings", response_model=AoLMappingSummary)
+@router.get(
+    "/units/{unit_id}/aol-mappings",
+    response_model=AoLMappingSummary,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_aol_mappings(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -293,7 +303,11 @@ async def get_unit_aol_mappings(
     )
 
 
-@router.post("/units/{unit_id}/aol-mappings", response_model=AoLMappingResponse)
+@router.post(
+    "/units/{unit_id}/aol-mappings",
+    response_model=AoLMappingResponse,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def add_unit_aol_mapping(
     unit_id: UUID,
     mapping_data: AoLMappingCreate,
@@ -351,7 +365,11 @@ async def add_unit_aol_mapping(
     )
 
 
-@router.put("/units/{unit_id}/aol-mappings", response_model=AoLMappingSummary)
+@router.put(
+    "/units/{unit_id}/aol-mappings",
+    response_model=AoLMappingSummary,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def update_unit_aol_mappings(
     unit_id: UUID,
     bulk_data: BulkAoLMappingCreate,
@@ -412,7 +430,10 @@ async def update_unit_aol_mappings(
     )
 
 
-@router.delete("/units/{unit_id}/aol-mappings/{competency_code}")
+@router.delete(
+    "/units/{unit_id}/aol-mappings/{competency_code}",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def remove_unit_aol_mapping(
     unit_id: UUID,
     competency_code: str,
@@ -443,7 +464,11 @@ async def remove_unit_aol_mapping(
 # ============= SDG Mappings (Unit-level) =============
 
 
-@router.get("/units/{unit_id}/sdg-mappings", response_model=SDGMappingSummary)
+@router.get(
+    "/units/{unit_id}/sdg-mappings",
+    response_model=SDGMappingSummary,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_sdg_mappings(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -486,7 +511,11 @@ async def get_unit_sdg_mappings(
     )
 
 
-@router.post("/units/{unit_id}/sdg-mappings", response_model=SDGMappingResponse)
+@router.post(
+    "/units/{unit_id}/sdg-mappings",
+    response_model=SDGMappingResponse,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def add_unit_sdg_mapping(
     unit_id: UUID,
     mapping_data: SDGMappingCreate,
@@ -541,7 +570,11 @@ async def add_unit_sdg_mapping(
     )
 
 
-@router.put("/units/{unit_id}/sdg-mappings", response_model=SDGMappingSummary)
+@router.put(
+    "/units/{unit_id}/sdg-mappings",
+    response_model=SDGMappingSummary,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def update_unit_sdg_mappings(
     unit_id: UUID,
     bulk_data: BulkSDGMappingCreate,
@@ -600,7 +633,10 @@ async def update_unit_sdg_mappings(
     )
 
 
-@router.delete("/units/{unit_id}/sdg-mappings/{sdg_code}")
+@router.delete(
+    "/units/{unit_id}/sdg-mappings/{sdg_code}",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def remove_unit_sdg_mapping(
     unit_id: UUID,
     sdg_code: str,
@@ -664,6 +700,7 @@ def _framework_response(fw: CustomAlignmentFramework) -> FrameworkResponse:
 @router.get(
     "/units/{unit_id}/frameworks",
     response_model=FrameworkSummary,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_unit_frameworks(
     unit_id: UUID,
@@ -698,6 +735,7 @@ async def get_unit_frameworks(
     "/units/{unit_id}/frameworks",
     response_model=FrameworkResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def create_framework(
     unit_id: UUID,
@@ -744,6 +782,7 @@ async def create_framework(
 @router.put(
     "/units/{unit_id}/frameworks/{framework_id}",
     response_model=FrameworkResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def update_framework(
     unit_id: UUID,
@@ -782,7 +821,10 @@ async def update_framework(
     return _framework_response(fw)
 
 
-@router.delete("/units/{unit_id}/frameworks/{framework_id}")
+@router.delete(
+    "/units/{unit_id}/frameworks/{framework_id}",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def delete_framework(
     unit_id: UUID,
     framework_id: UUID,
@@ -815,6 +857,7 @@ async def delete_framework(
     "/units/{unit_id}/frameworks/{framework_id}/items",
     response_model=FrameworkItemResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def add_framework_item(
     unit_id: UUID,
@@ -864,6 +907,7 @@ async def add_framework_item(
 @router.put(
     "/units/{unit_id}/frameworks/{framework_id}/items/{item_id}",
     response_model=FrameworkItemResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def update_framework_item(
     unit_id: UUID,
@@ -914,7 +958,10 @@ async def update_framework_item(
     )
 
 
-@router.delete("/units/{unit_id}/frameworks/{framework_id}/items/{item_id}")
+@router.delete(
+    "/units/{unit_id}/frameworks/{framework_id}/items/{item_id}",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def delete_framework_item(
     unit_id: UUID,
     framework_id: UUID,
@@ -950,6 +997,7 @@ async def delete_framework_item(
 @router.get(
     "/ulos/{ulo_id}/framework-mappings",
     response_model=list[ULOItemMappingResponse],
+    dependencies=[Depends(deps.get_user_ulo)],
 )
 async def get_ulo_framework_mappings(
     ulo_id: UUID,
@@ -993,6 +1041,7 @@ async def get_ulo_framework_mappings(
 @router.put(
     "/ulos/{ulo_id}/framework-mappings",
     response_model=list[ULOItemMappingResponse],
+    dependencies=[Depends(deps.get_user_ulo)],
 )
 async def update_ulo_framework_mappings(
     ulo_id: UUID,
@@ -1048,7 +1097,10 @@ async def update_ulo_framework_mappings(
     ]
 
 
-@router.delete("/ulos/{ulo_id}/framework-mappings/{item_id}")
+@router.delete(
+    "/ulos/{ulo_id}/framework-mappings/{item_id}",
+    dependencies=[Depends(deps.get_user_ulo)],
+)
 async def remove_ulo_framework_mapping(
     ulo_id: UUID,
     item_id: UUID,

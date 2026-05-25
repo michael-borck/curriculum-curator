@@ -57,9 +57,7 @@ _TIER_NAMES: dict[SearchTier, str] = {
 # =============================================================================
 
 
-def _load_user_research_settings(
-    db: Session, user_id: str
-) -> dict[str, object] | None:
+def _load_user_research_settings(db: Session, user_id: str) -> dict[str, object] | None:
     """Load the saved research settings dict from User.teaching_preferences.
 
     Stored in camelCase (matches the router's expectations) because that's how
@@ -208,11 +206,7 @@ async def propose_comparison(
     db: Session = Depends(deps.get_db),
 ):
     """Compare sources against an existing unit (no DB writes)."""
-    unit = db.query(Unit).filter(Unit.id == request.unit_id).first()
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
-    if str(unit.owner_id) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not your unit")
+    deps.require_unit_owner(db, str(request.unit_id), current_user)
 
     result, error = await outline_synthesis_service.propose_comparison(
         sources=request.source_data,
@@ -236,11 +230,7 @@ async def propose_reading_list(
     db: Session = Depends(deps.get_db),
 ):
     """Match sources to unit weeks with confidence scores (no DB writes)."""
-    unit = db.query(Unit).filter(Unit.id == request.unit_id).first()
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
-    if str(unit.owner_id) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not your unit")
+    deps.require_unit_owner(db, str(request.unit_id), current_user)
 
     result, error = await outline_synthesis_service.propose_reading_list(
         sources=request.source_data,
@@ -273,11 +263,7 @@ async def apply_scaffold(
 
     # Create or update unit
     if request.unit_id:
-        unit = db.query(Unit).filter(Unit.id == request.unit_id).first()
-        if not unit:
-            raise HTTPException(status_code=404, detail="Unit not found")
-        if str(unit.owner_id) != str(current_user.id):
-            raise HTTPException(status_code=403, detail="Not your unit")
+        unit = deps.require_unit_owner(db, str(request.unit_id), current_user)
         unit.title = proposal.title
         unit.description = proposal.description
     else:
@@ -370,11 +356,7 @@ async def apply_comparison(
     """Apply selected comparison suggestions — adds missing topics to unit weeks."""
     proposal = request.proposal
 
-    unit = db.query(Unit).filter(Unit.id == proposal.unit_id).first()
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
-    if str(unit.owner_id) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not your unit")
+    deps.require_unit_owner(db, str(proposal.unit_id), current_user)
 
     return {
         "unit_id": proposal.unit_id,
@@ -391,11 +373,7 @@ async def apply_reading_list(
     """Apply a reading list proposal — creates ResearchSource + optional WeeklyMaterial."""
     proposal = request.proposal
 
-    unit = db.query(Unit).filter(Unit.id == proposal.unit_id).first()
-    if not unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
-    if str(unit.owner_id) != str(current_user.id):
-        raise HTTPException(status_code=403, detail="Not your unit")
+    unit = deps.require_unit_owner(db, str(proposal.unit_id), current_user)
 
     saved_sources: list[dict[str, object]] = []
 
