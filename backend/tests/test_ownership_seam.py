@@ -128,6 +128,20 @@ class TestRouteGates:
         resp = client.get(f"/api/analytics/units/{other_unit.id}/overview")
         assert resp.status_code == 404
 
+    def test_unit_structure_owner_allowed(
+        self, client: TestClient, test_unit: Unit
+    ) -> None:
+        # Consolidated from an inline owner-filter query onto the seam (stage 3).
+        resp = client.get(f"/api/units/{test_unit.id}/structure")
+        assert resp.status_code == 200
+
+    def test_unit_structure_non_owner_404(
+        self, client: TestClient, test_db: Session
+    ) -> None:
+        _, other_unit, _, _ = _other_owner_setup(test_db)
+        resp = client.get(f"/api/units/{other_unit.id}/structure")
+        assert resp.status_code == 404
+
 
 # ---------------------------------------------------------------------------
 # Helper: load_owned_or_404 (admin bypass, owner, stranger)

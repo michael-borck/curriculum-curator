@@ -17,7 +17,7 @@ Grill-one → implement-one → verify → next (interleaved), **not** grill-all
 |---|-----------|----------|--------|
 | 1 | Export dispatch registry | Strong | ● implemented + verified (branch `refactor/export-registry`) |
 | 2 | AI generation orchestrator | Strong | ● implemented + verified (branch `refactor/ai-generation-orchestrator`) |
-| 3 | Resource-ownership seam | Strong | ☐ not started |
+| 3 | Resource-ownership seam | Strong | ● implemented + verified (branch `refactor/ownership-seam`) — ADR-066 |
 | 4 | Curriculum context builder | Worth exploring | ● delivered as part of #2 (CurriculumContextBuilder) |
 | 5 | Import extraction seam | Worth exploring | ☐ not started |
 | 6 | H5P collapse | Worth exploring | ☐ not started |
@@ -96,6 +96,17 @@ Three real frictions (grounded, not the report's vague "shallow routes"): (a) **
 **Solution:** Generalise to a parametric `get_user_resource[T]` and adopt across the owned-resource routes. Ownership becomes a property of the seam, not of each route author's memory.
 
 **Wins:** locality — access rule in one module · safety holes close by construction · ~100 lines of repeated guards deleted · smallest blast radius of the six.
+
+### Implemented (staged commits on `refactor/ownership-seam`, ADR-066)
+
+Grounding reframed this from "tidy boilerplate" to a **security fix**: six route groups had **no ownership check at all** (Broken Access Control / IDOR).
+
+1. **Seam** — `load_owned_or_404(db, model, id, user, *, owner_attr/via_unit)` + shared `_verify_owner_or_404`; per-resource deps (`get_user_unit/_material/_assessment/_ulo/_design`). Standardised: 404 (never 403), admin bypass, archived→404. Dead `get_user_or_admin_override` deleted.
+2. **Closed 6 gaps** — gated ~73 endpoints (assessments, learning_outcomes, designs, udl_audit, analytics, accreditation); body-based gaps closed in-handler (`create_design` via `require_unit_owner`; analytics batch via `filter_owned_unit_ids`).
+3. **Consolidated** research.py (403→404 + admin) and unit_structure.py (admin bypass).
+4–5. `clo_sets`/`research_sources` **left as-is** (gap-free query-filtering; admin-bypass gain not worth a service refactor). units.py + prompt_templates.py also left (see ADR-066). 13 ownership tests prove non-owner→404, owner→200, admin bypass, batch filtering.
+
+**Verification:** ruff + basedpyright clean; 879 passed. Shape decision (helper+per-resource over a factory) and the deliberate exclusions recorded in ADR-066.
 
 ## 4 · One seam for "build the AI context" — **Worth exploring**
 
