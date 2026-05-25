@@ -14,6 +14,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.models.assessment import Assessment
+from app.models.learning_design import LearningDesign
+from app.models.learning_outcome import UnitLearningOutcome
+from app.models.unit import Unit
 from app.models.weekly_material import WeeklyMaterial
 from app.repositories import unit_repo, user_repo
 from app.schemas.unit import UnitResponse
@@ -240,3 +244,86 @@ def get_user_material(
         via_unit=True,
         detail="Material not found or access denied",
     )
+
+
+def get_user_assessment(
+    assessment_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
+) -> Assessment:
+    """Get an assessment whose owning unit belongs to the current user, or 404."""
+    return load_owned_or_404(
+        db,
+        Assessment,
+        assessment_id,
+        current_user,
+        via_unit=True,
+        detail="Assessment not found or access denied",
+    )
+
+
+def get_user_ulo(
+    ulo_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
+) -> UnitLearningOutcome:
+    """Get a learning outcome whose owning unit belongs to the current user, or 404."""
+    return load_owned_or_404(
+        db,
+        UnitLearningOutcome,
+        ulo_id,
+        current_user,
+        via_unit=True,
+        detail="Learning outcome not found or access denied",
+    )
+
+
+def get_user_design(
+    design_id: str,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
+) -> LearningDesign:
+    """Get a learning design whose owning unit belongs to the current user, or 404."""
+    return load_owned_or_404(
+        db,
+        LearningDesign,
+        design_id,
+        current_user,
+        via_unit=True,
+        detail="Learning design not found or access denied",
+    )
+
+
+def require_unit_owner(
+    db: Session, unit_id: str, current_user: UserResponse
+) -> None:
+    """Verify the current user owns ``unit_id`` (admins bypass), else 404.
+
+    For body-based creates where the unit_id is in the request body, not the
+    path, so it can't be a route-level dependency.
+    """
+    load_owned_or_404(
+        db, Unit, unit_id, current_user, detail="Unit not found or access denied"
+    )
+
+
+def filter_owned_unit_ids(
+    db: Session, unit_ids: list[str], current_user: UserResponse
+) -> list[str]:
+    """Return the subset of ``unit_ids`` the current user owns (admins get all).
+
+    The collection analogue of :func:`get_user_unit`, for batch endpoints that
+    take a list of unit ids in the body. Non-owned ids are silently dropped (no
+    existence leak), preserving order.
+    """
+    if current_user.role == ROLE_ADMIN:
+        return list(unit_ids)
+    if not unit_ids:
+        return []
+    rows = (
+        db.query(Unit.id)
+        .filter(Unit.id.in_(unit_ids), Unit.owner_id == current_user.id)
+        .all()
+    )
+    owned = {str(row[0]) for row in rows}
+    return [uid for uid in unit_ids if str(uid) in owned]

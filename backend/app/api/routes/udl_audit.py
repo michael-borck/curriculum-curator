@@ -34,6 +34,7 @@ async def list_guidelines() -> Any:
 @router.get(
     "/units/{unit_id}/responses",
     response_model=list[UDLAuditResponseItem],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_unit_responses(
     unit_id: UUID,
@@ -49,6 +50,7 @@ async def get_unit_responses(
 @router.get(
     "/units/{unit_id}/summary",
     response_model=UDLAuditSummary,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_unit_summary(
     unit_id: UUID,
@@ -64,6 +66,7 @@ async def get_unit_summary(
 @router.put(
     "/units/{unit_id}/responses",
     response_model=list[UDLAuditResponseItem],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def upsert_unit_responses(
     unit_id: UUID,
@@ -78,6 +81,7 @@ async def upsert_unit_responses(
 @router.post(
     "/units/{unit_id}/ai-suggestions",
     response_model=UDLAuditAISuggestionsResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_ai_suggestions(
     unit_id: UUID,

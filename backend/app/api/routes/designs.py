@@ -19,7 +19,11 @@ from app.services.design_service import design_service
 router = APIRouter()
 
 
-@router.get("/units/{unit_id}/designs", response_model=list[DesignListItem])
+@router.get(
+    "/units/{unit_id}/designs",
+    response_model=list[DesignListItem],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def list_designs(
     unit_id: str,
     db: Session = Depends(deps.get_db),
@@ -49,6 +53,8 @@ async def create_design(
     current_user: UserResponse = Depends(deps.get_current_active_user),
 ) -> DesignResponse:
     """Create a new learning design"""
+    # unit_id is in the body (not the path), so ownership is checked here.
+    deps.require_unit_owner(db, str(design_data.unit_id), current_user)
     try:
         design = await design_service.create_design(db, design_data)
         return _to_response(design)
@@ -59,7 +65,11 @@ async def create_design(
         ) from e
 
 
-@router.get("/designs/{design_id}", response_model=DesignResponse)
+@router.get(
+    "/designs/{design_id}",
+    response_model=DesignResponse,
+    dependencies=[Depends(deps.get_user_design)],
+)
 async def get_design(
     design_id: str,
     db: Session = Depends(deps.get_db),
@@ -75,7 +85,11 @@ async def get_design(
     return _to_response(design)
 
 
-@router.put("/designs/{design_id}", response_model=DesignResponse)
+@router.put(
+    "/designs/{design_id}",
+    response_model=DesignResponse,
+    dependencies=[Depends(deps.get_user_design)],
+)
 async def update_design(
     design_id: str,
     design_data: DesignUpdate,
@@ -99,7 +113,11 @@ async def update_design(
     return _to_response(design)
 
 
-@router.delete("/designs/{design_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/designs/{design_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(deps.get_user_design)],
+)
 async def delete_design(
     design_id: str,
     db: Session = Depends(deps.get_db),
@@ -114,7 +132,11 @@ async def delete_design(
         )
 
 
-@router.post("/designs/{design_id}/submit-review", response_model=DesignResponse)
+@router.post(
+    "/designs/{design_id}/submit-review",
+    response_model=DesignResponse,
+    dependencies=[Depends(deps.get_user_design)],
+)
 async def submit_for_review(
     design_id: str,
     db: Session = Depends(deps.get_db),
@@ -141,6 +163,7 @@ async def submit_for_review(
     "/designs/{design_id}/clone",
     response_model=DesignResponse,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(deps.get_user_design)],
 )
 async def clone_design(
     design_id: str,
@@ -157,7 +180,10 @@ async def clone_design(
     return _to_response(design)
 
 
-@router.post("/designs/{design_id}/generate-tasks")
+@router.post(
+    "/designs/{design_id}/generate-tasks",
+    dependencies=[Depends(deps.get_user_design)],
+)
 async def generate_tasks(
     design_id: str,
     db: Session = Depends(deps.get_db),

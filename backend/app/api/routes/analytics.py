@@ -36,7 +36,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/units/{unit_id}/overview", response_model=UnitOverview)
+@router.get(
+    "/units/{unit_id}/overview",
+    response_model=UnitOverview,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_overview(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -49,7 +53,11 @@ async def get_unit_overview(
     )
 
 
-@router.get("/units/{unit_id}/progress", response_model=ProgressReport)
+@router.get(
+    "/units/{unit_id}/progress",
+    response_model=ProgressReport,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_progress(
     unit_id: UUID,
     include_details: bool = Query(False),
@@ -64,7 +72,11 @@ async def get_unit_progress(
     )
 
 
-@router.get("/units/{unit_id}/completion", response_model=CompletionReport)
+@router.get(
+    "/units/{unit_id}/completion",
+    response_model=CompletionReport,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_completion_report(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -77,7 +89,11 @@ async def get_completion_report(
     )
 
 
-@router.get("/units/{unit_id}/alignment", response_model=AlignmentReport)
+@router.get(
+    "/units/{unit_id}/alignment",
+    response_model=AlignmentReport,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_alignment_report(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -90,7 +106,11 @@ async def get_alignment_report(
     )
 
 
-@router.get("/units/{unit_id}/workload", response_model=list[WeeklyWorkload])
+@router.get(
+    "/units/{unit_id}/workload",
+    response_model=list[WeeklyWorkload],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_weekly_workload(
     unit_id: UUID,
     start_week: int = Query(1, ge=1, le=52),
@@ -107,7 +127,10 @@ async def get_weekly_workload(
     )
 
 
-@router.get("/units/{unit_id}/recommendations")
+@router.get(
+    "/units/{unit_id}/recommendations",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_recommendations(
     unit_id: UUID,
     source: str = Query("rules", pattern="^(rules|llm)$"),
@@ -122,7 +145,10 @@ async def get_recommendations(
     )
 
 
-@router.get("/units/{unit_id}/export")
+@router.get(
+    "/units/{unit_id}/export",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def export_unit_data(
     unit_id: UUID,
     export_format: str = Query("json", pattern="^(json|csv|pdf)$", alias="format"),
@@ -137,7 +163,11 @@ async def export_unit_data(
     )
 
 
-@router.get("/units/{unit_id}/quality-score", response_model=QualityScore)
+@router.get(
+    "/units/{unit_id}/quality-score",
+    response_model=QualityScore,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_quality_score(
     unit_id: UUID,
     total_weeks: int = Query(12, ge=1, le=52),
@@ -172,6 +202,7 @@ async def get_quality_score(
 @router.get(
     "/units/{unit_id}/weekly-quality",
     response_model=list[WeekQualityScore],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_weekly_quality(
     unit_id: UUID,
@@ -193,8 +224,9 @@ async def get_batch_quality_scores(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Get star ratings for multiple units"""
-    uuids = [UUID(uid) for uid in unit_ids]
+    """Get star ratings for multiple units (only those the caller owns)."""
+    owned_ids = deps.filter_owned_unit_ids(db, unit_ids, current_user)
+    uuids = [UUID(uid) for uid in owned_ids]
     scores = await analytics_service.calculate_batch_quality_scores(
         db=db,
         unit_ids=uuids,
@@ -211,8 +243,9 @@ async def get_batch_dashboard_metrics(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Get quality stars, UDL stars, and weeks with content for multiple units"""
-    uuids = [UUID(uid) for uid in unit_ids]
+    """Get dashboard metrics for multiple units (only those the caller owns)."""
+    owned_ids = deps.filter_owned_unit_ids(db, unit_ids, current_user)
+    uuids = [UUID(uid) for uid in owned_ids]
     metrics = await analytics_service.calculate_batch_dashboard_metrics(
         db=db,
         unit_ids=uuids,
@@ -220,7 +253,10 @@ async def get_batch_dashboard_metrics(
     return {"metrics": metrics}
 
 
-@router.get("/units/{unit_id}/validation")
+@router.get(
+    "/units/{unit_id}/validation",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def validate_unit(
     unit_id: UUID,
     strict: bool = Query(False),
@@ -235,7 +271,11 @@ async def validate_unit(
     )
 
 
-@router.get("/units/{unit_id}/udl-score", response_model=UDLUnitScore)
+@router.get(
+    "/units/{unit_id}/udl-score",
+    response_model=UDLUnitScore,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_udl_score(
     unit_id: UUID,
     total_weeks: int = Query(12, ge=1, le=52),
@@ -263,6 +303,7 @@ async def get_udl_score(
 @router.get(
     "/units/{unit_id}/udl-weekly",
     response_model=list[UDLWeekScore],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_udl_weekly(
     unit_id: UUID,
@@ -283,6 +324,7 @@ async def get_udl_weekly(
 @router.get(
     "/units/{unit_id}/udl-suggestions",
     response_model=UDLSuggestionsResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_udl_suggestions(
     unit_id: UUID,
@@ -300,7 +342,10 @@ async def get_udl_suggestions(
     )
 
 
-@router.get("/units/{unit_id}/statistics")
+@router.get(
+    "/units/{unit_id}/statistics",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_statistics(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -319,6 +364,7 @@ async def get_unit_statistics(
 @router.get(
     "/units/{unit_id}/snapshots",
     response_model=list[SnapshotListItem],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def list_snapshots(
     unit_id: UUID,
@@ -332,6 +378,7 @@ async def list_snapshots(
 @router.post(
     "/units/{unit_id}/snapshots",
     response_model=SnapshotResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def create_snapshot(
     unit_id: UUID,
@@ -352,6 +399,7 @@ async def create_snapshot(
 @router.get(
     "/units/{unit_id}/snapshots/compare",
     response_model=SnapshotComparison,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def compare_snapshots(
     unit_id: UUID,
@@ -375,6 +423,7 @@ async def compare_snapshots(
 @router.get(
     "/units/{unit_id}/snapshots/{snapshot_id}",
     response_model=SnapshotResponse,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_snapshot(
     unit_id: UUID,
@@ -389,7 +438,10 @@ async def get_snapshot(
     return result
 
 
-@router.delete("/units/{unit_id}/snapshots/{snapshot_id}")
+@router.delete(
+    "/units/{unit_id}/snapshots/{snapshot_id}",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def delete_snapshot(
     unit_id: UUID,
     snapshot_id: UUID,
