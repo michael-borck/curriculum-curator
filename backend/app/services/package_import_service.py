@@ -382,7 +382,10 @@ def parse_manifest(zf: zipfile.ZipFile) -> _ManifestData:
 
     raw = zf.read("imsmanifest.xml").decode("utf-8")
     data.raw_text = raw
-    tree = ET.fromstring(raw)
+    try:
+        tree = ET.fromstring(raw)
+    except ET.ParseError as e:
+        raise PackageImportError(f"Invalid or corrupted manifest XML: {e}") from e
 
     ns = _resolve_ns(tree)
 
@@ -408,12 +411,12 @@ def parse_manifest(zf: zipfile.ZipFile) -> _ManifestData:
     # Walk items
     data.top_items = _walk_items(tree, tag_fn, data.resource_map)
 
-    # Better title from <organization>
+    # Better title from <organization> (only if it actually has one)
     org_el = tree.find(f".//{tag_fn('organization')}")
     if org_el is not None:
-        data.title = _el_title(org_el, tag_fn)
-        if data.title == "Untitled":
-            data.title = ""
+        org_title = _el_title(org_el, tag_fn)
+        if org_title and org_title != "Untitled":
+            data.title = org_title
 
     # Fallback title
     if not data.title:
@@ -1267,12 +1270,37 @@ class PackageImportService:
         import bleach  # noqa: PLC0415
 
         allowed_tags = [
-            "p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li",
-            "a", "strong", "em", "br", "table", "thead", "tbody", "tr", "th", "td",
-            "code", "pre", "blockquote", "img", "div", "span",
+            "p",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "ul",
+            "ol",
+            "li",
+            "a",
+            "strong",
+            "em",
+            "br",
+            "table",
+            "thead",
+            "tbody",
+            "tr",
+            "th",
+            "td",
+            "code",
+            "pre",
+            "blockquote",
+            "img",
+            "div",
+            "span",
         ]
         allowed_attrs = {"a": ["href"], "img": ["src", "alt"], "*": ["class"]}
-        inner_html = bleach.clean(inner_html, tags=allowed_tags, attributes=allowed_attrs)
+        inner_html = bleach.clean(
+            inner_html, tags=allowed_tags, attributes=allowed_attrs
+        )
 
         return title, inner_html
 

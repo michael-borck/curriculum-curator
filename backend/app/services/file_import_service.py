@@ -455,7 +455,7 @@ class FileImportService:
             r"^#+\s+(.+)$",  # Markdown headers
             r"^([A-Z][^.!?]*):$",  # Title case with colon
             r"^(\d+\.?\s+[A-Z].+)$",  # Numbered sections
-            r"^(Chapter|Section|Module|Unit|Lesson|Topic)\s+\d+:?\s*(.*)$",  # Common prefixes
+            r"^((?:Chapter|Section|Module|Unit|Lesson|Topic)\s+\d+):?\s*(.*)$",  # Common prefixes
             r"^(Introduction|Overview|Summary|Conclusion|References|Objectives|Materials|Procedure)$",  # Common sections
         ]
 
@@ -973,12 +973,11 @@ class FileImportService:
             r"[_\s](\d+)[_\s]",  # Number in middle
         ]
 
-        # Combine filename and folder path for analysis
-        text_to_analyze = f"{folder_path}/{filename}".lower()
-
-        # Check filename patterns
+        # Check filename patterns against the basename so anchored patterns
+        # (e.g. leading numbers like "03_lecture.pdf") match correctly
+        filename_lower = Path(filename).name.lower()
         for pattern in week_patterns:
-            matches = re.findall(pattern, text_to_analyze)
+            matches = re.findall(pattern, filename_lower)
             if matches:
                 try:
                     week_num = int(matches[0])
@@ -1099,76 +1098,76 @@ class FileImportService:
             zip_path = temp_path / "uploaded.zip"
             zip_path.write_bytes(zip_content)
 
+            # Extract into a dedicated subdirectory so the uploaded zip
+            # itself is never included in the walk below
+            extract_dir = temp_path / "extracted"
+            extract_dir.mkdir()
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                # Extract all files
-                zip_ref.extractall(temp_dir)
+                zip_ref.extractall(extract_dir)
 
-                # Analyze file structure
-                for root, _, files in os.walk(temp_dir):
-                    for file in files:
-                        if file.startswith((".", "__")):
-                            continue  # Skip hidden files
+            # Analyze file structure
+            for root, _, files in os.walk(extract_dir):
+                for file in files:
+                    file_path = Path(root) / file
+                    rel_path_obj = file_path.relative_to(extract_dir)
+                    if any(part.startswith((".", "__")) for part in rel_path_obj.parts):
+                        # Skip hidden/system files and anything inside
+                        # hidden/system directories (e.g. __MACOSX/)
+                        continue
 
-                        file_path = Path(root) / file
-                        rel_path = str(file_path.relative_to(temp_path))
-                        folder_path = str(file_path.parent.relative_to(temp_path))
-                        if folder_path == ".":
-                            folder_path = ""
+                    rel_path = str(rel_path_obj)
+                    folder_path = str(rel_path_obj.parent)
+                    if folder_path == ".":
+                        folder_path = ""
 
-                        # Check if unit outline
-                        if self.is_unit_outline(file):
-                            results["unit_outline_found"] = True
-                            results["unit_outline_file"] = {
-                                "filename": file,
-                                "path": rel_path,
-                                "folder": folder_path,
-                            }
+                    # Check if unit outline
+                    if self.is_unit_outline(file):
+                        results["unit_outline_found"] = True
+                        results["unit_outline_file"] = {
+                            "filename": file,
+                            "path": rel_path,
+                            "folder": folder_path,
+                        }
 
-                        # Detect week number
-                        week_num = self.detect_week_number(file, folder_path)
+                    # Detect week number
+                    week_num = self.detect_week_number(file, folder_path)
 
-                        # Detect content type
-                        content_type = self.detect_content_type_from_name(
-                            file, folder_path
-                        )
+                    # Detect content type
+                    content_type = self.detect_content_type_from_name(file, folder_path)
 
-                        # Read file content for further analysis
-                        try:
-                            file_content = file_path.read_bytes()
+                    # Read file content for further analysis
+                    try:
+                        file_content = file_path.read_bytes()
 
-                            # Process file to get more details
-                            file_result = await self.process_file(
-                                file_content, file, None
-                            )
+                        # Process file to get more details
+                        file_result = await self.process_file(file_content, file, None)
 
-                            file_info = {
-                                "filename": file,
-                                "path": rel_path,
-                                "folder": folder_path,
-                                "week_number": week_num,
-                                "detected_type": content_type,
-                                "processed_type": file_result.get(
-                                    "content_type", "general"
-                                ),
-                                "confidence": file_result.get(
-                                    "content_type_confidence", 0
-                                ),
-                                "word_count": file_result.get("word_count", 0),
-                                "size": len(file_content),
-                            }
+                        file_info = {
+                            "filename": file,
+                            "path": rel_path,
+                            "folder": folder_path,
+                            "week_number": week_num,
+                            "detected_type": content_type,
+                            "processed_type": file_result.get(
+                                "content_type", "general"
+                            ),
+                            "confidence": file_result.get("content_type_confidence", 0),
+                            "word_count": file_result.get("word_count", 0),
+                            "size": len(file_content),
+                        }
 
-                            results["processed_files"].append(file_info)
-                            results["total_files"] += 1
+                        results["processed_files"].append(file_info)
+                        results["total_files"] += 1
 
-                            # Group by week
-                            if week_num:
-                                if week_num not in results["files_by_week"]:
-                                    results["files_by_week"][week_num] = []
-                                results["files_by_week"][week_num].append(file_info)
+                        # Group by week
+                        if week_num:
+                            if week_num not in results["files_by_week"]:
+                                results["files_by_week"][week_num] = []
+                            results["files_by_week"][week_num].append(file_info)
 
-                        except Exception:
-                            # Skip files we can't process
-                            continue
+                    except Exception:
+                        # Skip files we can't process
+                        continue
 
         # Generate suggested structure
         results["suggested_structure"] = self._generate_suggested_structure(

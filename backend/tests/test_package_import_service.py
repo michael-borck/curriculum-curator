@@ -16,7 +16,6 @@ import json
 import zipfile
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
-from xml.etree.ElementTree import ParseError
 
 import pytest
 
@@ -365,6 +364,30 @@ class TestParseManifest:
         assert manifest.top_items == []
         assert manifest.resource_map == {}
 
+    def test_org_without_title_keeps_metadata_title(self) -> None:
+        """An <organization> with no <title> child must not wipe the title
+        already taken from <metadata><schema>."""
+        manifest_xml = """<?xml version='1.0'?>
+<manifest identifier="m1">
+  <metadata>
+    <schema>IMS Common Cartridge</schema>
+  </metadata>
+  <organizations>
+    <organization identifier="org">
+      <item identifier="i1" identifierref="r1"><title>Page</title></item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="r1" type="webcontent" href="content/page.html"/>
+  </resources>
+</manifest>"""
+        manifest = parse_manifest(_open_zip({"imsmanifest.xml": manifest_xml}))
+        assert manifest.title == "IMS Common Cartridge"
+
+    def test_malformed_manifest_raises_package_import_error(self) -> None:
+        with pytest.raises(PackageImportError, match="Invalid or corrupted manifest"):
+            parse_manifest(_open_zip({"imsmanifest.xml": "<manifest><unclosed"}))
+
 
 # ---------------------------------------------------------------------------
 # HTML extraction and filename inference
@@ -498,12 +521,12 @@ class TestAnalyzePackage:
         with pytest.raises(PackageImportError, match="missing 'unit'"):
             svc.analyze_package(zip_bytes)
 
-    def test_malformed_manifest_xml_raises_parse_error(self) -> None:
-        """Documents current behavior: malformed manifest XML leaks a raw
-        ParseError instead of being wrapped in PackageImportError."""
+    def test_malformed_manifest_xml_raises_package_import_error(self) -> None:
+        """Malformed manifest XML is wrapped in PackageImportError instead of
+        leaking a raw ParseError."""
         svc = PackageImportService()
         zip_bytes = _zip_bytes({"imsmanifest.xml": "<manifest><unclosed"})
-        with pytest.raises(ParseError):
+        with pytest.raises(PackageImportError, match="Invalid or corrupted manifest"):
             svc.analyze_package(zip_bytes)
 
     def test_round_trip_preview_counts_and_week_detection(self) -> None:

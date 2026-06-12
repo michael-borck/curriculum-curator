@@ -155,6 +155,10 @@ class TestHeadingDetection:
             "",
             "ab",
             "this is a normal sentence about content.",
+            # Lowercase prose without punctuation: must not match the
+            # all-caps heading pattern (which is case-sensitive).
+            "this is plain prose",
+            "Mixed Case But Not All Caps",
         ],
     )
     def test_rejects_non_headings(
@@ -389,16 +393,16 @@ class TestWeeklyContent:
         assert len(weekly) == 1
         assert weekly[0].topic == "Week 3"
 
-    def test_topic_regex_swallows_newline_after_colon(
+    def test_bare_week_heading_does_not_swallow_next_line_as_topic(
         self, analyzer: DocumentAnalyzerService
     ) -> None:
-        # Known quirk: `[:\s]*` in the week pattern consumes the newline,
-        # so the next body line is captured as the topic.
+        # The week pattern must not consume the newline after "Week 3:",
+        # so the body line stays body and the topic falls back to the label.
         weekly = analyzer._extract_weekly_content(
             _make_doc(text="Week 3:\nsome plain body content here\n\n")
         )
         assert len(weekly) == 1
-        assert weekly[0].topic == "some plain body content here"
+        assert weekly[0].topic == "Week 3"
 
     def test_no_weeks_in_document(self, analyzer: DocumentAnalyzerService) -> None:
         assert analyzer._extract_weekly_content(_make_doc(text="No schedule.")) == []

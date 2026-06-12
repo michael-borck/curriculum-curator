@@ -257,9 +257,8 @@ class TestParseSections:
         content = "Chapter 2: Data Structures\nLists and trees explained here.\n"
         sections = service._parse_sections(content)
 
-        # Note: the parser combines regex groups 1 and 2 ("Chapter" +
-        # "Data Structures") and drops the chapter number from the title.
-        assert sections[0]["title"] == "Chapter Data Structures"
+        # The chapter prefix and number are preserved in the section title.
+        assert sections[0]["title"] == "Chapter 2 Data Structures"
         assert "Lists and trees" in sections[0]["content"]
 
     def test_empty_content_yields_no_sections(self, service: FileImportService):
@@ -322,6 +321,7 @@ class TestNameInference:
             ("week_3_lecture.pptx", "", 3),
             ("Week 12 Notes.docx", "", 12),
             ("lecture_05.pdf", "", 5),
+            ("03_lecture.pdf", "", 3),  # leading number in filename, no folder
             ("notes.txt", "Week_7", 7),
             ("notes.txt", "", None),
             ("week_99_lecture.txt", "", None),  # out of 1-52 range
@@ -432,6 +432,9 @@ class TestProcessZipFile:
                 "week_2/quiz_questions.txt": QUIZ_TEXT.encode(),
                 "unit_outline.txt": b"Unit outline for the semester.",
                 ".hidden.txt": b"hidden",  # dotfiles must be skipped
+                # Files inside hidden/system directories must be skipped too
+                "__MACOSX/week_1/resource.txt": b"macos junk",
+                ".git/config.txt": b"git junk",
             }
         )
         # db and current_user are accepted but unused by the implementation
@@ -441,11 +444,15 @@ class TestProcessZipFile:
         assert result["unit_outline_file"]["filename"] == "unit_outline.txt"
         processed_names = {f["filename"] for f in result["processed_files"]}
         assert ".hidden.txt" not in processed_names
-        assert {
+        assert "resource.txt" not in processed_names  # inside __MACOSX/
+        assert "config.txt" not in processed_names  # inside .git/
+        assert "uploaded.zip" not in processed_names  # the temp zip itself
+        assert processed_names == {
             "lecture_notes.txt",
             "quiz_questions.txt",
             "unit_outline.txt",
-        } <= processed_names
+        }
+        assert result["total_files"] == 3
         assert set(result["files_by_week"]) == {1, 2}
         week1 = result["files_by_week"][1][0]
         assert week1["filename"] == "lecture_notes.txt"

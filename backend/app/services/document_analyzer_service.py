@@ -384,10 +384,14 @@ class DocumentAnalyzerService:
         if not text or len(text) < 3:
             return False
 
+        # All-caps headings must be genuinely upper case (no IGNORECASE,
+        # which would match any letters-and-spaces line of prose)
+        if re.match(r"^[A-Z][A-Z\s]+$", text):
+            return True
+
         # Check for common heading patterns
         patterns = [
             r"^\d+\.?\s+",  # Numbered sections
-            r"^[A-Z][A-Z\s]+$",  # All caps
             r"^(Chapter|Section|Unit|Module|Week|Topic)\s+",
             r"^(Introduction|Overview|Objectives|Outcomes|Assessment|Summary|Conclusion)",
         ]
@@ -592,8 +596,10 @@ class DocumentAnalyzerService:
         weekly_content = []
         text = document.full_text
 
-        # Find weekly sections
-        week_pattern = r"Week\s+(\d+)[:\s]*([^\n]*)\n(.*?)(?=Week\s+\d+|\Z)"
+        # Find weekly sections. Whitespace after the week number must not
+        # cross the newline ([:\t ] instead of [:\s]), otherwise a bare
+        # "Week 3:" heading would capture the next line as its topic.
+        week_pattern = r"Week\s+(\d+)[:\t ]*([^\n]*)\n(.*?)(?=Week\s+\d+|\Z)"
         matches = re.finditer(week_pattern, text, re.IGNORECASE | re.DOTALL)
 
         for match in matches:
