@@ -213,7 +213,8 @@ export interface PedagogySelectorProps {
 }
 
 export interface RichTextEditorProps {
-  content: string;
+  // HTML string or TipTap JSON document (both accepted by useEditor)
+  content: string | Record<string, unknown>;
   onChange: (content: string) => void;
   onJsonChange?: ((json: Record<string, unknown>) => void) | undefined;
   pedagogyHints?: string[] | undefined;

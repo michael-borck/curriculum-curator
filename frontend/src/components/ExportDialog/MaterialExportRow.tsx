@@ -1,5 +1,6 @@
 import React from 'react';
 import type { MaterialExportPreview } from '../../services/exportApi';
+import { getExportFormatMeta } from '../../constants/exportFormats';
 
 // ─── Display labels and colours ──────────────────────────────────────
 
@@ -12,15 +13,6 @@ const CONTENT_TYPE_BADGES: Record<string, { label: string; color: string }> = {
     color: 'bg-indigo-100 text-indigo-700',
   },
   rich_text: { label: 'Text', color: 'bg-gray-100 text-gray-600' },
-};
-
-const TARGET_LABELS: Record<string, string> = {
-  qti: 'QTI',
-  h5p_question_set: 'H5P Quiz',
-  h5p_course_presentation: 'H5P Slides',
-  h5p_branching: 'H5P Branching',
-  h5p_interactive_video: 'H5P Interactive Video',
-  html: 'HTML',
 };
 
 // ─── Component ───────────────────────────────────────────────────────
@@ -89,17 +81,21 @@ const MaterialExportRow: React.FC<MaterialExportRowProps> = ({
             <div key={ct} className='flex items-center gap-1'>
               {available.map(target => {
                 const isOn = active.includes(target);
+                const meta = getExportFormatMeta(target);
                 return (
                   <button
                     key={target}
                     onClick={() => toggleTarget(ct, target)}
+                    title={
+                      meta.tooltip ? `${meta.label} — ${meta.tooltip}` : ''
+                    }
                     className={`text-[11px] px-2 py-0.5 rounded-full border transition ${
                       isOn
                         ? 'bg-purple-100 border-purple-300 text-purple-700 font-medium'
                         : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                     }`}
                   >
-                    {TARGET_LABELS[target] ?? target}
+                    {meta.friendlyLabel}
                   </button>
                 );
               })}

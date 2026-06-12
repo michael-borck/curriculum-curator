@@ -29,6 +29,7 @@ import {
   downloadExport,
   downloadMaterialsExport,
 } from '../utils/downloadExport';
+import { getExportFormatMeta } from '../constants/exportFormats';
 import ULOManager from '../components/UnitStructure/ULOManager';
 import { AssessmentsManager } from '../components/UnitStructure/AssessmentsManager';
 import { UnitAnalytics } from '../components/UnitStructure/UnitAnalytics';
@@ -403,14 +404,7 @@ const UnitPage = () => {
   ) => {
     if (!unitId) return;
     setExportMenuOpen(false);
-    const labelMap: Record<string, string> = {
-      imscc: 'IMSCC v1.1',
-      scorm: 'SCORM 1.2',
-      html: 'HTML',
-      qti: 'QTI 2.1',
-      h5p_question_set: 'H5P Quiz',
-    };
-    const label = labelMap[format] ?? format;
+    const label = getExportFormatMeta(format).label;
     try {
       setExporting(true);
       await downloadExport(unitId, format, targetLms);
@@ -582,37 +576,33 @@ const UnitPage = () => {
                         <option value='brightspace'>Brightspace</option>
                       </select>
                     </div>
-                    <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('imscc')}
-                    >
-                      Export IMSCC v1.1 (.imscc)
-                    </button>
-                    <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('scorm')}
-                    >
-                      Export SCORM 1.2 (.zip)
-                    </button>
-                    <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('html')}
-                    >
-                      Export as HTML (.html)
-                    </button>
+                    {(['imscc', 'scorm', 'html'] as const).map(format => {
+                      const meta = getExportFormatMeta(format);
+                      return (
+                        <button
+                          key={format}
+                          className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                          title={`${meta.label} — ${meta.tooltip}`}
+                          onClick={() => handleExport(format)}
+                        >
+                          {meta.friendlyLabel} ({meta.extension})
+                        </button>
+                      );
+                    })}
                     <div className='border-t border-gray-100' />
-                    <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('qti')}
-                    >
-                      LMS Native Quiz (QTI 2.1)
-                    </button>
-                    <button
-                      className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
-                      onClick={() => handleExport('h5p_question_set')}
-                    >
-                      Interactive Quiz (H5P)
-                    </button>
+                    {(['qti', 'h5p_question_set'] as const).map(format => {
+                      const meta = getExportFormatMeta(format);
+                      return (
+                        <button
+                          key={format}
+                          className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
+                          title={`${meta.label} — ${meta.tooltip}`}
+                          onClick={() => handleExport(format)}
+                        >
+                          {meta.friendlyLabel} ({meta.extension})
+                        </button>
+                      );
+                    })}
                     <div className='border-t border-gray-100' />
                     <button
                       className='w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between rounded-b-lg'
@@ -627,22 +617,19 @@ const UnitPage = () => {
                     </button>
                     {materialsExportOpen && (
                       <div className='border-t border-gray-100 bg-gray-50'>
-                        {(
-                          [
-                            { value: 'html', label: 'HTML' },
-                            { value: 'pdf', label: 'PDF' },
-                            { value: 'docx', label: 'DOCX' },
-                            { value: 'pptx', label: 'PPTX' },
-                          ] as const
-                        ).map(fmt => (
-                          <button
-                            key={fmt.value}
-                            className='w-full text-left px-6 py-2 text-sm text-gray-600 hover:bg-gray-100 last:rounded-b-lg'
-                            onClick={() => handleMaterialsExport(fmt.value)}
-                          >
-                            All materials as {fmt.label} (.zip)
-                          </button>
-                        ))}
+                        {(['html', 'pdf', 'docx', 'pptx'] as const).map(
+                          format => (
+                            <button
+                              key={format}
+                              className='w-full text-left px-6 py-2 text-sm text-gray-600 hover:bg-gray-100 last:rounded-b-lg'
+                              title={getExportFormatMeta(format).tooltip}
+                              onClick={() => handleMaterialsExport(format)}
+                            >
+                              All materials as{' '}
+                              {getExportFormatMeta(format).label} (.zip)
+                            </button>
+                          )
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
   closestCenter,
@@ -64,6 +65,7 @@ import {
   WeekMaterials,
 } from '../../types/unitStructure';
 import { getFormatMeta } from '../../constants/sessionFormats';
+import { getExportFormatMeta } from '../../constants/exportFormats';
 import { SessionFormatCombobox } from '../shared/SessionFormatCombobox';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -157,14 +159,9 @@ function FormatIcon({
   return <Icon className={className} />;
 }
 
-const exportFormats = [
-  { value: 'html', label: 'HTML' },
-  { value: 'pdf', label: 'PDF' },
-  { value: 'docx', label: 'DOCX' },
-  { value: 'pptx', label: 'PPTX' },
-] as const;
+const exportFormats = ['html', 'pdf', 'docx', 'pptx'] as const;
 
-type ExportFormatValue = (typeof exportFormats)[number]['value'];
+type ExportFormatValue = (typeof exportFormats)[number];
 
 const handleMaterialDownload = async (
   materialId: string,
@@ -181,10 +178,18 @@ const handleMaterialDownload = async (
 const SortableMaterialItem: React.FC<{
   material: MaterialResponse;
   onEdit: (material: MaterialResponse) => void;
+  onEditContent: (material: MaterialResponse) => void;
   onDelete: (id: string) => void;
   onDuplicate: (material: MaterialResponse) => void;
   onHistory: (material: MaterialResponse) => void;
-}> = ({ material, onEdit, onDelete, onDuplicate, onHistory }) => {
+}> = ({
+  material,
+  onEdit,
+  onEditContent,
+  onDelete,
+  onDuplicate,
+  onHistory,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportRef = React.useRef<HTMLDivElement>(null);
@@ -292,7 +297,7 @@ const SortableMaterialItem: React.FC<{
         </div>
 
         <div className='flex items-center space-x-2 ml-4'>
-          {material.description && (
+          {(material.contentJson || material.description) && (
             <div className='relative' ref={exportRef}>
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
@@ -303,18 +308,22 @@ const SortableMaterialItem: React.FC<{
               </button>
               {showExportMenu && (
                 <div className='absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
-                  {exportFormats.map(fmt => (
-                    <button
-                      key={fmt.value}
-                      className='w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg'
-                      onClick={() => {
-                        setShowExportMenu(false);
-                        handleMaterialDownload(material.id, fmt.value);
-                      }}
-                    >
-                      {fmt.label}
-                    </button>
-                  ))}
+                  {exportFormats.map(format => {
+                    const meta = getExportFormatMeta(format);
+                    return (
+                      <button
+                        key={format}
+                        className='w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg'
+                        title={meta.tooltip}
+                        onClick={() => {
+                          setShowExportMenu(false);
+                          handleMaterialDownload(material.id, format);
+                        }}
+                      >
+                        {meta.friendlyLabel}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -334,7 +343,7 @@ const SortableMaterialItem: React.FC<{
               <Clipboard className='w-4 h-4' />
             </button>
           )}
-          {material.description && (
+          {(material.contentJson || material.description) && (
             <button
               onClick={() => onHistory(material)}
               className='p-1 text-gray-400 hover:text-indigo-600'
@@ -351,9 +360,16 @@ const SortableMaterialItem: React.FC<{
             <Copy className='w-4 h-4' />
           </button>
           <button
+            onClick={() => onEditContent(material)}
+            className='p-1 text-gray-400 hover:text-purple-600'
+            title='Edit content'
+          >
+            <FileText className='w-4 h-4' />
+          </button>
+          <button
             onClick={() => onEdit(material)}
             className='p-1 text-gray-400 hover:text-blue-600'
-            title='Edit'
+            title='Edit details'
           >
             <Edit2 className='w-4 h-4' />
           </button>
@@ -376,6 +392,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
   topicLabel = 'Week',
   onMaterialsChanged,
 }) => {
+  const navigate = useNavigate();
   const confirm = useConfirmDialog();
   const { globalStyle } = useTeachingStyleStore();
   const { canGenerate } = useAILevel();
@@ -1049,6 +1066,9 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
                   key={material.id}
                   material={material}
                   onEdit={handleEdit}
+                  onEditContent={m =>
+                    navigate(`/units/${unitId}/materials/${m.id}/edit`)
+                  }
                   onDelete={handleDelete}
                   onDuplicate={handleDuplicate}
                   onHistory={setHistoryMaterial}

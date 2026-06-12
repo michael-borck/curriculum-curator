@@ -14,6 +14,7 @@ import AppLayout from './components/Layout/AppLayout';
 // Pages
 import DashboardPage from './pages/DashboardPage';
 import UnitPage from './pages/UnitPage';
+import MaterialEditorPage from './pages/MaterialEditorPage';
 
 // Features
 import Login from './features/auth/Login';
@@ -158,6 +159,10 @@ function App() {
               <Route path='/units' element={<DashboardPage />} />
               <Route path='/units/:unitId' element={<UnitPage />} />
               <Route path='/units/:unitId/edit' element={<UnitPage />} />
+              <Route
+                path='/units/:unitId/materials/:materialId/edit'
+                element={<MaterialEditorPage />}
+              />
 
               {/* Legacy redirects */}
               <Route

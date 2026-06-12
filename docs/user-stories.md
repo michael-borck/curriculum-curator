@@ -166,7 +166,7 @@
 | 9.16 | As a **Creator**, I want to export a video material as an H5P Interactive Video so I can overlay questions at specific timestamps for active viewing. | P5 | **Done** — `H5pInteractiveVideoExporter` |
 | 9.17 | As a **Creator**, I want H5P exports to be embeddable in my IMSCC packages alongside HTML and QTI content, so a single package can contain a mix of static pages, native quizzes, and interactive H5P objects. | P5 | **Planned** |
 | 9.18 | As a **Creator**, I want to export a unit or selection of materials as a flat ZIP file (folder structure mirroring unit/week/material hierarchy) for manual distribution or archival outside an LMS. | P5 | **Done** — `GET /api/units/{id}/export/materials` ZIP, wired on UnitPage |
-| 9.19 | As a **Creator**, I want export options displayed with user-friendly labels and tooltips ("LMS Native Quiz", "Interactive Quiz", "Printable Document") rather than technical format names, so I can choose without knowing what H5P or QTI means. | P5 | **Planned** |
+| 9.19 | As a **Creator**, I want export options displayed with user-friendly labels and tooltips ("LMS Native Quiz", "Interactive Quiz", "Printable Document") rather than technical format names, so I can choose without knowing what H5P or QTI means. | P5 | **Done** — `constants/exportFormats.ts` single source of friendly labels + tooltips across all export surfaces |
 | 9.20 | As a **Creator**, I want to set a default export format per content type (e.g., "my quizzes default to LMS Native Quiz") so I don't have to choose every time I export. | P5 | **Planned** |
 | 9.21 | As a **Creator**, I want the system to warn me at export time if my content contains elements that the chosen format doesn't support (e.g., matching questions in a QTI export) and suggest an alternative format. | P5 | **Planned** |
 | 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Done** — per-material download menu in `WeeklyMaterialsManager` via unified export route |
@@ -289,7 +289,7 @@
 | 19C.2 | As a **Creator**, I want structured quiz question blocks in the editor where I define question text, answer options, correct answers, and feedback in dedicated fields rather than free-form text. | P5 | **Planned** |
 | 19C.3 | As a **Creator**, I want to choose question types (multiple choice, true/false, multiple select, short answer, fill-in-the-blank, matching, drag-and-drop) and have the editor show the appropriate answer structure for each. | P5 | **Planned** |
 | 19C.4 | As a **Creator**, I want structured slide break nodes in the editor so I can clearly separate slides with titles and content areas, making export to PPTX and H5P Course Presentation predictable. | P5 | **Planned** |
-| 19C.5 | As a **Creator**, I want structured branching card nodes in the editor with choice fields (label + target card), so authoring branching scenarios feels like filling in a form, not writing markup. | P5 | **Planned** |
+| 19C.5 | As a **Creator**, I want structured branching card nodes in the editor with choice fields (label + target card), so authoring branching scenarios feels like filling in a form, not writing markup. | P5 | **Done** — `BranchingCardNode`/`BranchingCardView` form-field editing, hosted on the material editor route |
 
 ## 18. Flexibility & Workflow Freedom
 

@@ -14,6 +14,7 @@ import {
 } from '../../services/exportTemplateApi';
 import api from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { getExportFormatMeta } from '../../constants/exportFormats';
 
 interface FormatSectionProps {
   format: string;
@@ -174,30 +175,24 @@ const FormatSection: React.FC<FormatSectionProps> = ({
 interface ContentTypeRow {
   key: string;
   label: string;
-  targets: { value: string; label: string }[];
+  targets: string[];
 }
 
 const CONTENT_TYPE_ROWS: ContentTypeRow[] = [
   {
     key: 'quiz',
     label: 'Quizzes',
-    targets: [
-      { value: 'qti', label: 'QTI (LMS native)' },
-      { value: 'h5p_question_set', label: 'H5P Quiz' },
-    ],
+    targets: ['qti', 'h5p_question_set'],
   },
   {
     key: 'slides',
     label: 'Slides',
-    targets: [
-      { value: 'h5p_course_presentation', label: 'H5P Course Presentation' },
-      { value: 'html', label: 'HTML' },
-    ],
+    targets: ['h5p_course_presentation', 'html'],
   },
   {
     key: 'branching',
     label: 'Branching Scenarios',
-    targets: [{ value: 'h5p_branching', label: 'H5P Branching Scenario' }],
+    targets: ['h5p_branching'],
   },
 ];
 
@@ -267,19 +262,23 @@ const DefaultExportTargets: React.FC = () => {
                 {row.label}
               </span>
               <div className='flex items-center gap-2'>
-                {row.targets.map(t => {
-                  const isOn = active.includes(t.value);
+                {row.targets.map(target => {
+                  const isOn = active.includes(target);
+                  const meta = getExportFormatMeta(target);
                   return (
                     <button
-                      key={t.value}
-                      onClick={() => toggle(row.key, t.value)}
+                      key={target}
+                      onClick={() => toggle(row.key, target)}
+                      title={
+                        meta.tooltip ? `${meta.label} — ${meta.tooltip}` : ''
+                      }
                       className={`text-xs px-3 py-1 rounded-full border transition ${
                         isOn
                           ? 'bg-purple-100 border-purple-300 text-purple-700 font-medium'
                           : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}
                     >
-                      {t.label}
+                      {meta.friendlyLabel}
                     </button>
                   );
                 })}
