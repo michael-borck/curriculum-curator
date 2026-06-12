@@ -5,6 +5,7 @@ interface UnifiedEditorProps {
   content: string | Record<string, unknown>;
   onChange: (content: string) => void;
   onJsonChange?: ((json: Record<string, unknown>) => void) | undefined;
+  onEditorReady?: ((editor: import('@tiptap/core').Editor) => void) | undefined;
   contentId?: string | undefined;
   pedagogyHints?: string[] | undefined;
   unitId?: string | undefined;
@@ -15,6 +16,7 @@ const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   content,
   onChange,
   onJsonChange,
+  onEditorReady,
   pedagogyHints,
   unitId,
   materialId,
@@ -24,6 +26,7 @@ const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
       content={content}
       onChange={onChange}
       onJsonChange={onJsonChange}
+      onEditorReady={onEditorReady}
       pedagogyHints={pedagogyHints}
       unitId={unitId}
       materialId={materialId}

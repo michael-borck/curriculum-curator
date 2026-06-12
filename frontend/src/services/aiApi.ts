@@ -41,6 +41,17 @@ export interface FillGapResponse {
   suggestions: string[];
 }
 
+// ─── Speaker Notes Types ─────────────────────────────────────────────────────
+
+export interface SpeakerNotesDraft {
+  slideIndex: number;
+  notes: string;
+}
+
+export interface GenerateSpeakerNotesResponse {
+  drafts: SpeakerNotesDraft[];
+}
+
 // ─── API Calls ───────────────────────────────────────────────────────────────
 
 export const aiApi = {
@@ -64,5 +75,13 @@ export const aiApi = {
     designId?: string;
   }) {
     return api.post<FillGapResponse>('/ai/fill-gap', data);
+  },
+
+  /** Draft speaker notes for the selected slides of a material. */
+  generateSpeakerNotes(materialId: string, slideIndices: number[]) {
+    return api.post<GenerateSpeakerNotesResponse>(
+      `/ai/materials/${materialId}/generate-speaker-notes`,
+      { slideIndices }
+    );
   },
 };

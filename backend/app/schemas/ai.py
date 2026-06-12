@@ -164,3 +164,29 @@ class SuggestedInteraction(CamelModel):
 
 class SuggestInteractionPointsResponse(CamelModel):
     interactions: list[SuggestedInteraction]
+
+
+# =============================================================================
+# Speaker Notes Generation (15.11)
+# =============================================================================
+
+
+class GenerateSpeakerNotesRequest(CamelModel):
+    """Request to draft speaker notes for selected slides of a material.
+
+    ``slide_indices`` are zero-based indices into the material's slide
+    segments (as produced by the slide splitter). Empty list means all
+    slides.
+    """
+
+    slide_indices: list[int] = Field(default_factory=list)
+    design_id: str | None = None
+
+
+class SpeakerNotesDraft(CamelModel):
+    slide_index: int
+    notes: str
+
+
+class GenerateSpeakerNotesResponse(CamelModel):
+    drafts: list[SpeakerNotesDraft]

@@ -1,11 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import type { Editor } from '@tiptap/core';
 import UnifiedEditor from '../components/Editor/UnifiedEditor';
+import SpeakerNotesGenerateDialog from '../components/Editor/SpeakerNotesGenerateDialog';
 import { materialsApi } from '../services/materialsApi';
+import type { SpeakerNotesDraft } from '../services/aiApi';
 import type { MaterialResponse } from '../types/unitStructure';
 import { getFormatMeta } from '../constants/sessionFormats';
+import { applySpeakerNotesDrafts } from '../utils/speakerNotes';
+import { useAILevel } from '../hooks/useAILevel';
 
 /**
  * Full-page content editor for a single weekly material.
@@ -31,6 +36,18 @@ const MaterialEditorPage: React.FC = () => {
   >(undefined);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [hasSlides, setHasSlides] = useState(false);
+  const editorRef = useRef<Editor | null>(null);
+  const { isAIDisabled } = useAILevel();
+
+  const updateHasSlides = useCallback((json: Record<string, unknown>) => {
+    const content = json.content;
+    setHasSlides(
+      Array.isArray(content) &&
+        content.some(node => (node as { type?: string }).type === 'slideBreak')
+    );
+  }, []);
 
   useEffect(() => {
     if (!materialId) return;
@@ -42,6 +59,7 @@ const MaterialEditorPage: React.FC = () => {
         if (!cancelled) {
           setMaterial(data);
           setEditedHtml(data.description ?? '');
+          if (data.contentJson) updateHasSlides(data.contentJson);
         }
       } catch {
         if (!cancelled) setLoadError(true);
@@ -52,7 +70,7 @@ const MaterialEditorPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [materialId]);
+  }, [materialId, updateHasSlides]);
 
   const handleSave = useCallback(async () => {
     if (!material) return;
@@ -144,6 +162,16 @@ const MaterialEditorPage: React.FC = () => {
           {dirty && (
             <span className='text-sm text-amber-600'>Unsaved changes</span>
           )}
+          {hasSlides && !isAIDisabled && (
+            <button
+              onClick={() => setNotesDialogOpen(true)}
+              className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+              title='Draft speaker notes for your slides with AI, reviewed before saving'
+            >
+              <Sparkles className='w-4 h-4' />
+              Notes with AI
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={saving || !dirty}
@@ -167,10 +195,31 @@ const MaterialEditorPage: React.FC = () => {
         }}
         onJsonChange={json => {
           setEditedJson(json);
+          updateHasSlides(json);
+        }}
+        onEditorReady={editor => {
+          editorRef.current = editor;
         }}
         unitId={unitId}
         materialId={materialId}
       />
+
+      {notesDialogOpen && materialId && editorRef.current && (
+        <SpeakerNotesGenerateDialog
+          materialId={materialId}
+          contentJson={editorRef.current.getJSON()}
+          onApply={(drafts: SpeakerNotesDraft[]) => {
+            const editor = editorRef.current;
+            if (!editor) return;
+            const updated = applySpeakerNotesDrafts(editor.getJSON(), drafts);
+            editor.commands.setContent(updated, true);
+            toast.success(
+              `Applied notes to ${drafts.length} slide${drafts.length === 1 ? '' : 's'} — remember to save`
+            );
+          }}
+          onClose={() => setNotesDialogOpen(false)}
+        />
+      )}
     </div>
   );
 };

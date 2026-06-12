@@ -23,6 +23,10 @@ from app.services.ai_prompts.schedule import (
     SCHEDULE_SYSTEM,
     render_schedule_prompt,
 )
+from app.services.ai_prompts.speaker_notes import (
+    SPEAKER_NOTES_SYSTEM,
+    render_speaker_notes_prompt,
+)
 from app.services.ai_prompts.validate import (
     VALIDATE_SYSTEM,
     ValidationCheck,
@@ -48,6 +52,7 @@ __all__ = [
     "REMEDIATE_SYSTEM",
     "SCAFFOLD_UNIT_SYSTEM",
     "SCHEDULE_SYSTEM",
+    "SPEAKER_NOTES_SYSTEM",
     "SUGGEST_POINTS_SYSTEM",
     "VALIDATE_CONTENT_SYSTEM",
     "VALIDATE_SYSTEM",
@@ -58,6 +63,7 @@ __all__ = [
     "render_remediate_prompt",
     "render_scaffold_unit_prompt",
     "render_schedule_prompt",
+    "render_speaker_notes_prompt",
     "render_suggest_points_prompt",
     "render_validate_content_prompt",
     "render_validation_prompt",

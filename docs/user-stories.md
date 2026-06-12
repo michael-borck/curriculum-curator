@@ -238,7 +238,7 @@
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
 | 15.8 | As a **Creator**, I want to embed YouTube/video links as rich previews in my materials. | P2 | **Done** — TipTap Video/YouTube nodes |
 | 15.10 | As a **Creator**, I want the editor to display speaker notes as a clearly distinct block beneath each slide, with a "+ Add speaker notes" affordance for empty slides and auto-scaffolding when I insert a slide break, so writing notes feels like a normal part of slide authoring rather than a hidden feature. | P2 | **Done** — styled notes block, per-slide "+ Add speaker notes" affordance, auto-scaffold on slide break, Notes N/M badge |
-| 15.11 | As a **Creator**, I want a "Generate speaker notes with AI" action that drafts conversational notes from each slide's content (with a per-slide opt-out toggle so I can exclude slides I want to script myself), reviewed via propose/apply before anything commits. | P3 | **Planned** — Phase 3 of `docs/speaker-notes-plan.md` |
+| 15.11 | As a **Creator**, I want a "Generate speaker notes with AI" action that drafts conversational notes from each slide's content (with a per-slide opt-out toggle so I can exclude slides I want to script myself), reviewed via propose/apply before anything commits. | P3 | **Done** — `POST /ai/materials/{id}/generate-speaker-notes` batched call + select/review/apply dialog in the material editor |
 
 ## 16. Desktop App & Distribution
 

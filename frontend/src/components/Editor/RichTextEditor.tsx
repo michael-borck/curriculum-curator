@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Table from '@tiptap/extension-table';
@@ -254,6 +254,7 @@ const RichTextEditor = ({
   content,
   onChange,
   onJsonChange,
+  onEditorReady,
   pedagogyHints = [],
   unitId,
   materialId,
@@ -292,6 +293,10 @@ const RichTextEditor = ({
       onJsonChange?.(editor.getJSON());
     },
   });
+
+  useEffect(() => {
+    if (editor) onEditorReady?.(editor);
+  }, [editor, onEditorReady]);
 
   const staticGuidance = isAIDisabled
     ? getPedagogyStaticGuidance(globalStyle)

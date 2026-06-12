@@ -217,6 +217,7 @@ export interface RichTextEditorProps {
   content: string | Record<string, unknown>;
   onChange: (content: string) => void;
   onJsonChange?: ((json: Record<string, unknown>) => void) | undefined;
+  onEditorReady?: ((editor: import('@tiptap/core').Editor) => void) | undefined;
   pedagogyHints?: string[] | undefined;
   unitId?: string | undefined;
   materialId?: string | undefined;

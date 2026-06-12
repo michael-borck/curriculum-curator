@@ -15,9 +15,12 @@ from sqlalchemy.orm import Session
 from app.api import deps
 from app.models import User
 from app.models.system_settings import SystemSettings
+from app.models.weekly_material import WeeklyMaterial
 from app.schemas.ai import (
     FillGapRequest,
     FillGapResponse,
+    GenerateSpeakerNotesRequest,
+    GenerateSpeakerNotesResponse,
     GenerateVideoInteractionRequest,
     GenerateVideoInteractionResponse,
     ScaffoldUnitRequest,
@@ -53,6 +56,7 @@ from app.services.ai_prompts import (
     REMEDIATE_SYSTEM,
     SCAFFOLD_UNIT_SYSTEM,
     SCHEDULE_SYSTEM,
+    SPEAKER_NOTES_SYSTEM,
     SUGGEST_POINTS_SYSTEM,
     VALIDATE_CONTENT_SYSTEM,
     VALIDATE_SYSTEM,
@@ -63,6 +67,7 @@ from app.services.ai_prompts import (
     render_remediate_prompt,
     render_scaffold_unit_prompt,
     render_schedule_prompt,
+    render_speaker_notes_prompt,
     render_suggest_points_prompt,
     render_validate_content_prompt,
     render_validation_prompt,
@@ -75,6 +80,7 @@ from app.services.design_context import (
     get_design_context,
 )
 from app.services.llm_service import llm_service
+from app.services.slide_splitter import has_slide_breaks, split_at_slide_breaks
 
 logger = logging.getLogger(__name__)
 
@@ -974,4 +980,106 @@ async def suggest_interaction_points(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=error or "Interaction suggestion failed",
         )
+    return result
+
+
+# =============================================================================
+# Speaker Notes Generation (15.11)
+# =============================================================================
+
+
+def _segment_plain_text(segment: dict[str, Any], skip_notes: bool) -> str:
+    """Flatten a slide segment's content to plain text for prompting."""
+
+    def node_text(node: dict[str, Any]) -> str:
+        if node.get("type") == "speakerNotes" and skip_notes:
+            return ""
+        if "text" in node:
+            return str(node["text"])
+        children = node.get("content") or []
+        return " ".join(filter(None, (node_text(child) for child in children)))
+
+    return node_text(segment).strip()
+
+
+def _segment_notes_text(segment: dict[str, Any]) -> str:
+    """Extract the existing speaker-notes text from a slide segment."""
+    parts = [
+        _segment_plain_text(node, skip_notes=False)
+        for node in segment.get("content") or []
+        if node.get("type") == "speakerNotes"
+    ]
+    return " ".join(filter(None, parts)).strip()
+
+
+@router.post(
+    "/materials/{material_id}/generate-speaker-notes",
+    response_model=GenerateSpeakerNotesResponse,
+)
+async def generate_speaker_notes(
+    request: GenerateSpeakerNotesRequest,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Draft speaker notes for the selected slides of a material.
+
+    Returns drafts for review (propose/apply) — never mutates content_json.
+    Slide indices follow the slide splitter's segmentation.
+    """
+    if not material.content_json or not has_slide_breaks(material.content_json):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no slide breaks — speaker notes apply to slide-style materials",
+        )
+
+    segments = split_at_slide_breaks(material.content_json)
+    wanted = set(request.slide_indices) if request.slide_indices else None
+    slides: list[dict[str, str | int]] = []
+    for index, segment in enumerate(segments):
+        if wanted is not None and index not in wanted:
+            continue
+        content_text = _segment_plain_text(segment, skip_notes=True)
+        if not content_text:
+            continue
+        slides.append(
+            {
+                "slide_index": index,
+                "content": content_text[:4000],
+                "existing_notes": _segment_notes_text(segment)[:2000],
+            }
+        )
+    if not slides:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No slides with content found for the requested indices",
+        )
+
+    context = await build_context(
+        db, unit_id=str(material.unit_id), design_id=request.design_id
+    )
+    pedagogy_instruction = build_pedagogy_instruction(
+        fallback_style=material.unit.pedagogy_type
+    )
+    design_block = f"\n{context.design_spec}" if context.design_spec else ""
+    prompt = render_speaker_notes_prompt(slides, pedagogy_instruction, design_block)
+
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=GenerateSpeakerNotesResponse,
+        system_prompt=SPEAKER_NOTES_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=4096,
+    )
+    if error or result is None:
+        logger.error("Speaker notes generation failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Speaker notes generation failed",
+        )
+
+    # Keep only drafts for slides we actually asked about
+    requested = {slide["slide_index"] for slide in slides}
+    result.drafts = [d for d in result.drafts if d.slide_index in requested]
     return result
