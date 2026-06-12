@@ -66,6 +66,7 @@ import {
 } from '../../types/unitStructure';
 import { getFormatMeta } from '../../constants/sessionFormats';
 import { getExportFormatMeta } from '../../constants/exportFormats';
+import { getSpeakerNotesCoverage } from '../../utils/speakerNotes';
 import { SessionFormatCombobox } from '../shared/SessionFormatCombobox';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -259,6 +260,19 @@ const SortableMaterialItem: React.FC<{
               {material.qualityScore != null && (
                 <QualityBadge score={material.qualityScore} />
               )}
+
+              {(() => {
+                const coverage = getSpeakerNotesCoverage(material.contentJson);
+                if (!coverage || coverage.slides === 0) return null;
+                return (
+                  <span
+                    className='inline-flex items-center px-1.5 py-0.5 rounded-full text-xs text-amber-700 bg-amber-50 border border-amber-200'
+                    title='Slides with speaker notes'
+                  >
+                    Notes {coverage.withNotes}/{coverage.slides}
+                  </span>
+                );
+              })()}
 
               {material.durationMinutes && (
                 <span className='inline-flex items-center text-xs text-gray-500'>

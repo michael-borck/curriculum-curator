@@ -81,3 +81,56 @@ div[data-youtube-video] iframe {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+
+/* Speaker notes block — author-only delivery prompts (ADR-064) */
+.ProseMirror aside[data-type='speaker-notes'] {
+  position: relative;
+  background: #fefce8;
+  border-left: 3px solid #facc15;
+  border-radius: 0 0.375rem 0.375rem 0;
+  margin: 0.75rem 0;
+  padding: 1.5rem 0.75rem 0.5rem;
+  font-size: 0.875rem;
+  color: #57534e;
+}
+.ProseMirror aside[data-type='speaker-notes']::before {
+  content: 'Speaker notes';
+  position: absolute;
+  top: 0.35rem;
+  left: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ca8a04;
+  pointer-events: none;
+}
+/* Placeholder for an empty notes block (single empty paragraph) */
+.ProseMirror
+  aside[data-type='speaker-notes']
+  > p:first-child:last-child:has(> br:only-child)::before {
+  content: "What you'll say but not show. Notes export to PowerPoint's speaker notes pane.";
+  color: #a8a29e;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* "+ Add speaker notes" per-slide affordance */
+.ProseMirror .speaker-notes-add-button {
+  display: block;
+  margin: 0.25rem 0 0.75rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  color: #a8a29e;
+  border: 1px dashed #d6d3d1;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+}
+.ProseMirror .speaker-notes-add-button:hover {
+  color: #ca8a04;
+  border-color: #facc15;
+  background: #fefce8;
+}
