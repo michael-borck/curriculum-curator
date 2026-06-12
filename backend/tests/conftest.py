@@ -59,11 +59,13 @@ API_URL = f"{BASE_URL}/api"
 
 
 def is_backend_running() -> bool:
-    """Check if backend is running"""
+    """Check that the curriculum-curator backend (not just any server) is on port 8000"""
     try:
-        response = requests.get(f"{BASE_URL}/docs", timeout=2)
-        return response.status_code == 200
-    except requests.exceptions.RequestException:
+        response = requests.get(f"{BASE_URL}/openapi.json", timeout=2)
+        if response.status_code != 200:
+            return False
+        return "/api/auth/login" in response.json().get("paths", {})
+    except (requests.exceptions.RequestException, ValueError):
         return False
 
 
