@@ -15,6 +15,7 @@ from app.core import security
 from app.core.config import settings
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
+from app.core.security_settings import get_security_settings
 from app.models.user import User
 from app.repositories import security_repo, user_repo
 from app.schemas import (
@@ -118,9 +119,18 @@ async def register(
 ):
     """Register a new user with email verification"""
     email = user_request.email.lower().strip()
+    security_settings = get_security_settings(db)
 
-    # Check if email is whitelisted
-    if not user_repo.is_email_whitelisted(db, email):
+    if not security_settings.enable_user_registration:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User registration is currently disabled. Please contact your administrator.",
+        )
+
+    # Check if email is whitelisted (unless the whitelist is disabled)
+    if security_settings.enable_email_whitelist and not user_repo.is_email_whitelisted(
+        db, email
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email address is not authorized for registration. Please contact your administrator.",
@@ -128,7 +138,7 @@ async def register(
 
     # Enhanced password validation
     is_valid, password_errors = PasswordValidator.validate_password(
-        user_request.password, user_request.name, email
+        user_request.password, user_request.name, email, policy=security_settings
     )
 
     if not is_valid:
@@ -288,8 +298,10 @@ async def verify_email(
     if user_data:
         await email_service.send_welcome_email(user_data)
 
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Create access token (admin-configured session timeout)
+    access_token_expires = timedelta(
+        minutes=get_security_settings(db).session_timeout_minutes
+    )
     access_token = security.create_access_token(
         data={"sub": user.id, "email": user.email},
         expires_delta=access_token_expires,
@@ -353,6 +365,7 @@ async def login(
     client_ip = _get_client_ip(request)
     user_agent = _get_user_agent(request)
     email = login_data.email.lower().strip()
+    security_settings = get_security_settings(db)
 
     # Check for account lockout
     is_locked, lockout_reason, minutes_remaining = security_repo.check_account_lockout(
@@ -378,7 +391,13 @@ async def login(
         security_repo.record_login_success(db, email, client_ip, user_agent)
     else:
         security_repo.record_login_failure(
-            db, email, client_ip, user_agent, "Invalid credentials"
+            db,
+            email,
+            client_ip,
+            user_agent,
+            "Invalid credentials",
+            max_attempts=security_settings.max_login_attempts,
+            lockout_minutes=security_settings.lockout_duration_minutes,
         )
 
     if not login_success:
@@ -416,8 +435,10 @@ async def login(
             detail="Incorrect email or password",
         )
 
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Create access token (admin-configured session timeout)
+    access_token_expires = timedelta(
+        minutes=security_settings.session_timeout_minutes
+    )
     access_token = security.create_access_token(
         data={"sub": user.id, "email": user.email},
         expires_delta=access_token_expires,
@@ -507,7 +528,7 @@ async def reset_password(
 
     # Validate new password strength
     is_valid, password_errors = PasswordValidator.validate_password(
-        reset_request.new_password, "", email
+        reset_request.new_password, "", email, policy=get_security_settings(db)
     )
     if not is_valid:
         raise HTTPException(
@@ -570,7 +591,10 @@ async def change_password(
 
     # Validate new password strength
     is_valid, password_errors = PasswordValidator.validate_password(
-        change_request.new_password, "", current_user.email
+        change_request.new_password,
+        "",
+        current_user.email,
+        policy=get_security_settings(db),
     )
     if not is_valid:
         raise HTTPException(

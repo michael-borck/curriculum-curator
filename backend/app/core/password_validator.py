@@ -5,6 +5,8 @@ Enhanced password validation with security requirements
 import re
 from pathlib import Path
 
+from app.core.security_settings import SecuritySettings
+
 
 def _load_common_passwords() -> set[str]:
     """Load common passwords from external file."""
@@ -41,7 +43,11 @@ class PasswordValidator:
 
     @classmethod
     def validate_password(  # noqa: PLR0912
-        cls, password: str, user_name: str = "", user_email: str = ""
+        cls,
+        password: str,
+        user_name: str = "",
+        user_email: str = "",
+        policy: SecuritySettings | None = None,
     ) -> tuple[bool, list[str]]:
         """
         Validate password against all security requirements
@@ -50,27 +56,42 @@ class PasswordValidator:
             password: The password to validate
             user_name: User's name for personal info check
             user_email: User's email for personal info check
+            policy: Admin-configured policy; class defaults apply when None
 
         Returns:
             Tuple[bool, List[str]]: (is_valid, list_of_errors)
         """
         errors = []
 
+        min_length = policy.password_min_length if policy else cls.min_length
+        require_uppercase = (
+            policy.password_require_uppercase if policy else cls.require_uppercase
+        )
+        require_lowercase = (
+            policy.password_require_lowercase if policy else cls.require_lowercase
+        )
+        require_numbers = (
+            policy.password_require_numbers if policy else cls.require_numbers
+        )
+        require_special = (
+            policy.password_require_special if policy else cls.require_special
+        )
+
         # Basic length check
-        if len(password) < cls.min_length:
-            errors.append(f"Password must be at least {cls.min_length} characters long")
+        if len(password) < min_length:
+            errors.append(f"Password must be at least {min_length} characters long")
 
         # Character type requirements
-        if cls.require_uppercase and not any(c.isupper() for c in password):
+        if require_uppercase and not any(c.isupper() for c in password):
             errors.append("Password must contain at least one uppercase letter")
 
-        if cls.require_lowercase and not any(c.islower() for c in password):
+        if require_lowercase and not any(c.islower() for c in password):
             errors.append("Password must contain at least one lowercase letter")
 
-        if cls.require_numbers and not any(c.isdigit() for c in password):
+        if require_numbers and not any(c.isdigit() for c in password):
             errors.append("Password must contain at least one number")
 
-        if cls.require_special and not any(c in cls.special_chars for c in password):
+        if require_special and not any(c in cls.special_chars for c in password):
             errors.append(
                 f"Password must contain at least one special character: {cls.special_chars}"
             )

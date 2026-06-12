@@ -84,6 +84,8 @@ def record_login_failure(
     ip_address: str,
     user_agent: str | None = None,
     reason: str = "Invalid credentials",
+    max_attempts: int = 5,
+    lockout_minutes: int = 30,
 ) -> LoginAttempt:
     """Record failed login attempt and potentially lock account"""
     email = email.lower().strip()
@@ -92,7 +94,9 @@ def record_login_failure(
     attempt = get_or_create_login_attempt(db, email, ip_address)
 
     # Use the model's method to record failure (includes lockout logic)
-    attempt.record_failure(reason)
+    attempt.record_failure(
+        reason, max_attempts=max_attempts, lockout_minutes=lockout_minutes
+    )
     if user_agent:
         attempt.user_agent = user_agent
 

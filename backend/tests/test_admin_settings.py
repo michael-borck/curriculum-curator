@@ -1,6 +1,7 @@
 """Tests for the admin system-settings endpoints (SystemConfig-backed)."""
 
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy.orm import Session
@@ -119,3 +120,90 @@ async def test_update_settings_overwrites_existing_config_row(
     )
     assert len(rows) == 1
     assert rows[0].value == 45
+
+
+# ---------------------------------------------------------------------------
+# Enforcement: the persisted settings drive actual security behavior
+# ---------------------------------------------------------------------------
+
+
+def _store_setting(test_db: Session, key: str, value: object) -> None:
+    test_db.add(
+        SystemConfig(key=key, value=value, category=ConfigCategory.SECURITY.value)
+    )
+    test_db.commit()
+
+
+def test_get_security_settings_reads_stored_values(test_db: Session):
+    from app.core.security_settings import get_security_settings
+
+    _store_setting(test_db, "security.password_min_length", 12)
+    _store_setting(test_db, "security.max_login_attempts", 3)
+
+    loaded = get_security_settings(test_db)
+
+    assert loaded.password_min_length == 12
+    assert loaded.max_login_attempts == 3
+    assert loaded.lockout_duration_minutes == 15  # unset -> default
+
+
+def test_get_security_settings_ignores_wrong_typed_rows(test_db: Session):
+    from app.core.security_settings import get_security_settings
+
+    _store_setting(test_db, "security.password_min_length", "twelve")
+    _store_setting(test_db, "security.enable_user_registration", 0)
+
+    loaded = get_security_settings(test_db)
+
+    assert loaded.password_min_length == 8
+    assert loaded.enable_user_registration is True
+
+
+def test_password_validator_honours_admin_policy(test_db: Session):
+    from app.core.password_validator import PasswordValidator
+    from app.core.security_settings import get_security_settings
+
+    _store_setting(test_db, "security.password_min_length", 16)
+    _store_setting(test_db, "security.password_require_special", False)
+    policy = get_security_settings(test_db)
+
+    # 12 chars, no special char: fails only on the longer min length
+    is_valid, errors = PasswordValidator.validate_password(
+        "Zq3vKx9mTw1b", policy=policy
+    )
+    assert not is_valid
+    assert any("16 characters" in e for e in errors)
+    assert not any("special character" in e for e in errors)
+
+    # Same password passes under the default policy except the special char
+    is_valid_default, errors_default = PasswordValidator.validate_password(
+        "Zq3vKx9mTw1b"
+    )
+    assert not is_valid_default
+    assert any("special character" in e for e in errors_default)
+
+
+def test_lockout_uses_configured_attempts_and_duration(test_db: Session):
+    from app.repositories import security_repo
+
+    email = "lockout-test@example.com"
+    for _ in range(2):
+        attempt = security_repo.record_login_failure(
+            test_db,
+            email,
+            "10.0.0.1",
+            max_attempts=3,
+            lockout_minutes=45,
+        )
+        assert not attempt.is_locked
+
+    attempt = security_repo.record_login_failure(
+        test_db, email, "10.0.0.1", max_attempts=3, lockout_minutes=45
+    )
+
+    assert attempt.is_locked
+    assert attempt.locked_until is not None
+    # SQLite returns naive datetimes; normalise before comparing
+    locked_until = attempt.locked_until.replace(tzinfo=UTC)
+    expires_in = (locked_until - datetime.now(UTC)).total_seconds() / 60
+    assert 40 <= expires_in <= 45

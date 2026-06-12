@@ -2,6 +2,7 @@
 Admin routes for user management and system configuration
 """
 
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.security_settings import SETTINGS_CONFIG_KEYS, get_security_settings
 from app.models import (
     ConfigCategory,
     EmailVerification,
@@ -411,37 +413,11 @@ async def delete_whitelist_pattern(
     return {"message": f"Pattern {pattern_str} has been deleted"}
 
 
-# System settings, persisted in SystemConfig under security.* keys.
-# Note: enforcement (PasswordValidator, lockout logic) still uses its own
-# defaults — these values feed the admin UI until enforcement reads them.
-_SETTINGS_CONFIG_KEYS: dict[str, str] = {
-    "password_min_length": "security.password_min_length",
-    "password_require_uppercase": "security.password_require_uppercase",
-    "password_require_lowercase": "security.password_require_lowercase",
-    "password_require_numbers": "security.password_require_numbers",
-    "password_require_special": "security.password_require_special",
-    "max_login_attempts": "security.max_login_attempts",
-    "lockout_duration_minutes": "security.lockout_duration",
-    "session_timeout_minutes": "security.session_timeout",
-    "enable_user_registration": "security.enable_user_registration",
-    "enable_email_whitelist": "security.enable_email_whitelist",
-}
-
-
+# System settings are persisted in SystemConfig under security.* keys and
+# read through the same loader the enforcement points use, so the admin UI
+# always reflects the values actually in force.
 def _load_system_settings(db: Session) -> SystemSettingsResponse:
-    rows = (
-        db.query(SystemConfig)
-        .filter(SystemConfig.key.in_(list(_SETTINGS_CONFIG_KEYS.values())))
-        .all()
-    )
-    stored = {row.key: row.value for row in rows}
-    fields = SystemSettingsResponse.model_fields
-    return SystemSettingsResponse(
-        **{
-            field: stored.get(key, fields[field].default)
-            for field, key in _SETTINGS_CONFIG_KEYS.items()
-        }
-    )
+    return SystemSettingsResponse(**asdict(get_security_settings(db)))
 
 
 @router.get("/settings", response_model=SystemSettingsResponse)
@@ -464,7 +440,7 @@ async def update_system_settings(
     """Update system settings"""
     updates = settings_data.model_dump(exclude_none=True)
     for field, value in updates.items():
-        key = _SETTINGS_CONFIG_KEYS[field]
+        key = SETTINGS_CONFIG_KEYS[field]
         config = db.query(SystemConfig).filter(SystemConfig.key == key).first()
         if config:
             config.value = value

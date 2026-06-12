@@ -92,8 +92,18 @@ class LoginAttempt(Base):
         self.last_attempt = datetime.now(UTC)
         self.updated_at = datetime.now(UTC)
 
-    def record_failure(self, reason: str = "Invalid credentials") -> None:
-        """Record failed login attempt and apply lockout if needed"""
+    def record_failure(
+        self,
+        reason: str = "Invalid credentials",
+        max_attempts: int = 5,
+        lockout_minutes: int = 30,
+    ) -> None:
+        """Record failed login attempt and apply lockout if needed.
+
+        The first lockout triggers at the admin-configured max_attempts for
+        the admin-configured duration; persistence past the threshold
+        escalates to 4-hour and 24-hour lockouts.
+        """
         self.attempt_type = LoginAttemptType.LOGIN_FAILED.value
         self.failed_attempts = int(self.failed_attempts) + 1
         self.consecutive_failures = int(self.consecutive_failures) + 1
@@ -102,15 +112,14 @@ class LoginAttempt(Base):
 
         # Apply progressive lockout based on consecutive failures
         consecutive = int(self.consecutive_failures)
-        if consecutive >= 10:
-            # 10+ failures: 24 hour lockout
+        if consecutive >= max_attempts + 5:
             self.apply_lockout(hours=24, reason=f"Excessive login attempts: {reason}")
-        elif consecutive >= 7:
-            # 7-9 failures: 4 hour lockout
+        elif consecutive >= max_attempts + 2:
             self.apply_lockout(hours=4, reason=f"Multiple failed attempts: {reason}")
-        elif consecutive >= 5:
-            # 5-6 failures: 30 minute lockout
-            self.apply_lockout(minutes=30, reason=f"Failed login attempts: {reason}")
+        elif consecutive >= max_attempts:
+            self.apply_lockout(
+                minutes=lockout_minutes, reason=f"Failed login attempts: {reason}"
+            )
 
     def apply_lockout(
         self, minutes: int = 0, hours: int = 0, reason: str | None = None
