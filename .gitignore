@@ -47,6 +47,8 @@ tmp/
 
 # Data directories (persistent volumes)
 data/
+# Per-unit git content repositories (runtime data)
+content_repos/
 # Exception: commit UDL reference data files
 !data/udl-guidelines.json
 !data/udl-profiles.json
