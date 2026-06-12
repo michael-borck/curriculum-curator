@@ -64,7 +64,7 @@ class SystemSettingsBase(CamelModel):
     # Security settings
     max_login_attempts: int = Field(5, ge=3, le=10)
     lockout_duration_minutes: int = Field(15, ge=5, le=60)
-    session_timeout_minutes: int = Field(30, ge=15, le=480)
+    session_timeout_minutes: int = Field(30, ge=15, le=1440)
 
     # Feature flags
     enable_user_registration: bool = True
@@ -85,7 +85,7 @@ class SystemSettingsUpdate(CamelModel):
 
     max_login_attempts: int | None = Field(None, ge=3, le=10)
     lockout_duration_minutes: int | None = Field(None, ge=5, le=60)
-    session_timeout_minutes: int | None = Field(None, ge=15, le=480)
+    session_timeout_minutes: int | None = Field(None, ge=15, le=1440)
 
     enable_user_registration: bool | None = None
     enable_email_whitelist: bool | None = None

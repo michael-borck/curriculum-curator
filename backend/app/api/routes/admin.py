@@ -10,11 +10,13 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models import (
+    ConfigCategory,
     EmailVerification,
     EmailWhitelist,
     LoginAttempt,
     PasswordReset,
     SecurityLog,
+    SystemConfig,
     User,
     UserRole,
 )
@@ -409,7 +411,39 @@ async def delete_whitelist_pattern(
     return {"message": f"Pattern {pattern_str} has been deleted"}
 
 
-# System settings endpoints (placeholder for now)
+# System settings, persisted in SystemConfig under security.* keys.
+# Note: enforcement (PasswordValidator, lockout logic) still uses its own
+# defaults — these values feed the admin UI until enforcement reads them.
+_SETTINGS_CONFIG_KEYS: dict[str, str] = {
+    "password_min_length": "security.password_min_length",
+    "password_require_uppercase": "security.password_require_uppercase",
+    "password_require_lowercase": "security.password_require_lowercase",
+    "password_require_numbers": "security.password_require_numbers",
+    "password_require_special": "security.password_require_special",
+    "max_login_attempts": "security.max_login_attempts",
+    "lockout_duration_minutes": "security.lockout_duration",
+    "session_timeout_minutes": "security.session_timeout",
+    "enable_user_registration": "security.enable_user_registration",
+    "enable_email_whitelist": "security.enable_email_whitelist",
+}
+
+
+def _load_system_settings(db: Session) -> SystemSettingsResponse:
+    rows = (
+        db.query(SystemConfig)
+        .filter(SystemConfig.key.in_(list(_SETTINGS_CONFIG_KEYS.values())))
+        .all()
+    )
+    stored = {row.key: row.value for row in rows}
+    fields = SystemSettingsResponse.model_fields
+    return SystemSettingsResponse(
+        **{
+            field: stored.get(key, fields[field].default)
+            for field, key in _SETTINGS_CONFIG_KEYS.items()
+        }
+    )
+
+
 @router.get("/settings", response_model=SystemSettingsResponse)
 # @limiter.limit(RateLimits.DEFAULT)
 async def get_system_settings(
@@ -417,19 +451,7 @@ async def get_system_settings(
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
     """Get system settings"""
-    # TODO: Implement actual system settings retrieval
-    return SystemSettingsResponse(
-        password_min_length=8,
-        password_require_uppercase=True,
-        password_require_lowercase=True,
-        password_require_numbers=True,
-        password_require_special=True,
-        max_login_attempts=5,
-        lockout_duration_minutes=15,
-        session_timeout_minutes=30,
-        enable_user_registration=True,
-        enable_email_whitelist=True,
-    )
+    return _load_system_settings(db)
 
 
 @router.put("/settings", response_model=SystemSettingsResponse)
@@ -440,35 +462,27 @@ async def update_system_settings(
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
     """Update system settings"""
-    # TODO: Implement actual system settings update
-    # For now, just return the provided settings
+    updates = settings_data.model_dump(exclude_none=True)
+    for field, value in updates.items():
+        key = _SETTINGS_CONFIG_KEYS[field]
+        config = db.query(SystemConfig).filter(SystemConfig.key == key).first()
+        if config:
+            config.value = value
+            config.updated_by_id = admin_user.id
+        else:
+            db.add(
+                SystemConfig(
+                    key=key,
+                    value=value,
+                    category=ConfigCategory.SECURITY.value,
+                    description=f"System setting: {field.replace('_', ' ')}",
+                    updated_by_id=admin_user.id,
+                )
+            )
+    db.commit()
 
-    # Log the action
     SecurityLogger.log_admin_action(
         db=db, admin_user=admin_user, action="Updated system settings"
     )
 
-    return SystemSettingsResponse(
-        password_min_length=settings_data.password_min_length or 8,
-        password_require_uppercase=settings_data.password_require_uppercase
-        if settings_data.password_require_uppercase is not None
-        else True,
-        password_require_lowercase=settings_data.password_require_lowercase
-        if settings_data.password_require_lowercase is not None
-        else True,
-        password_require_numbers=settings_data.password_require_numbers
-        if settings_data.password_require_numbers is not None
-        else True,
-        password_require_special=settings_data.password_require_special
-        if settings_data.password_require_special is not None
-        else True,
-        max_login_attempts=settings_data.max_login_attempts or 5,
-        lockout_duration_minutes=settings_data.lockout_duration_minutes or 15,
-        session_timeout_minutes=settings_data.session_timeout_minutes or 30,
-        enable_user_registration=settings_data.enable_user_registration
-        if settings_data.enable_user_registration is not None
-        else True,
-        enable_email_whitelist=settings_data.enable_email_whitelist
-        if settings_data.enable_email_whitelist is not None
-        else True,
-    )
+    return _load_system_settings(db)
