@@ -47,7 +47,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import MaterialImportDialog from '../../features/import/MaterialImportDialog';
-import axios from 'axios';
+import { downloadMaterialExport } from '../../utils/downloadExport';
 import { materialsApi } from '../../services/unitStructureApi';
 import { useConfirmDialog } from '../../components/ui';
 import { materialVersionApi } from '../../services/materialVersionApi';
@@ -171,27 +171,7 @@ const handleMaterialDownload = async (
   format: ExportFormatValue
 ) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await axios.get(
-      `/api/materials/${materialId}/export?format=${format}`,
-      {
-        responseType: 'blob',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      }
-    );
-    const disposition = response.headers['content-disposition'] as
-      | string
-      | undefined;
-    const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-    const filename = filenameMatch?.[1] ?? `material.${format}`;
-    const url = URL.createObjectURL(response.data as Blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(url);
-    a.remove();
+    await downloadMaterialExport(materialId, format);
     toast.success(`Exported as ${format.toUpperCase()}`);
   } catch {
     toast.error('Failed to export material');

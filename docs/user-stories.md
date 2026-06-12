@@ -169,7 +169,7 @@
 | 9.19 | As a **Creator**, I want export options displayed with user-friendly labels and tooltips ("LMS Native Quiz", "Interactive Quiz", "Printable Document") rather than technical format names, so I can choose without knowing what H5P or QTI means. | P5 | **Planned** |
 | 9.20 | As a **Creator**, I want to set a default export format per content type (e.g., "my quizzes default to LMS Native Quiz") so I don't have to choose every time I export. | P5 | **Planned** |
 | 9.21 | As a **Creator**, I want the system to warn me at export time if my content contains elements that the chosen format doesn't support (e.g., matching questions in a QTI export) and suggest an alternative format. | P5 | **Planned** |
-| 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Partial** — backend `GET /api/materials/{id}/export/{format}` done; no frontend UI yet |
+| 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Done** — per-material download menu in `WeeklyMaterialsManager` via unified export route |
 | 9.23 | As a **Creator**, I want my speaker notes from the editor to round-trip to PowerPoint's speaker notes pane on PPTX export, so I keep my delivery prompts when sharing the deck or re-importing it later. | P2 | **Done** — `speakerNotes` nodes route through Pandoc `::: notes` fenced divs (ADR-064) |
 | 9.24 | As a **Creator**, I want speaker notes automatically stripped from student-facing exports (HTML, PDF, DOCX, IMSCC, SCORM, H5P) so my delivery prompts never appear in materials students see. | P2 | **Done** — `strip_speaker_notes` helper applied centrally in `render_material_html` and `h5p_course_presentation` (ADR-064) |
 
@@ -193,8 +193,8 @@
 | 11.2 | As an **Admin**, I want to configure system-wide LLM provider settings and API keys. | P1 | **Done** |
 | 11.3 | As an **Admin**, I want to manage the email whitelist (allowed registration domains). | P1 | **Done** |
 | 11.4 | As an **Admin**, I want to view security logs (login attempts, admin actions). | P1 | **Done** |
-| 11.5 | As an **Admin**, I want to configure password policy (min length, complexity). | P1 | **Partial** — settings persist to `SystemConfig`; `PasswordValidator` still enforces hardcoded defaults |
-| 11.6 | As an **Admin**, I want to configure session and lockout settings. | P1 | **Partial** — settings persist to `SystemConfig`; lockout/session enforcement still uses hardcoded defaults |
+| 11.5 | As an **Admin**, I want to configure password policy (min length, complexity). | P1 | **Done** — persisted in `SystemConfig`, enforced via `get_security_settings()` policy in `PasswordValidator` |
+| 11.6 | As an **Admin**, I want to configure session and lockout settings. | P1 | **Done** — lockout threshold/duration, session timeout, registration and whitelist toggles all enforced from stored settings |
 | 11.7 | As an **Admin**, I want to view system health and monitoring info. | P1 | **Done** |
 
 ## 12. Research & Citation

@@ -49,6 +49,42 @@ export async function downloadExport(
 }
 
 /**
+ * Downloads a single material in the given format via the unified
+ * export route (GET /api/materials/{id}/export/{format}).
+ */
+export async function downloadMaterialExport(
+  materialId: string,
+  format: string
+): Promise<string> {
+  const token = localStorage.getItem('token');
+
+  const response = await axios.get(
+    `/api/materials/${materialId}/export/${format}`,
+    {
+      responseType: 'blob',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }
+  );
+
+  const disposition = response.headers['content-disposition'] as
+    | string
+    | undefined;
+  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] ?? `material.${format}`;
+
+  const url = URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+
+  return filename;
+}
+
+/**
  * Downloads a materials ZIP export.
  */
 export async function downloadMaterialsExport(
