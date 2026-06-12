@@ -1,7 +1,7 @@
 # Speaker Notes — Implementation Plan
 
-**Status:** Phase 1 (export half) shipped 2026-04-10. Phases 2–4 still planned.
-**Date:** 2026-04-10
+**Status:** Phases 1–3 shipped (Phase 1 export half 2026-04-10; Phase 2 authoring UX and Phase 3 AI generation 2026-06-12). Phase 4 polish remaining: guide section, one-time tip card, prompt audit.
+**Date:** 2026-04-10 (updated 2026-06-12)
 **Related:** [ADR-064](adr/064-rough-slides-as-feature.md), [ADR-038](adr/038-content-not-presentation.md), [ADR-048](adr/048-tiptap-custom-extensions.md), [ADR-032](adr/032-ai-assistance-levels.md)
 
 ## Background
