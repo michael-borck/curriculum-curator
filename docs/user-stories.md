@@ -33,9 +33,9 @@
 | 1.10 | As a **Creator**, I want to customise the time-period label for my unit (Week, Module, Topic, etc.) so the UI matches my institution's terminology. | P1 | **Done** — configurable `topicLabel` on unit |
 | 1.11 | As a **Creator**, I want a Settings tab on my unit page where I can edit academic details (year, semester, delivery mode, credit points) and toggle optional features (accreditation mappings, SDGs, AoL, quality/UDL metrics) per unit. | P1 | **Done** — UnitSettings component with feature toggles stored in `unit_metadata.features` |
 | 1.12 | As a **Creator**, I want to define custom alignment frameworks (e.g. PLOs, ABET criteria, graduate attributes) with named items, and map my ULOs to them, so I can demonstrate alignment to any accreditation or institutional standard. | P1 | **Done** — `CustomAlignmentFramework` model, presets (PLO, Graduate Attributes, ABET, AQF), CRUD API, mapping UI on UnitPage |
-| 1.13 | As an **Enhancer**, I want to upload my unit outline document (PDF, DOCX, or TXT) and have the system extract unit metadata, learning outcomes, weekly schedule, assessments, and textbooks so I can scaffold my unit without manual data entry. | P2 | **Planned** — ADR-063 |
-| 1.14 | As an **Enhancer**, I want to review and edit the extracted outline data in a structured form before the unit is created, so I can correct parsing errors and decide what to keep or discard. | P2 | **Planned** — ADR-063 |
-| 1.15 | As an **Enhancer**, I want to select my institution's outline parser (e.g. "Curtin University") from a dropdown for more accurate extraction, with "Generic" as the default that works with any document. | P2 | **Planned** — ADR-063 |
+| 1.13 | As an **Enhancer**, I want to upload my unit outline document (PDF, DOCX, or TXT) and have the system extract unit metadata, learning outcomes, weekly schedule, assessments, and textbooks so I can scaffold my unit without manual data entry. | P2 | **Done** — ADR-063; outline import parse→review→apply flow (`outline_import.py`) |
+| 1.14 | As an **Enhancer**, I want to review and edit the extracted outline data in a structured form before the unit is created, so I can correct parsing errors and decide what to keep or discard. | P2 | **Done** — ADR-063; `OutlineReviewForm` review/edit step |
+| 1.15 | As an **Enhancer**, I want to select my institution's outline parser (e.g. "Curtin University") from a dropdown for more accurate extraction, with "Generic" as the default that works with any document. | P2 | **Done** — ADR-063; parser dropdown (Generic / Curtin) |
 
 ## 2. Learning Outcomes
 
@@ -110,8 +110,8 @@
 | 6.6 | As an **Enhancer**, I want to import a PowerPoint and have it converted to editable content (text extracted, slides become sections). | P3 | **Done** — text + image extraction via `python-pptx`, images stored in content repo |
 | 6.7 | As an **Enhancer**, I want imported content to go straight into the normal editing flow so I can refine it immediately. | P2 | **Done** — import flow redirects to editing |
 | 6.8 | As an **Enhancer**, I want to extract the theme (colours, fonts, layouts) from an imported PPTX and save it as an export template, so future PPTX exports use my existing branding. | P2 | **Done** — opt-in checkbox on Import Materials; strips content slides, keeps masters/layouts/theme (ADR-056) |
-| 6.9 | As an **Enhancer**, I want a generic LLM-powered outline parser that intelligently extracts structure from any unit outline document regardless of format or institution, using AI to identify unit details, outcomes, schedule, and assessments. | P2 | **Planned** — ADR-063 |
-| 6.10 | As an **Enhancer**, I want a purpose-built parser for my institution (e.g. Curtin University) that accurately extracts data from its standard unit outline format, giving higher accuracy than the generic parser. | P2 | **Planned** — ADR-063 |
+| 6.9 | As an **Enhancer**, I want a generic LLM-powered outline parser that intelligently extracts structure from any unit outline document regardless of format or institution, using AI to identify unit details, outcomes, schedule, and assessments. | P2 | **Done** — ADR-063; `outline_parsers/generic_parser.py` |
+| 6.10 | As an **Enhancer**, I want a purpose-built parser for my institution (e.g. Curtin University) that accurately extracts data from its standard unit outline format, giving higher accuracy than the generic parser. | P2 | **Done** — ADR-063; `outline_parsers/curtin_parser.py` |
 | 6.11 | As an **Enhancer**, I want PowerPoint imports to preserve slide structure (titles, bullet lists, tables, images, slide breaks) as editable structured content — not flattened to a wall of text — so I can refine my existing decks in the editor without losing their layout. | P2 | **Done** — `pptx_structural` parser via `/api/import/material/single/{preview,apply}` and bulk LMS import via `unified_import_service`; supersedes the plain-text path from 6.6 (ADR-065) |
 | 6.12 | As an **Enhancer**, I want PowerPoint speaker notes preserved as structured content during import so they survive round-trip back to PowerPoint's speaker notes pane. | P2 | **Done** — `speakerNotes` nodes emitted by `pptx_structural`, round-trip closed with the export pipeline (ADR-064) |
 | 6.13 | As an **Enhancer**, I want my PowerPoint upload to report what was extracted successfully and what was dropped (linked images, equations, deeply nested bullets), so I know what to verify before relying on the import. | P2 | **Done** — parser emits warnings via `MaterialParseResult.warnings`, surfaced in the apply response (per ADR-061) |
@@ -160,16 +160,16 @@
 | 9.10 | As a **Creator**, I want to select a target LMS when exporting so the package uses the correct naming conventions and structure for that LMS. | P4 | **Done** — `target_lms` query param on IMSCC/SCORM export routes; LMS dropdown in export menu |
 | 9.11 | As a **Creator**, I want to export quizzes as QTI 2.1 XML (standalone ZIP) so I can import them into any LMS quiz bank without exporting the full unit. | P4 | **Done** — `GET /api/units/{id}/export/qti` returns QTI 2.1 package ZIP |
 | 9.12 | As a **Creator**, I want IMSCC/SCORM exports to embed QTI quiz items so quizzes import as interactive, auto-graded assessments in the LMS — not just static description pages. | P4 | **Done** — QTI 1.2 XML embedded in IMSCC (CC assessment resource type) and SCORM exports |
-| 9.13 | As a **Creator**, I want to export a quiz as an H5P Question Set so students get a rich interactive experience (drag-drop, immediate feedback, multimedia) beyond what the native LMS quiz offers. | P5 | **Planned** |
-| 9.14 | As a **Creator**, I want to export a slide deck as an H5P Course Presentation so students can view interactive slides with embedded questions directly in the LMS. | P5 | **Planned** |
-| 9.15 | As a **Creator**, I want to export a case study as an H5P Branching Scenario so students can make decisions and experience consequences in a choose-your-own-adventure style. | P5 | **Planned** |
-| 9.16 | As a **Creator**, I want to export a video material as an H5P Interactive Video so I can overlay questions at specific timestamps for active viewing. | P5 | **Planned** |
+| 9.13 | As a **Creator**, I want to export a quiz as an H5P Question Set so students get a rich interactive experience (drag-drop, immediate feedback, multimedia) beyond what the native LMS quiz offers. | P5 | **Done** — `H5pQuestionSetExporter` via export registry |
+| 9.14 | As a **Creator**, I want to export a slide deck as an H5P Course Presentation so students can view interactive slides with embedded questions directly in the LMS. | P5 | **Done** — `H5pCoursePresentationExporter` |
+| 9.15 | As a **Creator**, I want to export a case study as an H5P Branching Scenario so students can make decisions and experience consequences in a choose-your-own-adventure style. | P5 | **Done** — `H5pBranchingExporter` |
+| 9.16 | As a **Creator**, I want to export a video material as an H5P Interactive Video so I can overlay questions at specific timestamps for active viewing. | P5 | **Done** — `H5pInteractiveVideoExporter` |
 | 9.17 | As a **Creator**, I want H5P exports to be embeddable in my IMSCC packages alongside HTML and QTI content, so a single package can contain a mix of static pages, native quizzes, and interactive H5P objects. | P5 | **Planned** |
-| 9.18 | As a **Creator**, I want to export a unit or selection of materials as a flat ZIP file (folder structure mirroring unit/week/material hierarchy) for manual distribution or archival outside an LMS. | P5 | **Planned** |
+| 9.18 | As a **Creator**, I want to export a unit or selection of materials as a flat ZIP file (folder structure mirroring unit/week/material hierarchy) for manual distribution or archival outside an LMS. | P5 | **Done** — `GET /api/units/{id}/export/materials` ZIP, wired on UnitPage |
 | 9.19 | As a **Creator**, I want export options displayed with user-friendly labels and tooltips ("LMS Native Quiz", "Interactive Quiz", "Printable Document") rather than technical format names, so I can choose without knowing what H5P or QTI means. | P5 | **Planned** |
 | 9.20 | As a **Creator**, I want to set a default export format per content type (e.g., "my quizzes default to LMS Native Quiz") so I don't have to choose every time I export. | P5 | **Planned** |
 | 9.21 | As a **Creator**, I want the system to warn me at export time if my content contains elements that the chosen format doesn't support (e.g., matching questions in a QTI export) and suggest an alternative format. | P5 | **Planned** |
-| 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Planned** |
+| 9.22 | As a **Creator**, I want to export individual materials directly (not just whole units) so I can quickly get a single quiz or handout in my preferred format. | P5 | **Partial** — backend `GET /api/materials/{id}/export/{format}` done; no frontend UI yet |
 | 9.23 | As a **Creator**, I want my speaker notes from the editor to round-trip to PowerPoint's speaker notes pane on PPTX export, so I keep my delivery prompts when sharing the deck or re-importing it later. | P2 | **Done** — `speakerNotes` nodes route through Pandoc `::: notes` fenced divs (ADR-064) |
 | 9.24 | As a **Creator**, I want speaker notes automatically stripped from student-facing exports (HTML, PDF, DOCX, IMSCC, SCORM, H5P) so my delivery prompts never appear in materials students see. | P2 | **Done** — `strip_speaker_notes` helper applied centrally in `render_material_html` and `h5p_course_presentation` (ADR-064) |
 
@@ -193,8 +193,8 @@
 | 11.2 | As an **Admin**, I want to configure system-wide LLM provider settings and API keys. | P1 | **Done** |
 | 11.3 | As an **Admin**, I want to manage the email whitelist (allowed registration domains). | P1 | **Done** |
 | 11.4 | As an **Admin**, I want to view security logs (login attempts, admin actions). | P1 | **Done** |
-| 11.5 | As an **Admin**, I want to configure password policy (min length, complexity). | P1 | **Done** |
-| 11.6 | As an **Admin**, I want to configure session and lockout settings. | P1 | **Done** |
+| 11.5 | As an **Admin**, I want to configure password policy (min length, complexity). | P1 | **Partial** — settings persist to `SystemConfig`; `PasswordValidator` still enforces hardcoded defaults |
+| 11.6 | As an **Admin**, I want to configure session and lockout settings. | P1 | **Partial** — settings persist to `SystemConfig`; lockout/session enforcement still uses hardcoded defaults |
 | 11.7 | As an **Admin**, I want to view system health and monitoring info. | P1 | **Done** |
 
 ## 12. Research & Citation
@@ -265,12 +265,12 @@
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 19A.1 | As a **Creator**, I want to author a branching scenario as a collection of cards, where each card has content (rich text, images, video) and zero or more choices that link to other cards. | P5 | **Planned** |
-| 19A.2 | As a **Creator**, I want to see a visual map (node graph) of my branching scenario alongside the editor, so I can see the overall narrative structure, convergence points, and dead ends at a glance. | P5 | **Planned** |
-| 19A.3 | As a **Creator**, I want to click a node in the map view to navigate directly to that card in the editor. | P5 | **Planned** |
-| 19A.4 | As a **Creator**, I want the system to flag dead-end cards (no choices and not marked as an end card) and orphaned cards (not reachable from the start) so I can fix structural issues. | P5 | **Planned** |
-| 19A.5 | As a **Creator**, I want to designate cards as "end cards" with a summary message and an author-assigned score, so different endings reflect different learning outcomes. | P5 | **Planned** |
-| 19A.6 | As a **Creator**, I want to allow multiple paths to converge on the same card, so branching narratives can rejoin without duplicating content. | P5 | **Planned** |
+| 19A.1 | As a **Creator**, I want to author a branching scenario as a collection of cards, where each card has content (rich text, images, video) and zero or more choices that link to other cards. | P5 | **Done** — `BranchingCardNode` TipTap node |
+| 19A.2 | As a **Creator**, I want to see a visual map (node graph) of my branching scenario alongside the editor, so I can see the overall narrative structure, convergence points, and dead ends at a glance. | P5 | **Done** — `BranchingMapDialog` node graph |
+| 19A.3 | As a **Creator**, I want to click a node in the map view to navigate directly to that card in the editor. | P5 | **Done** — map click scrolls editor to card |
+| 19A.4 | As a **Creator**, I want the system to flag dead-end cards (no choices and not marked as an end card) and orphaned cards (not reachable from the start) so I can fix structural issues. | P5 | **Done** — dead-end/orphan detection in `BranchingMapDialog` |
+| 19A.5 | As a **Creator**, I want to designate cards as "end cards" with a summary message and an author-assigned score, so different endings reflect different learning outcomes. | P5 | **Done** — `cardType: 'ending'` with endScore/endMessage |
+| 19A.6 | As a **Creator**, I want to allow multiple paths to converge on the same card, so branching narratives can rejoin without duplicating content. | P5 | **Done** — choices link by card id; convergence supported |
 
 ### 19B. Interactive HTML Export
 
