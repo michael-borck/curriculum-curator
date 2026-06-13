@@ -48,6 +48,16 @@ export async function fetchExportPreview(
   return data;
 }
 
+export async function fetchMaterialExportPreview(
+  materialId: string
+): Promise<MaterialExportPreview> {
+  const { data } = await axios.get<MaterialExportPreview>(
+    `/api/materials/${materialId}/export/preview`,
+    { headers: getAuthHeaders() }
+  );
+  return data;
+}
+
 /**
  * Kick off an async background export. Returns the task_id
  * which can be tracked via SSE at /api/bg-tasks/{id}/events.

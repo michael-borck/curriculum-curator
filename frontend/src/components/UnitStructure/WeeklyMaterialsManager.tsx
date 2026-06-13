@@ -49,6 +49,10 @@ import {
 } from 'lucide-react';
 import MaterialImportDialog from '../../features/import/MaterialImportDialog';
 import { downloadMaterialExport } from '../../utils/downloadExport';
+import {
+  fetchMaterialExportPreview,
+  type MaterialExportPreview,
+} from '../../services/exportApi';
 import { materialsApi } from '../../services/unitStructureApi';
 import { useConfirmDialog } from '../../components/ui';
 import { materialVersionApi } from '../../services/materialVersionApi';
@@ -160,17 +164,14 @@ function FormatIcon({
   return <Icon className={className} />;
 }
 
-const exportFormats = ['html', 'pdf', 'docx', 'pptx'] as const;
+// Document formats are always offered; the material's resolved targets
+// (per-material overrides → user defaults → auto) are listed above them.
+const DOCUMENT_EXPORT_FORMATS = ['html', 'pdf', 'docx', 'pptx'];
 
-type ExportFormatValue = (typeof exportFormats)[number];
-
-const handleMaterialDownload = async (
-  materialId: string,
-  format: ExportFormatValue
-) => {
+const handleMaterialDownload = async (materialId: string, format: string) => {
   try {
     await downloadMaterialExport(materialId, format);
-    toast.success(`Exported as ${format.toUpperCase()}`);
+    toast.success(`Exported as ${getExportFormatMeta(format).friendlyLabel}`);
   } catch {
     toast.error('Failed to export material');
   }
@@ -193,7 +194,28 @@ const SortableMaterialItem: React.FC<{
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exportPreview, setExportPreview] =
+    useState<MaterialExportPreview | null>(null);
   const exportRef = React.useRef<HTMLDivElement>(null);
+
+  const toggleExportMenu = () => {
+    setShowExportMenu(open => !open);
+    if (!exportPreview) {
+      fetchMaterialExportPreview(material.id)
+        .then(setExportPreview)
+        .catch(() => {
+          // Preview is an enhancement; document formats still work without it
+        });
+    }
+  };
+
+  // Resolved targets (defaults) first, then the document formats
+  const defaultTargets = exportPreview
+    ? [...new Set(Object.values(exportPreview.resolvedTargets).flat())]
+    : [];
+  const documentTargets = DOCUMENT_EXPORT_FORMATS.filter(
+    format => !defaultTargets.includes(format)
+  );
 
   // Close export menu on click outside
   React.useEffect(() => {
@@ -314,15 +336,41 @@ const SortableMaterialItem: React.FC<{
           {(material.contentJson || material.description) && (
             <div className='relative' ref={exportRef}>
               <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
+                onClick={toggleExportMenu}
                 className='p-1 text-gray-400 hover:text-emerald-600'
                 title='Download material'
               >
                 <Download className='w-4 h-4' />
               </button>
               {showExportMenu && (
-                <div className='absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
-                  {exportFormats.map(format => {
+                <div className='absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+                  {defaultTargets.map(format => {
+                    const meta = getExportFormatMeta(format);
+                    return (
+                      <button
+                        key={format}
+                        className='w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg'
+                        title={
+                          meta.tooltip
+                            ? `${meta.label} — ${meta.tooltip}`
+                            : meta.label
+                        }
+                        onClick={() => {
+                          setShowExportMenu(false);
+                          handleMaterialDownload(material.id, format);
+                        }}
+                      >
+                        <span>{meta.friendlyLabel}</span>
+                        <span className='text-[10px] font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-full px-1.5'>
+                          Default
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {defaultTargets.length > 0 && (
+                    <div className='border-t border-gray-100' />
+                  )}
+                  {documentTargets.map(format => {
                     const meta = getExportFormatMeta(format);
                     return (
                       <button

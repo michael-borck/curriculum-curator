@@ -194,6 +194,11 @@ const CONTENT_TYPE_ROWS: ContentTypeRow[] = [
     label: 'Branching Scenarios',
     targets: ['h5p_branching'],
   },
+  {
+    key: 'interactive_video',
+    label: 'Interactive Videos',
+    targets: ['h5p_interactive_video', 'h5p_question_set', 'qti'],
+  },
 ];
 
 const DefaultExportTargets: React.FC = () => {
