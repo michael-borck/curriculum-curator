@@ -107,6 +107,16 @@ This is also worth surfacing in `docs/POSITIONING.md` and the README.
 
 ## Implementation Notes
 
+> **Status update (2026-06-13):** the speaker-notes pipeline below is fully
+> shipped — structured `speakerNotes` node, import routing, `::: notes`
+> export, round-trip verification (Phase 1, 2026-04-10), plus the editor
+> authoring affordances and batched AI generation (Phases 2–3, 2026-06-12).
+> See [speaker-notes-plan.md](../speaker-notes-plan.md). The AI prompt
+> review below was also completed: the generation prompts
+> (`llm_service._build_pedagogy_prompt`, `ai_prompts/`) contain no
+> "engaging visuals"/"compelling slides" language, and the new
+> speaker-notes prompt explicitly encodes this ADR's constraints.
+
 - **Speaker notes pipeline (follow-up work):** The current state is that PPTX import flattens notes into body text (`file_import_service.py:381-383`) and PPTX export emits no `::: notes` divs. To honour this ADR, the work is:
   1. Add a structured `notes` block type to `content_json` (TipTap node, rendered below each slide in the editor with a "speaker notes" affordance).
   2. Update PPTX import to route extracted notes into that field instead of prepending `Notes: ...` to slide text.

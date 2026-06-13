@@ -38,8 +38,16 @@ const MaterialEditorPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
+  const [tipDismissed, setTipDismissed] = useState(
+    () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
+  );
   const editorRef = useRef<Editor | null>(null);
   const { isAIDisabled } = useAILevel();
+
+  const dismissTip = () => {
+    localStorage.setItem('speaker-notes-tip-dismissed', 'true');
+    setTipDismissed(true);
+  };
 
   const updateHasSlides = useCallback((json: Record<string, unknown>) => {
     const content = json.content;
@@ -186,6 +194,24 @@ const MaterialEditorPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {hasSlides && !tipDismissed && (
+        <div className='mb-4 flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
+          <p>
+            <span className='font-medium'>
+              Speaker notes carry your teaching
+            </span>{' '}
+            — what you say, not what students see on screen. Each slide has a
+            notes block that exports to PowerPoint&apos;s speaker notes pane.
+          </p>
+          <button
+            onClick={dismissTip}
+            className='shrink-0 text-amber-600 hover:text-amber-800 text-xs font-medium'
+          >
+            Got it
+          </button>
+        </div>
+      )}
 
       <UnifiedEditor
         content={initialContent}
