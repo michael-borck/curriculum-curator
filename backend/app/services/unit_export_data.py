@@ -244,6 +244,11 @@ def extract_branching_cards(content_json: dict[str, Any]) -> list[dict[str, Any]
                         "choices": attrs.get("choices", []),
                         "endScore": int(attrs.get("endScore", 0)),
                         "endMessage": str(attrs.get("endMessage", "")),
+                        "stepThreshold": int(attrs.get("stepThreshold", 0) or 0),
+                        "endMessageEfficient": str(
+                            attrs.get("endMessageEfficient", "")
+                        ),
+                        "endMessageThorough": str(attrs.get("endMessageThorough", "")),
                     }
                 )
 

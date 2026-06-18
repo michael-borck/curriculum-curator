@@ -57,6 +57,9 @@ class InteractiveHtmlBuilder:
                 "choices": choices,
                 "endMessage": str(card.get("endMessage", "")),
                 "endScore": int(card.get("endScore", 0) or 0),
+                "stepThreshold": int(card.get("stepThreshold", 0) or 0),
+                "endMessageEfficient": str(card.get("endMessageEfficient", "")),
+                "endMessageThorough": str(card.get("endMessageThorough", "")),
             }
         return {
             "title": title,
@@ -146,7 +149,7 @@ function render(cardId) {
 
   if (isEnding || !hasChoices) {
     const box = el('div', { className: 'ending' });
-    box.textContent = card.endMessage || (isEnding ? 'The end.' : 'End of this path.');
+    box.textContent = endMessageFor(card) || (isEnding ? 'The end.' : 'End of this path.');
     root.appendChild(box);
     root.appendChild(el('p', { text: 'Cards visited: ' + steps, className: 'muted' }));
     root.appendChild(restartButton());
@@ -158,6 +161,19 @@ function render(cardId) {
     btn.addEventListener('click', function () { choose(choice); });
     root.appendChild(btn);
   });
+}
+
+// Pick the ending message: with a threshold set, an efficient run (steps at
+// or under it) gets the efficient variant, otherwise the thorough one; either
+// falls back to the plain end message when left blank.
+function endMessageFor(card) {
+  if (card.stepThreshold > 0) {
+    const variant = steps <= card.stepThreshold
+      ? card.endMessageEfficient
+      : card.endMessageThorough;
+    if (variant) return variant;
+  }
+  return card.endMessage;
 }
 
 function choose(choice) {

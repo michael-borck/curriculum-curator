@@ -52,6 +52,9 @@ const BranchingCardView: React.FC<NodeViewProps> = ({
     choices: BranchingChoice[];
     endScore: number;
     endMessage: string;
+    stepThreshold: number;
+    endMessageEfficient: string;
+    endMessageThorough: string;
   };
 
   const isNew = !attrs.cardTitle && !attrs.cardContent;
@@ -280,6 +283,64 @@ const BranchingCardView: React.FC<NodeViewProps> = ({
                 placeholder='End message…'
                 className='w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-400'
               />
+
+              {/* Step-count thresholds (19B.3) — interactive HTML export */}
+              <div className='border-t border-gray-200 pt-2 space-y-2'>
+                <label className='text-sm text-gray-600 flex items-center gap-1'>
+                  If reached in
+                  <input
+                    type='number'
+                    min={0}
+                    value={draft.stepThreshold}
+                    onChange={e =>
+                      setDraft({
+                        ...draft,
+                        stepThreshold: Math.max(
+                          0,
+                          parseInt(e.target.value, 10) || 0
+                        ),
+                      })
+                    }
+                    onKeyDown={handleKeyDown}
+                    className='w-16 border border-gray-300 rounded px-2 py-1 text-sm'
+                  />
+                  cards or fewer (0 = off)
+                </label>
+                {draft.stepThreshold > 0 && (
+                  <>
+                    <textarea
+                      value={draft.endMessageEfficient}
+                      onChange={e =>
+                        setDraft({
+                          ...draft,
+                          endMessageEfficient: e.target.value,
+                        })
+                      }
+                      onKeyDown={handleKeyDown}
+                      rows={2}
+                      placeholder='Message for an efficient run (at or under the threshold)…'
+                      className='w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-400'
+                    />
+                    <textarea
+                      value={draft.endMessageThorough}
+                      onChange={e =>
+                        setDraft({
+                          ...draft,
+                          endMessageThorough: e.target.value,
+                        })
+                      }
+                      onKeyDown={handleKeyDown}
+                      rows={2}
+                      placeholder='Message for a thorough run (over the threshold)…'
+                      className='w-full border border-gray-300 rounded p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-pink-400'
+                    />
+                    <p className='text-xs text-gray-400'>
+                      Used by the Interactive HTML export. Leave a variant blank
+                      to fall back to the end message above.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           )}
 

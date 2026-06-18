@@ -113,3 +113,70 @@ class TestInteractiveHtml:
         assert "Cards visited: " in html
         # Start again resets the counter before re-rendering from the start
         assert "steps = 0; render(SCENARIO.startCardId)" in html
+
+    def test_threshold_messages_embedded(self) -> None:
+        # 19B.3: threshold + two message variants travel into the scenario
+        cards = [
+            _card(
+                "end",
+                card_type="ending",
+                end_message="Done.",
+                end_score=10,
+            ),
+        ]
+        cards[0]["stepThreshold"] = 3
+        cards[0]["endMessageEfficient"] = "Swift and sure!"
+        cards[0]["endMessageThorough"] = "You explored everything."
+        html = interactive_html_builder.build(cards, "T")
+        scenario = _extract_scenario(html)
+        end = scenario["cards"]["end"]
+        assert end["stepThreshold"] == 3
+        assert end["endMessageEfficient"] == "Swift and sure!"
+        assert end["endMessageThorough"] == "You explored everything."
+        # Player chooses the variant by comparing steps to the threshold
+        assert "card.stepThreshold > 0" in html
+        assert "steps <= card.stepThreshold" in html
+
+
+class TestThresholdExtraction:
+    def test_extract_branching_cards_reads_threshold_attrs(self) -> None:
+        from app.services.unit_export_data import extract_branching_cards
+
+        content_json = {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "branchingCard",
+                    "attrs": {
+                        "cardId": "end",
+                        "cardType": "ending",
+                        "endMessage": "Done.",
+                        "endScore": 5,
+                        "stepThreshold": 4,
+                        "endMessageEfficient": "Quick!",
+                        "endMessageThorough": "Thorough!",
+                    },
+                }
+            ],
+        }
+        cards = extract_branching_cards(content_json)
+        assert cards[0]["stepThreshold"] == 4
+        assert cards[0]["endMessageEfficient"] == "Quick!"
+        assert cards[0]["endMessageThorough"] == "Thorough!"
+
+    def test_defaults_when_attrs_absent(self) -> None:
+        from app.services.unit_export_data import extract_branching_cards
+
+        content_json = {
+            "type": "doc",
+            "content": [
+                {
+                    "type": "branchingCard",
+                    "attrs": {"cardId": "c1", "cardType": "content"},
+                }
+            ],
+        }
+        cards = extract_branching_cards(content_json)
+        assert cards[0]["stepThreshold"] == 0
+        assert cards[0]["endMessageEfficient"] == ""
+        assert cards[0]["endMessageThorough"] == ""

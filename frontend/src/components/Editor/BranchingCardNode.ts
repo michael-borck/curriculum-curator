@@ -19,6 +19,13 @@ export interface BranchingCardAttrs {
   choices: BranchingChoice[];
   endScore: number;
   endMessage: string;
+  // Step-count thresholds for ending cards (19B.3). 0 disables the split,
+  // falling back to endMessage. When > 0, a student who reached this ending
+  // in `stepThreshold` cards or fewer sees endMessageEfficient, otherwise
+  // endMessageThorough.
+  stepThreshold: number;
+  endMessageEfficient: string;
+  endMessageThorough: string;
 }
 
 function generateId(): string {
@@ -46,6 +53,9 @@ export const BranchingCardNode = Node.create({
       choices: { default: [] as BranchingChoice[] },
       endScore: { default: 0 },
       endMessage: { default: '' },
+      stepThreshold: { default: 0 },
+      endMessageEfficient: { default: '' },
+      endMessageThorough: { default: '' },
     };
   },
 
@@ -71,6 +81,14 @@ export const BranchingCardNode = Node.create({
             choices,
             endScore: parseInt(el.getAttribute('data-end-score') || '0', 10),
             endMessage: el.getAttribute('data-end-message') || '',
+            stepThreshold: parseInt(
+              el.getAttribute('data-step-threshold') || '0',
+              10
+            ),
+            endMessageEfficient:
+              el.getAttribute('data-end-message-efficient') || '',
+            endMessageThorough:
+              el.getAttribute('data-end-message-thorough') || '',
           };
         },
       },
@@ -89,6 +107,9 @@ export const BranchingCardNode = Node.create({
         'data-choices': JSON.stringify(node.attrs.choices),
         'data-end-score': String(node.attrs.endScore),
         'data-end-message': node.attrs.endMessage as string,
+        'data-step-threshold': String(node.attrs.stepThreshold),
+        'data-end-message-efficient': node.attrs.endMessageEfficient as string,
+        'data-end-message-thorough': node.attrs.endMessageThorough as string,
       },
       `Card: ${(node.attrs.cardTitle as string) || '(new card)'}`,
     ];
