@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Sparkles, Wand2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Editor } from '@tiptap/core';
 import UnifiedEditor from '../components/Editor/UnifiedEditor';
 import SpeakerNotesGenerateDialog from '../components/Editor/SpeakerNotesGenerateDialog';
+import RestructureDialog from '../components/Editor/RestructureDialog';
 import SourceFilesPanel from '../components/Editor/SourceFilesPanel';
 import { materialsApi } from '../services/materialsApi';
 import type { SpeakerNotesDraft } from '../services/aiApi';
@@ -12,6 +13,10 @@ import type { AttachedSourceFile } from '../services/materialImportApi';
 import type { MaterialResponse } from '../types/unitStructure';
 import { getFormatMeta } from '../constants/sessionFormats';
 import { applySpeakerNotesDrafts } from '../utils/speakerNotes';
+import {
+  isPlainParagraphContent,
+  estimateTokens,
+} from '../utils/contentStructure';
 import { useAILevel } from '../hooks/useAILevel';
 
 /**
@@ -39,6 +44,7 @@ const MaterialEditorPage: React.FC = () => {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [restructureOpen, setRestructureOpen] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -155,6 +161,10 @@ const MaterialEditorPage: React.FC = () => {
   // stored untransformed in material_metadata.
   const sourceFiles = (material.materialMetadata?.attached_source_files ??
     []) as AttachedSourceFile[];
+  // Structure recovery (6.16) is offered for flat plain-paragraph content,
+  // the shape a PDF import produces.
+  const liveJson = editedJson ?? material.contentJson;
+  const canRestructure = isPlainParagraphContent(liveJson);
 
   return (
     <div className='max-w-5xl mx-auto px-4 py-6'>
@@ -188,6 +198,16 @@ const MaterialEditorPage: React.FC = () => {
             >
               <Sparkles className='w-4 h-4' />
               Notes with AI
+            </button>
+          )}
+          {canRestructure && !isAIDisabled && (
+            <button
+              onClick={() => setRestructureOpen(true)}
+              className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+              title='Recover headings and lists from this plain-text import, reviewed before applying'
+            >
+              <Wand2 className='w-4 h-4' />
+              Improve structure
             </button>
           )}
           <button
@@ -263,6 +283,20 @@ const MaterialEditorPage: React.FC = () => {
             );
           }}
           onClose={() => setNotesDialogOpen(false)}
+        />
+      )}
+
+      {restructureOpen && materialId && (
+        <RestructureDialog
+          materialId={materialId}
+          estimatedTokens={estimateTokens(
+            editorRef.current?.getJSON() ?? liveJson
+          )}
+          onApply={contentJson => {
+            editorRef.current?.commands.setContent(contentJson, true);
+            toast.success('Structure applied — remember to save');
+          }}
+          onClose={() => setRestructureOpen(false)}
         />
       )}
     </div>

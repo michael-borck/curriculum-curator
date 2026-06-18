@@ -52,6 +52,15 @@ export interface GenerateSpeakerNotesResponse {
   drafts: SpeakerNotesDraft[];
 }
 
+// ─── Structure Recovery Types (6.16) ─────────────────────────────────────────
+
+export interface RestructureContentResponse {
+  contentJson: Record<string, unknown>;
+  headingCount: number;
+  listCount: number;
+  paragraphCount: number;
+}
+
 // ─── API Calls ───────────────────────────────────────────────────────────────
 
 export const aiApi = {
@@ -82,6 +91,14 @@ export const aiApi = {
     return api.post<GenerateSpeakerNotesResponse>(
       `/ai/materials/${materialId}/generate-speaker-notes`,
       { slideIndices }
+    );
+  },
+
+  /** Recover structure (headings, lists) from a material's plain content. */
+  restructureContent(materialId: string) {
+    return api.post<RestructureContentResponse>(
+      `/ai/materials/${materialId}/restructure`,
+      {}
     );
   },
 };

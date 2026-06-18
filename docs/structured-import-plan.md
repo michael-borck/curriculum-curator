@@ -1,6 +1,17 @@
 # Structured Material Import — Architecture Plan
 
-**Status:** Phases 1–3 shipped — Phase 1 (foundation + PPTX + Mode A) 2026-04-10; Phase 2 (DOCX/HTML/MD/PDF parsers) 2026-04-10; Phase 3 (Mode B multi-file zip + multi-format grouping + source files) 2026-06-18. Phase 4 (AI-assisted PDF structuring) and Phase 5 (dialect parsers) remain. Architecture formalised in [ADR-065](adr/065-structured-material-import-architecture.md).
+**Status:** Phases 1–4 shipped — Phase 1 (foundation + PPTX + Mode A) 2026-04-10; Phase 2 (DOCX/HTML/MD/PDF parsers) 2026-04-10; Phase 3 (Mode B multi-file zip + multi-format grouping + source files) 2026-06-18; Phase 4 (AI structure recovery — "Improve structure" editor action) 2026-06-18. Phase 5 (dialect parsers) remains. Architecture formalised in [ADR-065](adr/065-structured-material-import-architecture.md).
+
+> **Phase 4 implementation note (2026-06-18):** built as an editor action
+> (`POST /ai/materials/{id}/restructure`) operating on the material's
+> already-extracted text rather than a `pdf_llm` parser re-reading the
+> binary. Rationale: the parser interface is a pure, db-free transform
+> (base.py) that can't host the user/db-dependent LLM call, and `pdf_llm`
+> is plain-text→structure anyway — the extracted text holds the same
+> signal as the binary, so re-reading adds nothing. The action also
+> generalises to any plain-paragraph material. Table recovery is deferred:
+> a flattened table is an ambiguous run of cell text with no recoverable
+> column boundaries.
 **Date:** 2026-04-10
 **Related:** [ADR-023](adr/023-file-import-processing-architecture.md), [ADR-042](adr/042-package-import-round-trip.md), [ADR-054](adr/054-import-provenance-round-trip-fidelity.md), [ADR-061](adr/061-transparent-import-reporting.md), [ADR-063](adr/063-unit-outline-import-parser-system.md), [ADR-038](adr/038-content-not-presentation.md), [ADR-064](adr/064-rough-slides-as-feature.md), [speaker-notes-plan.md](speaker-notes-plan.md)
 

@@ -23,8 +23,11 @@ from app.schemas.ai import (
     GenerateSpeakerNotesResponse,
     GenerateVideoInteractionRequest,
     GenerateVideoInteractionResponse,
+    RestructureContentRequest,
+    RestructureContentResponse,
     ScaffoldUnitRequest,
     ScaffoldUnitResponse,
+    StructuredDocument,
     SuggestInteractionPointsRequest,
     SuggestInteractionPointsResponse,
     VisualPromptRequest,
@@ -57,6 +60,7 @@ from app.services.ai_prompts import (
     SCAFFOLD_UNIT_SYSTEM,
     SCHEDULE_SYSTEM,
     SPEAKER_NOTES_SYSTEM,
+    STRUCTURE_CONTENT_SYSTEM,
     SUGGEST_POINTS_SYSTEM,
     VALIDATE_CONTENT_SYSTEM,
     VALIDATE_SYSTEM,
@@ -68,11 +72,16 @@ from app.services.ai_prompts import (
     render_scaffold_unit_prompt,
     render_schedule_prompt,
     render_speaker_notes_prompt,
+    render_structure_content_prompt,
     render_suggest_points_prompt,
     render_validate_content_prompt,
     render_validation_prompt,
     render_video_interaction_prompt,
     render_visual_prompt,
+)
+from app.services.content_structuring import (
+    flatten_content_to_text,
+    structured_document_to_content_json,
 )
 from app.services.curriculum_context import build_context
 from app.services.design_context import (
@@ -1083,3 +1092,60 @@ async def generate_speaker_notes(
     requested = {slide["slide_index"] for slide in slides}
     result.drafts = [d for d in result.drafts if d.slide_index in requested]
     return result
+
+
+# =============================================================================
+# AI Structure Recovery (6.16)
+# =============================================================================
+
+
+@router.post(
+    "/materials/{material_id}/restructure",
+    response_model=RestructureContentResponse,
+)
+async def restructure_material_content(
+    request: RestructureContentRequest,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Re-interpret a material's plain content into structured blocks.
+
+    For plain-paragraph imports (notably PDFs), an LLM re-segments the
+    existing text into headings and lists without inventing content. The
+    proposed content_json is returned for propose/apply review — the
+    material is never mutated here.
+    """
+    _ = request  # design_id reserved for future pedagogy-aware structuring
+    text = flatten_content_to_text(material.content_json)
+    if not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no text content to restructure",
+        )
+
+    prompt = render_structure_content_prompt(text[:12000])
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=StructuredDocument,
+        system_prompt=STRUCTURE_CONTENT_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=4096,
+    )
+    if error or result is None:
+        logger.error("Content restructure failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Content restructure failed",
+        )
+
+    content_json, headings, lists, paragraphs = structured_document_to_content_json(
+        result
+    )
+    return RestructureContentResponse(
+        content_json=content_json,
+        heading_count=headings,
+        list_count=lists,
+        paragraph_count=paragraphs,
+    )

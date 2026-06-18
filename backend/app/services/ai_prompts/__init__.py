@@ -27,6 +27,10 @@ from app.services.ai_prompts.speaker_notes import (
     SPEAKER_NOTES_SYSTEM,
     render_speaker_notes_prompt,
 )
+from app.services.ai_prompts.structure_content import (
+    STRUCTURE_CONTENT_SYSTEM,
+    render_structure_content_prompt,
+)
 from app.services.ai_prompts.validate import (
     VALIDATE_SYSTEM,
     ValidationCheck,
@@ -53,6 +57,7 @@ __all__ = [
     "SCAFFOLD_UNIT_SYSTEM",
     "SCHEDULE_SYSTEM",
     "SPEAKER_NOTES_SYSTEM",
+    "STRUCTURE_CONTENT_SYSTEM",
     "SUGGEST_POINTS_SYSTEM",
     "VALIDATE_CONTENT_SYSTEM",
     "VALIDATE_SYSTEM",
@@ -64,6 +69,7 @@ __all__ = [
     "render_scaffold_unit_prompt",
     "render_schedule_prompt",
     "render_speaker_notes_prompt",
+    "render_structure_content_prompt",
     "render_suggest_points_prompt",
     "render_validate_content_prompt",
     "render_validation_prompt",

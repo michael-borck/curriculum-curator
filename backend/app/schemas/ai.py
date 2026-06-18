@@ -190,3 +190,46 @@ class SpeakerNotesDraft(CamelModel):
 
 class GenerateSpeakerNotesResponse(CamelModel):
     drafts: list[SpeakerNotesDraft]
+
+
+# =============================================================================
+# AI Structure Recovery (6.16) — upgrade plain-paragraph content to structure
+# =============================================================================
+
+
+class StructuredBlock(CamelModel):
+    """One block the LLM proposes when recovering structure from plain text.
+
+    Constrained to the block kinds the converter can map to TipTap nodes.
+    ``text`` is used by heading/paragraph; ``items`` by the list kinds;
+    ``level`` (1-3) by headings only.
+    """
+
+    kind: str = Field(
+        ...,
+        description="One of: heading, paragraph, bullet_list, ordered_list",
+    )
+    text: str = ""
+    level: int = Field(default=2, ge=1, le=3)
+    items: list[str] = Field(default_factory=list)
+
+
+class StructuredDocument(CamelModel):
+    """The LLM's structured re-interpretation of plain text (no new content)."""
+
+    blocks: list[StructuredBlock]
+
+
+class RestructureContentRequest(CamelModel):
+    """Improve the structure of a material's existing plain content."""
+
+    design_id: str | None = None
+
+
+class RestructureContentResponse(CamelModel):
+    """Proposed structured content for review (propose/apply — no mutation)."""
+
+    content_json: dict[str, object]
+    heading_count: int
+    list_count: int
+    paragraph_count: int
