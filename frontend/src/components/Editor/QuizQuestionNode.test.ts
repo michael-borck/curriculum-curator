@@ -56,6 +56,33 @@ describe('QuizQuestionNode matching attrs', () => {
     expect(node?.attrs?.pairs).toEqual(pairs);
   });
 
+  it('round-trips drag_drop words through options', () => {
+    const options = [
+      { id: 'o1', text: 'cat', correct: true },
+      { id: 'o2', text: 'mat', correct: true },
+      { id: 'o3', text: 'dog', correct: false },
+    ];
+    const ed = makeEditor({
+      type: 'doc',
+      content: [
+        {
+          type: 'quizQuestion',
+          attrs: {
+            questionId: 'q1',
+            questionType: 'drag_drop',
+            questionText: 'The ___ sat on the ___.',
+            options,
+            pairs: [],
+          },
+        },
+      ],
+    });
+    const reparsed = makeEditor(ed.getHTML());
+    const node = reparsed.getJSON().content?.[0];
+    expect(node?.attrs?.questionType).toBe('drag_drop');
+    expect(node?.attrs?.options).toEqual(options);
+  });
+
   it('defaults pairs to an empty array for non-matching questions', () => {
     const ed = makeEditor({
       type: 'doc',

@@ -268,7 +268,9 @@ class TestFeedback:
         )
         buf = h5p_builder.build([q], "Test")  # type: ignore[arg-type]
         _, content = _unpack_h5p(buf)
-        assert content["questions"][0]["params"]["feedbackOnCorrect"] == "Because reasons."
+        assert (
+            content["questions"][0]["params"]["feedbackOnCorrect"] == "Because reasons."
+        )
 
 
 class TestSubContentIds:
@@ -279,3 +281,38 @@ class TestSubContentIds:
 
         ids = [q["subContentId"] for q in content["questions"]]
         assert len(ids) == len(set(ids))  # all unique
+
+
+# ---------------------------------------------------------------------------
+# Drag & Drop (19C.3) — H5P.DragText export
+# ---------------------------------------------------------------------------
+
+
+def _drag_drop_question() -> _FakeQuestion:
+    return _FakeQuestion(
+        text="The ___ sat on the ___.",
+        q_type="drag_drop",
+        # 'cat' and 'mat' fill the gaps; 'dog' is a distractor
+        options=[{"text": "cat"}, {"text": "mat"}, {"text": "dog"}],
+        correct=["cat", "mat"],
+        points=2.0,
+    )
+
+
+class TestDragDrop:
+    def test_drag_drop_uses_dragtext_library(self) -> None:
+        buf = h5p_builder.build([_drag_drop_question()], "DD Quiz")
+        _, content = _unpack_h5p(buf)
+        q = content["questions"][0]
+        assert q["library"] == "H5P.DragText 1.10"
+
+    def test_gaps_filled_in_order_with_distractor(self) -> None:
+        buf = h5p_builder.build([_drag_drop_question()], "DD Quiz")
+        _, content = _unpack_h5p(buf)
+        field = content["questions"][0]["params"]["textField"]
+        # answers fill the two gaps, in order
+        assert field.startswith("The *cat* sat on the *mat*.")
+        # distractor appears as an extra draggable
+        assert "*dog*" in field
+        # no leftover gap markers
+        assert "___" not in field

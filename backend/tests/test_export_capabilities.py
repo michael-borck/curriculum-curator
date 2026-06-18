@@ -79,11 +79,17 @@ class TestWarnings:
         )
         assert warnings_for("quiz", "h5p_question_set", features) == []
 
-    def test_drag_drop_dropped_by_qti(self):
+    def test_drag_drop_dropped_by_qti_suggests_h5p(self):
         features = ContentFeatures(question_types={"drag_drop"})
         warnings = warnings_for("quiz", "qti", features)
         assert len(warnings) == 1
         assert warnings[0].severity == "dropped"
+        # H5P DragText supports it, so it's the suggested alternative
+        assert warnings[0].suggested_target == "h5p_question_set"
+
+    def test_drag_drop_supported_by_h5p_no_warning(self):
+        features = ContentFeatures(question_types={"drag_drop"})
+        assert warnings_for("quiz", "h5p_question_set", features) == []
 
     def test_interactive_video_drops_video_on_quiz_target(self):
         features = ContentFeatures(has_video=True)

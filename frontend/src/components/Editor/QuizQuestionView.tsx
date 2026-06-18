@@ -10,6 +10,7 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   short_answer: 'Short Answer',
   fill_in_blank: 'Fill in the Blank',
   matching: 'Matching',
+  drag_drop: 'Drag & Drop',
 };
 
 function generateId(): string {
@@ -40,11 +41,12 @@ function resetOptionsForType(
       return [];
     case 'multiple_choice':
     case 'multi_select':
+    case 'drag_drop':
       return existing.length >= 2
         ? existing
         : [
-            { id: generateId(), text: '', correct: false },
-            { id: generateId(), text: '', correct: false },
+            { id: generateId(), text: '', correct: true },
+            { id: generateId(), text: '', correct: true },
           ];
   }
 }
@@ -367,6 +369,58 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
                 </p>
               </div>
             )}
+
+            {draft.questionType === 'drag_drop' && (
+              <div className='space-y-1'>
+                <p className='text-xs text-gray-500'>
+                  Put <code className='bg-white px-1 rounded'>___</code> in the
+                  question text for each gap. List the draggable words below;
+                  ticked words are answers (filled into the gaps in order),
+                  unticked words are distractors.
+                </p>
+                {draft.options.map((opt, idx) => (
+                  <div key={opt.id} className='flex items-center gap-2'>
+                    <input
+                      type='checkbox'
+                      checked={opt.correct}
+                      onChange={() => toggleCorrect(idx)}
+                      title='Is an answer (fills a gap)'
+                    />
+                    <input
+                      type='text'
+                      value={opt.text}
+                      onChange={e => setOption(idx, { text: e.target.value })}
+                      onKeyDown={handleKeyDown}
+                      placeholder={`Word ${idx + 1}`}
+                      className='flex-1 border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    />
+                    {draft.options.length > 2 && (
+                      <button
+                        type='button'
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          removeOption(idx);
+                        }}
+                        className='text-red-400 hover:text-red-600 text-sm px-1'
+                        title='Remove word'
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type='button'
+                  onMouseDown={e => {
+                    e.preventDefault();
+                    addOption();
+                  }}
+                  className='text-sm text-purple-600 hover:text-purple-800'
+                >
+                  + Add word
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Feedback (collapsible) */}
@@ -494,6 +548,24 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
               </li>
             ))}
           </ul>
+        )}
+
+        {attrs.questionType === 'drag_drop' && (
+          <div className='flex flex-wrap gap-1.5 mb-3'>
+            {attrs.options.map(opt => (
+              <span
+                key={opt.id}
+                className={`text-xs px-2 py-0.5 rounded-full border ${
+                  opt.correct
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}
+                title={opt.correct ? 'Answer' : 'Distractor'}
+              >
+                {opt.text || '(empty)'}
+              </span>
+            ))}
+          </div>
         )}
 
         {/* Feedback callout */}

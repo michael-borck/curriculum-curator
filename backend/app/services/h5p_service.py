@@ -39,6 +39,11 @@ _BLANKS_LIB: dict[str, Any] = {
     "majorVersion": 1,
     "minorVersion": 14,
 }
+_DRAG_TEXT_LIB: dict[str, Any] = {
+    "machineName": "H5P.DragText",
+    "majorVersion": 1,
+    "minorVersion": 10,
+}
 
 # Question type → H5P library mapping
 _TYPE_MAP: dict[str, dict[str, Any]] = {
@@ -47,6 +52,7 @@ _TYPE_MAP: dict[str, dict[str, Any]] = {
     "true_false": _TRUE_FALSE_LIB,
     "short_answer": _ESSAY_LIB,
     "fill_in_blank": _BLANKS_LIB,
+    "drag_drop": _DRAG_TEXT_LIB,
 }
 
 _TYPE_LABELS: dict[str, str] = {
@@ -55,6 +61,7 @@ _TYPE_LABELS: dict[str, str] = {
     "true_false": "True/False",
     "short_answer": "Essay",
     "fill_in_blank": "Fill in the Blanks",
+    "drag_drop": "Drag Text",
 }
 
 
@@ -117,6 +124,8 @@ class H5PQuestionSetBuilder:
             params = self._build_essay(q)
         elif q_type == "fill_in_blank":
             params = self._build_blanks(q)
+        elif q_type == "drag_drop":
+            params = self._build_drag_text(q)
         else:
             params = self._build_multi_choice(q, single_answer=True)
 
@@ -258,6 +267,48 @@ class H5PQuestionSetBuilder:
                 "caseSensitive": False,
                 "autoCheck": False,
                 "acceptSpellingErrors": True,
+            },
+        }
+
+        if q.answer_explanation:
+            params["overallFeedback"] = [
+                {"from": 0, "to": 100, "feedback": q.answer_explanation}
+            ]
+
+        return params
+
+    def _build_drag_text(self, q: QuizQuestion) -> dict[str, Any]:
+        """Build H5P.DragText params (drag words into gaps).
+
+        The question text carries ``___`` for each gap; correct answers fill
+        them in order (``*word*``). Any answer beyond the gaps and any option
+        that isn't a correct answer becomes an extra draggable (a distractor).
+        """
+        text = str(q.question_text)
+        correct = [str(a) for a in (q.correct_answers or [])]
+
+        for word in correct:
+            if "___" in text:
+                text = text.replace("___", f"*{word}*", 1)
+            else:
+                text = f"{text} *{word}*"
+
+        # Options that aren't correct answers are distractor draggables
+        correct_set = set(correct)
+        for opt in q.options or []:
+            if isinstance(opt, dict):
+                word = str(opt.get("text", ""))
+                if word and word not in correct_set:
+                    text = f"{text} *{word}*"
+
+        params: dict[str, Any] = {
+            "taskDescription": "<p>Drag the words into the correct boxes</p>",
+            "textField": text,
+            "behaviour": {
+                "enableRetry": True,
+                "enableSolutionsButton": True,
+                "enableCheckButton": True,
+                "instantFeedback": False,
             },
         }
 

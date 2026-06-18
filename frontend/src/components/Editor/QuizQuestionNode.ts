@@ -8,7 +8,8 @@ export type QuestionType =
   | 'multi_select'
   | 'short_answer'
   | 'fill_in_blank'
-  | 'matching';
+  | 'matching'
+  | 'drag_drop';
 
 export interface QuizOption {
   id: string;

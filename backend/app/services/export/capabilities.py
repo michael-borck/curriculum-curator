@@ -93,6 +93,7 @@ _H5P_QS_QUESTION_TYPES = frozenset(
         "true_false",
         "short_answer",
         "fill_in_blank",
+        "drag_drop",
     }
 )
 
