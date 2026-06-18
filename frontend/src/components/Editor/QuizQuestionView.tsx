@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
-import type { QuestionType, QuizOption } from './QuizQuestionNode';
+import type { MatchPair, QuestionType, QuizOption } from './QuizQuestionNode';
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   multiple_choice: 'Multiple Choice',
@@ -9,10 +9,18 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   multi_select: 'Multi-Select',
   short_answer: 'Short Answer',
   fill_in_blank: 'Fill in the Blank',
+  matching: 'Matching',
 };
 
 function generateId(): string {
   return globalThis.crypto.randomUUID();
+}
+
+function makeEmptyPairs(): MatchPair[] {
+  return [
+    { id: generateId(), left: '', right: '' },
+    { id: generateId(), left: '', right: '' },
+  ];
 }
 
 function resetOptionsForType(
@@ -28,6 +36,8 @@ function resetOptionsForType(
     case 'short_answer':
     case 'fill_in_blank':
       return [{ id: generateId(), text: '', correct: true }];
+    case 'matching':
+      return [];
     case 'multiple_choice':
     case 'multi_select':
       return existing.length >= 2
@@ -48,6 +58,7 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
     questionType: QuestionType;
     questionText: string;
     options: QuizOption[];
+    pairs: MatchPair[];
     feedback: string;
     points: number;
     explanation: string;
@@ -55,11 +66,19 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
 
   const isNew = !attrs.questionText && attrs.options.every(o => !o.text);
   const [editing, setEditing] = useState(isNew);
-  const [draft, setDraft] = useState({ ...attrs, options: [...attrs.options] });
+  const [draft, setDraft] = useState({
+    ...attrs,
+    options: [...attrs.options],
+    pairs: [...(attrs.pairs ?? [])],
+  });
   const [showFeedback, setShowFeedback] = useState(!!attrs.feedback);
 
   const startEdit = () => {
-    setDraft({ ...attrs, options: [...attrs.options] });
+    setDraft({
+      ...attrs,
+      options: [...attrs.options],
+      pairs: [...(attrs.pairs ?? [])],
+    });
     setShowFeedback(!!attrs.feedback);
     setEditing(true);
   };
@@ -71,7 +90,11 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
 
   const handleCancel = () => {
     if (isNew) return; // can't cancel a brand-new question
-    setDraft({ ...attrs, options: [...attrs.options] });
+    setDraft({
+      ...attrs,
+      options: [...attrs.options],
+      pairs: [...(attrs.pairs ?? [])],
+    });
     setEditing(false);
   };
 
@@ -114,9 +137,37 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
     setDraft({ ...draft, options: draft.options.filter((_, i) => i !== idx) });
   };
 
+  const setPair = (idx: number, patch: Partial<MatchPair>) => {
+    const next = draft.pairs.map((p, i) =>
+      i === idx ? { ...p, ...patch } : p
+    );
+    setDraft({ ...draft, pairs: next });
+  };
+
+  const addPair = () => {
+    setDraft({
+      ...draft,
+      pairs: [...draft.pairs, { id: generateId(), left: '', right: '' }],
+    });
+  };
+
+  const removePair = (idx: number) => {
+    if (draft.pairs.length <= 2) return;
+    setDraft({ ...draft, pairs: draft.pairs.filter((_, i) => i !== idx) });
+  };
+
   const handleTypeChange = (newType: QuestionType) => {
     const newOptions = resetOptionsForType(newType, draft.options);
-    setDraft({ ...draft, questionType: newType, options: newOptions });
+    const newPairs =
+      newType === 'matching' && draft.pairs.length < 2
+        ? makeEmptyPairs()
+        : draft.pairs;
+    setDraft({
+      ...draft,
+      questionType: newType,
+      options: newOptions,
+      pairs: newPairs,
+    });
   };
 
   // ── Edit mode ──────────────────────────────────────────────
@@ -259,6 +310,63 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
                 />
               </div>
             )}
+
+            {draft.questionType === 'matching' && (
+              <div className='space-y-1'>
+                <div className='flex gap-2 text-xs text-gray-500 font-medium'>
+                  <span className='flex-1'>Prompt</span>
+                  <span className='flex-1'>Matches with</span>
+                  <span className='w-5' />
+                </div>
+                {draft.pairs.map((pair, idx) => (
+                  <div key={pair.id} className='flex items-center gap-2'>
+                    <input
+                      type='text'
+                      value={pair.left}
+                      onChange={e => setPair(idx, { left: e.target.value })}
+                      onKeyDown={handleKeyDown}
+                      placeholder={`Prompt ${idx + 1}`}
+                      className='flex-1 border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    />
+                    <span className='text-gray-400 text-sm'>&rarr;</span>
+                    <input
+                      type='text'
+                      value={pair.right}
+                      onChange={e => setPair(idx, { right: e.target.value })}
+                      onKeyDown={handleKeyDown}
+                      placeholder={`Match ${idx + 1}`}
+                      className='flex-1 border border-gray-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    />
+                    {draft.pairs.length > 2 && (
+                      <button
+                        type='button'
+                        onMouseDown={e => {
+                          e.preventDefault();
+                          removePair(idx);
+                        }}
+                        className='text-red-400 hover:text-red-600 text-sm px-1 w-5'
+                        title='Remove pair'
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type='button'
+                  onMouseDown={e => {
+                    e.preventDefault();
+                    addPair();
+                  }}
+                  className='text-sm text-purple-600 hover:text-purple-800'
+                >
+                  + Add pair
+                </button>
+                <p className='text-xs text-gray-400'>
+                  Each prompt is correctly matched to the term on its right.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Feedback (collapsible) */}
@@ -369,6 +477,23 @@ const QuizQuestionView: React.FC<NodeViewProps> = ({
             <span className='font-medium'>Expected:</span>{' '}
             {attrs.options[0]?.text || '(none)'}
           </p>
+        )}
+
+        {attrs.questionType === 'matching' && (
+          <ul className='space-y-1 mb-3'>
+            {(attrs.pairs ?? []).map(pair => (
+              <li
+                key={pair.id}
+                className='flex items-center gap-2 text-sm text-gray-700'
+              >
+                <span className='flex-1'>{pair.left || '(empty)'}</span>
+                <span className='text-gray-400'>&rarr;</span>
+                <span className='flex-1 text-green-700'>
+                  {pair.right || '(empty)'}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
 
         {/* Feedback callout */}

@@ -415,3 +415,74 @@ async def test_gather_no_quiz_questions_when_no_content_json(
 
     data = gather_unit_export_data(str(test_unit.id), test_db)
     assert str(mat.id) not in data.quiz_questions_by_material
+
+
+# ---------------------------------------------------------------------------
+# Matching question type (19C.3) — pairs attr → {left, right} options
+# ---------------------------------------------------------------------------
+
+
+def _matching_node(
+    *,
+    pairs: list[dict[str, str]],
+    question_text: str = "Match the pairs",
+    question_id: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "type": "quizQuestion",
+        "attrs": {
+            "questionId": question_id or str(uuid.uuid4()),
+            "questionText": question_text,
+            "questionType": "matching",
+            "options": [],
+            "pairs": pairs,
+            "points": 2,
+        },
+    }
+
+
+class TestMatchingExtraction:
+    def test_pairs_become_left_right_options(self) -> None:
+        doc = _doc(
+            _matching_node(
+                pairs=[
+                    {"id": "p1", "left": "Dog", "right": "Bark"},
+                    {"id": "p2", "left": "Cat", "right": "Meow"},
+                ]
+            )
+        )
+        questions = extract_quiz_nodes(doc)
+        assert len(questions) == 1
+        q = questions[0]
+        assert q.question_type == "matching"
+        assert q.options == [
+            {"left": "Dog", "right": "Bark"},
+            {"left": "Cat", "right": "Meow"},
+        ]
+        # right values are the correct answers (left[i] ↔ right[i])
+        assert q.correct_answers == ["Bark", "Meow"]
+
+    def test_matching_exports_to_qti12(self) -> None:
+        doc = _doc(
+            _matching_node(
+                pairs=[
+                    {"id": "p1", "left": "France", "right": "Paris"},
+                    {"id": "p2", "left": "Japan", "right": "Tokyo"},
+                ]
+            )
+        )
+        questions = extract_quiz_nodes(doc)
+        xml = qti_exporter.export_qti12(questions, "Capitals")
+        # Both prompts and both answers appear in the QTI 1.2 output
+        assert "France" in xml and "Japan" in xml
+        assert "Paris" in xml and "Tokyo" in xml
+        # Parses as valid XML
+        ET.fromstring(xml)
+
+    def test_matching_exports_to_qti21(self) -> None:
+        doc = _doc(
+            _matching_node(pairs=[{"id": "p1", "left": "H2O", "right": "Water"}])
+        )
+        questions = extract_quiz_nodes(doc)
+        buf = qti_exporter.export_qti21_zip(questions, "Chem")
+        assert buf.getvalue()  # non-empty zip produced

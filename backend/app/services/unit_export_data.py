@@ -176,19 +176,34 @@ def extract_quiz_nodes(content_json: dict[str, Any]) -> list[QuizQuestion]:
         for node in nodes:
             if node.get("type") == "quizQuestion":
                 attrs = node.get("attrs", {})
-                options_raw: list[dict[str, Any]] = attrs.get("options", [])
+                question_type = str(attrs.get("questionType", "multiple_choice"))
 
-                options = [{"text": str(o.get("text", ""))} for o in options_raw]
-                correct_answers = [
-                    str(o.get("text", ""))
-                    for o in options_raw
-                    if o.get("correct", False)
-                ]
+                if question_type == "matching":
+                    # Matching pairs use a separate `pairs` attr; emit them in
+                    # the {left, right} shape qti_service consumes directly.
+                    pairs_raw: list[dict[str, Any]] = attrs.get("pairs", [])
+                    options = [
+                        {
+                            "left": str(p.get("left", "")),
+                            "right": str(p.get("right", "")),
+                        }
+                        for p in pairs_raw
+                    ]
+                    # left[i] matches right[i] by construction
+                    correct_answers = [str(p.get("right", "")) for p in pairs_raw]
+                else:
+                    options_raw: list[dict[str, Any]] = attrs.get("options", [])
+                    options = [{"text": str(o.get("text", ""))} for o in options_raw]
+                    correct_answers = [
+                        str(o.get("text", ""))
+                        for o in options_raw
+                        if o.get("correct", False)
+                    ]
 
                 q = InMemoryQuizQuestion(
                     question_id=str(attrs.get("questionId", "")),
                     question_text=str(attrs.get("questionText", "")),
-                    question_type=str(attrs.get("questionType", "multiple_choice")),
+                    question_type=question_type,
                     options=options,
                     correct_answers=correct_answers,
                     answer_explanation=attrs.get("feedback") or None,

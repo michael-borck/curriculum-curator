@@ -7,7 +7,9 @@ import { useAILevel } from '../../hooks/useAILevel';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import { videoInteractionApi } from '../../services/videoInteractionApi';
 
-const TYPE_LABELS: Record<QuestionType, string> = {
+// Video interactions support single-answer question types only — matching
+// has no sensible representation as an in-video overlay.
+const TYPE_LABELS: Partial<Record<QuestionType, string>> = {
   multiple_choice: 'Multiple Choice',
   true_false: 'True / False',
   multi_select: 'Multi-Select',
@@ -40,6 +42,7 @@ function resetOptionsForType(
       return [{ id: generateId(), text: '', correct: true }];
     case 'multiple_choice':
     case 'multi_select':
+    default:
       return existing.length >= 2
         ? existing
         : [

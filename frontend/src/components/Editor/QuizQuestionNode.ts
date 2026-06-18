@@ -7,7 +7,8 @@ export type QuestionType =
   | 'true_false'
   | 'multi_select'
   | 'short_answer'
-  | 'fill_in_blank';
+  | 'fill_in_blank'
+  | 'matching';
 
 export interface QuizOption {
   id: string;
@@ -15,11 +16,19 @@ export interface QuizOption {
   correct: boolean;
 }
 
+/** A matching pair: left[i] is the correct match for right[i]. */
+export interface MatchPair {
+  id: string;
+  left: string;
+  right: string;
+}
+
 export interface QuizQuestionAttrs {
   questionId: string;
   questionType: QuestionType;
   questionText: string;
   options: QuizOption[];
+  pairs: MatchPair[];
   feedback: string;
   points: number;
   explanation: string;
@@ -47,6 +56,7 @@ export const QuizQuestionNode = Node.create({
       questionType: { default: 'multiple_choice' as QuestionType },
       questionText: { default: '' },
       options: { default: [] as QuizOption[] },
+      pairs: { default: [] as MatchPair[] },
       feedback: { default: '' },
       points: { default: 1 },
       explanation: { default: '' },
@@ -67,12 +77,21 @@ export const QuizQuestionNode = Node.create({
           } catch {
             /* empty */
           }
+          let pairs: MatchPair[] = [];
+          try {
+            pairs = JSON.parse(
+              el.getAttribute('data-pairs') || '[]'
+            ) as MatchPair[];
+          } catch {
+            /* empty */
+          }
           return {
             questionId: el.getAttribute('data-question-id') || '',
             questionType:
               el.getAttribute('data-question-type') || 'multiple_choice',
             questionText: el.getAttribute('data-question-text') || '',
             options,
+            pairs,
             feedback: el.getAttribute('data-feedback') || '',
             points: parseInt(el.getAttribute('data-points') || '1', 10),
             explanation: el.getAttribute('data-explanation') || '',
@@ -91,6 +110,7 @@ export const QuizQuestionNode = Node.create({
         'data-question-type': node.attrs.questionType as string,
         'data-question-text': node.attrs.questionText as string,
         'data-options': JSON.stringify(node.attrs.options),
+        'data-pairs': JSON.stringify(node.attrs.pairs),
         'data-feedback': node.attrs.feedback as string,
         'data-points': String(node.attrs.points),
         'data-explanation': node.attrs.explanation as string,
