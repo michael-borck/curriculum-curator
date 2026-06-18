@@ -24,6 +24,9 @@ from app.services.export.h5p_exporter import (
 )
 from app.services.export.html_exporter import HtmlExporter
 from app.services.export.imscc_exporter import ImsccExporter
+from app.services.export.interactive_html_exporter import (
+    InteractiveHtmlExporter,
+)
 from app.services.export.qti_exporter import QtiExporter
 from app.services.export.scorm_exporter import ScormExporter
 from app.services.export_service import ExportFormat
@@ -107,6 +110,7 @@ def _build_default_registry() -> ExportRegistry:
     registry.register("h5p_course_presentation", H5pCoursePresentationExporter())
     registry.register("h5p_branching", H5pBranchingExporter())
     registry.register("h5p_interactive_video", H5pInteractiveVideoExporter())
+    registry.register("interactive_html", InteractiveHtmlExporter())
     registry.register("html", HtmlExporter())
     # Document formats (single material → Pandoc/Typst)
     registry.register("pdf", DocumentExporter(ExportFormat.PDF))

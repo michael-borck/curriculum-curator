@@ -70,7 +70,7 @@ AUTO_DEFAULTS: dict[str, list[str]] = {
 TARGETS_FOR_CONTENT_TYPE: dict[str, list[str]] = {
     CONTENT_TYPE_QUIZ: ["qti", "h5p_question_set"],
     CONTENT_TYPE_SLIDES: ["h5p_course_presentation", "html"],
-    CONTENT_TYPE_BRANCHING: ["h5p_branching"],
+    CONTENT_TYPE_BRANCHING: ["h5p_branching", "interactive_html"],
     CONTENT_TYPE_INTERACTIVE_VIDEO: [
         "h5p_interactive_video",
         "h5p_question_set",

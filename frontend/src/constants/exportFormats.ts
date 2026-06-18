@@ -66,6 +66,13 @@ export const EXPORT_FORMAT_META: Record<string, ExportFormatMeta> = {
       'Choose-your-own-adventure scenario where student decisions lead to different outcomes.',
     extension: '.h5p',
   },
+  interactive_html: {
+    label: 'Interactive HTML',
+    friendlyLabel: 'Interactive Web Page',
+    tooltip:
+      'Standalone choose-your-own-adventure page that works in any browser — no LMS or H5P needed.',
+    extension: '.html',
+  },
   h5p_interactive_video: {
     label: 'H5P Interactive Video',
     friendlyLabel: 'Interactive Video',
