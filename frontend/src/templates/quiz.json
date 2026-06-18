@@ -1,0 +1,50 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 2 },
+      "content": [{ "type": "text", "text": "Quiz: [Your Title Here]" }]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Add a short instruction for students here, then edit the questions below."
+        }
+      ]
+    },
+    {
+      "type": "quizQuestion",
+      "attrs": {
+        "questionId": "tmpl-q-mc",
+        "questionType": "multiple_choice",
+        "questionText": "Write your multiple-choice question here.",
+        "options": [
+          { "id": "tmpl-mc-a", "text": "Correct answer", "correct": true },
+          { "id": "tmpl-mc-b", "text": "Distractor", "correct": false },
+          { "id": "tmpl-mc-c", "text": "Distractor", "correct": false }
+        ],
+        "feedback": "Explain why the correct answer is correct.",
+        "points": 1,
+        "explanation": ""
+      }
+    },
+    {
+      "type": "quizQuestion",
+      "attrs": {
+        "questionId": "tmpl-q-tf",
+        "questionType": "true_false",
+        "questionText": "Write a statement students judge true or false.",
+        "options": [
+          { "id": "tmpl-tf-t", "text": "True", "correct": true },
+          { "id": "tmpl-tf-f", "text": "False", "correct": false }
+        ],
+        "feedback": "",
+        "points": 1,
+        "explanation": ""
+      }
+    }
+  ]
+}

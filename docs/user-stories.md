@@ -285,7 +285,7 @@
 
 | # | Story | Phase | Status |
 |---|-------|-------|--------|
-| 19C.1 | As a **Creator**, I want to select a content type (quiz, case study, slides, etc.) when creating a material and have the editor load with a pre-built template structure, so I have the right layout without manual setup. | P5 | **Planned** |
+| 19C.1 | As a **Creator**, I want to select a content type (quiz, case study, slides, etc.) when creating a material and have the editor load with a pre-built template structure, so I have the right layout without manual setup. | P5 | **Done** — "Start from" picker (blank/quiz/slides/case study/interactive video) on material creation; `templates/` skeletons with per-insert node-id regeneration, opens the editor pre-filled |
 | 19C.2 | As a **Creator**, I want structured quiz question blocks in the editor where I define question text, answer options, correct answers, and feedback in dedicated fields rather than free-form text. | P5 | **Planned** |
 | 19C.3 | As a **Creator**, I want to choose question types (multiple choice, true/false, multiple select, short answer, fill-in-the-blank, matching, drag-and-drop) and have the editor show the appropriate answer structure for each. | P5 | **Planned** |
 | 19C.4 | As a **Creator**, I want structured slide break nodes in the editor so I can clearly separate slides with titles and content areas, making export to PPTX and H5P Course Presentation predictable. | P5 | **Planned** |

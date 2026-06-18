@@ -1,0 +1,68 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 1 },
+      "content": [{ "type": "text", "text": "Slide 1 — Title" }]
+    },
+    {
+      "type": "paragraph",
+      "content": [{ "type": "text", "text": "Key point for this slide." }]
+    },
+    {
+      "type": "speakerNotes",
+      "attrs": { "aiSelected": true },
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "What you'll say for this slide — not shown to students."
+            }
+          ]
+        }
+      ]
+    },
+    { "type": "slideBreak" },
+    {
+      "type": "heading",
+      "attrs": { "level": 1 },
+      "content": [{ "type": "text", "text": "Slide 2 — Title" }]
+    },
+    {
+      "type": "bulletList",
+      "content": [
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "First point" }]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "Second point" }]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "speakerNotes",
+      "attrs": { "aiSelected": true },
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [{ "type": "text", "text": "Notes for slide 2." }]
+        }
+      ]
+    }
+  ]
+}

@@ -72,6 +72,11 @@ import {
 import { getFormatMeta } from '../../constants/sessionFormats';
 import { getExportFormatMeta } from '../../constants/exportFormats';
 import { getSpeakerNotesCoverage } from '../../utils/speakerNotes';
+import {
+  TEMPLATE_OPTIONS,
+  getTemplateForContentType,
+  type TemplateKey,
+} from '../../templates';
 import { SessionFormatCombobox } from '../shared/SessionFormatCombobox';
 import { useAuthStore } from '../../stores/authStore';
 import {
@@ -102,6 +107,7 @@ interface MaterialFormData {
   topic: string;
   useAI: boolean;
   overrideStyle: PedagogyType | null;
+  template: TemplateKey;
 }
 
 const CATEGORY_OPTIONS: { value: MaterialCategory; label: string }[] = [
@@ -499,6 +505,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
     topic: '',
     useAI: false,
     overrideStyle: null,
+    template: 'blank',
   });
 
   const sensors = useSensors(
@@ -555,20 +562,29 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
         await materialsApi.updateMaterial(editingMaterial.id, updateData);
         toast.success('Material updated successfully');
       } else {
+        const templateDoc = getTemplateForContentType(formData.template);
         const createData: MaterialCreate = {
           weekNumber,
           title: formData.title,
           type: formData.type,
           category: formData.category,
           ...(formData.description && { description: formData.description }),
+          ...(templateDoc && { contentJson: templateDoc }),
           ...(formData.durationMinutes && {
             durationMinutes: formData.durationMinutes,
           }),
           status: formData.status,
         };
 
-        await materialsApi.createMaterial(unitId, createData);
+        const created = await materialsApi.createMaterial(unitId, createData);
         toast.success('Material created successfully');
+        await refetchAfterMutation();
+        handleCancel();
+        // Drop the author straight into the editor for templated content
+        if (templateDoc) {
+          navigate(`/units/${unitId}/materials/${created.id}/edit`);
+        }
+        return;
       }
 
       await refetchAfterMutation();
@@ -596,6 +612,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       topic: '',
       useAI: false,
       overrideStyle: null,
+      template: 'blank',
     });
     setShowForm(true);
   };
@@ -660,6 +677,7 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
       topic: '',
       useAI: false,
       overrideStyle: null,
+      template: 'blank',
     });
   };
 
@@ -798,6 +816,41 @@ export const WeeklyMaterialsManager: React.FC<WeeklyMaterialsManagerProps> = ({
           </h4>
 
           <form onSubmit={handleSubmit} className='space-y-4'>
+            {!editingMaterial && (
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  Start from
+                </label>
+                <div className='flex flex-wrap gap-2'>
+                  {TEMPLATE_OPTIONS.map(opt => (
+                    <button
+                      key={opt.key}
+                      type='button'
+                      onClick={() =>
+                        setFormData({ ...formData, template: opt.key })
+                      }
+                      title={opt.description}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition ${
+                        formData.template === opt.key
+                          ? 'bg-blue-50 border-blue-300 text-blue-700 font-medium'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {formData.template !== 'blank' && (
+                  <p className='mt-1 text-xs text-gray-500'>
+                    You&apos;ll be taken to the editor to fill in the{' '}
+                    {TEMPLATE_OPTIONS.find(
+                      o => o.key === formData.template
+                    )?.label.toLowerCase()}{' '}
+                    template after creating.
+                  </p>
+                )}
+              </div>
+            )}
             <div className='grid grid-cols-2 gap-4'>
               <div>
                 <label className='block text-sm font-medium text-gray-700'>
