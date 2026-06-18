@@ -55,6 +55,16 @@ def material_images_dir(material: WeeklyMaterial) -> str:
     return f"{material_git_path(material)}.images"
 
 
+def material_source_files_dir(material: WeeklyMaterial) -> str:
+    """Return the Git-relative path for a material's source-files directory.
+
+    Mode B (multi-format zip) attaches the non-canonical files of a group
+    here as immutable, downloadable originals. Mirrors the layout of
+    ``material_images_dir`` so both ride alongside the material's HTML.
+    """
+    return f"{material_git_path(material)}.source_files"
+
+
 def sanitize_filename(filename: str) -> str:
     """Sanitise a filename to be safe for filesystem storage.
 
@@ -127,12 +137,68 @@ def persist_extracted_images(
         )
 
         url = (
-            f"/api/materials/units/{unit_id}/materials/{material.id}"
-            f"/images/{safe_name}"
+            f"/api/materials/units/{unit_id}/materials/{material.id}/images/{safe_name}"
         )
         rewrites[original_name] = url
 
     return rewrites
+
+
+def persist_source_files(
+    *,
+    files: list[tuple[str, bytes]],
+    unit_id: str,
+    material: WeeklyMaterial,
+    user_email: str,
+) -> list[dict[str, Any]]:
+    """Write attached source files to git and return their metadata.
+
+    Each input is ``(original_filename, raw_bytes)``. Files are stored
+    under the material's ``source_files/`` git directory using a sanitised
+    filename (collisions resolved with an 8-char SHA256 suffix, matching
+    the image-persistence convention). The returned list is suitable for
+    ``material_metadata["attached_source_files"]`` — one dict per file with
+    ``filename`` (the stored name), ``format``, ``original_size`` and
+    ``sha256`` (full digest of the original bytes).
+    """
+    if not files:
+        return []
+
+    git = get_git_service()
+    src_dir = material_source_files_dir(material)
+    existing = set(git.list_directory(unit_id, src_dir))
+    records: list[dict[str, Any]] = []
+
+    for original_name, data in files:
+        safe_name = sanitize_filename(original_name)
+        digest = hashlib.sha256(data).hexdigest()
+
+        if safe_name in existing:
+            stem = Path(safe_name).stem
+            ext = Path(safe_name).suffix
+            safe_name = f"{stem}-{digest[:8]}{ext}"
+
+        existing.add(safe_name)
+        file_path = f"{src_dir}/{safe_name}"
+
+        git.save_binary(
+            unit_id=unit_id,
+            path=file_path,
+            data=data,
+            user_email=user_email,
+            message=f"Attached source file {safe_name} to {material.title}",
+        )
+
+        records.append(
+            {
+                "filename": safe_name,
+                "format": Path(safe_name).suffix.lower().lstrip("."),
+                "original_size": len(data),
+                "sha256": digest,
+            }
+        )
+
+    return records
 
 
 def rewrite_image_src(
@@ -166,7 +232,9 @@ def rewrite_image_src(
 __all__ = [
     "material_git_path",
     "material_images_dir",
+    "material_source_files_dir",
     "persist_extracted_images",
+    "persist_source_files",
     "rewrite_image_src",
     "sanitize_filename",
 ]

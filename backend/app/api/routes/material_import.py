@@ -21,8 +21,11 @@ enough that background-task overhead isn't worth it. Modes B and C will
 use the existing ImportTask polling pattern from ``unified_import_service``.
 """
 
+import io
+import json
 import logging
-from pathlib import Path
+import zipfile
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -36,13 +39,25 @@ from fastapi import (
     UploadFile,
     status,
 )
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models.unit import Unit
 from app.models.user import User
 from app.schemas.base import CamelModel
+from app.schemas.material_batch_import import (
+    BatchApplyResponse,
+    BatchGroupOverride,
+    BatchGroupPreview,
+    BatchGroupSourceFile,
+    BatchPreviewResponse,
+    BatchStandaloneFile,
+    BatchStatusResponse,
+)
 from app.schemas.materials import MaterialCreate
+from app.services.batch_import_service import batch_import_service
+from app.services.import_task_store import get_task
 from app.services.material_parsers import (
     autodetect,
     get_default_for_format,
@@ -50,6 +65,7 @@ from app.services.material_parsers import (
     list_parsers,
 )
 from app.services.material_parsers.base import MaterialParseResult
+from app.services.material_parsers.grouping import FileGroup
 from app.services.material_parsers.persistence import (
     persist_extracted_images,
     rewrite_image_src,
@@ -359,4 +375,192 @@ async def apply_single_material(
         parser_used=parsed.parser_used,
         image_count=len(parsed.images),
         warnings=parsed.warnings,
+    )
+
+
+# =============================================================================
+# Mode B — multi-file zip → existing unit (Phase 3)
+# =============================================================================
+
+
+async def _read_zip(file: UploadFile) -> bytes:
+    """Read an uploaded zip, validating it's present and a real archive."""
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Filename is required",
+        )
+    data = await file.read()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty",
+        )
+    if not zipfile.is_zipfile(io.BytesIO(data)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is not a valid zip archive",
+        )
+    return data
+
+
+def _source_file_entries(group: FileGroup) -> list[BatchGroupSourceFile]:
+    return [
+        BatchGroupSourceFile(
+            path=p,
+            filename=PurePosixPath(p).name,
+            file_format=PurePosixPath(p).suffix.lower().lstrip("."),
+        )
+        for p in group.source_files
+    ]
+
+
+@router.post("/batch/preview", response_model=BatchPreviewResponse)
+async def preview_batch_materials(
+    file: Annotated[UploadFile, File()],
+    unit_id: Annotated[UUID, Form()],
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> BatchPreviewResponse:
+    """Analyse a zip of materials for a unit without writing anything.
+
+    Returns the multi-format groups (canonical + source files), standalone
+    files, detected weeks, parsers to be used, and any warnings (e.g.
+    unsupported files skipped). No DB or git writes happen here.
+    """
+    deps.require_unit_owner(db, str(unit_id), current_user)
+    zip_bytes = await _read_zip(file)
+
+    try:
+        analysis = batch_import_service.analyze(zip_bytes)
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid zip archive: {exc}",
+        ) from exc
+
+    groups = [
+        BatchGroupPreview(
+            name=plan.group.name,
+            directory=plan.group.directory,
+            detected_week=plan.detected_week,
+            canonical_path=plan.group.canonical,
+            canonical_filename=PurePosixPath(plan.group.canonical).name,
+            canonical_format=PurePosixPath(plan.group.canonical)
+            .suffix.lower()
+            .lstrip("."),
+            parser=plan.parser_id,
+            source_files=_source_file_entries(plan.group),
+        )
+        for plan in analysis.group_plans
+    ]
+    standalones = [
+        BatchStandaloneFile(
+            path=plan.group.canonical,
+            filename=PurePosixPath(plan.group.canonical).name,
+            file_format=PurePosixPath(plan.group.canonical).suffix.lower().lstrip("."),
+            detected_week=plan.detected_week,
+            parser=plan.parser_id,
+        )
+        for plan in analysis.standalone_plans
+    ]
+    total_source_files = sum(len(g.source_files) for g in groups)
+
+    return BatchPreviewResponse(
+        unit_id=str(unit_id),
+        groups=groups,
+        standalone_files=standalones,
+        warnings=analysis.warnings,
+        total_materials=len(groups) + len(standalones),
+        total_source_files=total_source_files,
+    )
+
+
+def _parse_overrides(raw: str | None) -> dict[str, dict[str, object]]:
+    """Parse the optional overrides JSON form field into a name→dict map.
+
+    Accepts a JSON array of ``BatchGroupOverride`` objects. Returns an
+    empty map when absent. Raises 400 on malformed JSON or schema errors.
+    """
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"overrides is not valid JSON: {exc}",
+        ) from exc
+    if not isinstance(payload, list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="overrides must be a JSON array of group overrides",
+        )
+    result: dict[str, dict[str, object]] = {}
+    for item in payload:
+        try:
+            override = BatchGroupOverride.model_validate(item)
+        except ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"invalid override entry: {exc}",
+            ) from exc
+        entry: dict[str, object] = {}
+        if override.canonical_filename is not None:
+            entry["canonical_filename"] = override.canonical_filename
+        if override.week_number is not None:
+            entry["week_number"] = override.week_number
+        result[override.name] = entry
+    return result
+
+
+@router.post("/batch/apply", response_model=BatchApplyResponse)
+async def apply_batch_materials(
+    file: Annotated[UploadFile, File()],
+    unit_id: Annotated[UUID, Form()],
+    overrides: Annotated[str | None, Form()] = None,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> BatchApplyResponse:
+    """Import a zip of materials into a unit. Async — poll ``/batch/status``.
+
+    ``overrides`` is an optional JSON array of per-group overrides
+    (``name`` + optional ``canonicalFilename`` / ``weekNumber``). Each
+    group becomes one editable WeeklyMaterial; non-canonical files in a
+    group are attached as downloadable source files.
+    """
+    unit = deps.require_unit_owner(db, str(unit_id), current_user)
+    zip_bytes = await _read_zip(file)
+    override_map = _parse_overrides(overrides)
+
+    task_id = batch_import_service.apply(
+        zip_bytes,
+        unit=unit,
+        user_email=current_user.email,
+        db=db,
+        overrides=override_map,
+    )
+    return BatchApplyResponse(task_id=task_id)
+
+
+@router.get("/batch/status/{task_id}", response_model=BatchStatusResponse)
+async def batch_status(
+    task_id: str,
+    _current_user: User = Depends(deps.get_current_active_user),
+) -> BatchStatusResponse:
+    """Poll progress of a background batch import task."""
+    task = get_task(task_id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found or expired",
+        )
+    return BatchStatusResponse(
+        task_id=task.task_id,
+        status=task.status,
+        total_files=task.total_files,
+        processed_files=task.processed_files,
+        current_file=task.current_file,
+        unit_id=task.unit_id,
+        errors=task.errors,
     )

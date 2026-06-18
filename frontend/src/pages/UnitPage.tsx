@@ -16,6 +16,7 @@ import {
   Star,
   Settings,
   Plus,
+  FolderUp,
 } from 'lucide-react';
 import {
   getUnit,
@@ -59,6 +60,7 @@ import { useWorkingContextStore } from '../stores/workingContextStore';
 import toast from 'react-hot-toast';
 import { Wand2 } from 'lucide-react';
 import ExportDialog from '../components/ExportDialog/ExportDialog';
+import BatchImportDialog from '../features/import/BatchImportDialog';
 
 type TabType =
   | 'structure'
@@ -358,6 +360,7 @@ const UnitPage = () => {
   };
 
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showBatchImport, setShowBatchImport] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = React.useRef<HTMLDivElement>(null);
@@ -696,6 +699,15 @@ const UnitPage = () => {
                   </p>
                 </div>
                 <div className='flex items-center gap-2'>
+                  <Button
+                    variant='secondary'
+                    size='sm'
+                    onClick={() => setShowBatchImport(true)}
+                    title='Import a zip of materials — multiple formats of the same lecture are grouped automatically'
+                  >
+                    <FolderUp className='w-4 h-4 mr-1' />
+                    Import Folder
+                  </Button>
                   {canScaffold && (
                     <Button
                       variant='secondary'
@@ -890,6 +902,13 @@ const UnitPage = () => {
         isOpen={showExportDialog}
         onClose={() => setShowExportDialog(false)}
         unitId={unitId!}
+      />
+
+      <BatchImportDialog
+        isOpen={showBatchImport}
+        onClose={() => setShowBatchImport(false)}
+        unitId={unitId!}
+        onImported={fetchUnit}
       />
 
       {/* Delete Confirmation Modal */}

@@ -1,6 +1,6 @@
 # Structured Material Import — Architecture Plan
 
-**Status:** Phase 1 (foundation + PPTX + Mode A + bulk-import wiring) shipped 2026-04-10. Phases 2–5 still planned. Architecture formalised in [ADR-065](adr/065-structured-material-import-architecture.md).
+**Status:** Phases 1–3 shipped — Phase 1 (foundation + PPTX + Mode A) 2026-04-10; Phase 2 (DOCX/HTML/MD/PDF parsers) 2026-04-10; Phase 3 (Mode B multi-file zip + multi-format grouping + source files) 2026-06-18. Phase 4 (AI-assisted PDF structuring) and Phase 5 (dialect parsers) remain. Architecture formalised in [ADR-065](adr/065-structured-material-import-architecture.md).
 **Date:** 2026-04-10
 **Related:** [ADR-023](adr/023-file-import-processing-architecture.md), [ADR-042](adr/042-package-import-round-trip.md), [ADR-054](adr/054-import-provenance-round-trip-fidelity.md), [ADR-061](adr/061-transparent-import-reporting.md), [ADR-063](adr/063-unit-outline-import-parser-system.md), [ADR-038](adr/038-content-not-presentation.md), [ADR-064](adr/064-rough-slides-as-feature.md), [speaker-notes-plan.md](speaker-notes-plan.md)
 

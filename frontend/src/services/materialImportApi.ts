@@ -133,3 +133,151 @@ export const applySingleMaterial = async (
   );
   return res.data;
 };
+
+// ---------------------------------------------------------------------------
+// Mode B — multi-file zip → existing unit (multi-format grouping)
+// ---------------------------------------------------------------------------
+
+export interface BatchGroupSourceFile {
+  path: string;
+  filename: string;
+  fileFormat: string;
+}
+
+/** One multi-format group: a canonical file plus its attached source files. */
+export interface BatchGroupPreview {
+  name: string;
+  directory: string;
+  detectedWeek: number | null;
+  canonicalPath: string;
+  canonicalFilename: string;
+  canonicalFormat: string;
+  parser: string;
+  sourceFiles: BatchGroupSourceFile[];
+}
+
+/** A single-format file imported as its own material. */
+export interface BatchStandaloneFile {
+  path: string;
+  filename: string;
+  fileFormat: string;
+  detectedWeek: number | null;
+  parser: string;
+}
+
+export interface BatchPreviewResponse {
+  unitId: string;
+  groups: BatchGroupPreview[];
+  standaloneFiles: BatchStandaloneFile[];
+  warnings: string[];
+  totalMaterials: number;
+  totalSourceFiles: number;
+}
+
+/** Per-group override applied at apply time, keyed by group name. */
+export interface BatchGroupOverride {
+  name: string;
+  canonicalFilename?: string | undefined;
+  weekNumber?: number | undefined;
+}
+
+export interface BatchStatusResponse {
+  taskId: string;
+  status: string;
+  totalFiles: number;
+  processedFiles: number;
+  currentFile: string | null;
+  unitId: string | null;
+  errors: string[];
+}
+
+export const previewBatchMaterials = async (
+  file: File,
+  unitId: string
+): Promise<BatchPreviewResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('unit_id', unitId);
+  const res = await api.post<BatchPreviewResponse>(
+    '/import/material/batch/preview',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
+    }
+  );
+  return res.data;
+};
+
+export const applyBatchMaterials = async (
+  file: File,
+  unitId: string,
+  overrides?: BatchGroupOverride[]
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('unit_id', unitId);
+  if (overrides && overrides.length > 0) {
+    formData.append('overrides', JSON.stringify(overrides));
+  }
+  const res = await api.post<{ taskId: string }>(
+    '/import/material/batch/apply',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
+    }
+  );
+  return res.data.taskId;
+};
+
+export const getBatchStatus = async (
+  taskId: string
+): Promise<BatchStatusResponse> => {
+  const res = await api.get<BatchStatusResponse>(
+    `/import/material/batch/status/${taskId}`
+  );
+  return res.data;
+};
+
+// ---------------------------------------------------------------------------
+// Attached source files (download + promote to canonical)
+// ---------------------------------------------------------------------------
+
+export interface AttachedSourceFile {
+  filename: string;
+  // Backend records snake_case keys inside material_metadata JSON, which is
+  // passed through untransformed — accept both spellings defensively.
+  fileFormat?: string | undefined;
+  file_format?: string | undefined;
+  originalSize?: number | undefined;
+  original_size?: number | undefined;
+  sha256?: string | undefined;
+}
+
+export const downloadSourceFile = async (
+  materialId: string,
+  filename: string
+): Promise<void> => {
+  const res = await api.get(
+    `/materials/${materialId}/source-files/${encodeURIComponent(filename)}`,
+    { responseType: 'blob' }
+  );
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+};
+
+export const promoteSourceFile = async (
+  materialId: string,
+  filename: string
+): Promise<void> => {
+  await api.post(
+    `/materials/${materialId}/source-files/${encodeURIComponent(filename)}/promote`
+  );
+};

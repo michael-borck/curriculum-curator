@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import type { Editor } from '@tiptap/core';
 import UnifiedEditor from '../components/Editor/UnifiedEditor';
 import SpeakerNotesGenerateDialog from '../components/Editor/SpeakerNotesGenerateDialog';
+import SourceFilesPanel from '../components/Editor/SourceFilesPanel';
 import { materialsApi } from '../services/materialsApi';
 import type { SpeakerNotesDraft } from '../services/aiApi';
+import type { AttachedSourceFile } from '../services/materialImportApi';
 import type { MaterialResponse } from '../types/unitStructure';
 import { getFormatMeta } from '../constants/sessionFormats';
 import { applySpeakerNotesDrafts } from '../utils/speakerNotes';
@@ -41,6 +43,7 @@ const MaterialEditorPage: React.FC = () => {
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
   );
+  const [editorKey, setEditorKey] = useState(0);
   const editorRef = useRef<Editor | null>(null);
   const { isAIDisabled } = useAILevel();
 
@@ -57,28 +60,31 @@ const MaterialEditorPage: React.FC = () => {
     );
   }, []);
 
-  useEffect(() => {
-    if (!materialId) return;
-    let cancelled = false;
-    (async () => {
+  const loadMaterial = useCallback(
+    async (showSpinner = true) => {
+      if (!materialId) return;
       try {
-        setLoading(true);
+        if (showSpinner) setLoading(true);
         const data = await materialsApi.getMaterial(materialId);
-        if (!cancelled) {
-          setMaterial(data);
-          setEditedHtml(data.description ?? '');
-          if (data.contentJson) updateHasSlides(data.contentJson);
-        }
+        setMaterial(data);
+        setEditedHtml(data.description ?? '');
+        setEditedJson(data.contentJson);
+        if (data.contentJson) updateHasSlides(data.contentJson);
+        // Bump the key so the editor remounts with freshly loaded content
+        setEditorKey(k => k + 1);
+        setDirty(false);
       } catch {
-        if (!cancelled) setLoadError(true);
+        setLoadError(true);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (showSpinner) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [materialId, updateHasSlides]);
+    },
+    [materialId, updateHasSlides]
+  );
+
+  useEffect(() => {
+    void loadMaterial();
+  }, [loadMaterial]);
 
   const handleSave = useCallback(async () => {
     if (!material) return;
@@ -145,6 +151,10 @@ const MaterialEditorPage: React.FC = () => {
   // HTML fallback for materials created before structured authoring.
   const initialContent =
     material.contentJson ?? material.description ?? '<p></p>';
+  // Source files attached by a Mode B multi-format import (story 6.15),
+  // stored untransformed in material_metadata.
+  const sourceFiles = (material.materialMetadata?.attached_source_files ??
+    []) as AttachedSourceFile[];
 
   return (
     <div className='max-w-5xl mx-auto px-4 py-6'>
@@ -214,6 +224,7 @@ const MaterialEditorPage: React.FC = () => {
       )}
 
       <UnifiedEditor
+        key={editorKey}
         content={initialContent}
         onChange={html => {
           setEditedHtml(html);
@@ -229,6 +240,14 @@ const MaterialEditorPage: React.FC = () => {
         unitId={unitId}
         materialId={materialId}
       />
+
+      {materialId && sourceFiles.length > 0 && (
+        <SourceFilesPanel
+          materialId={materialId}
+          sourceFiles={sourceFiles}
+          onPromoted={() => void loadMaterial(false)}
+        />
+      )}
 
       {notesDialogOpen && materialId && editorRef.current && (
         <SpeakerNotesGenerateDialog

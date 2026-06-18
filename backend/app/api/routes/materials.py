@@ -33,9 +33,13 @@ from app.schemas.materials import (
     WeekMaterials,
 )
 from app.services.git_content_service import get_git_service
+from app.services.material_parsers import get_default_for_format
 from app.services.material_parsers.persistence import (
     material_git_path,
     material_images_dir,
+    material_source_files_dir,
+    persist_extracted_images,
+    rewrite_image_src,
     sanitize_filename,
 )
 from app.services.materials_service import materials_service
@@ -750,3 +754,123 @@ async def delete_material_image(
         ) from exc
 
     return {"message": f"Image {filename} deleted successfully"}
+
+
+# =============================================================================
+# Source files (Mode B attached originals — Phase 3)
+# =============================================================================
+
+
+def _reject_traversal(filename: str) -> None:
+    """Reject filenames containing path separators or traversal segments.
+
+    Source-file filenames are flat (no directories), so anything with a
+    slash, backslash, or ``..`` is an attempt to escape the source_files
+    directory. Returns 400 rather than 404 to be explicit about the cause.
+    """
+    if (
+        "/" in filename
+        or "\\" in filename
+        or filename in (".", "..")
+        or "\x00" in filename
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid source file name",
+        )
+
+
+@router.get("/{material_id}/source-files/{filename}")
+async def download_source_file(
+    filename: str,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+) -> Response:
+    """Download an attached source file as-is (ownership-checked).
+
+    Path-traversal safe: filenames with separators are rejected before
+    the git read.
+    """
+    _reject_traversal(filename)
+
+    git = get_git_service()
+    src_dir = material_source_files_dir(material)
+    file_path = f"{src_dir}/{filename}"
+
+    try:
+        data = git.read_binary(str(material.unit_id), file_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Source file not found"
+        ) from exc
+
+    content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/{material_id}/source-files/{filename}/promote")
+async def promote_source_file(
+    filename: str,
+    db: Session = Depends(deps.get_db),
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> MaterialResponse:
+    """Re-parse an attached source file and make it the material's content.
+
+    Runs the source file through its format's default parser and replaces
+    the material's ``content_json`` (and persists any extracted images
+    under the material's image directory). The previously-canonical
+    content is simply replaced — in v1 it is not demoted to a source file.
+    Returns the updated material.
+    """
+    _reject_traversal(filename)
+
+    git = get_git_service()
+    src_dir = material_source_files_dir(material)
+    file_path = f"{src_dir}/{filename}"
+
+    try:
+        data = git.read_binary(str(material.unit_id), file_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Source file not found"
+        ) from exc
+
+    ext = Path(filename).suffix.lower().lstrip(".")
+    try:
+        parser = get_default_for_format(ext)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No parser available for '.{ext}' source files",
+        ) from exc
+
+    try:
+        parsed = await parser.parse(data, filename)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not parse source file: {exc}",
+        ) from exc
+
+    try:
+        rewrites = persist_extracted_images(
+            images=parsed.images,
+            unit_id=str(material.unit_id),
+            material=material,
+            user_email=current_user.email,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to persist images while promoting source file",
+        ) from exc
+
+    material.content_json = rewrite_image_src(parsed.content_json, rewrites)
+    db.commit()
+    db.refresh(material)
+
+    return _to_material_response(material)
