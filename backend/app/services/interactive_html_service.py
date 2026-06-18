@@ -110,6 +110,9 @@ _TEMPLATE = """<!DOCTYPE html>
 <script>
 const SCENARIO = __SCENARIO__;
 
+// Number of cards the student has visited on the current run-through.
+let steps = 0;
+
 function el(tag, opts) {
   const node = document.createElement(tag);
   if (opts && opts.text) node.textContent = opts.text;
@@ -125,6 +128,7 @@ function render(cardId) {
     root.appendChild(el('p', { text: 'This path is incomplete.', className: 'muted' }));
     return;
   }
+  steps += 1;
 
   if (card.title) {
     const t = el('div', { text: card.title });
@@ -144,6 +148,7 @@ function render(cardId) {
     const box = el('div', { className: 'ending' });
     box.textContent = card.endMessage || (isEnding ? 'The end.' : 'End of this path.');
     root.appendChild(box);
+    root.appendChild(el('p', { text: 'Cards visited: ' + steps, className: 'muted' }));
     root.appendChild(restartButton());
     return;
   }
@@ -170,7 +175,7 @@ function choose(choice) {
 
 function restartButton() {
   const btn = el('button', { text: 'Start again', className: 'primary' });
-  btn.addEventListener('click', function () { render(SCENARIO.startCardId); });
+  btn.addEventListener('click', function () { steps = 0; render(SCENARIO.startCardId); });
   return btn;
 }
 

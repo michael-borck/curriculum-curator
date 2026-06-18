@@ -105,3 +105,11 @@ class TestInteractiveHtml:
         scenario = _extract_scenario(html)
         assert scenario["cards"] == {}
         assert scenario["startCardId"] == ""
+
+    def test_player_tracks_steps_and_replays(self) -> None:
+        # Step tracking (19B.2) + replay reset (19B.4) wired into the player
+        html = interactive_html_builder.build(SCENARIO, "Adventure")
+        assert "steps += 1" in html
+        assert "Cards visited: " in html
+        # Start again resets the counter before re-rendering from the start
+        assert "steps = 0; render(SCENARIO.startCardId)" in html
