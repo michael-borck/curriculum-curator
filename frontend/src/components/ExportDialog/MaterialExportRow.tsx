@@ -1,5 +1,9 @@
 import React from 'react';
-import type { MaterialExportPreview } from '../../services/exportApi';
+import { AlertTriangle } from 'lucide-react';
+import type {
+  MaterialExportPreview,
+  ExportTargetWarning,
+} from '../../services/exportApi';
 import { getExportFormatMeta } from '../../constants/exportFormats';
 
 // ─── Display labels and colours ──────────────────────────────────────
@@ -46,6 +50,28 @@ const MaterialExportRow: React.FC<MaterialExportRowProps> = ({
     });
   };
 
+  const switchTo = (contentType: string, target: string) => {
+    onOverrideChange(material.materialId, {
+      ...overrides,
+      [contentType]: [target],
+    });
+  };
+
+  // Warnings for the targets currently selected for a content type.
+  const activeWarnings = (
+    contentType: string,
+    activeTargets: string[]
+  ): { target: string; warning: ExportTargetWarning }[] => {
+    const map = material.warnings ?? {};
+    const out: { target: string; warning: ExportTargetWarning }[] = [];
+    for (const target of activeTargets) {
+      for (const warning of map[`${contentType}:${target}`] ?? []) {
+        out.push({ target, warning });
+      }
+    }
+    return out;
+  };
+
   return (
     <div className='flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50'>
       {/* Title */}
@@ -77,26 +103,61 @@ const MaterialExportRow: React.FC<MaterialExportRowProps> = ({
           const available = material.availableTargets[ct] ?? [];
           if (available.length <= 1) return null; // No choice to make
           const active = overrides[ct] ?? material.resolvedTargets[ct] ?? [];
+          const warnings = activeWarnings(ct, active);
           return (
-            <div key={ct} className='flex items-center gap-1'>
-              {available.map(target => {
-                const isOn = active.includes(target);
-                const meta = getExportFormatMeta(target);
+            <div key={ct} className='flex flex-col items-end gap-1'>
+              <div className='flex items-center gap-1'>
+                {available.map(target => {
+                  const isOn = active.includes(target);
+                  const meta = getExportFormatMeta(target);
+                  const hasWarning =
+                    isOn &&
+                    (material.warnings?.[`${ct}:${target}`]?.length ?? 0) > 0;
+                  return (
+                    <button
+                      key={target}
+                      onClick={() => toggleTarget(ct, target)}
+                      title={
+                        meta.tooltip ? `${meta.label} — ${meta.tooltip}` : ''
+                      }
+                      className={`flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border transition ${
+                        isOn
+                          ? hasWarning
+                            ? 'bg-amber-50 border-amber-300 text-amber-700 font-medium'
+                            : 'bg-purple-100 border-purple-300 text-purple-700 font-medium'
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      {hasWarning && <AlertTriangle className='w-3 h-3' />}
+                      {meta.friendlyLabel}
+                    </button>
+                  );
+                })}
+              </div>
+              {warnings.map(({ target, warning }, i) => {
+                const suggested = warning.suggestedTarget;
+                const canSwitch =
+                  suggested !== null &&
+                  available.includes(suggested) &&
+                  !active.includes(suggested);
                 return (
-                  <button
-                    key={target}
-                    onClick={() => toggleTarget(ct, target)}
-                    title={
-                      meta.tooltip ? `${meta.label} — ${meta.tooltip}` : ''
-                    }
-                    className={`text-[11px] px-2 py-0.5 rounded-full border transition ${
-                      isOn
-                        ? 'bg-purple-100 border-purple-300 text-purple-700 font-medium'
-                        : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
+                  <p
+                    key={`${target}-${i}`}
+                    className='flex items-center gap-1 text-[10px] text-amber-600 max-w-[16rem] text-right'
                   >
-                    {meta.friendlyLabel}
-                  </button>
+                    <AlertTriangle className='w-3 h-3 shrink-0' />
+                    <span>
+                      {warning.message}
+                      {canSwitch && suggested && (
+                        <button
+                          onClick={() => switchTo(ct, suggested)}
+                          className='ml-1 underline hover:text-amber-800'
+                        >
+                          Use {getExportFormatMeta(suggested).friendlyLabel}
+                        </button>
+                      )}
+                    </span>
+                  </p>
                 );
               })}
             </div>

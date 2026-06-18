@@ -20,10 +20,15 @@ from app.api.deps import (
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.export_preview import (
     ExportPreviewResponse,
+    ExportTargetWarning,
     MaterialExportPreview,
 )
 from app.schemas.unit import UnitResponse
 from app.schemas.user import UserResponse
+from app.services.export.capabilities import (
+    detect_content_features,
+    warnings_for,
+)
 from app.services.format_resolver import (
     TARGETS_FOR_CONTENT_TYPE,
     detect_content_types,
@@ -33,6 +38,33 @@ from app.services.format_resolver import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _build_warnings(
+    content_json: dict[str, Any] | None,
+    content_types: list[str],
+    available: dict[str, list[str]],
+) -> dict[str, list[ExportTargetWarning]]:
+    """Capability warnings keyed by "contentType:target" (9.21).
+
+    Only populated for (content_type, target) pairs that would silently
+    drop or convert content — empty entries are omitted.
+    """
+    features = detect_content_features(content_json)
+    result: dict[str, list[ExportTargetWarning]] = {}
+    for content_type in content_types:
+        for target in available.get(content_type, []):
+            warnings = warnings_for(content_type, target, features)
+            if warnings:
+                result[f"{content_type}:{target}"] = [
+                    ExportTargetWarning(
+                        severity=w.severity,
+                        message=w.message,
+                        suggested_target=w.suggested_target,
+                    )
+                    for w in warnings
+                ]
+    return result
 
 
 @router.get(
@@ -74,6 +106,7 @@ async def export_preview(
                 content_types=content_types,
                 resolved_targets=resolved,
                 available_targets=available,
+                warnings=_build_warnings(mat.content_json, content_types, available),
             )
         )
 
@@ -98,6 +131,7 @@ async def material_export_preview(
         material.export_targets_list,
         user_defaults,
     )
+    available = {ct: TARGETS_FOR_CONTENT_TYPE.get(ct, []) for ct in content_types}
     return MaterialExportPreview(
         material_id=str(material.id),
         title=str(material.title),
@@ -105,7 +139,6 @@ async def material_export_preview(
         category=str(material.category),
         content_types=content_types,
         resolved_targets=resolved,
-        available_targets={
-            ct: TARGETS_FOR_CONTENT_TYPE.get(ct, []) for ct in content_types
-        },
+        available_targets=available,
+        warnings=_build_warnings(material.content_json, content_types, available),
     )

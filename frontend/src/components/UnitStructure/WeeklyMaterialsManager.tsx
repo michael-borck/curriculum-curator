@@ -45,6 +45,7 @@ import {
   History,
   Upload,
   X,
+  AlertTriangle,
   type LucideIcon,
 } from 'lucide-react';
 import MaterialImportDialog from '../../features/import/MaterialImportDialog';
@@ -216,6 +217,14 @@ const SortableMaterialItem: React.FC<{
   const documentTargets = DOCUMENT_EXPORT_FORMATS.filter(
     format => !defaultTargets.includes(format)
   );
+  // First warning message per target (any content type), for the menu icon.
+  const warningByTarget: Record<string, string> = {};
+  for (const [key, list] of Object.entries(exportPreview?.warnings ?? {})) {
+    const target = key.split(':')[1];
+    if (target && list[0] && !warningByTarget[target]) {
+      warningByTarget[target] = list[0].message;
+    }
+  }
 
   // Close export menu on click outside
   React.useEffect(() => {
@@ -346,21 +355,29 @@ const SortableMaterialItem: React.FC<{
                 <div className='absolute right-0 mt-1 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
                   {defaultTargets.map(format => {
                     const meta = getExportFormatMeta(format);
+                    const warning = warningByTarget[format];
                     return (
                       <button
                         key={format}
                         className='w-full flex items-center justify-between gap-2 text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg'
                         title={
-                          meta.tooltip
-                            ? `${meta.label} — ${meta.tooltip}`
-                            : meta.label
+                          warning
+                            ? warning
+                            : meta.tooltip
+                              ? `${meta.label} — ${meta.tooltip}`
+                              : meta.label
                         }
                         onClick={() => {
                           setShowExportMenu(false);
                           handleMaterialDownload(material.id, format);
                         }}
                       >
-                        <span>{meta.friendlyLabel}</span>
+                        <span className='flex items-center gap-1'>
+                          {warning && (
+                            <AlertTriangle className='w-3 h-3 text-amber-500' />
+                          )}
+                          {meta.friendlyLabel}
+                        </span>
                         <span className='text-[10px] font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-full px-1.5'>
                           Default
                         </span>

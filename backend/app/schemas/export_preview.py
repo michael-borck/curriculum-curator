@@ -5,6 +5,14 @@ from pydantic import Field
 from app.schemas.base import CamelModel
 
 
+class ExportTargetWarning(CamelModel):
+    """A capability mismatch when exporting a content type to a target (9.21)."""
+
+    severity: str  # "converted" | "dropped"
+    message: str
+    suggested_target: str | None = None
+
+
 class MaterialExportPreview(CamelModel):
     """Preview data for a single material in the export dialog."""
 
@@ -15,6 +23,9 @@ class MaterialExportPreview(CamelModel):
     content_types: list[str]
     resolved_targets: dict[str, list[str]]
     available_targets: dict[str, list[str]]
+    # Warnings keyed by "contentType:target" — populated only for pairs that
+    # would silently drop or convert content (9.21).
+    warnings: dict[str, list[ExportTargetWarning]] = Field(default_factory=dict)
 
 
 class ExportPreviewResponse(CamelModel):

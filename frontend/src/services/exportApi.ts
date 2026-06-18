@@ -6,6 +6,12 @@ import axios from 'axios';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
+export interface ExportTargetWarning {
+  severity: 'converted' | 'dropped';
+  message: string;
+  suggestedTarget: string | null;
+}
+
 export interface MaterialExportPreview {
   materialId: string;
   title: string;
@@ -14,6 +20,8 @@ export interface MaterialExportPreview {
   contentTypes: string[];
   resolvedTargets: Record<string, string[]>;
   availableTargets: Record<string, string[]>;
+  // Keyed by "contentType:target"; present only for pairs that drop/convert.
+  warnings?: Record<string, ExportTargetWarning[]> | undefined;
 }
 
 export interface ExportPreviewResponse {
