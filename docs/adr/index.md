@@ -136,6 +136,7 @@ An Architecture Decision Record captures an important architectural decision mad
 - [ADR-011: Deployment Best Practices](011-deployment-best-practices.md) - Production deployment guidelines
 - [ADR-049: Tiered Rate Limiting](049-tiered-rate-limiting.md) - Endpoint-classified limits with dual IP/user limiter instances
 - [ADR-066: Resource Ownership Seam](066-resource-ownership-seam.md) - One ownership dependency (load_owned_or_404 + thin per-resource deps); closes six Broken Access Control gaps
+- [ADR-067: Slides as Breaks, Not Containers](067-slides-as-breaks-not-containers.md) - Keep flat slideBreak + first-heading convention; surface it with a labelled editor divider instead of a structured slide node
 
 ### Superseded Decisions (Historical)
 
