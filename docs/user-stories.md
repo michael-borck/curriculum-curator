@@ -305,8 +305,8 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | ~120 |
-| **Planned** | 26 |
+| **Done** | 172 |
+| **Planned** | 1 (9.17 — H5P-in-IMSCC, pending real-LMS validation) |
 | **Cut** | 2 |
 
 | Phase | Description | Status |
