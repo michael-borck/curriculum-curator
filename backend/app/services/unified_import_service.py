@@ -78,6 +78,7 @@ class _ExtractedContent:
     parsed: MaterialParseResult | None = None
     warnings: list[str] = field(default_factory=list)
 
+
 # Extensions we can extract text from
 PROCESSABLE_EXTENSIONS = {".pdf", ".docx", ".pptx", ".md", ".txt", ".html", ".htm"}
 
@@ -413,7 +414,7 @@ class UnifiedImportService:
         git commits for extracted images need an author. Both id and
         email come from the authenticated user at the route layer.
         """
-        task = create_task()
+        task = create_task(owner_id=user_id)
 
         edits: dict[str, dict[str, object]] = {}
         if file_edits:

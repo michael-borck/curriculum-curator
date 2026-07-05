@@ -180,7 +180,7 @@ class BatchImportService:
         ``overrides`` maps group name → {canonical_filename?, week_number?}.
         The route layer validates unit ownership before calling this.
         """
-        task = create_task()
+        task = create_task(owner_id=str(unit.owner_id))
         task.unit_id = str(unit.id)
 
         self._bg_task = asyncio.ensure_future(

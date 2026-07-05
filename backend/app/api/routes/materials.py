@@ -100,7 +100,11 @@ def _to_llo_response(llo: Any) -> LLOResponse:
     )
 
 
-@router.post("/units/{unit_id}/materials", response_model=MaterialResponse)
+@router.post(
+    "/units/{unit_id}/materials",
+    response_model=MaterialResponse,
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def create_material(
     unit_id: UUID,
     material_data: MaterialCreate,
@@ -123,7 +127,11 @@ async def create_material(
         ) from e
 
 
-@router.get("/units/{unit_id}/materials", response_model=list[MaterialResponse])
+@router.get(
+    "/units/{unit_id}/materials",
+    response_model=list[MaterialResponse],
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_unit_materials(
     unit_id: UUID,
     week_number: int | None = Query(None, ge=1, le=52),
@@ -151,7 +159,9 @@ async def get_unit_materials(
 
 
 @router.get(
-    "/units/{unit_id}/weeks/{week_number}/materials", response_model=WeekMaterials
+    "/units/{unit_id}/weeks/{week_number}/materials",
+    response_model=WeekMaterials,
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def get_week_materials(
     unit_id: UUID,
@@ -180,7 +190,11 @@ async def get_week_materials(
     )
 
 
-@router.get("/materials/{material_id}", response_model=MaterialWithOutcomes)
+@router.get(
+    "/materials/{material_id}",
+    response_model=MaterialWithOutcomes,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def get_material(
     material_id: UUID,
     include_outcomes: bool = Query(False),
@@ -237,7 +251,11 @@ async def get_material(
     return response
 
 
-@router.put("/materials/{material_id}", response_model=MaterialResponse)
+@router.put(
+    "/materials/{material_id}",
+    response_model=MaterialResponse,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def update_material(
     material_id: UUID,
     material_data: MaterialUpdate,
@@ -267,7 +285,10 @@ async def update_material(
         ) from e
 
 
-@router.delete("/materials/{material_id}")
+@router.delete(
+    "/materials/{material_id}",
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def delete_material(
     material_id: UUID,
     db: Session = Depends(deps.get_db),
@@ -288,7 +309,11 @@ async def delete_material(
     return {"message": "Material deleted successfully"}
 
 
-@router.post("/materials/{material_id}/duplicate", response_model=MaterialResponse)
+@router.post(
+    "/materials/{material_id}/duplicate",
+    response_model=MaterialResponse,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def duplicate_material(
     material_id: UUID,
     duplicate_data: MaterialDuplicate,
@@ -314,6 +339,7 @@ async def duplicate_material(
 @router.post(
     "/units/{unit_id}/weeks/{week_number}/materials/reorder",
     response_model=list[MaterialResponse],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def reorder_materials(
     unit_id: UUID,
@@ -339,7 +365,11 @@ async def reorder_materials(
         ) from e
 
 
-@router.put("/materials/{material_id}/mappings", response_model=MaterialWithOutcomes)
+@router.put(
+    "/materials/{material_id}/mappings",
+    response_model=MaterialWithOutcomes,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def update_material_mappings(
     material_id: UUID,
     mapping_data: MaterialMapping,
@@ -388,7 +418,10 @@ async def update_material_mappings(
         ) from e
 
 
-@router.get("/units/{unit_id}/weeks/{week_number}/summary")
+@router.get(
+    "/units/{unit_id}/weeks/{week_number}/summary",
+    dependencies=[Depends(deps.get_user_unit)],
+)
 async def get_week_summary(
     unit_id: UUID,
     week_number: int,
@@ -406,6 +439,7 @@ async def get_week_summary(
 @router.post(
     "/units/{unit_id}/apply-structure",
     response_model=list[MaterialResponse],
+    dependencies=[Depends(deps.get_user_unit)],
 )
 async def apply_structure(
     unit_id: UUID,
@@ -434,7 +468,11 @@ async def apply_structure(
 # =============================================================================
 
 
-@router.get("/materials/{material_id}/history", response_model=MaterialHistory)
+@router.get(
+    "/materials/{material_id}/history",
+    response_model=MaterialHistory,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def get_material_history(
     material_id: UUID,
     limit: int = Query(20, ge=1, le=100),
@@ -464,7 +502,10 @@ async def get_material_history(
     return MaterialHistory(material_id=str(material_id), versions=versions)
 
 
-@router.get("/materials/{material_id}/version/{commit}")
+@router.get(
+    "/materials/{material_id}/version/{commit}",
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def get_material_at_version(
     material_id: UUID,
     commit: str,
@@ -486,11 +527,18 @@ async def get_material_at_version(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Version not found"
         ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid version"
+        ) from exc
 
     return {"commit": commit, "body": body}
 
 
-@router.get("/materials/{material_id}/diff")
+@router.get(
+    "/materials/{material_id}/diff",
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def get_material_diff(
     material_id: UUID,
     old_commit: str = Query(...),
@@ -507,7 +555,12 @@ async def get_material_diff(
 
     git = get_git_service()
     git_path = material_git_path(material)
-    diff = git.diff(str(material.unit_id), git_path, old_commit, new_commit)
+    try:
+        diff = git.diff(str(material.unit_id), git_path, old_commit, new_commit)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid version"
+        ) from exc
 
     return {
         "materialId": str(material_id),
@@ -517,7 +570,11 @@ async def get_material_diff(
     }
 
 
-@router.post("/materials/{material_id}/revert", response_model=MaterialResponse)
+@router.post(
+    "/materials/{material_id}/revert",
+    response_model=MaterialResponse,
+    dependencies=[Depends(deps.get_user_material)],
+)
 async def revert_material(
     material_id: UUID,
     data: MaterialRevert,
@@ -574,18 +631,11 @@ async def revert_material(
 @router.post("/units/{unit_id}/materials/{material_id}/images")
 async def upload_material_image(
     unit_id: UUID,
-    material_id: UUID,
     file: UploadFile,
-    db: Session = Depends(deps.get_db),
+    material: WeeklyMaterial = Depends(deps.get_user_material),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Upload an image for a material."""
-    material = await materials_service.get_material(db, material_id)
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
-        )
-
+    """Upload an image for a material (ownership-checked)."""
     if str(material.unit_id) != str(unit_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -637,7 +687,7 @@ async def upload_material_image(
         message=f"Added image {safe_name} to {material.title}",
     )
 
-    url = f"/api/materials/units/{unit_id}/materials/{material_id}/images/{safe_name}"
+    url = f"/api/materials/units/{unit_id}/materials/{material.id}/images/{safe_name}"
 
     return {"url": url, "filename": safe_name}
 
@@ -646,16 +696,10 @@ async def upload_material_image(
 async def list_material_images(
     unit_id: UUID,
     material_id: UUID,
-    db: Session = Depends(deps.get_db),
+    material: WeeklyMaterial = Depends(deps.get_user_material),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """List all images for a material."""
-    material = await materials_service.get_material(db, material_id)
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
-        )
-
+    """List all images for a material (ownership-checked)."""
     if str(material.unit_id) != str(unit_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -678,17 +722,12 @@ async def list_material_images(
 @router.get("/units/{unit_id}/materials/{material_id}/images/{filename}")
 async def serve_material_image(
     unit_id: UUID,
-    material_id: UUID,
     filename: str,
-    db: Session = Depends(deps.get_db),
+    material: WeeklyMaterial = Depends(deps.get_user_material),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Response:
-    """Serve an image file for a material."""
-    material = await materials_service.get_material(db, material_id)
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
-        )
+    """Serve an image file for a material (ownership-checked, traversal-safe)."""
+    _reject_traversal(filename)
 
     if str(material.unit_id) != str(unit_id):
         raise HTTPException(
@@ -709,27 +748,33 @@ async def serve_material_image(
 
     content_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
 
+    headers = {
+        "Cache-Control": "public, max-age=86400",
+        "X-Content-Type-Options": "nosniff",
+    }
+    # SVG (and any HTML-ish payload) can carry inline scripts. Neutralise
+    # stored-XSS: never let it render inline in the app's origin — force a
+    # locked-down sandbox and download disposition.
+    if content_type in ("image/svg+xml", "text/html", "application/xhtml+xml"):
+        headers["Content-Security-Policy"] = "default-src 'none'; sandbox"
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+
     return Response(
         content=data,
         media_type=content_type,
-        headers={"Cache-Control": "public, max-age=86400"},
+        headers=headers,
     )
 
 
 @router.delete("/units/{unit_id}/materials/{material_id}/images/{filename}")
 async def delete_material_image(
     unit_id: UUID,
-    material_id: UUID,
     filename: str,
-    db: Session = Depends(deps.get_db),
+    material: WeeklyMaterial = Depends(deps.get_user_material),
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Any:
-    """Delete an image from a material."""
-    material = await materials_service.get_material(db, material_id)
-    if not material:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Material not found"
-        )
+    """Delete an image from a material (ownership-checked, traversal-safe)."""
+    _reject_traversal(filename)
 
     if str(material.unit_id) != str(unit_id):
         raise HTTPException(

@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Trust X-Forwarded-For / X-Real-IP headers for the client IP used in rate
+    # limiting, account lockout, and JWT IP-binding. Leave False unless the app
+    # runs behind a trusted reverse proxy (e.g. Caddy/nginx) that sets these —
+    # otherwise a client can spoof them to bypass those controls.
+    TRUST_PROXY_HEADERS: bool = False
+
     # Database
     DATABASE_URL: str = "sqlite:///./data/curriculum_curator.db"
 

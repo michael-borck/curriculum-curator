@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from io import BytesIO, StringIO
 from typing import Any
 
+from defusedxml.ElementTree import fromstring as defused_fromstring
+
 from app.models.quiz_question import QuestionType, QuizQuestion
 
 logger = logging.getLogger(__name__)
@@ -695,7 +697,9 @@ class QTIImporter:
             try:
                 xml_bytes = zf.read(name)
                 xml_text = xml_bytes.decode("utf-8", errors="replace")
-                root = ET.fromstring(xml_text)
+                # defusedxml parse guards against XXE / entity-expansion in
+                # untrusted package XML; ET is still used for building output.
+                root = defused_fromstring(xml_text)
             except ET.ParseError:
                 continue
 

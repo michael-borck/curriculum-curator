@@ -18,15 +18,15 @@ from fastapi.responses import FileResponse, StreamingResponse
 from app.api import deps
 from app.schemas.task import TaskStatusResponse
 from app.schemas.user import UserResponse  # noqa: TC001 — FastAPI needs at runtime
-from app.services.task_store import BackgroundTask, get_task
+from app.services.task_store import BackgroundTask, get_owned_task
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bg-tasks")
 
 
-def _task_or_404(task_id: str) -> BackgroundTask:
-    task = get_task(task_id)
+def _owned_task_or_404(task_id: str, user: UserResponse) -> BackgroundTask:
+    task = get_owned_task(task_id, str(user.id), is_admin=user.role == deps.ROLE_ADMIN)
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -53,10 +53,10 @@ def _serialise(task: BackgroundTask) -> dict[str, Any]:
 @router.get("/{task_id}", response_model=TaskStatusResponse)
 async def get_task_status(
     task_id: str,
-    _current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ) -> TaskStatusResponse:
     """Return the current status of a background task."""
-    task = _task_or_404(task_id)
+    task = _owned_task_or_404(task_id, current_user)
     return TaskStatusResponse(
         task_id=task.task_id,
         kind=task.kind,
@@ -77,10 +77,10 @@ async def get_task_status(
 @router.get("/{task_id}/events")
 async def stream_task_events(
     task_id: str,
-    _current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ) -> StreamingResponse:
     """Stream progress events via SSE until the task reaches a terminal state."""
-    task = _task_or_404(task_id)
+    task = _owned_task_or_404(task_id, current_user)
 
     async def _generate():
         while True:
@@ -99,10 +99,10 @@ async def stream_task_events(
 @router.get("/{task_id}/download")
 async def download_task_result(
     task_id: str,
-    _current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
+    current_user: Annotated[UserResponse, Depends(deps.get_current_active_user)],
 ) -> FileResponse:
     """Serve the result file of a completed task."""
-    task = _task_or_404(task_id)
+    task = _owned_task_or_404(task_id, current_user)
 
     if task.status != "completed" or task.result is None:
         raise HTTPException(status_code=404, detail="Result not ready")

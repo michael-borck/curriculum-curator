@@ -48,6 +48,35 @@ except ImportError:
     has_markdown = False
 
 
+# Zip-bomb guards for archive extraction.
+_MAX_EXTRACT_TOTAL_BYTES = 1024 * 1024 * 1024  # 1 GiB uncompressed
+_MAX_EXTRACT_FILE_COUNT = 10_000
+
+
+def _safe_extract_all(zip_ref: zipfile.ZipFile, dest: Path) -> None:
+    """Extract a zip with path-containment and zip-bomb caps.
+
+    ``extractall`` on modern CPython already normalises member paths (no
+    zip-slip), but imposes no limit on uncompressed size or file count. Enforce
+    both, and defensively re-check each member resolves inside ``dest``.
+    """
+    dest_resolved = dest.resolve()
+    infos = zip_ref.infolist()
+    if len(infos) > _MAX_EXTRACT_FILE_COUNT:
+        raise ValueError("Archive contains too many files")
+
+    total = 0
+    for info in infos:
+        total += info.file_size
+        if total > _MAX_EXTRACT_TOTAL_BYTES:
+            raise ValueError("Archive uncompressed size exceeds limit")
+        target = (dest / info.filename).resolve()
+        if target != dest_resolved and dest_resolved not in target.parents:
+            raise ValueError(f"Unsafe path in archive: {info.filename!r}")
+
+    zip_ref.extractall(dest)
+
+
 class FileImportService:
     """Service for importing and processing various file formats"""
 
@@ -1103,7 +1132,7 @@ class FileImportService:
             extract_dir = temp_path / "extracted"
             extract_dir.mkdir()
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(extract_dir)
+                _safe_extract_all(zip_ref, extract_dir)
 
             # Analyze file structure
             for root, _, files in os.walk(extract_dir):

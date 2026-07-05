@@ -9,12 +9,13 @@ import re
 import time
 from datetime import datetime
 from typing import Any, ClassVar, NoReturn
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin
 
 import aiohttp
 
 from app.core.config import settings
 from app.services.llm_service import LLMService
+from app.utils.url_safety import UrlNotAllowedError, assert_public_url
 
 logger = logging.getLogger(__name__)
 
@@ -380,18 +381,36 @@ class WebSearchService:
         }
 
         try:
-            async with (
-                aiohttp.ClientSession(
-                    timeout=aiohttp.ClientTimeout(total=timeout)
-                ) as session,
-                session.get(url, headers=headers) as response,
-            ):
-                if response.status != 200:
-                    raise WebSearchError(
-                        f"Failed to fetch page: HTTP {response.status}"
-                    )
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=timeout)
+            ) as session:
+                # Follow redirects manually so every hop is SSRF-validated: an
+                # allowed public URL must not be able to 30x us into an
+                # internal address.
+                current = url
+                html: str | None = None
+                for _ in range(6):
+                    await assert_public_url(current)
+                    async with session.get(
+                        current, headers=headers, allow_redirects=False
+                    ) as response:
+                        if response.status in (301, 302, 303, 307, 308):
+                            location = response.headers.get("Location")
+                            if not location:
+                                raise WebSearchError("Redirect without a location")
+                            current = urljoin(current, location)
+                            continue
+                        if response.status != 200:
+                            raise WebSearchError(
+                                f"Failed to fetch page: HTTP {response.status}"
+                            )
+                        html = await response.text()
+                        break
+                else:
+                    raise WebSearchError("Too many redirects")
 
-                html = await response.text()
+                if html is None:
+                    raise WebSearchError("No response received")
 
                 # Simple content extraction (in production, use something like trafilatura or readability)
                 # This is a basic implementation
@@ -405,6 +424,8 @@ class WebSearchService:
 
                 return content.strip()
 
+        except UrlNotAllowedError as e:
+            raise WebSearchError(f"URL not allowed: {e!s}") from e
         except TimeoutError as e:
             raise WebSearchError("Page fetch timed out") from e
         except WebSearchError:

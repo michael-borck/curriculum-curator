@@ -25,7 +25,7 @@ from app.schemas.package_import import (
     UnifiedImportPreview,
     UnifiedImportResult,
 )
-from app.services.import_task_store import get_task
+from app.services.import_task_store import get_owned_task
 from app.services.package_import_service import (
     PackageImportError,
     package_import_service,
@@ -197,10 +197,12 @@ class ImportTaskStatus(BaseModel):
 @router.get("/import/unified/status/{task_id}", response_model=ImportTaskStatus)
 async def unified_status(
     task_id: str,
-    _current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_user),
 ) -> ImportTaskStatus:
     """Poll progress of a background import task."""
-    task = get_task(task_id)
+    task = get_owned_task(
+        task_id, str(current_user.id), is_admin=current_user.role == deps.ROLE_ADMIN
+    )
     if task is None:
         raise HTTPException(status_code=404, detail="Task not found or expired.")
     return ImportTaskStatus(

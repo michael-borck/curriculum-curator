@@ -36,6 +36,7 @@ from app.schemas import (
 from app.schemas.auth import ChangePasswordRequest, ChangePasswordResponse
 from app.schemas.user import ProfileUpdateRequest, UserCreate
 from app.services.email_service import email_service
+from app.utils.request_ip import get_client_ip
 
 router = APIRouter()
 
@@ -95,14 +96,12 @@ async def get_local_session(
 
 
 def _get_client_ip(request: Request) -> str:
-    """Get client IP address from request, handling proxies"""
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip.strip()
-    return request.client.host if request.client else "unknown"
+    """Get client IP address from request.
+
+    Proxy headers are honoured only when ``TRUST_PROXY_HEADERS`` is set, so
+    lockout and JWT IP-binding can't be bypassed by spoofing them.
+    """
+    return get_client_ip(request)
 
 
 def _get_user_agent(request: Request) -> str:
@@ -436,9 +435,7 @@ async def login(
         )
 
     # Create access token (admin-configured session timeout)
-    access_token_expires = timedelta(
-        minutes=security_settings.session_timeout_minutes
-    )
+    access_token_expires = timedelta(minutes=security_settings.session_timeout_minutes)
     access_token = security.create_access_token(
         data={"sub": user.id, "email": user.email},
         expires_delta=access_token_expires,

@@ -4,6 +4,8 @@ Curriculum Curator - Main FastAPI Application
 
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -164,10 +166,19 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
 
+def _resolve_app_version() -> str:
+    """Read the app version from installed package metadata (single source of
+    truth: pyproject.toml), falling back if the package isn't installed."""
+    try:
+        return _pkg_version("curriculum-curator-backend")
+    except PackageNotFoundError:
+        return "0.0.0"
+
+
 app = FastAPI(
     title="Curriculum Curator",
     description="Pedagogically-aware course content platform",
-    version="0.1.0",
+    version=_resolve_app_version(),
     lifespan=lifespan,
 )
 
@@ -248,17 +259,24 @@ app.add_middleware(
 )
 
 # 5. CORS configuration (should be last middleware)
+_cors_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://curriculumcurator.eduserver.au",
+]
+# Desktop (Electron) loads the renderer over file://, whose requests carry
+# `Origin: null`. Only trust that in LOCAL_MODE, where the backend binds to
+# localhost and authentication is already bypassed.
+if settings.LOCAL_MODE:
+    _cors_origins.append("null")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "https://curriculumcurator.eduserver.au",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],

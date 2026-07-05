@@ -10,26 +10,17 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
+from app.utils.request_ip import get_client_ip
 
 
 def get_client_identifier(request: Request) -> str:
     """
-    Get client identifier for rate limiting
-    Uses IP address with forwarded header support
+    Get client identifier for rate limiting.
+
+    Proxy headers are only trusted when ``TRUST_PROXY_HEADERS`` is set, so a
+    client cannot spoof ``X-Forwarded-For`` to dodge the rate limit.
     """
-    # Check for forwarded IP (behind proxy/load balancer)
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        # Take the first IP in the chain (original client)
-        return forwarded_for.split(",")[0].strip()
-
-    # Check for real IP header (some proxies use this)
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip.strip()
-
-    # Fall back to direct connection IP
-    return request.client.host if request.client else "unknown"
+    return get_client_ip(request)
 
 
 # Create limiter instance

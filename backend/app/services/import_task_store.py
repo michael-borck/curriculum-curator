@@ -14,6 +14,7 @@ from typing import Any
 
 from app.services.task_store import BackgroundTask
 from app.services.task_store import create_task as _generic_create
+from app.services.task_store import get_owned_task as _generic_get_owned
 from app.services.task_store import get_task as _generic_get
 
 
@@ -113,15 +114,25 @@ class ImportTask:
         self._inner.meta["skipped_items"] = value
 
 
-def create_task() -> ImportTask:
+def create_task(owner_id: str | None = None) -> ImportTask:
     """Create a new import task via the generic store."""
-    inner = _generic_create("import")
+    inner = _generic_create("import", owner_id=owner_id)
     return ImportTask(inner)
 
 
 def get_task(task_id: str) -> ImportTask | None:
     """Look up an import task by id."""
     inner = _generic_get(task_id)
+    if inner is None or inner.kind != "import":
+        return None
+    return ImportTask(inner)
+
+
+def get_owned_task(
+    task_id: str, user_id: str, *, is_admin: bool = False
+) -> ImportTask | None:
+    """Look up an import task by id, enforcing ownership (no existence leak)."""
+    inner = _generic_get_owned(task_id, user_id, is_admin=is_admin)
     if inner is None or inner.kind != "import":
         return None
     return ImportTask(inner)

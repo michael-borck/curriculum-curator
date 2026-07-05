@@ -84,8 +84,8 @@ class TestBackgroundTaskWait:
 
 
 class TestTaskEndpoints:
-    def test_get_task_status(self, client) -> None:  # type: ignore[no-untyped-def]
-        task = create_task("export", meta={"unit_id": "u1"})
+    def test_get_task_status(self, client, test_user) -> None:  # type: ignore[no-untyped-def]
+        task = create_task("export", meta={"unit_id": "u1"}, owner_id=str(test_user.id))
         task.status = "processing"
         task.progress = 2
         task.total = 5
@@ -131,11 +131,17 @@ class TestTaskEndpoints:
         assert payload["status"] == "completed"
         assert payload["result"]["filename"] == "test.imscc"
 
-    def test_download_task_result_not_ready(self, client) -> None:  # type: ignore[no-untyped-def]
-        task = create_task("export")
+    def test_download_task_result_not_ready(self, client, test_user) -> None:  # type: ignore[no-untyped-def]
+        task = create_task("export", owner_id=str(test_user.id))
         task.status = "processing"
 
         resp = client.get(f"/api/bg-tasks/{task.task_id}/download")
+        assert resp.status_code == 404
+
+    def test_get_task_status_forbidden_for_other_owner(self, client) -> None:  # type: ignore[no-untyped-def]
+        """A task owned by a different user is invisible (404, no existence leak)."""
+        task = create_task("export", owner_id="some-other-user-id")
+        resp = client.get(f"/api/bg-tasks/{task.task_id}")
         assert resp.status_code == 404
 
     def test_download_task_result_404_no_task(self, client) -> None:  # type: ignore[no-untyped-def]

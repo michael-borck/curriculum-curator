@@ -86,13 +86,11 @@ def get_current_user(
 
     from app.core import security as security_module  # noqa: PLC0415
 
-    # Extract client IP for token IP-binding verification
-    client_ip: str | None = None
-    if request.client:
-        client_ip = request.client.host
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        client_ip = forwarded_for.split(",")[0].strip()
+    # Extract client IP for token IP-binding verification. Proxy headers are
+    # only trusted when TRUST_PROXY_HEADERS is set (see request_ip helper).
+    from app.utils.request_ip import get_client_ip  # noqa: PLC0415
+
+    client_ip: str | None = get_client_ip(request)
 
     payload = security_module.decode_access_token(token, verify_ip=client_ip)
     if payload is None:
@@ -294,9 +292,7 @@ def get_user_design(
     )
 
 
-def require_unit_owner(
-    db: Session, unit_id: str, current_user: UserResponse
-) -> Unit:
+def require_unit_owner(db: Session, unit_id: str, current_user: UserResponse) -> Unit:
     """Verify the current user owns ``unit_id`` (admins bypass), else 404; return it.
 
     For handlers where the unit_id is in the request body (not the path), so it

@@ -11,6 +11,7 @@ All commits are made by the system user with app user info in commit messages.
 """
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -37,6 +38,33 @@ class GitContentService:
     def _get_unit_repo_path(self, unit_id: str) -> Path:
         """Get the path to a unit's repository"""
         return self.repos_base / unit_id
+
+    @staticmethod
+    def _resolve_within(repo_path: Path, path: str) -> Path:
+        """Resolve ``path`` inside ``repo_path``, rejecting traversal escapes.
+
+        Defence-in-depth against path traversal (``..`` segments, absolute
+        paths, symlinks) in any caller-supplied relative path. Returns the
+        resolved absolute path; raises ``ValueError`` if it would land outside
+        the unit repository.
+        """
+        base = repo_path.resolve()
+        candidate = (repo_path / path).resolve()
+        if candidate != base and base not in candidate.parents:
+            raise ValueError(f"Path escapes unit repository: {path!r}")
+        return candidate
+
+    @staticmethod
+    def _validate_commit(commit: str) -> str:
+        """Validate a user-supplied git revision.
+
+        Prevents argument injection: a value like ``--output=/etc/x`` would be
+        parsed by git as an option. Only accept hex SHAs (7-40 chars) or
+        ``HEAD`` with optional ``~N``/``^N`` suffixes.
+        """
+        if not re.fullmatch(r"(?:[0-9a-fA-F]{7,40}|HEAD)(?:[~^]\d*)*", commit):
+            raise ValueError(f"Invalid git revision: {commit!r}")
+        return commit
 
     def _ensure_unit_repo(self, unit_id: str) -> Path:
         """
@@ -172,7 +200,7 @@ class GitContentService:
         repo_path = self._ensure_unit_repo(unit_id)
 
         # Ensure parent directories exist
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write content
@@ -216,10 +244,11 @@ class GitContentService:
 
         if commit:
             # Get content at specific commit
+            self._validate_commit(commit)
             return self._run_git(repo_path, "show", f"{commit}:{path}")
 
         # Get current content
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
         if file_path.exists():
             return file_path.read_text()
         raise FileNotFoundError(f"Content not found: {path} in unit {unit_id}")
@@ -293,6 +322,8 @@ class GitContentService:
         """
         repo_path = self._get_unit_repo_path(unit_id)
 
+        self._validate_commit(old_commit)
+        self._validate_commit(new_commit)
         try:
             return self._run_git(repo_path, "diff", old_commit, new_commit, "--", path)
         except subprocess.CalledProcessError:
@@ -358,7 +389,7 @@ class GitContentService:
             Commit hash
         """
         repo_path = self._get_unit_repo_path(unit_id)
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
 
         if not file_path.exists():
             raise FileNotFoundError(f"Content not found: {path}")
@@ -392,7 +423,7 @@ class GitContentService:
         """
         repo_path = self._ensure_unit_repo(unit_id)
 
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         file_path.write_bytes(data)
@@ -426,7 +457,7 @@ class GitContentService:
             Commit hash
         """
         repo_path = self._get_unit_repo_path(unit_id)
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
 
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {path}")
@@ -451,7 +482,10 @@ class GitContentService:
             List of filenames in the directory
         """
         repo_path = self._get_unit_repo_path(unit_id)
-        full_path = repo_path / dir_path
+        try:
+            full_path = self._resolve_within(repo_path, dir_path)
+        except ValueError:
+            return []
 
         if not full_path.exists() or not full_path.is_dir():
             return []
@@ -474,7 +508,7 @@ class GitContentService:
         if not repo_path.exists():
             raise FileNotFoundError(f"Unit repository not found: {unit_id}")
 
-        file_path = repo_path / path
+        file_path = self._resolve_within(repo_path, path)
         if file_path.exists():
             return file_path.read_bytes()
         raise FileNotFoundError(f"File not found: {path} in unit {unit_id}")

@@ -18,10 +18,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_user_unit
+from app.api.deps import get_current_active_user, get_db, get_user_unit
+from app.core.database import SessionLocal
 from app.schemas.base import CamelModel
 from app.schemas.export_preview import ExportPackageRequest
 from app.schemas.unit import UnitResponse
+from app.schemas.user import UserResponse
 from app.services.export import ExportOptions, ExportScope, export_registry
 from app.services.lms_terminology import TargetLMS
 from app.services.task_store import create_task, make_progress_cb
@@ -68,7 +70,7 @@ def _validate_package_type(package_type: str) -> None:
 @router.post("/units/{unit_id}/export/package", response_model=ExportTaskResponse)
 async def export_package(
     unit: Annotated[UnitResponse, Depends(get_user_unit)],
-    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[UserResponse, Depends(get_current_active_user)],
     request: ExportPackageRequest,
 ) -> ExportTaskResponse:
     """Kick off a background package export and return the task_id."""
@@ -76,14 +78,21 @@ async def export_package(
 
     task = create_task(
         "export",
+        owner_id=str(current_user.id),
         meta={
             "unit_id": unit.id,
             "unit_code": unit.code,
             "package_type": request.package_type,
         },
     )
+    unit_id = str(unit.id)
 
     async def _run() -> None:
+        # Open a dedicated session: the request-scoped `db` is closed once this
+        # handler returns, so the background task must not capture it.
+        if SessionLocal is None:
+            raise RuntimeError("Database not configured")
+        db = SessionLocal()
         try:
             task.status = "processing"
             task.label = "Preparing export…"
@@ -95,7 +104,7 @@ async def export_package(
                 on_progress=make_progress_cb(task),
             )
             result = await export_registry.export(
-                request.package_type, ExportScope.UNIT, str(unit.id), db, options
+                request.package_type, ExportScope.UNIT, unit_id, db, options
             )
 
             # Write to a temp file so the download endpoint can serve it
@@ -118,6 +127,8 @@ async def export_package(
             task.status = "failed"
             task.label = "Export failed"
             task.notify()
+        finally:
+            db.close()
 
     asyncio.ensure_future(_run())  # noqa: RUF006
     return ExportTaskResponse(task_id=task.task_id)
