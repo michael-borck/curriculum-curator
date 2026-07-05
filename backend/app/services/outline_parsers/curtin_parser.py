@@ -83,7 +83,9 @@ def _extract_text_from_pdf(content: bytes) -> str:
         # explicitly so the join call has an iterable of real strings.
         return "\n\n".join(str(page.get_text()) for page in doc)
     except ImportError:
-        logger.warning("pymupdf not installed — falling back to pypdf (digits may be missing from Curtin PDFs)")
+        logger.warning(
+            "pymupdf not installed — falling back to pypdf (digits may be missing from Curtin PDFs)"
+        )
     except Exception:
         logger.warning("pymupdf extraction failed — falling back to pypdf")
 
@@ -164,7 +166,9 @@ _TEXTBOOK_SECTION_RE = re.compile(
 _SYLLABUS_RE = re.compile(r"(?<=\n)Syllabus\s*\n")
 _INTRODUCTION_RE = re.compile(r"(?<=\n)Introduction\s*\n")
 
-_CREDIT_RE = re.compile(r"Credit\s+(?:value|Points?)\s*[:\-]?\s*\n?\s*(\d+)", re.IGNORECASE)
+_CREDIT_RE = re.compile(
+    r"Credit\s+(?:value|Points?)\s*[:\-]?\s*\n?\s*(\d+)", re.IGNORECASE
+)
 
 _SEMESTER_RE = re.compile(
     r"Semester\s+(\d)\s*,\s*(20\d{2})",
@@ -185,10 +189,10 @@ _UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
 # Assessment schedule rows: "1\nAI Implementation Proposal\n40 %\nWeek:6"
 # Title may span multiple lines (e.g. "Group Report and Prototype AI\nApplication")
 _ASSESS_TASK_RE = re.compile(
-    r"(?:^|\n)\s*(\d+)\s*\n"              # task number
-    r"((?:(?!\d{1,3}\s*%).)+?)\n"          # title (everything up to the line before weight)
-    r"\s*(\d{1,3})\s*%\s*\n"              # weight (e.g. "40 %" or "60 %")
-    r"\s*(?:Week\s*:\s*([\d, ]+))?",        # optional week(s) — no newlines
+    r"(?:^|\n)\s*(\d+)\s*\n"  # task number
+    r"((?:(?!\d{1,3}\s*%).)+?)\n"  # title (everything up to the line before weight)
+    r"\s*(\d{1,3})\s*%\s*\n"  # weight (e.g. "40 %" or "60 %")
+    r"\s*(?:Week\s*:\s*([\d, ]+))?",  # optional week(s) — no newlines
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -375,11 +379,14 @@ class CurtinOutlineParser(OutlineParser):
             re.IGNORECASE,
         )
         if completion_match:
-            ulo_section = ulo_section[completion_match.end():]
+            ulo_section = ulo_section[completion_match.end() :]
 
         # Remove the "Graduate Capabilities addressed" header if present
         ulo_section = re.sub(
-            r"Graduate\s+Capabilities\s+addressed\s*\n?", "", ulo_section, flags=re.IGNORECASE
+            r"Graduate\s+Capabilities\s+addressed\s*\n?",
+            "",
+            ulo_section,
+            flags=re.IGNORECASE,
         )
 
         # Remove repeated "On successful completion..." headers (from page breaks)
@@ -392,7 +399,12 @@ class CurtinOutlineParser(OutlineParser):
 
         # Remove GC references (GC1, GC2, etc.) and the GC description block
         ulo_section = re.sub(r"GC\d+\s*:[^\n]*\n?", "", ulo_section)
-        ulo_section = re.sub(r"Find\s+out\s+more\s+about\s+Curtin.*$", "", ulo_section, flags=re.IGNORECASE | re.DOTALL)
+        ulo_section = re.sub(
+            r"Find\s+out\s+more\s+about\s+Curtin.*$",
+            "",
+            ulo_section,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
 
         # Now split by numbered items: a line that is just a digit
         # The pattern is: "\n1\nDescription text\n2\nDescription text\n"
@@ -407,11 +419,13 @@ class CurtinOutlineParser(OutlineParser):
             # Clean up: join lines, remove extra whitespace
             desc = " ".join(desc_raw.split())
             if desc and len(desc) > 5:
-                ulos.append(ExtractedULO(
-                    code=f"ULO{num}",
-                    description=desc[:500],
-                    bloom_level=_guess_bloom(desc),
-                ))
+                ulos.append(
+                    ExtractedULO(
+                        code=f"ULO{num}",
+                        description=desc[:500],
+                        bloom_level=_guess_bloom(desc),
+                    )
+                )
             i += 2
 
         return ulos
@@ -435,7 +449,9 @@ class CurtinOutlineParser(OutlineParser):
             re.compile(r"\*Please\s+refer\s+to", re.IGNORECASE),
             _SCHEDULE_SECTION_RE,
         ]
-        assess_section = _section_between(text, _ASSESSMENT_SECTION_RE, assess_end_markers)
+        assess_section = _section_between(
+            text, _ASSESSMENT_SECTION_RE, assess_end_markers
+        )
         if not assess_section:
             return []
 
@@ -456,9 +472,14 @@ class CurtinOutlineParser(OutlineParser):
 
             if title and weight > 0:
                 category = self._guess_assessment_category(title)
-                assessments.append(ExtractedAssessment(
-                    title=title, category=category, weight=weight, due_week=due_week,
-                ))
+                assessments.append(
+                    ExtractedAssessment(
+                        title=title,
+                        category=category,
+                        weight=weight,
+                        due_week=due_week,
+                    )
+                )
 
         # If structured pattern didn't work, try "Title NN%" fallback
         if not assessments:
@@ -469,14 +490,16 @@ class CurtinOutlineParser(OutlineParser):
                 if title and weight > 0 and len(title) > 3:
                     due_match = re.search(
                         r"[Ww](?:ee)?k\s*:?\s*(\d{1,2})",
-                        assess_section[m.start():m.end() + 150],
+                        assess_section[m.start() : m.end() + 150],
                     )
-                    assessments.append(ExtractedAssessment(
-                        title=title,
-                        category=self._guess_assessment_category(title),
-                        weight=weight,
-                        due_week=int(due_match.group(1)) if due_match else None,
-                    ))
+                    assessments.append(
+                        ExtractedAssessment(
+                            title=title,
+                            category=self._guess_assessment_category(title),
+                            weight=weight,
+                            due_week=int(due_match.group(1)) if due_match else None,
+                        )
+                    )
 
         return assessments
 
@@ -575,7 +598,11 @@ class CurtinOutlineParser(OutlineParser):
                         if k < len(lines) and _month_re.match(lines[k].strip()):
                             week_starts.append((i, week_id))
                             continue
-                    elif re.match(r"^\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)", next_line, re.IGNORECASE):
+                    elif re.match(
+                        r"^\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)",
+                        next_line,
+                        re.IGNORECASE,
+                    ):
                         week_starts.append((i, week_id))
                         continue
 
@@ -587,8 +614,12 @@ class CurtinOutlineParser(OutlineParser):
                 continue
 
             # Determine block end
-            block_end = week_starts[idx + 1][0] if idx + 1 < len(week_starts) else len(lines)
-            block_lines = [ln.strip() for ln in lines[line_idx + 1:block_end] if ln.strip()]
+            block_end = (
+                week_starts[idx + 1][0] if idx + 1 < len(week_starts) else len(lines)
+            )
+            block_lines = [
+                ln.strip() for ln in lines[line_idx + 1 : block_end] if ln.strip()
+            ]
 
             # Skip date lines (e.g. "16", "Feb", "9 Feb", "2 Mar")
             _date_part_re = re.compile(
@@ -614,7 +645,9 @@ class CurtinOutlineParser(OutlineParser):
             topic_parts: list[str] = []
             for cl in content_lines:
                 # Stop at obvious non-topic content
-                if cl == "—" or re.match(r"^(?:AIM|AAI|Assessment|Compile|Review|No scheduled|Teams)", cl):
+                if cl == "—" or re.match(
+                    r"^(?:AIM|AAI|Assessment|Compile|Review|No scheduled|Teams)", cl
+                ):
                     break
                 # Stop if this line contains commas (likely Content column)
                 if topic_parts and "," in cl:
@@ -631,21 +664,29 @@ class CurtinOutlineParser(OutlineParser):
             topic = " ".join(topic_parts).strip().rstrip("&").strip()[:300]
             if topic:
                 # Collect remaining lines as activities (first 2-3)
-                activity_lines = content_lines[len(topic_parts):len(topic_parts) + 3]
-                activities = [" ".join(al.split()) for al in activity_lines if len(al) > 5 and al != "—"]
+                activity_lines = content_lines[len(topic_parts) : len(topic_parts) + 3]
+                activities = [
+                    " ".join(al.split())
+                    for al in activity_lines
+                    if len(al) > 5 and al != "—"
+                ]
 
-                weeks.append(ExtractedWeek(
-                    week_number=int(week_id),
-                    topic=topic,
-                    activities=activities[:3],
-                ))
+                weeks.append(
+                    ExtractedWeek(
+                        week_number=int(week_id),
+                        topic=topic,
+                        activities=activities[:3],
+                    )
+                )
 
         # Fallback: try simpler "Week N: Topic" pattern
         if not weeks:
             for m in _WEEK_ROW_RE.finditer(sched_section):
                 topic = m.group(2).strip().split("\n")[0].strip()[:300]
                 if topic:
-                    weeks.append(ExtractedWeek(week_number=int(m.group(1)), topic=topic))
+                    weeks.append(
+                        ExtractedWeek(week_number=int(m.group(1)), topic=topic)
+                    )
 
         return weeks
 
@@ -673,9 +714,13 @@ class CurtinOutlineParser(OutlineParser):
             publisher = m.group(4).strip()
 
             # Look for Essential:Yes/No after this entry
-            after = tb_section[m.end():m.end() + 200]
-            essential_match = re.search(r"Essential\s*:\s*(Yes|No)", after, re.IGNORECASE)
-            required = essential_match.group(1).lower() == "yes" if essential_match else True
+            after = tb_section[m.end() : m.end() + 200]
+            essential_match = re.search(
+                r"Essential\s*:\s*(Yes|No)", after, re.IGNORECASE
+            )
+            required = (
+                essential_match.group(1).lower() == "yes" if essential_match else True
+            )
 
             # Look for ISBN
             isbn_match = _ISBN_RE.search(after)
@@ -686,12 +731,14 @@ class CurtinOutlineParser(OutlineParser):
 
             full_title = f"{authors} ({year}). {title}. {publisher}"
 
-            textbooks.append(ExtractedTextbook(
-                title=full_title[:300],
-                authors=authors,
-                isbn=isbn or "",
-                required=required,
-            ))
+            textbooks.append(
+                ExtractedTextbook(
+                    title=full_title[:300],
+                    authors=authors,
+                    isbn=isbn or "",
+                    required=required,
+                )
+            )
 
         # If regex didn't match, try line-based fallback
         if not textbooks:
@@ -715,12 +762,18 @@ class CurtinOutlineParser(OutlineParser):
             pat = re.compile(pattern_str, re.IGNORECASE)
             section = _section_between(text, pat, _ALL_SECTIONS)
             if section and len(section) > 20:
-                supplementary.append(ExtractedSnippet(heading=heading, content=section[:1000]))
+                supplementary.append(
+                    ExtractedSnippet(heading=heading, content=section[:1000])
+                )
         return supplementary
 
     def _extract_prerequisites(self, text: str) -> str | None:
         """Extract prerequisites from the metadata section."""
-        m = re.search(r"Pre-requisite\s+units?\s*:\s*\n?\s*(.+?)(?:\n|$)", text[:5000], re.IGNORECASE)
+        m = re.search(
+            r"Pre-requisite\s+units?\s*:\s*\n?\s*(.+?)(?:\n|$)",
+            text[:5000],
+            re.IGNORECASE,
+        )
         if m:
             val = m.group(1).strip()
             return val if val.lower() != "nil" else None
@@ -728,7 +781,9 @@ class CurtinOutlineParser(OutlineParser):
 
     def _extract_delivery_mode(self, text: str) -> str | None:
         """Extract mode of study (Internal/External/Online)."""
-        m = re.search(r"Mode\s+of\s+study\s*:\s*\n?\s*(\w+)", text[:5000], re.IGNORECASE)
+        m = re.search(
+            r"Mode\s+of\s+study\s*:\s*\n?\s*(\w+)", text[:5000], re.IGNORECASE
+        )
         return m.group(1).strip() if m else None
 
     async def parse(
@@ -749,19 +804,25 @@ class CurtinOutlineParser(OutlineParser):
 
         if not text.strip():
             return OutlineParseResult(
-                confidence=0.0, parser_used=self.name,
+                confidence=0.0,
+                parser_used=self.name,
                 warnings=["Document appears to be empty."],
             )
 
         # --- check if this looks like a Curtin outline ---
         if not self._is_curtin(text):
-            logger.info("Document does not appear to be a Curtin outline - falling back to generic.")
+            logger.info(
+                "Document does not appear to be a Curtin outline - falling back to generic."
+            )
             from app.services.outline_parsers.generic_parser import GenericOutlineParser  # noqa: PLC0415, I001
 
             result = await GenericOutlineParser().parse(
                 file_content, filename, file_type, user_context=user_context
             )
-            result.warnings.insert(0, "Document did not match Curtin format - used generic AI parser instead.")
+            result.warnings.insert(
+                0,
+                "Document did not match Curtin format - used generic AI parser instead.",
+            )
             return result
 
         warnings: list[str] = []
@@ -769,7 +830,9 @@ class CurtinOutlineParser(OutlineParser):
         # Strip page footers for cleaner parsing
         clean_text = _strip_page_footers(text)
 
-        unit_code, unit_title, credit_points, year, semester = self._extract_metadata(clean_text)
+        unit_code, unit_title, credit_points, year, semester = self._extract_metadata(
+            clean_text
+        )
         description = self._extract_description(clean_text)
         ulos = self._extract_ulos(clean_text)
         if not ulos:
@@ -784,10 +847,16 @@ class CurtinOutlineParser(OutlineParser):
         prerequisites = self._extract_prerequisites(text)
         delivery_mode = self._extract_delivery_mode(text)
 
-        fields_found = sum([
-            bool(unit_code), bool(unit_title), bool(ulos),
-            bool(weeks), bool(assessments), bool(description),
-        ])
+        fields_found = sum(
+            [
+                bool(unit_code),
+                bool(unit_title),
+                bool(ulos),
+                bool(weeks),
+                bool(assessments),
+                bool(description),
+            ]
+        )
         confidence = min(1.0, 0.3 + fields_found * 0.12)
 
         return OutlineParseResult(

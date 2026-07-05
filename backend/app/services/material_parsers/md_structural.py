@@ -86,9 +86,7 @@ class MdStructuralParser(MaterialParser):
         html = markdown.markdown(body, extensions=_MD_EXTENSIONS)
 
         # Delegate to the HTML parser for the heavy lifting
-        result = await self._html_parser.parse(
-            html.encode("utf-8"), filename
-        )
+        result = await self._html_parser.parse(html.encode("utf-8"), filename)
 
         # Post-process: top-level <hr> rendered from --- becomes a slideBreak.
         # The HTML parser emits horizontalRule for <hr>; we walk the top

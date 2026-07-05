@@ -315,10 +315,14 @@ class TestH5PEmbedding:
         buf, _ = service.export_unit(str(unit.id), test_db)
         with zipfile.ZipFile(buf, "r") as zf:
             names = zf.namelist()
-            h5p_files = [n for n in names if n.startswith("h5p/") and n.endswith(".h5p")]
+            h5p_files = [
+                n for n in names if n.startswith("h5p/") and n.endswith(".h5p")
+            ]
             qti_mat_files = [n for n in names if "qti_mat_" in n]
             assert len(h5p_files) == 1, f"Expected 1 H5P file, got: {h5p_files}"
-            assert len(qti_mat_files) == 0, f"Expected no QTI mat files, got: {qti_mat_files}"
+            assert len(qti_mat_files) == 0, (
+                f"Expected no QTI mat files, got: {qti_mat_files}"
+            )
 
             # H5P file should be a valid ZIP itself
             h5p_data = zf.read(h5p_files[0])

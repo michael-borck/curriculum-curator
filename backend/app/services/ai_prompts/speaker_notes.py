@@ -45,6 +45,4 @@ def render_speaker_notes_prompt(
             f"Existing notes: <user_data>{existing}</user_data>"
         )
     slides_text = "\n\n".join(slide_blocks)
-    return (
-        f"{_CONSTRAINTS}\n{pedagogy_instruction}{design_block}\n\n{slides_text}"
-    )
+    return f"{_CONSTRAINTS}\n{pedagogy_instruction}{design_block}\n\n{slides_text}"

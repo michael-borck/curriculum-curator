@@ -179,9 +179,7 @@ class TestBasicParsing:
         assert result.title == "empty"
 
     @pytest.mark.asyncio
-    async def test_title_extracted_as_h1(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_title_extracted_as_h1(self, parser: PptxStructuralParser) -> None:
         pptx = _slide_with_title_and_body("Introduction", "First point")
         result = await parser.parse(pptx, "deck.pptx")
         # Deck title comes from the first slide's title
@@ -232,17 +230,13 @@ class TestSlideBreaks:
         assert types.count("slideBreak") == 2
 
     @pytest.mark.asyncio
-    async def test_no_leading_slide_break(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_no_leading_slide_break(self, parser: PptxStructuralParser) -> None:
         result = await parser.parse(_multi_slide_deck(2), "deck.pptx")
         # First node should not be a slideBreak
         assert result.content_json["content"][0]["type"] != "slideBreak"
 
     @pytest.mark.asyncio
-    async def test_no_trailing_slide_break(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_no_trailing_slide_break(self, parser: PptxStructuralParser) -> None:
         result = await parser.parse(_multi_slide_deck(2), "deck.pptx")
         assert result.content_json["content"][-1]["type"] != "slideBreak"
 
@@ -261,9 +255,7 @@ class TestSpeakerNotes:
             "Slide A", "Open with the analogy. Pause for questions."
         )
         result = await parser.parse(pptx, "deck.pptx")
-        notes_node = _find_first(
-            result.content_json["content"], "speakerNotes"
-        )
+        notes_node = _find_first(result.content_json["content"], "speakerNotes")
         assert notes_node is not None
         assert "Open with the analogy" in _all_text(notes_node)
 
@@ -282,9 +274,7 @@ class TestSpeakerNotes:
         assert "Hidden delivery prompt" not in non_notes_text
 
     @pytest.mark.asyncio
-    async def test_notes_per_slide(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_notes_per_slide(self, parser: PptxStructuralParser) -> None:
         result = await parser.parse(_multi_slide_deck(3), "deck.pptx")
         # Each slide has its own notes, so we should find three speakerNotes
         # nodes in the document
@@ -307,15 +297,11 @@ class TestSpeakerNotes:
         assert "Notes for slide 3" in all_text
 
     @pytest.mark.asyncio
-    async def test_empty_notes_omitted(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_empty_notes_omitted(self, parser: PptxStructuralParser) -> None:
         # Slide with title but no notes content — no speakerNotes node emitted
         pptx = _slide_with_title_and_body("Title", "Body")
         result = await parser.parse(pptx, "deck.pptx")
-        notes_node = _find_first(
-            result.content_json["content"], "speakerNotes"
-        )
+        notes_node = _find_first(result.content_json["content"], "speakerNotes")
         assert notes_node is None
 
 
@@ -379,9 +365,7 @@ class TestImages:
         for i in range(1, 3):
             slide = prs.slides.add_slide(prs.slide_layouts[5])
             slide.shapes.title.text = f"Slide {i}"
-            slide.shapes.add_picture(
-                io.BytesIO(png_bytes), Inches(1), Inches(1)
-            )
+            slide.shapes.add_picture(io.BytesIO(png_bytes), Inches(1), Inches(1))
         result = await parser.parse(_save_to_bytes(prs), "deck.pptx")
         filenames = [img.filename for img in result.images]
         assert len(filenames) == 2
@@ -397,9 +381,7 @@ class TestImages:
 
 class TestTextFormatting:
     @pytest.mark.asyncio
-    async def test_bold_and_italic_marks(
-        self, parser: PptxStructuralParser
-    ) -> None:
+    async def test_bold_and_italic_marks(self, parser: PptxStructuralParser) -> None:
         result = await parser.parse(_slide_with_bold_italic(), "fmt.pptx")
 
         # Find any text nodes and collect their marks
@@ -408,9 +390,7 @@ class TestTextFormatting:
         def _walk(nodes: list[dict[str, Any]]) -> None:
             for n in nodes:
                 if n.get("type") == "text":
-                    marks_seen.extend(
-                        m.get("type", "") for m in n.get("marks", [])
-                    )
+                    marks_seen.extend(m.get("type", "") for m in n.get("marks", []))
                 children = n.get("content", [])
                 if isinstance(children, list):
                     _walk(children)

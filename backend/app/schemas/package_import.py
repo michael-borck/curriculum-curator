@@ -71,7 +71,9 @@ class SkippedFile(CamelModel):
     path: str
     filename: str
     reason: str  # "unsupported_format", "too_large", "corrupted", "image_not_imported", etc.
-    category: str = "not_supported"  # "action_needed" | "not_supported" | "not_applicable"
+    category: str = (
+        "not_supported"  # "action_needed" | "not_supported" | "not_applicable"
+    )
     content_type: str = "unknown"  # "image" | "video" | "audio" | "lti_tool" | "rubric" | "announcement" | "discussion" | "external_link" | "access_control" | "unknown"
 
 

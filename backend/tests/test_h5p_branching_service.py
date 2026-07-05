@@ -29,7 +29,9 @@ def _make_card(
     }
 
 
-def _build_and_parse(cards: list[dict[str, Any]], title: str = "Test Scenario") -> tuple[dict[str, Any], dict[str, Any]]:
+def _build_and_parse(
+    cards: list[dict[str, Any]], title: str = "Test Scenario"
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Build H5P package and return (h5p_json, content_json)."""
     buf = h5p_branching_builder.build(cards, title)
     with zipfile.ZipFile(buf) as zf:
@@ -80,8 +82,18 @@ class TestContentNodes:
                 card_type="branch",
                 title="Decision",
                 choices=[
-                    {"id": "c1", "text": "Option A", "targetCardId": "card-2", "feedback": ""},
-                    {"id": "c2", "text": "Option B", "targetCardId": "card-3", "feedback": ""},
+                    {
+                        "id": "c1",
+                        "text": "Option A",
+                        "targetCardId": "card-2",
+                        "feedback": "",
+                    },
+                    {
+                        "id": "c2",
+                        "text": "Option B",
+                        "targetCardId": "card-3",
+                        "feedback": "",
+                    },
                 ],
             ),
             _make_card(card_id="card-2", title="Path A"),
@@ -175,7 +187,9 @@ class TestEndScreens:
     def test_multiple_endings(self) -> None:
         cards = [
             _make_card(card_id="c1"),
-            _make_card(card_id="end-1", card_type="ending", title="Good", end_score=100),
+            _make_card(
+                card_id="end-1", card_type="ending", title="Good", end_score=100
+            ),
             _make_card(card_id="end-2", card_type="ending", title="Bad", end_score=20),
         ]
         _, content_json = _build_and_parse(cards)
@@ -228,7 +242,12 @@ class TestEdgeCases:
                 card_id="c1",
                 card_type="branch",
                 choices=[
-                    {"id": "c", "text": "Go", "targetCardId": "nonexistent", "feedback": ""},
+                    {
+                        "id": "c",
+                        "text": "Go",
+                        "targetCardId": "nonexistent",
+                        "feedback": "",
+                    },
                 ],
             ),
         ]
@@ -241,4 +260,7 @@ class TestEdgeCases:
         cards = [_make_card()]
         h5p_json, content_json = _build_and_parse(cards, "My Scenario")
         assert h5p_json["title"] == "My Scenario"
-        assert content_json["branchingScenario"]["startScreen"]["startScreenTitle"] == "My Scenario"
+        assert (
+            content_json["branchingScenario"]["startScreen"]["startScreenTitle"]
+            == "My Scenario"
+        )

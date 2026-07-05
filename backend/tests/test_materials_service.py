@@ -144,7 +144,9 @@ class TestDeleteMaterial:
         material = await mat_service.create_material(
             test_db, _uid(test_unit.id), _make_material_create()
         )
-        material_id = _uid(material.id)  # Capture before deletion invalidates ORM object
+        material_id = _uid(
+            material.id
+        )  # Capture before deletion invalidates ORM object
         deleted = await mat_service.delete_material(test_db, material_id)
         assert deleted is True
 

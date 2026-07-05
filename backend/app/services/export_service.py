@@ -522,8 +522,7 @@ class ExportService:
         if node.get("type") == "text":
             return node.get("text", "")
         return "".join(
-            ExportService._node_text(child)
-            for child in node.get("content", [])
+            ExportService._node_text(child) for child in node.get("content", [])
         )
 
     @staticmethod

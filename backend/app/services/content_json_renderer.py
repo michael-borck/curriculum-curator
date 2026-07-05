@@ -285,9 +285,7 @@ def _render_branching_card(attrs: dict[str, Any]) -> str:
         parts.append("</ul>")
 
     if card_type == "ending":
-        parts.append(
-            f'<p style="font-size:0.85rem;color:#666;">Score: {end_score}</p>'
-        )
+        parts.append(f'<p style="font-size:0.85rem;color:#666;">Score: {end_score}</p>')
         if end_message:
             parts.append(
                 f'<p style="font-style:italic;color:#555;">{escape(end_message)}</p>'

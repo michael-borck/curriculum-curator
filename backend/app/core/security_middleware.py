@@ -67,7 +67,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "sync-xhr=()"
         )
 
-    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         # Process request
         start_time = time.time()
 
@@ -186,7 +188,9 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
             "wfuzz",
         ]
 
-    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         # Validate request before processing
         validation_error = await self._validate_request(request)
         if validation_error:
@@ -201,11 +205,11 @@ class RequestValidationMiddleware(BaseHTTPMiddleware):
         # Check request size (basic DoS protection)
         # Allow larger uploads for import paths (IMSCC/SCORM packages)
         path = request.url.path
-        is_large_upload_path = any(
-            path.startswith(p) for p in self.large_upload_paths
-        )
+        is_large_upload_path = any(path.startswith(p) for p in self.large_upload_paths)
         size_limit = (
-            self.large_upload_max_size if is_large_upload_path else self.max_request_size
+            self.large_upload_max_size
+            if is_large_upload_path
+            else self.max_request_size
         )
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > size_limit:
@@ -270,7 +274,9 @@ class TrustedProxyMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.trusted_proxies = trusted_proxies or ["127.0.0.1", "::1"]
 
-    async def dispatch(self, request: Request, call_next: Callable[..., Any]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[..., Any]
+    ) -> Response:
         # Validate and sanitize proxy headers
         self._process_proxy_headers(request)
         return await call_next(request)

@@ -139,7 +139,11 @@ class TestPreviewEndpoint:
         self, client: TestClient, test_unit: Unit
     ) -> None:
         files = {
-            "file": ("lecture.pptx", _basic_pptx(), "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            "file": (
+                "lecture.pptx",
+                _basic_pptx(),
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
         }
         response = client.post(
             "/api/import/material/single/preview",
@@ -193,9 +197,7 @@ class TestPreviewEndpoint:
         assert response.status_code == 400
         assert "empty" in response.json()["detail"].lower()
 
-    def test_preview_rejects_unknown_unit(
-        self, client: TestClient
-    ) -> None:
+    def test_preview_rejects_unknown_unit(self, client: TestClient) -> None:
         files = {"file": ("x.pptx", _basic_pptx(), "application/octet-stream")}
         response = client.post(
             "/api/import/material/single/preview",
@@ -515,9 +517,7 @@ class TestPhase2FormatsApply:
         assert data["title"] == "Imported PDF"
 
         # PDF always surfaces the "structure not recovered" warning
-        assert any(
-            "plain paragraphs" in w.lower() for w in data["warnings"]
-        )
+        assert any("plain paragraphs" in w.lower() for w in data["warnings"])
 
     def test_unsupported_format_rejected(
         self, client: TestClient, test_unit: Unit

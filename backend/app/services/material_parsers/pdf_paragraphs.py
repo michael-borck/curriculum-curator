@@ -115,8 +115,7 @@ class PdfParagraphsParser(MaterialParser):
         # Surface any extraction errors from pdf_parser_service as warnings
         if document.extraction_errors:
             warnings.extend(
-                f"PDF extraction warning: {err}"
-                for err in document.extraction_errors
+                f"PDF extraction warning: {err}" for err in document.extraction_errors
             )
 
         return MaterialParseResult(

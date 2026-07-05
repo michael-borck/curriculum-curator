@@ -33,9 +33,7 @@ def _all_text(node: dict[str, Any]) -> str:
     if node.get("type") == "text":
         return str(node.get("text", ""))
     return "".join(
-        _all_text(child)
-        for child in node.get("content", [])
-        if isinstance(child, dict)
+        _all_text(child) for child in node.get("content", []) if isinstance(child, dict)
     )
 
 
@@ -96,7 +94,9 @@ class TestBasicStructure:
     async def test_title_extracted_from_title_tag(
         self, parser: HtmlStructuralParser
     ) -> None:
-        html = b"<html><head><title>My Doc</title></head><body><p>Body</p></body></html>"
+        html = (
+            b"<html><head><title>My Doc</title></head><body><p>Body</p></body></html>"
+        )
         result = await parser.parse(html, "doc.html")
         assert result.title == "My Doc"
 
@@ -149,9 +149,7 @@ class TestLists:
 
 class TestTables:
     @pytest.mark.asyncio
-    async def test_table_with_header_row(
-        self, parser: HtmlStructuralParser
-    ) -> None:
+    async def test_table_with_header_row(self, parser: HtmlStructuralParser) -> None:
         html = b"""
         <table>
           <thead>
@@ -174,9 +172,7 @@ class TestTables:
         assert "Bob" in _all_text(table)
 
     @pytest.mark.asyncio
-    async def test_table_without_thead(
-        self, parser: HtmlStructuralParser
-    ) -> None:
+    async def test_table_without_thead(self, parser: HtmlStructuralParser) -> None:
         html = b"<table><tr><td>x</td><td>y</td></tr></table>"
         result = await parser.parse(html, "t.html")
         table = _find_first(result.content_json["content"], "table")
@@ -209,9 +205,7 @@ class TestMarks:
         text_node = para["content"][0]
         assert text_node["type"] == "text"
         assert any(m.get("type") == "link" for m in text_node.get("marks", []))
-        link_mark = next(
-            m for m in text_node["marks"] if m.get("type") == "link"
-        )
+        link_mark = next(m for m in text_node["marks"] if m.get("type") == "link")
         assert link_mark["attrs"]["href"] == "https://example.com"
 
 
@@ -222,9 +216,7 @@ class TestMarks:
 
 class TestCodeBlocks:
     @pytest.mark.asyncio
-    async def test_code_block_with_language(
-        self, parser: HtmlStructuralParser
-    ) -> None:
+    async def test_code_block_with_language(self, parser: HtmlStructuralParser) -> None:
         html = b'<pre><code class="language-python">print("hi")</code></pre>'
         result = await parser.parse(html, "code.html")
         cb = _find_first(result.content_json["content"], "codeBlock")
@@ -317,9 +309,7 @@ class TestImages:
         assert result.images == []
 
     @pytest.mark.asyncio
-    async def test_data_url_image_extracted(
-        self, parser: HtmlStructuralParser
-    ) -> None:
+    async def test_data_url_image_extracted(self, parser: HtmlStructuralParser) -> None:
         # 1x1 transparent PNG, base64-encoded
         png_b64 = (
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4"

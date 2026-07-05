@@ -64,15 +64,15 @@ class Rubric(CamelModel):
             if len(self.levels) == 0:
                 raise ValueError("Holistic rubrics require at least one level")
         elif len(self.criteria) > 0 and len(self.levels) > 0:
-                for i, criterion in enumerate(self.criteria):
-                    if len(criterion.cells) > 0 and len(criterion.cells) != len(
-                        self.levels
-                    ):
-                        raise ValueError(
-                            f"Criterion '{criterion.name}' (index {i}) has "
-                            f"{len(criterion.cells)} cells but there are "
-                            f"{len(self.levels)} levels"
-                        )
+            for i, criterion in enumerate(self.criteria):
+                if len(criterion.cells) > 0 and len(criterion.cells) != len(
+                    self.levels
+                ):
+                    raise ValueError(
+                        f"Criterion '{criterion.name}' (index {i}) has "
+                        f"{len(criterion.cells)} cells but there are "
+                        f"{len(self.levels)} levels"
+                    )
         return self
 
 

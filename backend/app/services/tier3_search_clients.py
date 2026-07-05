@@ -309,7 +309,9 @@ class DuckDuckGoClient:
                 break
 
         if not results:
-            logger.info("DuckDuckGo returned zero results — HTML layout may have changed")
+            logger.info(
+                "DuckDuckGo returned zero results — HTML layout may have changed"
+            )
         return results
 
     @staticmethod

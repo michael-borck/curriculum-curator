@@ -571,5 +571,3 @@ class TestAnalyticsAccuracy:
 
         # Should return some validation structure
         assert "is_valid" in body or "errors" in body or "warnings" in body
-
-

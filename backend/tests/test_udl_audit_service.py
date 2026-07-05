@@ -39,7 +39,9 @@ def test_upsert_and_get_responses(test_db: Session, test_unit: Unit) -> None:
         assessment_id="",
         responses=[
             UDLCheckpointEntry(checkpoint_id="4.1", response="doing_well"),
-            UDLCheckpointEntry(checkpoint_id="2.4", response="needs_work", notes="review language"),
+            UDLCheckpointEntry(
+                checkpoint_id="2.4", response="needs_work", notes="review language"
+            ),
         ],
     )
     saved = udl_audit_service.upsert_responses(test_db, unit_id, data)
@@ -68,9 +70,11 @@ def test_upsert_overwrites_existing(test_db: Session, test_unit: Unit) -> None:
     saved = udl_audit_service.upsert_responses(test_db, unit_id, second)
     assert saved[0].response == "doing_well"
     # Only one row in DB
-    rows = test_db.query(UDLAuditResponse).filter_by(
-        unit_id=test_unit.id, checkpoint_id="4.1", assessment_id=""
-    ).all()
+    rows = (
+        test_db.query(UDLAuditResponse)
+        .filter_by(unit_id=test_unit.id, checkpoint_id="4.1", assessment_id="")
+        .all()
+    )
     assert len(rows) == 1
 
 

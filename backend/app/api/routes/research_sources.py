@@ -217,9 +217,7 @@ async def save_from_capture(
         for name in data.authors:
             parts = name.strip().rsplit(" ", 1)
             if len(parts) == 2:
-                author_dicts.append(
-                    {"first_name": parts[0], "last_name": parts[1]}
-                )
+                author_dicts.append({"first_name": parts[0], "last_name": parts[1]})
             else:
                 author_dicts.append({"first_name": "", "last_name": parts[0]})
         authors_json = json.dumps(author_dicts)

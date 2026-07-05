@@ -78,16 +78,23 @@ class TestParserRegistry:
 
 class TestBloomGuessing:
     def test_remember(self) -> None:
-        assert _guess_bloom("List the key features of object-oriented programming") == "remember"
+        assert (
+            _guess_bloom("List the key features of object-oriented programming")
+            == "remember"
+        )
 
     def test_understand(self) -> None:
-        assert _guess_bloom("Describe the principles of software testing") == "understand"
+        assert (
+            _guess_bloom("Describe the principles of software testing") == "understand"
+        )
 
     def test_apply(self) -> None:
         assert _guess_bloom("Apply sorting algorithms to datasets") == "apply"
 
     def test_analyse(self) -> None:
-        assert _guess_bloom("Analyse the performance of different approaches") == "analyse"
+        assert (
+            _guess_bloom("Analyse the performance of different approaches") == "analyse"
+        )
 
     def test_evaluate(self) -> None:
         assert _guess_bloom("Evaluate the suitability of cloud platforms") == "evaluate"
@@ -300,9 +307,7 @@ class TestGenericParser:
             confidence=0.85,
         )
 
-        with patch(
-            "app.services.llm_service.LLMService"
-        ) as MockLLMService:
+        with patch("app.services.llm_service.LLMService") as MockLLMService:
             instance = MockLLMService.return_value
             instance.generate_structured_content = AsyncMock(
                 return_value=(mock_extraction, None)
@@ -323,9 +328,7 @@ class TestGenericParser:
     async def test_llm_error_returns_zero_confidence(self) -> None:
         from app.services.outline_parsers.generic_parser import GenericOutlineParser
 
-        with patch(
-            "app.services.llm_service.LLMService"
-        ) as MockLLMService:
+        with patch("app.services.llm_service.LLMService") as MockLLMService:
             instance = MockLLMService.return_value
             instance.generate_structured_content = AsyncMock(
                 return_value=(None, "LLM service unavailable")
@@ -349,9 +352,7 @@ class TestGenericParser:
 
         mock_extraction = _LLMOutlineExtraction(unit_code="BIG101", confidence=0.5)
 
-        with patch(
-            "app.services.llm_service.LLMService"
-        ) as MockLLMService:
+        with patch("app.services.llm_service.LLMService") as MockLLMService:
             instance = MockLLMService.return_value
             instance.generate_structured_content = AsyncMock(
                 return_value=(mock_extraction, None)
@@ -373,7 +374,9 @@ class TestGenericParser:
 
 
 class TestApplyEndpoint:
-    def test_apply_creates_unit(self, client, test_db: Session, test_user: User) -> None:  # type: ignore[no-untyped-def]
+    def test_apply_creates_unit(
+        self, client, test_db: Session, test_user: User
+    ) -> None:  # type: ignore[no-untyped-def]
         payload = {
             "unitCode": "NEW101",
             "unitTitle": "Imported Unit",
@@ -384,8 +387,16 @@ class TestApplyEndpoint:
             "semester": "semester_1",
             "pedagogyType": "direct_instruction",
             "learningOutcomes": [
-                {"code": "ULO1", "description": "Describe basics", "bloomLevel": "understand"},
-                {"code": "ULO2", "description": "Apply techniques", "bloomLevel": "apply"},
+                {
+                    "code": "ULO1",
+                    "description": "Describe basics",
+                    "bloomLevel": "understand",
+                },
+                {
+                    "code": "ULO2",
+                    "description": "Apply techniques",
+                    "bloomLevel": "apply",
+                },
             ],
             "weeklySchedule": [
                 {"weekNumber": 1, "topic": "Introduction"},
@@ -396,7 +407,12 @@ class TestApplyEndpoint:
                 {"title": "Final Exam", "category": "exam", "weight": 70.0},
             ],
             "textbooks": [
-                {"title": "Test Book", "authors": "Author A", "isbn": "123", "required": True},
+                {
+                    "title": "Test Book",
+                    "authors": "Author A",
+                    "isbn": "123",
+                    "required": True,
+                },
             ],
             "supplementaryInfo": [
                 {"heading": "Policy", "content": "Some policy text", "keep": True},
@@ -418,19 +434,19 @@ class TestApplyEndpoint:
         assert unit is not None
         assert unit.credit_points == 25
 
-        ulos = test_db.query(UnitLearningOutcome).filter(
-            UnitLearningOutcome.unit_id == unit.id
-        ).all()
+        ulos = (
+            test_db.query(UnitLearningOutcome)
+            .filter(UnitLearningOutcome.unit_id == unit.id)
+            .all()
+        )
         assert len(ulos) == 2
 
-        weeks = test_db.query(WeeklyTopic).filter(
-            WeeklyTopic.unit_id == unit.id
-        ).all()
+        weeks = test_db.query(WeeklyTopic).filter(WeeklyTopic.unit_id == unit.id).all()
         assert len(weeks) == 2
 
-        assessments = test_db.query(Assessment).filter(
-            Assessment.unit_id == unit.id
-        ).all()
+        assessments = (
+            test_db.query(Assessment).filter(Assessment.unit_id == unit.id).all()
+        )
         assert len(assessments) == 2
 
         # Textbooks stored in metadata
@@ -443,7 +459,9 @@ class TestApplyEndpoint:
         assert len(unit.unit_metadata["supplementary_info"]) == 1
         assert unit.unit_metadata["supplementary_info"][0]["heading"] == "Policy"
 
-    def test_apply_duplicate_rejected(self, client, test_db: Session, test_user: User) -> None:  # type: ignore[no-untyped-def]
+    def test_apply_duplicate_rejected(
+        self, client, test_db: Session, test_user: User
+    ) -> None:  # type: ignore[no-untyped-def]
         payload = {
             "unitCode": "DUP101",
             "unitTitle": "First Unit",
@@ -461,7 +479,9 @@ class TestApplyEndpoint:
         assert resp2.status_code == 409
 
     def test_apply_missing_required_fields(self, client) -> None:  # type: ignore[no-untyped-def]
-        resp = client.post("/api/import/outline/apply", json={"unitCode": "", "unitTitle": ""})
+        resp = client.post(
+            "/api/import/outline/apply", json={"unitCode": "", "unitTitle": ""}
+        )
         assert resp.status_code == 422
 
     def test_list_parsers_endpoint(self, client) -> None:  # type: ignore[no-untyped-def]

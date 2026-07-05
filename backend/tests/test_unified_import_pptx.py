@@ -109,9 +109,7 @@ class TestUnifiedImportPptxStructured:
             # Find the unit that was created
             from app.models.unit import Unit
 
-            unit = (
-                test_db.query(Unit).filter(Unit.code == "TEST101").first()
-            )
+            unit = test_db.query(Unit).filter(Unit.code == "TEST101").first()
             assert unit is not None, "unified import should have created a unit"
 
             # And the material from the PPTX
@@ -120,9 +118,7 @@ class TestUnifiedImportPptxStructured:
                 .filter(WeeklyMaterial.unit_id == unit.id)
                 .all()
             )
-            assert len(materials) == 1, (
-                f"expected one material, got {len(materials)}"
-            )
+            assert len(materials) == 1, f"expected one material, got {len(materials)}"
             mat = materials[0]
 
             # The structured parser path must populate content_json,
@@ -210,10 +206,7 @@ class TestUnifiedImportPptxStructured:
 
 
 def _html_for_zip() -> bytes:
-    return (
-        b"<html><body><h1>HTML Lecture</h1>"
-        b"<p>HTML body paragraph</p></body></html>"
-    )
+    return b"<html><body><h1>HTML Lecture</h1><p>HTML body paragraph</p></body></html>"
 
 
 def _md_for_zip() -> bytes:
@@ -360,15 +353,12 @@ class TestUnifiedImportPhase2Formats:
                 .filter(WeeklyMaterial.unit_id == unit.id)
                 .all()
             )
-            assert len(materials) == 3, (
-                f"expected 3 materials, got {len(materials)}"
-            )
+            assert len(materials) == 3, f"expected 3 materials, got {len(materials)}"
             # Every material in the mixed zip should have structured
             # content_json — no legacy plain-text fallback for any format
             for mat in materials:
                 assert mat.content_json is not None, (
-                    f"material '{mat.title}' has no content_json "
-                    "(should be structured)"
+                    f"material '{mat.title}' has no content_json (should be structured)"
                 )
                 assert mat.content_json.get("type") == "doc"
         finally:

@@ -128,7 +128,9 @@ async def parse_outline(
         delivery_mode=result.delivery_mode,
         teaching_pattern=result.teaching_pattern,
         learning_outcomes=[
-            OutlineULO(code=u.code, description=u.description, bloom_level=u.bloom_level)
+            OutlineULO(
+                code=u.code, description=u.description, bloom_level=u.bloom_level
+            )
             for u in result.learning_outcomes
         ],
         weekly_schedule=[
@@ -201,7 +203,12 @@ async def apply_outline(
     unit_metadata: dict[str, object] = {}
     if request.textbooks:
         unit_metadata["textbooks"] = [
-            {"title": t.title, "authors": t.authors, "isbn": t.isbn, "required": t.required}
+            {
+                "title": t.title,
+                "authors": t.authors,
+                "isbn": t.isbn,
+                "required": t.required,
+            }
             for t in request.textbooks
         ]
     kept_supplementary = [s for s in request.supplementary_info if s.keep]
@@ -275,7 +282,9 @@ async def apply_outline(
                 unit_id=str(unit.id),
                 week_number=week.week_number,
                 topic_title=week.topic,
-                learning_objectives=", ".join(week.activities) if week.activities else None,
+                learning_objectives=", ".join(week.activities)
+                if week.activities
+                else None,
                 created_by_id=str(current_user.id),
             )
         )

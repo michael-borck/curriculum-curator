@@ -118,8 +118,7 @@ class DocxPandocParser(MaterialParser):
                 )
             except subprocess.TimeoutExpired as exc:
                 msg = (
-                    f"Pandoc DOCX conversion timed out after "
-                    f"{_PANDOC_TIMEOUT_SECONDS}s"
+                    f"Pandoc DOCX conversion timed out after {_PANDOC_TIMEOUT_SECONDS}s"
                 )
                 raise RuntimeError(msg) from exc
 
@@ -166,9 +165,7 @@ class DocxPandocParser(MaterialParser):
                     )
 
         # Run the markdown through the md parser
-        md_result = await self._md_parser.parse(
-            markdown_text.encode("utf-8"), filename
-        )
+        md_result = await self._md_parser.parse(markdown_text.encode("utf-8"), filename)
 
         # Rewrite the image src in content_json from Pandoc's relative
         # media paths to the placeholder filenames the persistence layer
@@ -181,9 +178,7 @@ class DocxPandocParser(MaterialParser):
         # Drop any extracted images that weren't actually referenced —
         # avoids persisting orphan files
         used_keys = {k for k, used in src_rewrites_used.items() if used}
-        final_images = [
-            img for k, img in extracted_images.items() if k in used_keys
-        ]
+        final_images = [img for k, img in extracted_images.items() if k in used_keys]
 
         if extracted_images and len(final_images) < len(extracted_images):
             warnings.append(

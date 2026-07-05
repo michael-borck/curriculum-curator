@@ -179,12 +179,12 @@ async def test_fetch_youtube_transcript_api_error():
     mock_cls = MagicMock(return_value=mock_api_instance)
     with (
         patch.object(
-            __import__("app.services.transcript_service", fromlist=["YouTubeTranscriptApi"]),
+            __import__(
+                "app.services.transcript_service", fromlist=["YouTubeTranscriptApi"]
+            ),
             "YouTubeTranscriptApi",
             mock_cls,
         ),
         pytest.raises(ValueError, match="Could not fetch transcript"),
     ):
-        await fetch_youtube_transcript(
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        )
+        await fetch_youtube_transcript("https://www.youtube.com/watch?v=dQw4w9WgXcQ")

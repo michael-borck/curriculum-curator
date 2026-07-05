@@ -10,7 +10,9 @@ from app.core.security_settings import SecuritySettings
 
 def _load_common_passwords() -> set[str]:
     """Load common passwords from external file."""
-    passwords_file = Path(__file__).parent.parent.parent / "data" / "common_passwords.txt"
+    passwords_file = (
+        Path(__file__).parent.parent.parent / "data" / "common_passwords.txt"
+    )
     if passwords_file.exists():
         return {
             line.strip().lower()

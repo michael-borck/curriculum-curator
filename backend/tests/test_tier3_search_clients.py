@@ -343,11 +343,11 @@ async def test_router_uses_ddg_when_no_keys():
     with patch(
         "app.services.tier3_search_clients.DuckDuckGoClient.search",
         new_callable=AsyncMock,
-        return_value=[SearchResult(title="t", url="https://a.edu/x", source="duckduckgo")],
+        return_value=[
+            SearchResult(title="t", url="https://a.edu/x", source="duckduckgo")
+        ],
     ) as mock_ddg:
-        results, tier = await router.search(
-            "test", preferred_tier=3, user_settings={}
-        )
+        results, tier = await router.search("test", preferred_tier=3, user_settings={})
 
     assert tier == SearchTier.GENERAL_WEB
     assert len(results) == 1
@@ -372,7 +372,9 @@ async def test_router_falls_back_to_ddg_when_keyed_returns_empty():
             "app.services.tier3_search_clients.DuckDuckGoClient.search",
             new_callable=AsyncMock,
             return_value=[
-                SearchResult(title="t", url="https://fallback.edu/x", source="duckduckgo")
+                SearchResult(
+                    title="t", url="https://fallback.edu/x", source="duckduckgo"
+                )
             ],
         ) as mock_ddg,
     ):
@@ -437,7 +439,9 @@ async def test_router_prefers_keyed_provider_when_it_has_results():
         patch(
             "app.services.tier3_search_clients.BraveSearchClient.search",
             new_callable=AsyncMock,
-            return_value=[SearchResult(title="brave", url="https://brave.edu/x", source="brave")],
+            return_value=[
+                SearchResult(title="brave", url="https://brave.edu/x", source="brave")
+            ],
         ),
         patch(
             "app.services.tier3_search_clients.DuckDuckGoClient.search",

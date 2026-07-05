@@ -75,8 +75,4 @@ def split_at_slide_breaks(content_json: dict[str, Any]) -> list[dict[str, Any]]:
                 segments[i] = leading_notes + segments[i]
 
     # Filter empty segments and wrap as docs
-    return [
-        {"type": "doc", "content": seg}
-        for seg in segments
-        if seg
-    ]
+    return [{"type": "doc", "content": seg} for seg in segments if seg]

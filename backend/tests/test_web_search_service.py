@@ -188,7 +188,9 @@ async def test_search_sends_browser_headers():
         session.__aenter__ = AsyncMock(return_value=session)
         session.__aexit__ = AsyncMock(return_value=False)
 
-        def _get(_url: str, headers: dict[str, str] | None = None, **_kw: Any) -> MagicMock:
+        def _get(
+            _url: str, headers: dict[str, str] | None = None, **_kw: Any
+        ) -> MagicMock:
             captured_headers.append(headers or {})
             return response
 
@@ -219,7 +221,19 @@ async def test_search_retries_on_429_then_succeeds():
     responses = [
         _resp(429),
         _resp(429),
-        _resp(200, {"results": [{"title": "ok", "url": "https://a.edu/x", "content": "", "description": ""}]}),
+        _resp(
+            200,
+            {
+                "results": [
+                    {
+                        "title": "ok",
+                        "url": "https://a.edu/x",
+                        "content": "",
+                        "description": "",
+                    }
+                ]
+            },
+        ),
     ]
     cls = _session_class_mock(*responses)
 
@@ -247,7 +261,12 @@ async def test_search_falls_through_to_second_endpoint():
                 200,
                 {
                     "results": [
-                        {"title": "ok", "url": "https://b.edu/x", "content": "", "description": ""}
+                        {
+                            "title": "ok",
+                            "url": "https://b.edu/x",
+                            "content": "",
+                            "description": "",
+                        }
                     ]
                 },
             ),  # / succeeds
@@ -307,7 +326,10 @@ async def test_search_timeout_classified():
         session.get = MagicMock(side_effect=TimeoutError("slow"))
         return session
 
-    with patch("aiohttp.ClientSession", side_effect=_factory), pytest.raises(WebSearchError) as exc_info:
+    with (
+        patch("aiohttp.ClientSession", side_effect=_factory),
+        pytest.raises(WebSearchError) as exc_info,
+    ):
         await svc.search("test")
 
     assert "timed out" in str(exc_info.value).lower()
@@ -327,7 +349,10 @@ async def test_search_dns_error_classified():
         )
         return session
 
-    with patch("aiohttp.ClientSession", side_effect=_factory), pytest.raises(WebSearchError) as exc_info:
+    with (
+        patch("aiohttp.ClientSession", side_effect=_factory),
+        pytest.raises(WebSearchError) as exc_info,
+    ):
         await svc.search("test")
 
     assert "resolve" in str(exc_info.value).lower()
@@ -347,7 +372,10 @@ async def test_search_ssl_error_classified():
         )
         return session
 
-    with patch("aiohttp.ClientSession", side_effect=_factory), pytest.raises(WebSearchError) as exc_info:
+    with (
+        patch("aiohttp.ClientSession", side_effect=_factory),
+        pytest.raises(WebSearchError) as exc_info,
+    ):
         await svc.search("test")
 
     assert "ssl" in str(exc_info.value).lower()
@@ -375,9 +403,7 @@ async def test_rate_limit_sleeps_on_rapid_calls(monkeypatch: pytest.MonkeyPatch)
     async def _fake_sleep(seconds: float) -> None:
         sleep_calls.append(seconds)
 
-    monkeypatch.setattr(
-        "app.services.web_search_service.asyncio.sleep", _fake_sleep
-    )
+    monkeypatch.setattr("app.services.web_search_service.asyncio.sleep", _fake_sleep)
 
     await svc._rate_limit_searxng("http://searx.test")
 

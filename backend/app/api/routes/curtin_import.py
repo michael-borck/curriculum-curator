@@ -96,7 +96,9 @@ async def download_outline(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Outline download failed for %s", request.unit_code)
-        raise HTTPException(status_code=502, detail="Outline download failed — see server logs.") from exc
+        raise HTTPException(
+            status_code=502, detail="Outline download failed — see server logs."
+        ) from exc
 
     return Response(
         content=pdf_bytes,
@@ -148,7 +150,9 @@ async def build_course_archive(
         job.error_message = "Unexpected error"
         db.commit()
         logger.exception("Course build trigger failed for %s", request.course_name)
-        raise HTTPException(status_code=502, detail="Build trigger failed — see server logs.") from exc
+        raise HTTPException(
+            status_code=502, detail="Build trigger failed — see server logs."
+        ) from exc
 
     return CurtinJobResponse.model_validate(job)
 
@@ -211,7 +215,9 @@ async def download_course_archive(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Course archive download failed for job %s", job_id)
-        raise HTTPException(status_code=502, detail="Download failed — see server logs.") from exc
+        raise HTTPException(
+            status_code=502, detail="Download failed — see server logs."
+        ) from exc
 
     job.status = "downloaded"
     db.commit()

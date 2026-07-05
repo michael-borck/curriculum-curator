@@ -29,9 +29,7 @@ def _all_text(node: dict[str, Any]) -> str:
     if node.get("type") == "text":
         return str(node.get("text", ""))
     return "".join(
-        _all_text(child)
-        for child in node.get("content", [])
-        if isinstance(child, dict)
+        _all_text(child) for child in node.get("content", []) if isinstance(child, dict)
     )
 
 
@@ -120,9 +118,7 @@ class TestBasicMarkdown:
 
 class TestCodeBlocks:
     @pytest.mark.asyncio
-    async def test_fenced_code_with_language(
-        self, parser: MdStructuralParser
-    ) -> None:
+    async def test_fenced_code_with_language(self, parser: MdStructuralParser) -> None:
         md = b"```python\nprint('hi')\n```\n"
         result = await parser.parse(md, "code.md")
         cb = _find_first(result.content_json["content"], "codeBlock")
@@ -131,9 +127,7 @@ class TestCodeBlocks:
         assert "print('hi')" in _all_text(cb)
 
     @pytest.mark.asyncio
-    async def test_fenced_code_no_language(
-        self, parser: MdStructuralParser
-    ) -> None:
+    async def test_fenced_code_no_language(self, parser: MdStructuralParser) -> None:
         md = b"```\nplain code\n```\n"
         result = await parser.parse(md, "code.md")
         cb = _find_first(result.content_json["content"], "codeBlock")
@@ -199,9 +193,7 @@ Body 2
 
 class TestFrontMatter:
     @pytest.mark.asyncio
-    async def test_front_matter_stripped(
-        self, parser: MdStructuralParser
-    ) -> None:
+    async def test_front_matter_stripped(self, parser: MdStructuralParser) -> None:
         md = b"""---
 title: My Document
 author: Someone
@@ -213,9 +205,7 @@ Body content
 """
         result = await parser.parse(md, "fm.md")
         # The front-matter should not appear as content
-        all_text = "".join(
-            _all_text(n) for n in result.content_json["content"]
-        )
+        all_text = "".join(_all_text(n) for n in result.content_json["content"])
         assert "title:" not in all_text
         assert "author:" not in all_text
         # But the real content should
@@ -239,9 +229,7 @@ Body content
 
 class TestTitle:
     @pytest.mark.asyncio
-    async def test_title_from_first_heading(
-        self, parser: MdStructuralParser
-    ) -> None:
+    async def test_title_from_first_heading(self, parser: MdStructuralParser) -> None:
         md = b"# My Document\n\nBody"
         result = await parser.parse(md, "doc.md")
         assert result.title == "My Document"

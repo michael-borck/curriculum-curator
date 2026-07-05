@@ -318,9 +318,7 @@ class PptxStructuralParser(MaterialParser):
                 current_list["content"].append(
                     {
                         "type": "listItem",
-                        "content": [
-                            {"type": "paragraph", "content": text_nodes}
-                        ],
+                        "content": [{"type": "paragraph", "content": text_nodes}],
                     }
                 )
 
@@ -442,6 +440,5 @@ class PptxStructuralParser(MaterialParser):
         if node.get("type") == "text":
             return str(node.get("text", ""))
         return "".join(
-            PptxStructuralParser._node_text(child)
-            for child in node.get("content", [])
+            PptxStructuralParser._node_text(child) for child in node.get("content", [])
         )

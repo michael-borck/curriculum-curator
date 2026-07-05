@@ -233,7 +233,9 @@ class CrossRefSearchClient:
                 session.get(url, params=params) as response,
             ):
                 if response.status != 200:
-                    logger.warning("CrossRef search returned status %d", response.status)
+                    logger.warning(
+                        "CrossRef search returned status %d", response.status
+                    )
                     return []
 
                 data = await response.json()
@@ -265,7 +267,11 @@ class CrossRefSearchClient:
 
                     # Publication year
                     pub_year = None
-                    for date_key in ("published-print", "published-online", "published"):
+                    for date_key in (
+                        "published-print",
+                        "published-online",
+                        "published",
+                    ):
                         date_parts = item.get(date_key, {}).get("date-parts", [[]])
                         if date_parts and date_parts[0]:
                             pub_year = date_parts[0][0]
@@ -369,7 +375,9 @@ class CORESearchClient:
                     # Authors
                     authors: list[str] = []
                     for author in item.get("authors", [])[:5]:
-                        name = author.get("name") if isinstance(author, dict) else author
+                        name = (
+                            author.get("name") if isinstance(author, dict) else author
+                        )
                         if name:
                             authors.append(str(name))
 
@@ -428,9 +436,13 @@ class AcademicSearchService:
         # Build the list of coroutines to run
         tasks: list[asyncio.Task[list[AcademicWork]]] = []
 
-        tasks.append(asyncio.ensure_future(self.openalex.search_works(query, max_results)))
         tasks.append(
-            asyncio.ensure_future(self.semantic_scholar.search_papers(query, max_results))
+            asyncio.ensure_future(self.openalex.search_works(query, max_results))
+        )
+        tasks.append(
+            asyncio.ensure_future(
+                self.semantic_scholar.search_papers(query, max_results)
+            )
         )
         tasks.append(
             asyncio.ensure_future(self.crossref.search_works(query, max_results))

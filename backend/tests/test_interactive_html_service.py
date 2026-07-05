@@ -57,9 +57,7 @@ SCENARIO = [
         "left",
         title="Left path",
         content="A dead end.",
-        choices=[
-            {"id": "c3", "text": "Back", "targetCardId": "end", "feedback": ""}
-        ],
+        choices=[{"id": "c3", "text": "Back", "targetCardId": "end", "feedback": ""}],
     ),
     _card("end", card_type="ending", end_message="You made it.", end_score=10),
 ]

@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class CLOSetService:
-
     # ── CLO Sets ──────────────────────────────────────────────
 
     def create_clo_set(self, db: Session, user_id: UUID, data: CLOSetCreate) -> CLOSet:
@@ -145,9 +144,7 @@ class CLOSetService:
         ).scalar_one_or_none()
         if existing:
             return existing
-        assignment = UnitCLOSetAssignment(
-            unit_id=str(unit_id), clo_set_id=str(set_id)
-        )
+        assignment = UnitCLOSetAssignment(unit_id=str(unit_id), clo_set_id=str(set_id))
         db.add(assignment)
         db.commit()
         db.refresh(assignment)
@@ -187,9 +184,7 @@ class CLOSetService:
     ) -> list[ULOCLOItemMapping]:
         return list(
             db.execute(
-                select(ULOCLOItemMapping).where(
-                    ULOCLOItemMapping.ulo_id == str(ulo_id)
-                )
+                select(ULOCLOItemMapping).where(ULOCLOItemMapping.ulo_id == str(ulo_id))
             ).scalars()
         )
 
@@ -242,8 +237,7 @@ class CLOSetService:
             return []
 
         ulo_block = "\n".join(
-            f'- id:{u.id} {u.outcome_code or "ULO"}: {u.outcome_text}'
-            for u in ulos
+            f"- id:{u.id} {u.outcome_code or 'ULO'}: {u.outcome_text}" for u in ulos
         )
         clo_block = "\n".join(
             f"- id:{i.id} {i.code}: {i.description}" for i in clo_items

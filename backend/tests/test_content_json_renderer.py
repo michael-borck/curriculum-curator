@@ -60,7 +60,11 @@ class TestBasicNodes:
     def test_heading_levels(self) -> None:
         for level in range(1, 7):
             doc = _doc(
-                {"type": "heading", "attrs": {"level": level}, "content": [_text("Title")]}
+                {
+                    "type": "heading",
+                    "attrs": {"level": level},
+                    "content": [_text("Title")],
+                }
             )
             assert f"<h{level}>Title</h{level}>" in render_content_json(doc)
 
@@ -138,7 +142,11 @@ class TestBasicNodes:
         doc = _doc(
             {
                 "type": "image",
-                "attrs": {"src": "https://example.com/img.png", "alt": "A photo", "title": "My Image"},
+                "attrs": {
+                    "src": "https://example.com/img.png",
+                    "alt": "A photo",
+                    "title": "My Image",
+                },
             }
         )
         html = render_content_json(doc)
@@ -241,7 +249,12 @@ class TestTextMarks:
 
     def test_link(self) -> None:
         doc = _doc(
-            _p(_text("click here", [{"type": "link", "attrs": {"href": "https://example.com"}}]))
+            _p(
+                _text(
+                    "click here",
+                    [{"type": "link", "attrs": {"href": "https://example.com"}}],
+                )
+            )
         )
         html = render_content_json(doc)
         assert '<a href="https://example.com">click here</a>' in html
@@ -344,9 +357,7 @@ class TestNestedStructures:
                         "content": [
                             {
                                 "type": "tableCell",
-                                "content": [
-                                    _p(_text("bold text", [{"type": "bold"}]))
-                                ],
+                                "content": [_p(_text("bold text", [{"type": "bold"}]))],
                             },
                         ],
                     },
@@ -381,9 +392,7 @@ class TestSpeakerNotesRendering:
         doc = _doc(_speaker_notes(_p(_text("Remember the framing here."))))
         html = render_content_json(doc)
         assert html == (
-            '<aside data-type="speaker-notes">'
-            "<p>Remember the framing here.</p>"
-            "</aside>"
+            '<aside data-type="speaker-notes"><p>Remember the framing here.</p></aside>'
         )
 
     def test_pandoc_target_emits_fenced_div(self) -> None:
@@ -399,9 +408,7 @@ class TestSpeakerNotesRendering:
 
     def test_pandoc_target_renders_inner_marks(self) -> None:
         # Notes should support the same marks as body content
-        doc = _doc(
-            _speaker_notes(_p(_text("emphasise", [{"type": "bold"}])))
-        )
+        doc = _doc(_speaker_notes(_p(_text("emphasise", [{"type": "bold"}]))))
         out = render_content_json(doc, target="pandoc")
         assert "<strong>emphasise</strong>" in out
 
@@ -482,6 +489,7 @@ class TestStripSpeakerNotes:
             }
         )
         result = strip_speaker_notes(doc)
+
         # Walk the result tree manually to assert no speakerNotes anywhere
         def has_notes(nodes: list[dict[str, Any]]) -> bool:
             for node in nodes:

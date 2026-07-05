@@ -108,8 +108,12 @@ def parse_vtt(content: str) -> list[dict[str, Any]]:
         if m:
             _flush_cue(segments, current_start, current_end, text_lines)
             text_lines = []
-            current_start = _parse_timestamp(m.group(1), m.group(2), m.group(3), m.group(4))
-            current_end = _parse_timestamp(m.group(5), m.group(6), m.group(7), m.group(8))
+            current_start = _parse_timestamp(
+                m.group(1), m.group(2), m.group(3), m.group(4)
+            )
+            current_end = _parse_timestamp(
+                m.group(5), m.group(6), m.group(7), m.group(8)
+            )
             continue
 
         # Blank line = cue boundary

@@ -114,11 +114,13 @@ def record_login_failure(
         # Lock all records for this email (distributed brute force)
         db.query(LoginAttempt).filter(
             LoginAttempt.email == email,
-        ).update({
-            "is_locked": True,
-            "locked_until": datetime.now(UTC) + timedelta(minutes=30),
-            "lockout_reason": "Account locked due to excessive failed attempts from multiple sources",
-        })
+        ).update(
+            {
+                "is_locked": True,
+                "locked_until": datetime.now(UTC) + timedelta(minutes=30),
+                "lockout_reason": "Account locked due to excessive failed attempts from multiple sources",
+            }
+        )
         db.commit()
 
     return attempt

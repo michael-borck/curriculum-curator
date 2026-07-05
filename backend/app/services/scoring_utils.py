@@ -49,9 +49,7 @@ def shannon_diversity(items: list[str]) -> float:
     if num_types <= 1:
         return 0.0 if total <= 1 else 20.0
 
-    entropy = -sum(
-        (c / total) * math.log(c / total) for c in counts.values() if c > 0
-    )
+    entropy = -sum((c / total) * math.log(c / total) for c in counts.values() if c > 0)
     max_entropy = math.log(num_types)
     evenness = entropy / max_entropy if max_entropy > 0 else 0
     return round(evenness * 100.0, 2)

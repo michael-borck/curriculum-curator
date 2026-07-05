@@ -126,7 +126,9 @@ def create_refresh_token(user_id: str, client_ip: str | None = None) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def decode_access_token(token: str, verify_ip: str | None = None) -> dict[str, Any] | None:
+def decode_access_token(
+    token: str, verify_ip: str | None = None
+) -> dict[str, Any] | None:
     """
     Decode and verify a JWT access token with enhanced security checks.
 

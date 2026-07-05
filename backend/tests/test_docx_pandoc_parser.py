@@ -44,9 +44,7 @@ def _all_text(node: dict[str, Any]) -> str:
     if node.get("type") == "text":
         return str(node.get("text", ""))
     return "".join(
-        _all_text(child)
-        for child in node.get("content", [])
-        if isinstance(child, dict)
+        _all_text(child) for child in node.get("content", []) if isinstance(child, dict)
     )
 
 
@@ -140,9 +138,7 @@ class TestDocxBasic:
         assert result.title == "My Title"
 
     @pytest.mark.asyncio
-    async def test_title_falls_back_to_filename(
-        self, parser: DocxPandocParser
-    ) -> None:
+    async def test_title_falls_back_to_filename(self, parser: DocxPandocParser) -> None:
         # Doc with no headings
         doc = Document()
         doc.add_paragraph("Just a paragraph, no heading.")
@@ -152,9 +148,7 @@ class TestDocxBasic:
 
 class TestDocxLists:
     @pytest.mark.asyncio
-    async def test_bullet_and_numbered_lists(
-        self, parser: DocxPandocParser
-    ) -> None:
+    async def test_bullet_and_numbered_lists(self, parser: DocxPandocParser) -> None:
         result = await parser.parse(_doc_with_lists(), "lists.docx")
         # At least one list should be present (Pandoc converts Word
         # bullet/number styles to markdown lists)
@@ -165,9 +159,7 @@ class TestDocxLists:
         ]
         assert len(bullet_or_ordered) > 0
         # Bullet text should appear somewhere
-        all_text = "".join(
-            _all_text(n) for n in result.content_json["content"]
-        )
+        all_text = "".join(_all_text(n) for n in result.content_json["content"])
         assert "First bullet" in all_text
         assert "First number" in all_text
 

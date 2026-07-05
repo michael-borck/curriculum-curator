@@ -51,9 +51,7 @@ class TestConvert:
                 StructuredBlock(kind="ordered_list", items=["1", "2"]),
             ]
         )
-        content, headings, lists, paragraphs = (
-            structured_document_to_content_json(doc)
-        )
+        content, headings, lists, paragraphs = structured_document_to_content_json(doc)
         types = [n["type"] for n in content["content"]]
         assert types == ["heading", "paragraph", "bulletList", "orderedList"]
         assert content["content"][0]["attrs"]["level"] == 1
@@ -77,9 +75,7 @@ class TestConvert:
                 StructuredBlock(kind="paragraph", text="real"),
             ]
         )
-        _content, headings, lists, paragraphs = (
-            structured_document_to_content_json(doc)
-        )
+        _content, headings, lists, paragraphs = structured_document_to_content_json(doc)
         assert headings == 0
         assert lists == 0
         assert paragraphs == 1

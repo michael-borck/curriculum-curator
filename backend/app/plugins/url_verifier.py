@@ -311,7 +311,9 @@ class URLVerifier(ValidatorPlugin):
 
         return None, None
 
-    def _handle_suspicious_url(self, url: str, result: dict[str, Any]) -> tuple[str, str]:
+    def _handle_suspicious_url(
+        self, url: str, result: dict[str, Any]
+    ) -> tuple[str, str]:
         """Handle suspicious URL."""
         issue = f"Suspicious URL pattern: {url[:100]}..."
         suggestion = (
@@ -319,7 +321,9 @@ class URLVerifier(ValidatorPlugin):
         )
         return issue, suggestion
 
-    def _handle_bot_blocked_url(self, url: str, result: dict[str, Any]) -> tuple[str, str]:
+    def _handle_bot_blocked_url(
+        self, url: str, result: dict[str, Any]
+    ) -> tuple[str, str]:
         """Handle bot-blocked URL."""
         issue = f"Bot detection: {url[:100]}... - {result['error']}"
 
@@ -377,7 +381,9 @@ class URLVerifier(ValidatorPlugin):
         # Default case
         return (f"Invalid URL: {url[:100]}... - {error}", "Verify and correct this URL")
 
-    def _handle_redirect(self, url: str, result: dict[str, Any]) -> tuple[str | None, str | None]:
+    def _handle_redirect(
+        self, url: str, result: dict[str, Any]
+    ) -> tuple[str | None, str | None]:
         """Handle URL redirect."""
         redirect_url = result["redirect_url"]
 

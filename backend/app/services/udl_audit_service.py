@@ -173,7 +173,9 @@ class UDLAuditService:
     ) -> UDLAuditAISuggestionsResponse:
         """Generate AI improvement suggestions for all needs_work checkpoints."""
         responses = self.get_responses(db, unit_id, profile_id, assessment_id)
-        needs_work_ids = [r.checkpoint_id for r in responses if r.response == "needs_work"]
+        needs_work_ids = [
+            r.checkpoint_id for r in responses if r.response == "needs_work"
+        ]
 
         if not needs_work_ids:
             return UDLAuditAISuggestionsResponse(
@@ -193,7 +195,9 @@ class UDLAuditService:
         }
 
         profile = _profile_by_id(profile_id)
-        profile_checkpoints = {cp["checkpointId"]: cp for cp in (profile or {}).get("checkpoints", [])}
+        profile_checkpoints = {
+            cp["checkpointId"]: cp for cp in (profile or {}).get("checkpoints", [])
+        }
 
         unit = db.query(Unit).filter(Unit.id == str(unit_id)).first()
         unit_context = f"Unit: {unit.title}" if unit else "Unknown unit"
@@ -237,9 +241,7 @@ class UDLAuditService:
                     raw = raw[4:]
             items = json.loads(raw)
             suggestions = [
-                UDLAuditAISuggestion(**item)
-                for item in items
-                if isinstance(item, dict)
+                UDLAuditAISuggestion(**item) for item in items if isinstance(item, dict)
             ]
         except Exception:
             logger.exception("UDL audit AI suggestion failed")

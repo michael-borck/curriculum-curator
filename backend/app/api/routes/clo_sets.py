@@ -212,9 +212,7 @@ async def set_ulo_clo_mappings(
     )
 
 
-@router.post(
-    "/units/{unit_id}/clo-suggestions", response_model=CLOSuggestionsResponse
-)
+@router.post("/units/{unit_id}/clo-suggestions", response_model=CLOSuggestionsResponse)
 async def suggest_clo_mappings(
     unit_id: UUID,
     db: Session = Depends(deps.get_db),

@@ -620,9 +620,7 @@ class AnalyticsService:
         workload_balance = balance_score(weekly_durations)
 
         # 5. Material Diversity: Shannon index on type distribution
-        material_diversity = shannon_diversity(
-            [str(m.type) for m in materials]
-        )
+        material_diversity = shannon_diversity([str(m.type) for m in materials])
 
         # 6. Assessment Distribution: spread of due_week across semester
         due_weeks = [a.due_week for a in assessments if a.due_week is not None]
@@ -701,9 +699,7 @@ class AnalyticsService:
                 continue
 
             material_count = len(week_materials)
-            type_diversity = shannon_diversity(
-                [str(m.type) for m in week_materials]
-            )
+            type_diversity = shannon_diversity([str(m.type) for m in week_materials])
             scored: list[int] = [
                 int(qs)
                 for m in week_materials
@@ -769,9 +765,7 @@ class AnalyticsService:
 
                 # Weeks with content
                 weeks_with_content: int = (
-                    db.query(
-                        func.count(func.distinct(WeeklyMaterial.week_number))
-                    )
+                    db.query(func.count(func.distinct(WeeklyMaterial.week_number)))
                     .filter(WeeklyMaterial.unit_id == uid)
                     .scalar()
                 ) or 0
@@ -782,9 +776,7 @@ class AnalyticsService:
                     "weeks_with_content": weeks_with_content,
                 }
             except Exception:
-                logger.warning(
-                    "Failed to calculate dashboard metrics for unit %s", uid
-                )
+                logger.warning("Failed to calculate dashboard metrics for unit %s", uid)
                 result[str(uid)] = {
                     "quality_stars": 0.0,
                     "udl_stars": 0.0,
@@ -991,7 +983,6 @@ class AnalyticsService:
         mean = sum(durations) / len(durations)
         variance = sum((x - mean) ** 2 for x in durations) / len(durations)
         return variance / (mean**2) if mean > 0 else 0.0
-
 
 
 # Create singleton instance

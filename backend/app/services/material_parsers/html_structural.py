@@ -120,9 +120,7 @@ class HtmlStructuralParser(MaterialParser):
 
         # Fallback title from first heading
         if doc_title is None:
-            first_heading = next(
-                (n for n in nodes if n.get("type") == "heading"), None
-            )
+            first_heading = next((n for n in nodes if n.get("type") == "heading"), None)
             if first_heading:
                 doc_title = self._node_text(first_heading)
 
@@ -207,12 +205,26 @@ class HtmlStructuralParser(MaterialParser):
             return [{"type": "paragraph", "content": inline}]
 
         if tag_name == "ul":
-            return [self._list_to_node(element, ordered=False, warnings=warnings,
-                                       images=images, image_counter=image_counter)]
+            return [
+                self._list_to_node(
+                    element,
+                    ordered=False,
+                    warnings=warnings,
+                    images=images,
+                    image_counter=image_counter,
+                )
+            ]
 
         if tag_name == "ol":
-            return [self._list_to_node(element, ordered=True, warnings=warnings,
-                                       images=images, image_counter=image_counter)]
+            return [
+                self._list_to_node(
+                    element,
+                    ordered=True,
+                    warnings=warnings,
+                    images=images,
+                    image_counter=image_counter,
+                )
+            ]
 
         if tag_name == "blockquote":
             inner = self._walk_block_children(

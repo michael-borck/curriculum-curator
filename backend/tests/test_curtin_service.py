@@ -11,7 +11,11 @@ from app.main import app
 from app.models.curtin_job import CurtinExportJob
 from app.models.user import User
 from app.schemas.curtin import CurtinSettings
-from app.services.curtin_service import CurtinServiceError, NotReadyError, _forgerock_login
+from app.services.curtin_service import (
+    CurtinServiceError,
+    NotReadyError,
+    _forgerock_login,
+)
 
 client = TestClient(app)
 
@@ -61,7 +65,9 @@ def test_forgerock_login_raises_on_username_field_not_found() -> None:
     mock_page.wait_for_selector.side_effect = PlaywrightTimeout("timeout")
 
     with pytest.raises(CurtinServiceError, match="Could not find SSO username field"):
-        _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+        _forgerock_login(
+            mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass"
+        )
 
 
 def test_forgerock_login_raises_on_wrong_redirect() -> None:
@@ -71,7 +77,9 @@ def test_forgerock_login_raises_on_wrong_redirect() -> None:
     mock_page.url = "https://unexpected-domain.com/error"
 
     with pytest.raises(CurtinServiceError, match="Login may have failed"):
-        _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+        _forgerock_login(
+            mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass"
+        )
 
 
 def test_forgerock_login_succeeds() -> None:
@@ -80,7 +88,9 @@ def test_forgerock_login_succeeds() -> None:
     mock_page.wait_for_selector.return_value = None
     mock_page.url = "https://litec.curtin.edu.au/outline.cfm"
 
-    _forgerock_login(mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass")
+    _forgerock_login(
+        mock_page, "https://litec.curtin.edu.au/outline.cfm", "user", "pass"
+    )
 
     mock_page.goto.assert_called_once_with(
         "https://litec.curtin.edu.au/outline.cfm",
@@ -94,7 +104,9 @@ def test_forgerock_login_succeeds() -> None:
 # ── Route tests ───────────────────────────────────────────────────────────────
 
 
-def test_get_curtin_settings_returns_defaults(test_db: Session, test_user: User) -> None:
+def test_get_curtin_settings_returns_defaults(
+    test_db: Session, test_user: User
+) -> None:
     """GET /api/curtin/settings returns defaults when no curtin prefs stored."""
     _override_deps(test_db, test_user)
     try:
@@ -130,7 +142,9 @@ def test_put_curtin_settings_persists(test_db: Session, test_user: User) -> None
         _clear_deps()
 
 
-def test_outline_download_rejects_missing_credentials(test_db: Session, test_user: User) -> None:
+def test_outline_download_rejects_missing_credentials(
+    test_db: Session, test_user: User
+) -> None:
     """POST /api/curtin/outline/download returns 400 when no credentials set."""
     _override_deps(test_db, test_user)
     try:
@@ -141,7 +155,9 @@ def test_outline_download_rejects_missing_credentials(test_db: Session, test_use
         _clear_deps()
 
 
-def test_course_build_rejects_missing_credentials(test_db: Session, test_user: User) -> None:
+def test_course_build_rejects_missing_credentials(
+    test_db: Session, test_user: User
+) -> None:
     """POST /api/curtin/course/build returns 400 when no credentials set."""
     _override_deps(test_db, test_user)
     try:
@@ -161,7 +177,9 @@ def test_not_ready_error_is_curtin_service_error_subclass() -> None:
     assert isinstance(err, RuntimeError)
 
 
-def test_course_download_returns_409_when_not_ready(test_db: Session, test_user: User) -> None:
+def test_course_download_returns_409_when_not_ready(
+    test_db: Session, test_user: User
+) -> None:
     """POST /api/curtin/course/download/{job_id} returns 409 when archive not ready."""
     from app.models.curtin_job import CurtinExportJob
 

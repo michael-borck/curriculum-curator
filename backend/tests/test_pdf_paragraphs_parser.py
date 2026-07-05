@@ -58,9 +58,7 @@ def _all_text(node: dict[str, Any]) -> str:
     if node.get("type") == "text":
         return str(node.get("text", ""))
     return "".join(
-        _all_text(child)
-        for child in node.get("content", [])
-        if isinstance(child, dict)
+        _all_text(child) for child in node.get("content", []) if isinstance(child, dict)
     )
 
 
@@ -79,9 +77,7 @@ class TestPdfBasic:
         assert result.parser_used == "pdf_paragraphs"
         assert result.content_json["type"] == "doc"
         # The parser should produce at least one paragraph containing the text
-        all_text = "".join(
-            _all_text(n) for n in result.content_json["content"]
-        )
+        all_text = "".join(_all_text(n) for n in result.content_json["content"])
         assert "Hello world" in all_text
 
     @pytest.mark.asyncio
@@ -115,9 +111,7 @@ class TestPdfBasic:
 
 class TestPdfTitle:
     @pytest.mark.asyncio
-    async def test_title_from_pdf_metadata(
-        self, parser: PdfParagraphsParser
-    ) -> None:
+    async def test_title_from_pdf_metadata(self, parser: PdfParagraphsParser) -> None:
         result = await parser.parse(
             _build_pdf(["Body content"], title="My PDF Title"),
             "doc.pdf",
@@ -166,9 +160,7 @@ class TestPdfWarnings:
         assert "structure" in first_warning.lower()
 
     @pytest.mark.asyncio
-    async def test_no_images_extracted(
-        self, parser: PdfParagraphsParser
-    ) -> None:
+    async def test_no_images_extracted(self, parser: PdfParagraphsParser) -> None:
         # v1 doesn't extract PDF images — confirmed by the empty list
         result = await parser.parse(_build_pdf(["text"]), "doc.pdf")
         assert result.images == []

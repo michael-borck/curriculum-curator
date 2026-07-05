@@ -148,7 +148,9 @@ def _trigger_build_sync(
             label = targets[0]["name"]
             status = results.get(label, "unknown")
             if status != "queued":
-                raise CurtinServiceError(f"Build trigger failed for '{label}': {status}")
+                raise CurtinServiceError(
+                    f"Build trigger failed for '{label}': {status}"
+                )
         finally:
             browser.close()
 
@@ -160,7 +162,9 @@ async def trigger_course_build(
     bb_url: str,
 ) -> None:
     """Async entry point — triggers the Blackboard export in a thread."""
-    await asyncio.to_thread(_trigger_build_sync, course_name, username, password, bb_url)
+    await asyncio.to_thread(
+        _trigger_build_sync, course_name, username, password, bb_url
+    )
 
 
 def _download_archive_sync(
@@ -202,8 +206,7 @@ def _download_archive_sync(
                         f"Archive download failed for '{label}': {status}"
                     )
                 files = [
-                    f for f in Path(tmpdir).iterdir()
-                    if f.suffix in (".zip", ".imscc")
+                    f for f in Path(tmpdir).iterdir() if f.suffix in (".zip", ".imscc")
                 ]
                 if not files:
                     raise NotReadyError("Archive not ready yet")

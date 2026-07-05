@@ -102,9 +102,7 @@ class SearchRouter:
         if tier == SearchTier.ACADEMIC:
             results = await self._search_academic(query, max_results, user_settings)
         elif tier == SearchTier.GENERAL_WEB:
-            results = await self._search_tier3(
-                query, max_results, user_settings or {}
-            )
+            results = await self._search_tier3(query, max_results, user_settings or {})
         elif tier == SearchTier.SEARXNG:
             results = await self._search_searxng(query, max_results)
         else:

@@ -172,12 +172,10 @@ class TestSpeakerNotesAttachment:
         assert seg1_types == ["paragraph", "speakerNotes", "speakerNotes"]
         # Order preserved
         assert (
-            result[0]["content"][1]["content"][0]["content"][0]["text"]
-            == "First note"
+            result[0]["content"][1]["content"][0]["content"][0]["text"] == "First note"
         )
         assert (
-            result[0]["content"][2]["content"][0]["content"][0]["text"]
-            == "Second note"
+            result[0]["content"][2]["content"][0]["content"][0]["text"] == "Second note"
         )
 
     def test_notes_after_leading_break_become_first_slide(self) -> None:

@@ -563,8 +563,12 @@ class TestRubricValidation:
                 RubricLevel(label="Good", points=3),
             ],
             criteria=[
-                RubricCriterion(name="Analysis", description="", weight=50, cells=["A", "B"]),
-                RubricCriterion(name="Writing", description="", weight=50, cells=["C", "D"]),
+                RubricCriterion(
+                    name="Analysis", description="", weight=50, cells=["A", "B"]
+                ),
+                RubricCriterion(
+                    name="Writing", description="", weight=50, cells=["C", "D"]
+                ),
             ],
             total_points=100,
         )
@@ -580,7 +584,9 @@ class TestRubricValidation:
                     RubricLevel(label="Good", points=3),
                 ],
                 criteria=[
-                    RubricCriterion(name="Analysis", description="", weight=100, cells=["A"]),
+                    RubricCriterion(
+                        name="Analysis", description="", weight=100, cells=["A"]
+                    ),
                 ],
                 total_points=100,
             )
@@ -601,7 +607,9 @@ class TestRubricValidation:
         rubric = Rubric(
             type=RubricType.HOLISTIC,
             levels=[
-                RubricLevel(label="Excellent", points=4, description="Outstanding work"),
+                RubricLevel(
+                    label="Excellent", points=4, description="Outstanding work"
+                ),
                 RubricLevel(label="Good", points=3, description="Solid work"),
             ],
             criteria=[],
@@ -635,8 +643,15 @@ class TestRubricValidation:
             type=RubricType.SINGLE_POINT,
             levels=[RubricLevel(label="Proficient", points=None)],
             criteria=[
-                RubricCriterion(name="Analysis", description="", weight=50, cells=["Meets expectations"]),
-                RubricCriterion(name="Writing", description="", weight=50, cells=["Clear prose"]),
+                RubricCriterion(
+                    name="Analysis",
+                    description="",
+                    weight=50,
+                    cells=["Meets expectations"],
+                ),
+                RubricCriterion(
+                    name="Writing", description="", weight=50, cells=["Clear prose"]
+                ),
             ],
             total_points=100,
         )
@@ -650,8 +665,12 @@ class TestRubricValidation:
                 RubricLevel(label="Not Met", points=0),
             ],
             criteria=[
-                RubricCriterion(name="Submitted on time", description="", weight=0, cells=[]),
-                RubricCriterion(name="Includes references", description="", weight=0, cells=[]),
+                RubricCriterion(
+                    name="Submitted on time", description="", weight=0, cells=[]
+                ),
+                RubricCriterion(
+                    name="Includes references", description="", weight=0, cells=[]
+                ),
             ],
             total_points=100,
         )
@@ -742,7 +761,9 @@ class TestRubricCRUD:
             total_points=100,
         )
         update_data = AssessmentUpdate(rubric=rubric_v2)
-        updated = await service.update_assessment(test_db, _uid(created.id), update_data)
+        updated = await service.update_assessment(
+            test_db, _uid(created.id), update_data
+        )
 
         assert updated is not None
         assert updated.rubric is not None
