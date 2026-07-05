@@ -211,7 +211,7 @@ const AppLayout = ({ onLogout }: AppLayoutProps) => {
                 My Learning Programs
               </span>
               <button
-                onClick={() => navigate('/units/new')}
+                onClick={() => navigate('/dashboard?new=1')}
                 className='p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded'
                 title='Create New Learning Program'
               >

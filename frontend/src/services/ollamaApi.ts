@@ -3,6 +3,7 @@
  */
 
 import api from './api';
+import { API_ORIGIN } from './apiBase';
 import type {
   OllamaStatus,
   OllamaRecommendation,
@@ -35,7 +36,7 @@ class OllamaApiService {
     const token = localStorage.getItem('token');
 
     window
-      .fetch('/api/ollama/pull', {
+      .fetch(`${API_ORIGIN}/api/ollama/pull`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

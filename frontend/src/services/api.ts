@@ -8,9 +8,7 @@ import type {
   VisualPromptRequest,
   VisualPromptResponse,
 } from '../types/index';
-
-// Same origin - backend serves both API and frontend
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from './apiBase';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

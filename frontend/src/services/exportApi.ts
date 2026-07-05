@@ -4,6 +4,8 @@
 
 import axios from 'axios';
 
+import { API_ORIGIN } from './apiBase';
+
 // ─── Types ───────────────────────────────────────────────────────────
 
 export interface ExportTargetWarning {
@@ -50,7 +52,7 @@ export async function fetchExportPreview(
   unitId: string
 ): Promise<ExportPreviewResponse> {
   const { data } = await axios.get<ExportPreviewResponse>(
-    `/api/units/${unitId}/export/preview`,
+    `${API_ORIGIN}/api/units/${unitId}/export/preview`,
     { headers: getAuthHeaders() }
   );
   return data;
@@ -60,7 +62,7 @@ export async function fetchMaterialExportPreview(
   materialId: string
 ): Promise<MaterialExportPreview> {
   const { data } = await axios.get<MaterialExportPreview>(
-    `/api/materials/${materialId}/export/preview`,
+    `${API_ORIGIN}/api/materials/${materialId}/export/preview`,
     { headers: getAuthHeaders() }
   );
   return data;
@@ -75,7 +77,7 @@ export async function startPackageExport(
   request: ExportPackageRequest
 ): Promise<string> {
   const { data } = await axios.post<{ taskId: string }>(
-    `/api/units/${unitId}/export/package`,
+    `${API_ORIGIN}/api/units/${unitId}/export/package`,
     request,
     {
       headers: {

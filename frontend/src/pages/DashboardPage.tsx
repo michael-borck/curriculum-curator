@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   BookOpen,
@@ -222,6 +222,7 @@ const contentTypeCards: { value: string; label: string; icon: LucideIcon }[] = [
 
 const DashboardPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const confirm = useConfirmDialog();
   const createModal = useModal();
   const quickCreateModal = useModal();
@@ -648,6 +649,16 @@ const DashboardPage = () => {
     resetForm();
     createModal.open();
   };
+
+  // Open the create-unit modal when arriving via the sidebar "+" (?new=1),
+  // then strip the param so a refresh doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get('new') !== null) {
+      openCreateModal();
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const deleteUnit = async (unitId: string, e: React.MouseEvent) => {
     e.stopPropagation();

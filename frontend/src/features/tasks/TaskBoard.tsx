@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { MoreVertical, Calendar, User, Flag, X } from 'lucide-react';
 import api from '../../services/api';
 
@@ -64,6 +65,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, designId }) => {
       }
     } catch (error) {
       console.error('Failed to fetch task lists:', error);
+      toast.error('Could not load task lists. Please refresh to try again.');
     } finally {
       setLoading(false);
     }
@@ -89,6 +91,7 @@ const TaskBoard: React.FC<TaskBoardProps> = ({ unitId, designId }) => {
       );
     } catch (error) {
       console.error('Failed to update task:', error);
+      toast.error('Could not update the task. Please try again.');
     }
   };
 

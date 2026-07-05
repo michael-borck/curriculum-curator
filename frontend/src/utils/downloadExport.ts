@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import { API_ORIGIN } from '../services/apiBase';
+
 /**
  * Downloads an export file from the backend and triggers a browser download.
  * Returns the filename for use in toast messages.
@@ -16,7 +18,7 @@ export async function downloadExport(
       : '';
 
   const response = await axios.get(
-    `/api/units/${unitId}/export/${format}${lmsParam}`,
+    `${API_ORIGIN}/api/units/${unitId}/export/${format}${lmsParam}`,
     {
       responseType: 'blob',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -59,7 +61,7 @@ export async function downloadMaterialExport(
   const token = localStorage.getItem('token');
 
   const response = await axios.get(
-    `/api/materials/${materialId}/export/${format}`,
+    `${API_ORIGIN}/api/materials/${materialId}/export/${format}`,
     {
       responseType: 'blob',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -94,7 +96,7 @@ export async function downloadMaterialsExport(
   const token = localStorage.getItem('token');
 
   const response = await axios.get(
-    `/api/units/${unitId}/export/materials?format=${format}`,
+    `${API_ORIGIN}/api/units/${unitId}/export/materials?format=${format}`,
     {
       responseType: 'blob',
       headers: token ? { Authorization: `Bearer ${token}` } : {},

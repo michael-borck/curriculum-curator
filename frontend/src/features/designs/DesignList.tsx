@@ -13,6 +13,7 @@ import {
   Copy,
   Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useConfirmDialog } from '../../components/ui';
 
@@ -74,6 +75,7 @@ const DesignList = () => {
       fetchData();
     } catch (error) {
       console.error('Error submitting for review:', error);
+      toast.error('Could not submit for review. Please try again.');
     }
   };
 
@@ -85,6 +87,7 @@ const DesignList = () => {
       }
     } catch (error) {
       console.error('Error generating tasks:', error);
+      toast.error('Could not generate tasks. Please try again.');
     }
   };
 
@@ -100,8 +103,10 @@ const DesignList = () => {
     try {
       await api.delete(`/designs/${designId}`);
       fetchData();
+      toast.success('Learning design deleted.');
     } catch (error) {
       console.error('Error deleting learning design:', error);
+      toast.error('Could not delete the learning design. Please try again.');
     }
   };
 
@@ -111,6 +116,7 @@ const DesignList = () => {
       navigate(`/units/${unitId}/designs/${response.data.id}/edit`);
     } catch (error) {
       console.error('Error cloning learning design:', error);
+      toast.error('Could not clone the learning design. Please try again.');
     }
   };
 

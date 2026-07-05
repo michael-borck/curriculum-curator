@@ -4,6 +4,8 @@
  * Provides SSE streaming, polling fallback, and download helpers.
  */
 
+import { API_ORIGIN } from './apiBase';
+
 // ─── Types ───────────────────────────────────────────────────────────
 
 export interface TaskStatus {
@@ -29,7 +31,7 @@ const getAuthHeaders = (): Record<string, string> => {
 // ─── Poll ────────────────────────────────────────────────────────────
 
 export async function getTaskStatus(taskId: string): Promise<TaskStatus> {
-  const resp = await window.fetch(`/api/bg-tasks/${taskId}`, {
+  const resp = await window.fetch(`${API_ORIGIN}/api/bg-tasks/${taskId}`, {
     headers: getAuthHeaders(),
   });
   if (!resp.ok) throw new Error(`Task not found (${resp.status})`);
@@ -47,10 +49,13 @@ export function streamTaskProgress(
 
   void (async () => {
     try {
-      const resp = await window.fetch(`/api/bg-tasks/${taskId}/events`, {
-        headers: getAuthHeaders(),
-        signal: controller.signal,
-      });
+      const resp = await window.fetch(
+        `${API_ORIGIN}/api/bg-tasks/${taskId}/events`,
+        {
+          headers: getAuthHeaders(),
+          signal: controller.signal,
+        }
+      );
       if (!resp.ok) {
         onError(`SSE connection failed (${resp.status})`);
         return;
@@ -100,9 +105,12 @@ export function streamTaskProgress(
 // ─── Download ────────────────────────────────────────────────────────
 
 export async function downloadTaskResult(taskId: string): Promise<string> {
-  const resp = await window.fetch(`/api/bg-tasks/${taskId}/download`, {
-    headers: getAuthHeaders(),
-  });
+  const resp = await window.fetch(
+    `${API_ORIGIN}/api/bg-tasks/${taskId}/download`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
   if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
 
   const disposition = resp.headers.get('content-disposition');
