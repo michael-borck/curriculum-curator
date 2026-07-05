@@ -92,11 +92,9 @@ npm run test:ui          # Run tests with UI interface
 - 🇺🇸 USA: Program → Course → Class
 - 🇦🇺 AUS: Course → Unit → Class
 
-### Legacy Code - DEPRECATED
-- `/api/courses` endpoints exist for backwards compatibility ONLY
-- They are aliases that create `Unit` objects underneath
-- **TODO**: Remove these endpoints (safe since no production users)
-- Use `/api/units` endpoints instead
+### Legacy Code
+- The old `/api/courses` alias endpoints have been removed. Use `/api/units`.
+- The frontend keeps a `/courses` → `/units` route redirect for old bookmarks.
 
 ## Architecture Overview
 
@@ -152,10 +150,12 @@ npm run test:ui          # Run tests with UI interface
 ### Authentication
 - `backend/app/core/security.py` - JWT utilities
 - `backend/app/api/routes/auth.py` - Auth endpoints
-- `frontend/src/stores/authStore.js` - Authentication state
+- `frontend/src/stores/authStore.ts` - Authentication state
 
 ### API Integration
-- `frontend/src/services/api.js` - Axios client with JWT interceptors
+- `frontend/src/services/api.ts` - Axios client with JWT interceptors
+- `frontend/src/services/apiBase.ts` - Single source of truth for the API base URL
+  (relative `/api` on web; absolute localhost for the Electron `file://` renderer)
 - `backend/app/api/deps.py` - FastAPI dependency injection
 
 ## Environment Variables
@@ -190,18 +190,24 @@ VITE_ENABLE_AI_FEATURES=true
 ## Development Status
 
 ### Implemented ✅
-- Core API structure with authentication
-- LLM integration with streaming
-- React frontend with routing
-- Rich text editing capabilities
+- Core API structure with JWT authentication (lockout, revocation, IP-binding)
+- Full SQLAlchemy data model (33 model modules: units, materials, outcomes,
+  assessments, designs, accreditation, research, etc.)
+- LLM integration with streaming (OpenAI/Anthropic/Gemini/Ollama via litellm)
+- Import/export pipelines (docx/pdf/pptx import; H5P/SCORM/IMSCC/QTI export)
+- Git-versioned per-unit content storage
+- React + TypeScript frontend with routing and rich text editing
 - Pedagogy-aware content generation
+- Backend test suite (~1150 pytest tests against real in-memory SQLite)
+- Playwright e2e suite (21 specs)
+- Electron desktop edition (bundled PyInstaller backend + pandoc/typst)
+- Docker + docker-compose deployment
 
-### Missing 🔄
-- Database models and relationships (SQLAlchemy models are empty)
-- Plugin validators/remediators (base classes exist, implementations needed) 
-- File upload processing (endpoints exist, processing incomplete)
-- Test suites (pytest configured but tests not written, npm test for frontend not implemented)
-- Production deployment configuration (Docker setup mentioned in README)
+### Missing / In progress 🔄
+- Frontend UI-level tests (stores/utils covered; pages/features largely untested)
+- CI running lint/type-check/pytest/Playwright (only Docker/desktop packaging is automated)
+- Encryption at rest for stored LLM API keys (currently plaintext in SQLite)
+- Move JWT off localStorage to httpOnly cookies (documented in authStore.ts)
 
 ### Future Enhancements 🚀
 - **Admin Dashboard**: Configuration interface for system settings
