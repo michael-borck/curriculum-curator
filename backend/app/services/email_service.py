@@ -2,10 +2,13 @@
 Email service using raw smtplib for maximum compatibility.
 """
 
+import json
 import secrets
 import smtplib
 import string
 import traceback
+import urllib.error
+import urllib.request
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
@@ -48,6 +51,7 @@ class EmailService:
             "sendgrid": EmailProvider.SENDGRID,
             "mailgun": EmailProvider.MAILGUN,
             "postmark": EmailProvider.POSTMARK,
+            "resend": EmailProvider.RESEND,
             "dev": EmailProvider.DEV_MODE,
         }
 
@@ -72,6 +76,7 @@ class EmailService:
             mailgun_api_key=settings.MAILGUN_API_KEY,
             mailgun_domain=settings.MAILGUN_DOMAIN,
             postmark_server_token=settings.POSTMARK_SERVER_TOKEN,
+            resend_api_key=settings.RESEND_API_KEY,
             # Development/Testing
             dev_mode=settings.EMAIL_DEV_MODE,
             test_recipient=settings.TEST_EMAIL_RECIPIENT,
@@ -121,6 +126,62 @@ class EmailService:
         server.send_message(msg)
         server.quit()
         return True
+
+    def _deliver(
+        self, *, subject: str, recipient: str, html_body: str, text_body: str
+    ) -> bool:
+        """Send via the configured transport: Resend HTTP API or raw SMTP."""
+        if self.smtp_config.provider == EmailProvider.RESEND:
+            return self._send_resend_api(
+                subject=subject,
+                recipient=recipient,
+                html_body=html_body,
+                text_body=text_body,
+            )
+        return self._send_raw(
+            subject=subject,
+            recipient=recipient,
+            html_body=html_body,
+            text_body=text_body,
+        )
+
+    def _send_resend_api(
+        self, *, subject: str, recipient: str, html_body: str, text_body: str
+    ) -> bool:
+        """Send an email through the Resend HTTP API (https://resend.com).
+
+        Uses the stdlib HTTP client (no extra dependency). Raises on a non-2xx
+        response so the caller logs the reason — Resend's error body names it
+        (e.g. unverified domain, or restricted-mode recipient).
+        """
+        payload = json.dumps(
+            {
+                "from": formataddr(
+                    (self.smtp_config.from_name, self.smtp_config.from_email)
+                ),
+                "to": [recipient],
+                "subject": subject,
+                "html": html_body,
+                "text": text_body,
+            }
+        ).encode("utf-8")
+
+        request = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {self.smtp_config.resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                return response.status in (200, 202)
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Resend API error {exc.code}: {detail}") from exc
 
     @staticmethod
     def generate_verification_code(length: int = 6) -> str:
@@ -236,6 +297,14 @@ class EmailService:
         if self.smtp_config.provider == EmailProvider.DEV_MODE:
             return True, "Development mode - no SMTP connection needed"
 
+        if self.smtp_config.provider == EmailProvider.RESEND:
+            has_key = bool(self.smtp_config.resend_api_key)
+            return has_key, (
+                "Resend API key configured (HTTP API, no SMTP to test)"
+                if has_key
+                else "Resend selected but RESEND_API_KEY is not set"
+            )
+
         try:
             smtp_settings = self.smtp_config.get_smtp_settings()
 
@@ -325,7 +394,7 @@ The {settings.APP_NAME} Team
                 else user.email
             )
 
-            self._send_raw(
+            self._deliver(
                 subject=f"Welcome to {settings.APP_NAME} - Verify Your Email",
                 recipient=recipient,
                 html_body=html_body,
@@ -425,7 +494,7 @@ The {settings.APP_NAME} Security Team
                 else user.email
             )
 
-            self._send_raw(
+            self._deliver(
                 subject=f"Password Reset - {settings.APP_NAME}",
                 recipient=recipient,
                 html_body=html_body,
@@ -522,7 +591,7 @@ The {settings.APP_NAME} Team
                 else user.email
             )
 
-            self._send_raw(
+            self._deliver(
                 subject=f"Account Activated - Welcome to {settings.APP_NAME}!",
                 recipient=recipient,
                 html_body=html_body,

@@ -18,6 +18,7 @@ class EmailProvider(str, Enum):
     SENDGRID = "sendgrid"
     MAILGUN = "mailgun"
     POSTMARK = "postmark"
+    RESEND = "resend"  # Resend HTTP API (not SMTP)
     DEV_MODE = "dev"  # Console output only
 
 
@@ -48,6 +49,7 @@ class SMTPConfig(BaseModel):
     mailgun_api_key: str | None = None
     mailgun_domain: str | None = None
     postmark_server_token: str | None = None
+    resend_api_key: str | None = None  # Resend HTTP API key (re_...)
 
     # Rate limiting
     rate_limit_per_hour: int = 100
@@ -144,6 +146,10 @@ class SMTPConfig(BaseModel):
         """Check if email is properly configured"""
         if self.dev_mode or self.provider == EmailProvider.DEV_MODE:
             return True
+
+        # Resend uses the HTTP API, not SMTP — only an API key + from address.
+        if self.provider == EmailProvider.RESEND:
+            return bool(self.resend_api_key and self.from_email)
 
         settings = self.get_smtp_settings()
         return bool(

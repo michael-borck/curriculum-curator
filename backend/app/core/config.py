@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     MAILGUN_API_KEY: str | None = None
     MAILGUN_DOMAIN: str | None = None
     POSTMARK_SERVER_TOKEN: str | None = None
+    RESEND_API_KEY: str | None = None  # For EMAIL_PROVIDER=resend (Resend HTTP API)
 
     # Brevo (legacy support)
     BREVO_API_KEY: str | None = None
