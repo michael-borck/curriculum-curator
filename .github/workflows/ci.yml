@@ -13,6 +13,9 @@ jobs:
   backend:
     name: Backend (lint, types, tests)
     runs-on: ubuntu-latest
+    env:
+      # Pin the interpreter so CI matches local (project requires >=3.13).
+      UV_PYTHON: '3.13'
     defaults:
       run:
         working-directory: backend
@@ -23,20 +26,23 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
+      # --frozen uses the exact locked versions (incl. ruff) instead of
+      # letting `uv run` fetch a newer tool; --extra dev adds pytest, which
+      # lives in the optional-dependencies group rather than dependency-groups.
       - name: Sync dependencies
-        run: uv sync
+        run: uv sync --frozen --extra dev
 
       - name: Ruff lint
-        run: uv run ruff check .
+        run: uv run --frozen ruff check .
 
       - name: Ruff format check
-        run: uv run ruff format --check .
+        run: uv run --frozen ruff format --check .
 
       - name: Type check
-        run: uv run basedpyright
+        run: uv run --frozen basedpyright
 
       - name: Tests
-        run: uv run pytest -q -m "not slow"
+        run: uv run --frozen pytest -q -m "not slow"
 
   frontend:
     name: Frontend (lint, types, build, tests)
