@@ -90,7 +90,8 @@ logs/
 
 # pyenv & uv
 .python-version
-uv.lock
+# uv.lock is intentionally committed: it pins the exact toolchain (ruff,
+# basedpyright, etc.) so CI and every machine resolve identical versions.
 
 # pipenv
 Pipfile.lock
