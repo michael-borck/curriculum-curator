@@ -26,9 +26,15 @@ mac:
         - arm64
   entitlementsInherit: build/entitlements.mac.plist
   entitlements: build/entitlements.mac.plist
-  hardenedRuntime: true
+  # Unsigned build: no Apple Developer cert configured. `identity: null` skips
+  # code signing; hardenedRuntime + notarize require signing so are disabled.
+  # Users see a Gatekeeper "unidentified developer" prompt (right-click → Open).
+  # To ship signed/notarized, set identity, hardenedRuntime/notarize back to
+  # true, and add the MACOS_CERTIFICATE / APPLE_* repo secrets.
+  identity: null
+  hardenedRuntime: false
   gatekeeperAssess: false
-  notarize: true
+  notarize: false
   category: public.app-category.education
 
 win:
