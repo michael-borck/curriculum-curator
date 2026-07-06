@@ -16,12 +16,22 @@ jobs:
     env:
       # Pin the interpreter so CI matches local (project requires >=3.13).
       UV_PYTHON: '3.13'
+      # Placeholder keys so the provider-detection tests see a configured
+      # provider. No real API calls are made — these tests only check that a
+      # present key surfaces the provider.
+      OPENAI_API_KEY: 'test-key'
+      ANTHROPIC_API_KEY: 'test-key'
     defaults:
       run:
         working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # pandoc is a real runtime dependency (docx import / doc export); the
+      # tests that parse .docx need it on PATH.
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
