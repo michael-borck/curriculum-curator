@@ -22,10 +22,12 @@ from app.models import (
     User,
     UserRole,
 )
+from app.repositories import user_repo
 from app.schemas.admin import (
     EmailWhitelistCreate,
     EmailWhitelistResponse,
     EmailWhitelistUpdate,
+    PendingVerificationResponse,
     SystemSettingsResponse,
     SystemSettingsUpdate,
     UserListResponse,
@@ -272,6 +274,33 @@ async def get_user_statistics(
 
 
 # Email Whitelist CRUD endpoints
+@router.get(
+    "/pending-verifications",
+    response_model=list[PendingVerificationResponse],
+)
+async def list_pending_verifications(
+    db: Session = Depends(deps.get_db),
+    admin_user: User = Depends(deps.get_current_admin_user),
+):
+    """List unverified sign-ups with their current verification code.
+
+    Fallback for instances without SMTP configured: the code is normally
+    emailed to the user, but here an admin can read it and relay it manually.
+    Admin-only; only users with a still-valid (unused, unexpired) code appear.
+    """
+    return [
+        PendingVerificationResponse(
+            user_id=str(user.id),
+            email=user.email,
+            name=user.name,
+            code=verification.code,
+            expires_at=verification.expires_at.isoformat(),
+            created_at=user.created_at.isoformat(),
+        )
+        for user, verification in user_repo.get_pending_verifications(db)
+    ]
+
+
 @router.get("/whitelist", response_model=list[EmailWhitelistResponse])
 # @limiter.limit(RateLimits.DEFAULT)
 async def list_email_whitelist(

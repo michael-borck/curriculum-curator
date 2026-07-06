@@ -152,7 +152,17 @@ def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[UserResp
 def create_verification_code(
     db: Session, user_id: str, expires_minutes: int = 60
 ) -> str:
-    """Create 6-digit email verification code"""
+    """Create 6-digit email verification code.
+
+    Invalidates any existing unused codes for the user first, so exactly one
+    code is valid at a time (mirrors ``create_password_reset_code`` and means a
+    resend supersedes the previous code).
+    """
+    db.query(EmailVerification).filter(
+        EmailVerification.user_id == user_id,
+        EmailVerification.used == False,  # noqa: E712
+    ).update({"used": True})
+
     code = _generate_code(6)
 
     verification = EmailVerification(
@@ -187,6 +197,40 @@ def verify_email_code(db: Session, user_id: str, code: str) -> bool:
         return True
 
     return False
+
+
+def get_pending_verifications(
+    db: Session,
+) -> list[tuple[User, EmailVerification]]:
+    """Return unverified users paired with their newest still-valid code.
+
+    Powers the admin relay fallback for instances without SMTP. Users whose
+    codes have all expired or been used are omitted — they need to request a
+    resend to appear here again. Newest sign-ups first.
+    """
+    now = datetime.now(UTC)
+    users = (
+        db.query(User)
+        .filter(User.is_verified == False)  # noqa: E712
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
+    pending: list[tuple[User, EmailVerification]] = []
+    for user in users:
+        verification = (
+            db.query(EmailVerification)
+            .filter(
+                EmailVerification.user_id == user.id,
+                EmailVerification.used == False,  # noqa: E712
+                EmailVerification.expires_at > now,
+            )
+            .order_by(EmailVerification.created_at.desc())
+            .first()
+        )
+        if verification is not None:
+            pending.append((user, verification))
+    return pending
 
 
 # Password reset functions

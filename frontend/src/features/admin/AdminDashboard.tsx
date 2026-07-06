@@ -11,16 +11,24 @@ import {
   Home,
   Activity,
   Brain,
+  KeyRound,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import UserManagement from './UserManagement';
 import EmailWhitelist from './EmailWhitelist';
+import PendingVerifications from './PendingVerifications';
 import SystemSettings from './SystemSettings';
 import { AdminLLMSettings } from './AdminLLMSettings';
 import api from '../../services/api';
 import { LoadingState, Alert, Button } from '../../components/ui';
 
-type TabType = 'overview' | 'users' | 'whitelist' | 'settings' | 'llm';
+type TabType =
+  | 'overview'
+  | 'users'
+  | 'verifications'
+  | 'whitelist'
+  | 'settings'
+  | 'llm';
 
 interface DashboardStats {
   total_users: number;
@@ -34,6 +42,7 @@ interface DashboardStats {
 const sidebarItems = [
   { id: 'overview', label: 'Overview', icon: Home },
   { id: 'users', label: 'User Management', icon: Users },
+  { id: 'verifications', label: 'Pending Sign-ups', icon: KeyRound },
   { id: 'whitelist', label: 'Email Whitelist', icon: Mail },
   { id: 'settings', label: 'System Settings', icon: Settings },
   { id: 'llm', label: 'LLM Configuration', icon: Brain },
@@ -180,6 +189,8 @@ const AdminDashboard = () => {
         return renderOverview();
       case 'users':
         return <UserManagement />;
+      case 'verifications':
+        return <PendingVerifications />;
       case 'whitelist':
         return <EmailWhitelist />;
       case 'settings':

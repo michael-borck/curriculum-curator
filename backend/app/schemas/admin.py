@@ -35,6 +35,22 @@ class EmailWhitelistResponse(EmailWhitelistBase):
     updated_at: str
 
 
+class PendingVerificationResponse(CamelModel):
+    """An unverified sign-up plus its current verification code.
+
+    For the admin relay fallback: codes are normally emailed, but when no SMTP
+    provider is configured an admin can read the code here and pass it to the
+    user out-of-band.
+    """
+
+    user_id: str
+    email: str
+    name: str
+    code: str
+    expires_at: str
+    created_at: str
+
+
 # User management schemas
 class UserListResponse(CamelModel):
     users: list[UserResponse]
