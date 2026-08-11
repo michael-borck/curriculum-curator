@@ -20,6 +20,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Public domain(s) the app is served from — bare hostnames, comma-separated
+    # (e.g. "curriculum.example.com" or "app.example.com,www.example.com").
+    # Each domain is added to the trusted-host allowlist and its https:// origin
+    # to the CORS allowlist. Localhost is always allowed, so this can stay empty
+    # for local development.
+    PUBLIC_DOMAIN: str = ""
+
+    @property
+    def public_domains(self) -> list[str]:
+        return [d.strip() for d in self.PUBLIC_DOMAIN.split(",") if d.strip()]
+
     # Trust X-Forwarded-For / X-Real-IP headers for the client IP used in rate
     # limiting, account lockout, and JWT IP-binding. Leave False unless the app
     # runs behind a trusted reverse proxy (e.g. Caddy/nginx) that sets these —

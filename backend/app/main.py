@@ -220,9 +220,8 @@ app.add_middleware(
         "localhost",
         "127.0.0.1",
         "*.localhost",
-        "*.edu",
-        "curriculumcurator.eduserver.au",
         "testserver",  # FastAPI TestClient default host
+        *settings.public_domains,  # PUBLIC_DOMAIN env var (comma-separated)
     ],
 )
 
@@ -266,7 +265,7 @@ _cors_origins = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://curriculumcurator.eduserver.au",
+    *(f"https://{domain}" for domain in settings.public_domains),
 ]
 # Desktop (Electron) loads the renderer over file://, whose requests carry
 # `Origin: null`. Only trust that in LOCAL_MODE, where the backend binds to
