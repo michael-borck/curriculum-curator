@@ -37,17 +37,18 @@ To send real emails, you need to:
    EMAIL_DEV_MODE=false
    
    # Brevo SMTP Configuration
-   BREVO_API_KEY=your-smtp-password-here  # This is the SMTP password
-   BREVO_SMTP_LOGIN=93b634001@smtp-brevo.com  # Your SMTP login
-   BREVO_FROM_EMAIL=noreply@yourdomain.com
-   BREVO_FROM_NAME=Your App Name
+   EMAIL_PROVIDER=brevo
+   BREVO_API_KEY=your-smtp-key-here            # This is the SMTP password
+   SMTP_USERNAME=your-login@smtp-brevo.com     # Your Brevo SMTP login
+   FROM_EMAIL=noreply@yourdomain.com
+   FROM_NAME=Your App Name
    ```
 
 3. **Brevo SMTP Settings**
    - Host: `smtp-relay.brevo.com`
    - Port: `587`
-   - Username: Your SMTP login (e.g., `93b634001@smtp-brevo.com`)
-   - Password: Your SMTP password from step 1
+   - Username: Your SMTP login (e.g., `your-login@smtp-brevo.com`)
+   - Password: Your SMTP key from step 1
 
 ## Troubleshooting
 

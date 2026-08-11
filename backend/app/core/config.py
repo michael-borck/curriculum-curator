@@ -53,8 +53,21 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str | None = None
 
     # Email Settings
-    FROM_EMAIL: str = "noreply@curriculum-curator.com"
+    FROM_EMAIL: str = "noreply@example.com"
     FROM_NAME: str = "Curriculum Curator"
+
+    # Contact email advertised to third-party APIs (CrossRef/OpenAlex "polite
+    # pool" identifiers, which those services use to reach the operator about
+    # misbehaving clients). Falls back to FROM_EMAIL; omitted while both are
+    # unset or still the example.com placeholder.
+    CONTACT_EMAIL: str | None = None
+
+    @property
+    def api_contact_email(self) -> str | None:
+        contact = self.CONTACT_EMAIL or self.FROM_EMAIL
+        if not contact or contact.strip().lower().endswith("@example.com"):
+            return None
+        return contact.strip()
 
     # Security Settings
     USE_TLS: bool = True
@@ -69,13 +82,8 @@ class Settings(BaseSettings):
     POSTMARK_SERVER_TOKEN: str | None = None
     RESEND_API_KEY: str | None = None  # For EMAIL_PROVIDER=resend (Resend HTTP API)
 
-    # Brevo (legacy support)
+    # Brevo (SMTP relay; set SMTP_USERNAME to your Brevo SMTP login)
     BREVO_API_KEY: str | None = None
-    BREVO_SMTP_HOST: str = "smtp-relay.brevo.com"
-    BREVO_SMTP_PORT: int = 587
-    BREVO_SMTP_LOGIN: str = "93b634001@smtp-brevo.com"
-    BREVO_FROM_EMAIL: str = "noreply@curriculum-curator.com"
-    BREVO_FROM_NAME: str = "Curriculum Curator"
 
     # Email rate limiting
     EMAIL_RATE_LIMIT_PER_HOUR: int = 100

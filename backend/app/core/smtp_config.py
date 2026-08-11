@@ -84,7 +84,7 @@ class SMTPConfig(BaseModel):
             return {
                 "host": "smtp-relay.brevo.com",
                 "port": 587,
-                "username": self.smtp_username or "your-login@smtp-brevo.com",
+                "username": self.smtp_username,  # Brevo SMTP login (required)
                 "password": self.brevo_api_key or self.smtp_password,
                 "use_tls": True,
                 "use_ssl": False,

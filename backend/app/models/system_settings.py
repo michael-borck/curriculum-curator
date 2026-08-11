@@ -95,16 +95,6 @@ class SystemSettings(Base):
                 "value": "30",
                 "description": "Password reset token expiry time in minutes",
             },
-            {
-                "key": "brevo_from_email",
-                "value": "noreply@curriculum-curator.com",
-                "description": "Default from email address for Brevo",
-            },
-            {
-                "key": "brevo_from_name",
-                "value": "Curriculum Curator",
-                "description": "Default from name for Brevo emails",
-            },
             # LLM System Settings
             {
                 "key": "default_llm_provider",

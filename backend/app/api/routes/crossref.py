@@ -9,6 +9,7 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, HTTPException, status
 
+from app.core.config import settings
 from app.schemas.capture import CrossRefLookupRequest, CrossRefLookupResponse
 
 logger = logging.getLogger(__name__)
@@ -16,11 +17,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 CROSSREF_API = "https://api.crossref.org/works"
-# Polite pool — CrossRef asks for a mailto header for better rate limits
-CROSSREF_HEADERS = {
-    "User-Agent": "CurriculumCurator/1.0 (mailto:support@curriculumcurator.edu.au)",
-}
 TIMEOUT = 10.0
+
+
+def _crossref_headers() -> dict[str, str]:
+    # Polite pool — CrossRef asks for a mailto contact for better rate limits;
+    # omitted unless the operator has configured CONTACT_EMAIL / FROM_EMAIL.
+    user_agent = "CurriculumCurator/1.0"
+    if settings.api_contact_email:
+        user_agent += f" (mailto:{settings.api_contact_email})"
+    return {"User-Agent": user_agent}
 
 
 def _normalise_doi(raw: str) -> str:
@@ -106,7 +112,7 @@ async def crossref_lookup(data: CrossRefLookupRequest):
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(
                 f"{CROSSREF_API}/{doi}",
-                headers=CROSSREF_HEADERS,
+                headers=_crossref_headers(),
             )
 
         if resp.status_code == 404:

@@ -248,7 +248,7 @@ class EmailSetup:
             print("❌ API key is required")
             return False
 
-        login = input("SMTP Login (e.g., 93b634001@smtp-brevo.com): ").strip()
+        login = input("SMTP Login (e.g., your-login@smtp-brevo.com): ").strip()
         if not login:
             print("❌ SMTP login is required")
             return False

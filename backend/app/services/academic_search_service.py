@@ -11,13 +11,10 @@ from dataclasses import dataclass, field
 
 import aiohttp
 
+from app.core.config import settings
 from app.services.web_search_service import SearchResult
 
 logger = logging.getLogger(__name__)
-
-# Polite pool identifiers
-_OPENALEX_MAILTO = "admin@curriculum-curator.app"
-_CROSSREF_MAILTO = "admin@curriculum-curator.app"
 
 
 @dataclass
@@ -81,8 +78,10 @@ class OpenAlexClient:
         params = {
             "search": query,
             "per_page": min(max_results, 50),
-            "mailto": _OPENALEX_MAILTO,
         }
+        # Polite pool — better rate limits when the operator sets a contact
+        if settings.api_contact_email:
+            params["mailto"] = settings.api_contact_email
         url = f"{self.BASE_URL}/works"
 
         try:
@@ -221,8 +220,10 @@ class CrossRefSearchClient:
             "rows": min(max_results, 50),
             "sort": "relevance",
             "order": "desc",
-            "mailto": _CROSSREF_MAILTO,
         }
+        # Polite pool — better rate limits when the operator sets a contact
+        if settings.api_contact_email:
+            params["mailto"] = settings.api_contact_email
         url = f"{self.BASE_URL}/works"
 
         try:
