@@ -10,7 +10,7 @@ const FIXTURES_DIR = path.resolve(__dirname, "../fixtures");
 // - Canvas IMSCC: Instructure's public sample (CC v1.3, "Ally: Accessibility Workshop")
 // - SCORM 1.2: Rustici/SCORM.com Golf Examples "RuntimeBasicCalls"
 const CANVAS_IMSCC = path.join(FIXTURES_DIR, "canvas-sample.imscc");
-const GOLF_SCORM = path.join(FIXTURES_DIR, "golf-scorm12.zip");
+const SAMPLE_SCORM = path.join(FIXTURES_DIR, "sample-scorm.zip");
 
 /** Upload a file to the package import drop zone via file chooser. */
 async function uploadPackage(page: import("@playwright/test").Page, filePath: string) {
@@ -145,13 +145,13 @@ test.describe("Package Import", () => {
     expect(count).toBeGreaterThanOrEqual(3);
   });
 
-  // ─── SCORM Import (SCORM.com Golf reference package) ────────────────────
+  // ─── SCORM Import (synthetic SCORM 1.2 package from create-fixtures.sh) ──
 
   test("can upload and analyse a SCORM 1.2 package", async ({ page }) => {
     await page.goto("/import/package");
     await expect(page.getByText(/\.imscc or \.zip/i)).toBeVisible({ timeout: 5000 });
 
-    await uploadPackage(page, GOLF_SCORM);
+    await uploadPackage(page, SAMPLE_SCORM);
 
     // Should detect as SCORM package
     await expect(page.getByText("SCORM")).toBeVisible({ timeout: 15000 });
@@ -164,7 +164,7 @@ test.describe("Package Import", () => {
   test("can import SCORM 1.2 package end-to-end", async ({ page }) => {
     test.setTimeout(90000); // SCORM packages with many files can take longer
     await page.goto("/import/package");
-    await uploadPackage(page, GOLF_SCORM);
+    await uploadPackage(page, SAMPLE_SCORM);
 
     await expect(page.getByText("SCORM")).toBeVisible({ timeout: 15000 });
 

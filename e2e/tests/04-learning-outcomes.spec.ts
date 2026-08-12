@@ -10,7 +10,7 @@ test.describe("Learning Outcomes (ULOs)", () => {
     await expect(page).toHaveURL(/\/units\//, { timeout: 10000 });
     await dismissOnboarding(page);
     // Navigate to Outcomes & Alignment tab
-    await page.getByRole("main").getByRole("button", { name: /outcomes/i }).click();
+    await page.getByRole("main").getByRole("button", { name: /outcomes & alignment/i }).click();
   });
 
   test("ULO manager is visible", async ({ page }) => {
@@ -96,7 +96,7 @@ test.describe("Learning Outcomes (ULOs)", () => {
   test("ULOs persist after page reload", async ({ page }) => {
     await page.reload();
     await dismissOnboarding(page);
-    await page.getByRole("main").getByRole("button", { name: /outcomes/i }).click();
+    await page.getByRole("main").getByRole("button", { name: /outcomes & alignment/i }).click();
 
     await expect(page.getByText("ULO1")).toBeVisible({ timeout: 5000 });
     await expect(page.getByText("ULO2")).toBeVisible();

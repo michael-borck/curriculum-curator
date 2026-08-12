@@ -61,6 +61,8 @@ content_repos/
 *.zip
 *.tar.gz
 *.rar
+# ...except committed e2e test fixtures
+!e2e/fixtures/*.zip
 
 # Node
 node_modules/

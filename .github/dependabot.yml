@@ -1,0 +1,62 @@
+# Automated dependency update PRs — keeps lockfiles from drifting into
+# hundreds of stale-dependency security alerts.
+#
+# Each ecosystem gets one grouped PR per week (security fixes may arrive
+# as separate PRs at any time). CI runs on every PR, so a green check on
+# a Dependabot PR means lint/type-check/tests passed with the new deps.
+version: 2
+updates:
+  # Backend Python dependencies (uv.lock)
+  - package-ecosystem: "uv"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Australia/Perth"
+    groups:
+      backend-deps:
+        patterns: ["*"]
+
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Australia/Perth"
+    groups:
+      frontend-deps:
+        patterns: ["*"]
+
+  # Desktop (Electron) npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/desktop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Australia/Perth"
+    groups:
+      desktop-deps:
+        patterns: ["*"]
+
+  # E2E test harness npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/e2e"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Australia/Perth"
+    groups:
+      e2e-deps:
+        patterns: ["*"]
+
+  # GitHub Actions workflow pins
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Australia/Perth"
+    groups:
+      actions:
+        patterns: ["*"]
