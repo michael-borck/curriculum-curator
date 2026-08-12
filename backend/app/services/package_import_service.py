@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 from xml.etree.ElementTree import Element as _Element  # type annotations only
 
 import defusedxml.ElementTree as ET  # noqa: N817
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from app.models.accreditation_mappings import (
     ULOGraduateCapabilityMapping,
@@ -1358,7 +1358,7 @@ class PackageImportService:
         if spec_h2:
             spec_parts: list[str] = []
             for sibling in spec_h2.next_siblings:
-                if hasattr(sibling, "name") and sibling.name == "h2":
+                if isinstance(sibling, Tag) and sibling.name == "h2":
                     break
                 text = str(sibling).strip()
                 if text:

@@ -48,8 +48,7 @@ dependencies = [
     "sqlalchemy>=2.0.25",
     "alembic>=1.13.1",
     # Document Processing
-    "PyPDF2>=3.0.1",  # PDF processing
-    "pypdf>=6.10.2",  # Modern PDF processing (replacement for PyPDF2)
+    "pypdf>=6.15.0",  # PDF processing (maintained successor of PyPDF2)
     "pdfplumber>=0.10.3",  # Advanced PDF text extraction
     # pymupdf moved to [pdf-advanced] optional extra for PyInstaller compatibility
     "python-docx>=1.1.0",  # DOCX processing
@@ -71,7 +70,8 @@ dependencies = [
     # attack of 2026-03-24. Those two versions are permanently excluded. The
     # <=1.82.6 ceiling has been removed now that 1.83.x addresses new CVEs
     # (CVE-2026-35029, CVE-2026-35030, GHSA-69x8-hrgq-fjj8, GHSA-xqmj-j6mv-4862).
-    "litellm>=1.83.7,!=1.82.7,!=1.82.8",
+    # 1.84.0 additionally fixes the auth bypass via Host header injection.
+    "litellm>=1.84.0,!=1.82.7,!=1.82.8",
     "tiktoken>=0.5.2",  # Token counting
     # File Processing
     "python-docx>=1.1.0",

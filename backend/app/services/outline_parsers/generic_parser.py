@@ -134,15 +134,7 @@ def _extract_text(file_content: bytes, file_type: str) -> str:
             pages = [page.extract_text() or "" for page in reader.pages]
             return "\n\n".join(pages)
         except Exception as exc:
-            logger.warning("pypdf extraction failed, trying PyPDF2: %s", exc)
-            try:
-                import PyPDF2  # type: ignore[import-untyped]  # noqa: PLC0415
-
-                reader = PyPDF2.PdfReader(io.BytesIO(file_content))
-                pages = [page.extract_text() or "" for page in reader.pages]
-                return "\n\n".join(pages)
-            except Exception:
-                raise ValueError("Could not extract text from PDF") from exc
+            raise ValueError("Could not extract text from PDF") from exc
 
     if file_type == "docx":
         try:

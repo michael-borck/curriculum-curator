@@ -95,14 +95,6 @@ def _extract_text_from_pdf(content: bytes) -> str:
 
         reader = pypdf.PdfReader(io.BytesIO(content))
         return "\n\n".join(page.extract_text() or "" for page in reader.pages)
-    except Exception:
-        pass
-
-    try:
-        import PyPDF2  # type: ignore[import-untyped]  # noqa: PLC0415
-
-        reader = PyPDF2.PdfReader(io.BytesIO(content))
-        return "\n\n".join(page.extract_text() or "" for page in reader.pages)
     except Exception as exc:
         raise ValueError("Could not extract text from PDF") from exc
 

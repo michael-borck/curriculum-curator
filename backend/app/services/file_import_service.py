@@ -14,13 +14,13 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 # Document processing libraries - optional dependencies
-PyPDF2: Any = None
+pypdf: Any = None
 Document: Any = None
 Presentation: Any = None
 markdown: Any = None
 
 try:
-    import PyPDF2
+    import pypdf
 
     has_pdf = True
 except ImportError:
@@ -327,11 +327,11 @@ class FileImportService:
     async def _extract_pdf(self, file_content: bytes) -> str:
         """Extract text from PDF file"""
         if not has_pdf:
-            raise ValueError("PDF processing not available. Install PyPDF2.")
+            raise ValueError("PDF processing not available. Install pypdf.")
 
         text_content = []
         pdf_file = io.BytesIO(file_content)
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        pdf_reader = pypdf.PdfReader(pdf_file)
 
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]

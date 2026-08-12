@@ -6,7 +6,7 @@ section parsing, suggestion/gap generation, filename/week inference,
 duration/difficulty heuristics, ZIP analysis, and template stripping.
 
 Test documents are built in-memory with python-docx / python-pptx /
-PyPDF2 rather than committed as binary fixtures. PPTX image extraction
+pypdf rather than committed as binary fixtures. PPTX image extraction
 is already covered by tests/test_image_upload.py and the structural
 parser path by tests/test_unified_import_pptx.py, so neither is
 duplicated here.
@@ -20,7 +20,7 @@ import zipfile
 import pytest
 from docx import Document
 from pptx import Presentation
-from PyPDF2 import PdfWriter
+from pypdf import PdfWriter
 
 from app.services.file_import_service import FileImportService
 

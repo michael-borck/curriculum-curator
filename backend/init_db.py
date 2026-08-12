@@ -64,7 +64,7 @@ def init_db():
 
         # Admin user
         admin = User(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email="admin@curriculum-curator.edu.au",
             password_hash=get_password_hash("admin123"),
             name="System Administrator",
@@ -79,7 +79,7 @@ def init_db():
 
         # Sample lecturer
         lecturer = User(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email="lecturer@university.edu.au",
             password_hash=get_password_hash("password123"),
             name="Dr. Sarah Chen",
@@ -101,7 +101,7 @@ def init_db():
         print("\n📚 Creating sample unit...")
 
         unit = Unit(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             title="Introduction to Python Programming",
             code="CS101",
             description="Learn Python fundamentals through hands-on practice",

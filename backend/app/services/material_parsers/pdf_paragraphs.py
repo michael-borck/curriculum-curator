@@ -5,7 +5,7 @@ Phase 2 default for ``.pdf`` files. PDF structure (headings, lists,
 tables) is fundamentally unrecoverable from the underlying text stream
 without heuristics that fail unpredictably on real-world documents.
 This parser is honest about that limit: it extracts the text via
-``pdf_parser_service`` (which already chooses the best of PyPDF2 /
+``pdf_parser_service`` (which already chooses the best of pypdf /
 pdfplumber / PyMuPDF per document), splits it into paragraphs on
 double newlines, and emits ``paragraph`` nodes only.
 
