@@ -341,6 +341,35 @@
 
 ---
 
+## Scenario 17 — Absorbed Tool Capabilities (Images, Lesson Plans, Branching, Quizzes)
+
+**Covers:** 15.5, 5.12, 5.13, 19A.7, 19C.6
+
+### AI Image Generation (15.5)
+
+- [ ] 1. Open a material in the editor. Click the image wand button — verify a "Generate" tab exists alongside the copy-paste prompt helper (15.9).
+- [ ] 2. Describe an image (e.g. "watercolour diagram of the water cycle"), pick a style and aspect ratio. Verify generated image previews.
+- [ ] 3. Insert the image. Verify it appears in the content, is stored in the unit's image library (`/api/materials/.../images`), and survives page reload.
+- [ ] 4. Verify generation respects your configured LLM/image provider and shows a clear error when no capable key is configured.
+
+### Lesson Plan Frameworks (5.12, 5.13)
+
+- [ ] 5. On a material with real content, open **Generate lesson plan**. Verify three frameworks are offered with "when to use" guidance: Gagné's Nine Events, BOPPPS, 5E.
+- [ ] 6. Set session duration to 50 minutes and generate. Verify the plan contains Bloom-tagged objectives, timed segments summing to ~50 minutes, formative checks with anticipated misconceptions, and differentiation notes.
+- [ ] 7. Insert the plan into the material (or save as new material). Verify it opens in the normal editing flow.
+
+### AI Branching Scenario Draft (19A.7)
+
+- [ ] 8. On a case-study material, choose **Generate branching scenario** from the AI actions. Verify a propose/apply dialog lists drafted cards with choices before anything changes in the editor.
+- [ ] 9. Apply. Verify cards appear as editable `branchingCard` nodes, at least two endings exist, the map view shows no dead ends or orphans, and choices link correctly.
+
+### AI Quiz Generation into Structured Blocks (19C.6)
+
+- [ ] 10. On a lecture material, choose **Generate quiz**. Verify a propose/apply dialog drafts questions with per-type fields (options, correct answer, feedback) for supported types.
+- [ ] 11. Apply. Verify questions appear as structured `quizQuestion` blocks (not free text), are editable via their dedicated fields, and export through QTI/H5P as normal.
+
+---
+
 ## Coverage Matrix
 
 | Category | Stories | Scenarios |
@@ -349,7 +378,7 @@
 | 2. Learning Outcomes | 2.1–2.8 | 3, 4, 5 |
 | 3. Weekly Materials | 3.1–3.12 | 4 |
 | 4. Assessments | 4.1–4.10 | 3 |
-| 5. AI Content | 5.1–5.11 | 5 |
+| 5. AI Content | 5.1–5.13 | 5, 17 |
 | 6. Import | 6.1–6.10 | 7, 8, 16 |
 | 7. Quality | 7.1–7.10 | 3, 10, 13 |
 | 8. Analytics | 8.1–8.5 | 10 |
@@ -358,9 +387,10 @@
 | 12. Research | 12.1–12.4 | 11 |
 | 13. Version Control | 13.1–13.4 | 12 |
 | 14. Learning Design | 14.1–14.4 | 6 |
-| 15. Editor | 15.1–15.4, 15.7–15.9 | 4 |
+| 15. Editor | 15.1–15.5, 15.7–15.11 | 4, 17 |
 | 17. Sector & Personalisation | 17A.1–17A.5 | 1, 3, 4, 15 |
 | 18. Flexibility | 18.1–18.3 | 2, 5 |
+| 19. Interactive Authoring | 19A.1–19A.7, 19C.1–19C.6 | 17 |
 
 ### Not Covered (by design)
 
@@ -368,6 +398,6 @@
 |----------|--------|
 | 11. Administration | Separate admin role — test independently |
 | 16. Desktop App | Different build target (Electron) — test via desktop installer |
-| 15.5, 15.6 | Cut from scope |
+| 15.6 | Cut from scope |
 
-*Last updated: 2026-03-09*
+*Last updated: 2026-08-25*

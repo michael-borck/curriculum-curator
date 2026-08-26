@@ -97,6 +97,8 @@
 | 5.9 | As a **Creator**, I want AI-assist available on any text field (generate from blank, improve existing, get recommendations) so I don't have to use the sidebar for everything. | P2 | **Done** — AIAssistField component |
 | 5.10 | As a **Creator**, I want to partially complete a unit (e.g. some ULOs and a couple of topics) and have AI generate the rest, using what I've provided as context. | P2 | **Done** — fill-gap endpoint |
 | 5.11 | As a **Creator**, I want to save an AI assistant response directly as unit content so I don't have to copy-paste between the chat and the editor. | P2 | **Done** — SaveToUnitButton on assistant messages with content type selector and unit picker modal |
+| 5.12 | As a **Creator**, I want to generate a structured, timed lesson plan from a material using a named pedagogical framework (Gagné's Nine Events, BOPPPS, 5E) — with Bloom-tagged objectives, timed segments that sum to the session length, formative checks with anticipated misconceptions, and differentiation notes. | P5 | **Done** — `/api/ai/generate-lesson-plan` + seeded framework templates in the prompt library (Lesson Loom capabilities absorbed; ADR-068) |
+| 5.13 | As a **Creator**, I want "when to use" guidance for each lesson-plan framework so I can pick the right one without pedagogy training. | P5 | **Done** — framework metadata (summary + when-to-use) returned by the templates endpoint and shown in the generator UI |
 
 ## 6. Content Import & Enhancement
 
@@ -232,7 +234,7 @@
 | 15.2 | As a **power user**, I want an advanced editing mode where I can see and edit YAML front matter and raw markdown directly. | P2 | **Done** — toggle between simple/advanced |
 | 15.3 | As a **Creator**, I want to add images to my materials by providing a URL/link. | P3 | **Done** — TipTap image extension with URL insert dialog |
 | 15.4 | As a **Creator**, I want to upload images from my computer to include in materials. | P3 | **Done** — image upload endpoint + TipTap toolbar button with preview |
-| 15.5 | ~~As a **Creator**, I want AI to generate images for my materials.~~ | P4 | **Cut** — outside core scope; educators have dedicated image tools |
+| 15.5 | As a **Creator**, I want AI image generation built in — describe an image, pick style and aspect ratio, and insert the result directly into my material, stored alongside uploaded images so it survives export. | P4 | **Done** — reverses the earlier cut: provider-backed generation via `/api/ai/generate-image` (Limn capabilities absorbed; pairs with the 15.9 prompt helper) |
 | 15.6 | ~~As a **Creator**, I want to search for free stock images (e.g. Unsplash) and insert them.~~ | P4 | **Cut** — adds API dependency for marginal value; use browser instead |
 | 15.9 | As a **Creator**, I want to generate an image prompt from my material content (with style options like realistic, sketch, diagram) so I can copy it into my preferred image tool. | P3 | **Done** — editor toolbar wand button opens slide-out panel; pick style + aspect ratio → LLM generates copy-paste prompt |
 | 15.7 | As a **Creator**, I want to embed Mermaid diagrams (flowcharts, sequence diagrams) in my materials so I can visualise concepts. | P2 | **Done** — TipTap Mermaid node with live preview |
@@ -271,6 +273,7 @@
 | 19A.4 | As a **Creator**, I want the system to flag dead-end cards (no choices and not marked as an end card) and orphaned cards (not reachable from the start) so I can fix structural issues. | P5 | **Done** — dead-end/orphan detection in `BranchingMapDialog` |
 | 19A.5 | As a **Creator**, I want to designate cards as "end cards" with a summary message and an author-assigned score, so different endings reflect different learning outcomes. | P5 | **Done** — `cardType: 'ending'` with endScore/endMessage |
 | 19A.6 | As a **Creator**, I want to allow multiple paths to converge on the same card, so branching narratives can rejoin without duplicating content. | P5 | **Done** — choices link by card id; convergence supported |
+| 19A.7 | As a **Creator**, I want AI to draft a complete branching scenario from my material content — cards with choices, at least two distinct endings, and dead-end-free structure — reviewed via propose/apply before anything commits to the editor. | P5 | **Done** — `/api/ai/materials/{id}/generate-branching` propose/apply dialog emitting `branchingCard` nodes (Playable Lessons capabilities absorbed; ADR-068) |
 
 ### 19B. Interactive HTML Export
 
@@ -290,6 +293,7 @@
 | 19C.3 | As a **Creator**, I want to choose question types (multiple choice, true/false, multiple select, short answer, fill-in-the-blank, matching, drag-and-drop) and have the editor show the appropriate answer structure for each. | P5 | **Done** — all 7 types with per-type editors; matching → QTI, drag-and-drop → H5P DragText. QTI can't represent drag-and-drop, so the export warns and suggests H5P (9.21) |
 | 19C.4 | As a **Creator**, I want clearly delineated slide breaks in the editor that show each slide's number and title, making export to PPTX and H5P Course Presentation predictable. | P5 | **Done** — ADR-067: kept the slideBreak + first-heading convention (a structured slide container would break the splitter/exporters and conflict with ADR-064/038); dividers now render "Slide N — {first heading}" via the `SlideLabel` decoration |
 | 19C.5 | As a **Creator**, I want structured branching card nodes in the editor with choice fields (label + target card), so authoring branching scenarios feels like filling in a form, not writing markup. | P5 | **Done** — `BranchingCardNode`/`BranchingCardView` form-field editing, hosted on the material editor route |
+| 19C.6 | As a **Creator**, I want AI to generate practice quiz questions from a material's content directly as structured quiz blocks (per-type fields pre-filled), reviewed via propose/apply before insertion. | P5 | **Done** — `/api/ai/materials/{id}/generate-quiz` propose/apply dialog emitting `quizQuestion` nodes for supported types (Playable Lessons capabilities absorbed; ADR-068) |
 
 ## 18. Flexibility & Workflow Freedom
 
@@ -305,9 +309,9 @@
 
 | Status | Count |
 |--------|-------|
-| **Done** | 172 |
+| **Done** | 177 |
 | **Planned** | 1 (9.17 — H5P-in-IMSCC, pending real-LMS validation) |
-| **Cut** | 2 |
+| **Cut** | 1 |
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -322,7 +326,8 @@
 
 | # | Story | Reason |
 |---|-------|--------|
-| 15.5 | AI image generation | Outside core scope — educators have dedicated tools; upload path (15.4) covers the need |
 | 15.6 | Unsplash stock image search | Marginal value vs API/licensing complexity; any browser can search Unsplash |
 
-*Last updated: 2026-03-09*
+*Note: 15.5 (AI image generation) was cut on 2026-03-09 and reinstated 2026-08-25 via capability absorption from Limn — see ADR-068. Stories 5.12–5.13, 19A.7 and 19C.6 absorb capabilities from Lesson Loom and Playable Lessons the same day.*
+
+*Last updated: 2026-08-25*
