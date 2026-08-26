@@ -44,6 +44,20 @@ class LLMService:
         "gemini": "gemini/gemini-pro",
     }
 
+    # Default image models per provider (ADR-068). Providers absent from
+    # this map have no image-generation capability.
+    IMAGE_MODELS: ClassVar[dict[str, str]] = {
+        "openai": "dall-e-3",
+        "gemini": "imagen-3.0-generate-002",
+    }
+
+    # Aspect ratio → pixel size for providers that need explicit dimensions.
+    IMAGE_SIZES: ClassVar[dict[str, str]] = {
+        "square": "1024x1024",
+        "landscape": "1792x1024",
+        "portrait": "1024x1792",
+    }
+
     def __init__(self) -> None:
         self.providers: dict[str, bool] = {}
         self._check_providers()
@@ -515,6 +529,69 @@ Provide ONLY the JSON object, no additional text or markdown formatting."""
             return None, f"Template error: {e!s}"
         except Exception as e:
             return None, f"Generation error: {e!s}"
+
+    async def generate_image(
+        self,
+        prompt: str,
+        aspect_ratio: str = "16:9",
+        user: User | None = None,
+        db: Session | None = None,
+    ) -> tuple[bytes, str] | tuple[None, str]:
+        """Generate an image from a text prompt (ADR-068, story 15.5).
+
+        Uses the provider's default image model — the same configured key as
+        chat generation. Returns ``(png_bytes, model_used)`` or ``(None,
+        error)``.
+        """
+        _model, provider, api_key, _api_base = self._get_llm_config(user, db)
+
+        if not provider or (not api_key and provider != "ollama"):
+            return None, (
+                "No AI provider configured. Go to Settings → AI/LLM to add an API key "
+                "(OpenAI or Gemini) to generate images."
+            )
+
+        image_model = self.IMAGE_MODELS.get(provider)
+        if not image_model:
+            return None, (
+                f"Image generation is not available for the '{provider}' "
+                "provider. Configure OpenAI or Gemini in Settings → AI/LLM."
+            )
+
+        size = self.IMAGE_SIZES.get(aspect_ratio, "1024x1024")
+        try:
+            response = await litellm.aimage_generation(
+                model=image_model,
+                prompt=prompt[:4000],
+                api_key=api_key,
+                n=1,
+                size=size,
+            )
+        except Exception as e:
+            return None, f"Image generation failed: {e!s}"
+
+        data_list = list(getattr(response, "data", None) or [])
+        data = data_list[0] if data_list else None
+        if data is None:
+            return None, "Image provider returned no image data"
+        image_bytes: bytes | None = None
+        b64 = getattr(data, "b64_json", None)
+        url = getattr(data, "url", None)
+        if b64:
+            import base64  # noqa: PLC0415
+
+            image_bytes = base64.b64decode(b64)
+        elif url:
+            import httpx  # noqa: PLC0415
+
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                image_bytes = resp.content
+
+        if not image_bytes:
+            return None, "Image provider returned no image data"
+        return image_bytes, f"{provider}/{image_model}"
 
     # =========================================================================
     # Educational AI Methods

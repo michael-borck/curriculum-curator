@@ -233,3 +233,164 @@ class RestructureContentResponse(CamelModel):
     heading_count: int
     list_count: int
     paragraph_count: int
+
+
+# =============================================================================
+# AI Image Generation (15.5 — Limn capabilities, ADR-068)
+# =============================================================================
+
+IMAGE_ASPECT_RATIOS = {"square", "landscape", "portrait"}
+
+
+class GenerateImageRequest(CamelModel):
+    """Request to generate an image from a text prompt."""
+
+    prompt: str = Field(..., min_length=1, max_length=4000)
+    aspect_ratio: str = Field(default="landscape")
+    material_id: str | None = Field(
+        default=None,
+        description=(
+            "When set (and owned), the image is saved into the material's "
+            "image library and a durable URL is returned. Otherwise only a "
+            "base64 data URL is returned for preview."
+        ),
+    )
+    style: str = Field(
+        default="",
+        max_length=200,
+        description="Optional style hint appended to the prompt",
+    )
+
+
+class GenerateImageResponse(CamelModel):
+    url: str = Field(
+        ...,
+        description=(
+            "Material-library URL when material_id was given, else a base64 data URL"
+        ),
+    )
+    filename: str = ""
+    model_used: str = ""
+
+
+# =============================================================================
+# Branching Scenario Generation (19A.7 — Playable Lessons, ADR-068)
+# =============================================================================
+
+
+class BranchingChoiceDraft(CamelModel):
+    id: str
+    text: str
+    target_card_id: str
+    feedback: str = ""
+
+
+class BranchingCardDraft(CamelModel):
+    card_id: str
+    card_type: str = Field(default="content")  # content | branch | ending
+    card_title: str
+    card_content: str
+    choices: list[BranchingChoiceDraft] = Field(default_factory=list)
+    end_score: int = 0
+    end_message: str = ""
+    step_threshold: int = 0
+    end_message_efficient: str = ""
+    end_message_thorough: str = ""
+
+
+class GenerateBranchingRequest(CamelModel):
+    """Request to draft a branching scenario from a material's content."""
+
+    card_count: int = Field(default=6, ge=3, le=12)
+    audience: str = Field(default="", max_length=300)
+    design_id: str | None = None
+
+
+class GenerateBranchingResponse(CamelModel):
+    cards: list[BranchingCardDraft]
+    start_card_id: str = ""
+    warnings: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# Quiz Generation into structured blocks (19C.6 — Playable Lessons, ADR-068)
+# =============================================================================
+
+QUIZ_QUESTION_TYPES = {
+    "multiple_choice",
+    "true_false",
+    "multi_select",
+    "short_answer",
+    "fill_in_blank",
+}
+
+
+class QuizOptionDraft(CamelModel):
+    id: str
+    text: str
+    correct: bool
+
+
+class QuizQuestionDraft(CamelModel):
+    question_type: str
+    question_text: str
+    options: list[QuizOptionDraft] = Field(default_factory=list)
+    feedback: str = ""
+    explanation: str = ""
+    points: int = Field(default=1, ge=1, le=100)
+
+
+class GenerateQuizRequest(CamelModel):
+    """Request to draft practice questions from a material's content."""
+
+    question_types: list[str] = Field(
+        default_factory=lambda: ["multiple_choice", "true_false"],
+    )
+    count: int = Field(default=5, ge=1, le=20)
+    design_id: str | None = None
+
+
+class GenerateQuizResponse(CamelModel):
+    questions: list[QuizQuestionDraft]
+
+
+# =============================================================================
+# Lesson Plan Generation (5.12/5.13 — Lesson Loom frameworks, ADR-068)
+# =============================================================================
+
+
+class LessonPlanObjective(CamelModel):
+    text: str
+    bloom_level: str
+
+
+class LessonPlanSegment(CamelModel):
+    name: str
+    minutes: int
+    description: str
+
+
+class FormativeCheck(CamelModel):
+    segment: str
+    question: str
+    misconceptions: list[str] = Field(default_factory=list)
+
+
+class LessonPlanRequest(CamelModel):
+    """Request to generate a framework-structured lesson plan."""
+
+    content: str = Field(..., min_length=1, max_length=20000)
+    framework_id: str
+    duration_minutes: int = Field(default=50, ge=10, le=300)
+    class_size: int | None = Field(default=None, ge=1, le=1000)
+    delivery_mode: str = Field(default="", max_length=100)
+
+
+class LessonPlanResponse(CamelModel):
+    title: str
+    objectives: list[LessonPlanObjective]
+    segments: list[LessonPlanSegment]
+    formative_checks: list[FormativeCheck]
+    differentiation_notes: str
+    materials_checklist: list[str]
+    homework_bridge: str

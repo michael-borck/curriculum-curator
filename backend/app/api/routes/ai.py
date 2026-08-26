@@ -4,8 +4,10 @@ AI/LLM API routes for content generation and educational AI features.
 This is the unified AI endpoint - all LLM functionality is accessed through /api/ai/*
 """
 
+import base64
 import json
 import logging
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,12 +19,23 @@ from app.models import User
 from app.models.system_settings import SystemSettings
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.ai import (
+    IMAGE_ASPECT_RATIOS,
+    QUIZ_QUESTION_TYPES,
+    BranchingCardDraft,
     FillGapRequest,
     FillGapResponse,
+    GenerateBranchingRequest,
+    GenerateBranchingResponse,
+    GenerateImageRequest,
+    GenerateImageResponse,
+    GenerateQuizRequest,
+    GenerateQuizResponse,
     GenerateSpeakerNotesRequest,
     GenerateSpeakerNotesResponse,
     GenerateVideoInteractionRequest,
     GenerateVideoInteractionResponse,
+    LessonPlanRequest,
+    LessonPlanResponse,
     RestructureContentRequest,
     RestructureContentResponse,
     ScaffoldUnitRequest,
@@ -55,7 +68,11 @@ from app.schemas.llm import (
     ValidationResult,
 )
 from app.services.ai_prompts import (
+    BRANCHING_SYSTEM,
     FILL_GAP_SYSTEM,
+    FRAMEWORKS,
+    LESSON_PLAN_SYSTEM,
+    QUIZ_SYSTEM,
     REMEDIATE_SYSTEM,
     SCAFFOLD_UNIT_SYSTEM,
     SCHEDULE_SYSTEM,
@@ -67,7 +84,10 @@ from app.services.ai_prompts import (
     VIDEO_INTERACTION_SYSTEM,
     VISUAL_PROMPT_SYSTEM,
     ValidationCheck,
+    render_branching_prompt,
     render_fill_gap_prompt,
+    render_lesson_plan_prompt,
+    render_quiz_prompt,
     render_remediate_prompt,
     render_scaffold_unit_prompt,
     render_schedule_prompt,
@@ -88,7 +108,9 @@ from app.services.design_context import (
     build_pedagogy_instruction,
     get_design_context,
 )
+from app.services.git_content_service import get_git_service
 from app.services.llm_service import llm_service
+from app.services.material_parsers.persistence import material_images_dir
 from app.services.slide_splitter import has_slide_breaks, split_at_slide_breaks
 
 logger = logging.getLogger(__name__)
@@ -1149,3 +1171,282 @@ async def restructure_material_content(
         list_count=lists,
         paragraph_count=paragraphs,
     )
+
+
+# =============================================================================
+# Absorbed Tool Capabilities (ADR-068) — image gen (Limn), branching +
+# quiz drafting (Playable Lessons), lesson-plan frameworks (Lesson Loom)
+# =============================================================================
+
+
+@router.post("/generate-image", response_model=GenerateImageResponse)
+async def generate_image(
+    request: GenerateImageRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
+) -> GenerateImageResponse:
+    """Generate an image from a text prompt (story 15.5).
+
+    With ``material_id`` (owned), the PNG is saved into that material's
+    image library and a durable URL is returned; without it, only a base64
+    data URL is returned for preview.
+    """
+    if request.aspect_ratio not in IMAGE_ASPECT_RATIOS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid aspect_ratio. Must be one of: {', '.join(sorted(IMAGE_ASPECT_RATIOS))}",
+        )
+
+    prompt = (
+        f"{request.prompt}. Style: {request.style}" if request.style else request.prompt
+    )
+    image_bytes, model_used = await llm_service.generate_image(
+        prompt=prompt,
+        aspect_ratio=request.aspect_ratio,
+        user=current_user,
+        db=db,
+    )
+    if image_bytes is None:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=model_used or "Image generation failed",
+        )
+
+    material = None
+    if request.material_id:
+        material = deps.load_owned_or_404(
+            db,
+            WeeklyMaterial,
+            request.material_id,
+            current_user,
+            via_unit=True,
+            detail="Material not found or access denied",
+        )
+        safe_name = f"generated-{uuid.uuid4().hex[:8]}.png"
+        git = get_git_service()
+        images_dir = material_images_dir(material)
+        git.save_binary(
+            unit_id=str(material.unit_id),
+            path=f"{images_dir}/{safe_name}",
+            data=image_bytes,
+            user_email=current_user.email,
+            message=f"Generated image {safe_name}",
+        )
+        return GenerateImageResponse(
+            url=f"/api/materials/units/{material.unit_id}/materials/{material.id}/images/{safe_name}",
+            filename=safe_name,
+            model_used=model_used,
+        )
+
+    encoded = base64.b64encode(image_bytes).decode("ascii")
+    return GenerateImageResponse(
+        url=f"data:image/png;base64,{encoded}", model_used=model_used
+    )
+
+
+def _validate_branching_cards(cards: list[BranchingCardDraft]) -> list[str]:
+    """Post-generation structural checks — collect warnings, don't fail."""
+    warnings: list[str] = []
+    ids = {card.card_id for card in cards}
+    endings = [c for c in cards if c.card_type == "ending"]
+    if len(endings) < 2:
+        warnings.append("Fewer than two ending cards — consider distinct outcomes")
+
+    for card in cards:
+        warnings.extend(
+            f"Choice '{choice.text[:40]}' on card '{card.card_id}' "
+            f"points at missing card '{choice.target_card_id}'"
+            for choice in card.choices
+            if choice.target_card_id not in ids
+        )
+        if card.card_type != "ending" and not card.choices:
+            warnings.append(f"Card '{card.card_id}' has no choices (dead end)")
+
+    # Reachability from the first card
+    if cards:
+        adjacency: dict[str, list[str]] = {}
+        for card in cards:
+            adjacency[card.card_id] = [ch.target_card_id for ch in card.choices]
+        seen = {cards[0].card_id}
+        queue = [cards[0].card_id]
+        while queue:
+            current = queue.pop()
+            for target in adjacency.get(current, []):
+                if target in ids and target not in seen:
+                    seen.add(target)
+                    queue.append(target)
+        orphans = sorted(ids - seen)
+        if orphans:
+            warnings.append(f"Cards unreachable from the start: {', '.join(orphans)}")
+    return warnings
+
+
+@router.post(
+    "/materials/{material_id}/generate-branching",
+    response_model=GenerateBranchingResponse,
+)
+async def generate_branching(
+    request: GenerateBranchingRequest,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> GenerateBranchingResponse:
+    """Draft a branching scenario from a material's content (story 19A.7).
+
+    Returns typed card drafts for propose/apply review — never mutates
+    content_json. The client converts drafts into ``branchingCard`` nodes.
+    """
+    text = flatten_content_to_text(material.content_json)
+    if not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no text content to build a scenario from",
+        )
+
+    pedagogy_instruction = build_pedagogy_instruction(
+        fallback_style=material.unit.pedagogy_type
+    )
+    prompt = render_branching_prompt(
+        content=text,
+        pedagogy_instruction=pedagogy_instruction,
+        design_block="",
+        card_count=request.card_count,
+        audience=request.audience,
+    )
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=GenerateBranchingResponse,
+        system_prompt=BRANCHING_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=8192,
+    )
+    if error or result is None or not result.cards:
+        logger.error("Branching generation failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Branching generation produced no cards",
+        )
+
+    result.warnings = _validate_branching_cards(result.cards)
+    result.start_card_id = result.cards[0].card_id
+    return result
+
+
+@router.post(
+    "/materials/{material_id}/generate-quiz",
+    response_model=GenerateQuizResponse,
+)
+async def generate_quiz(
+    request: GenerateQuizRequest,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> GenerateQuizResponse:
+    """Draft practice questions from a material's content (story 19C.6).
+
+    Returns typed question drafts for propose/apply review. The client
+    converts drafts into ``quizQuestion`` nodes, which export through
+    QTI/H5P unchanged.
+    """
+    invalid = set(request.question_types) - QUIZ_QUESTION_TYPES
+    if invalid:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported question types: {', '.join(sorted(invalid))}. "
+            f"Supported: {', '.join(sorted(QUIZ_QUESTION_TYPES))}",
+        )
+    if not request.question_types:
+        raise HTTPException(
+            status_code=400, detail="At least one question type is required"
+        )
+
+    text = flatten_content_to_text(material.content_json)
+    if not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no text content to write questions from",
+        )
+
+    pedagogy_instruction = build_pedagogy_instruction(
+        fallback_style=material.unit.pedagogy_type
+    )
+    prompt = render_quiz_prompt(
+        content=text,
+        question_types=request.question_types,
+        count=request.count,
+        pedagogy_instruction=pedagogy_instruction,
+    )
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=GenerateQuizResponse,
+        system_prompt=QUIZ_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=8192,
+    )
+    if error or result is None or not result.questions:
+        logger.error("Quiz generation failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Quiz generation produced no questions",
+        )
+    return result
+
+
+@router.get("/lesson-plan/frameworks")
+async def list_lesson_plan_frameworks() -> dict[str, Any]:
+    """List available lesson-plan frameworks with when-to-use guidance."""
+    return {
+        framework_id: {
+            "name": fw["name"],
+            "summary": fw["summary"],
+            "when_to_use": fw["when_to_use"],
+        }
+        for framework_id, fw in FRAMEWORKS.items()
+    }
+
+
+@router.post("/generate-lesson-plan", response_model=LessonPlanResponse)
+async def generate_lesson_plan(
+    request: LessonPlanRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
+) -> LessonPlanResponse:
+    """Generate a framework-structured lesson plan from content (story 5.12).
+
+    Frameworks: Gagné's Nine Events, BOPPPS, 5E — with Bloom-tagged
+    objectives, segments timed to ``duration_minutes``, formative checks
+    with anticipated misconceptions, and differentiation notes.
+    """
+    if request.framework_id not in FRAMEWORKS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown framework. Must be one of: {', '.join(sorted(FRAMEWORKS))}",
+        )
+
+    unit_context_block = ""
+    prompt = render_lesson_plan_prompt(
+        content=request.content,
+        framework_id=request.framework_id,
+        duration_minutes=request.duration_minutes,
+        class_size=request.class_size,
+        delivery_mode=request.delivery_mode,
+        unit_context_block=unit_context_block,
+        pedagogy_instruction="",
+    )
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=LessonPlanResponse,
+        system_prompt=LESSON_PLAN_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=8192,
+    )
+    if error or result is None:
+        logger.error("Lesson plan generation failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=error or "Lesson plan generation failed",
+        )
+    return result

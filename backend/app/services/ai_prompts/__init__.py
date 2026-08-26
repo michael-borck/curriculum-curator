@@ -7,9 +7,22 @@ library or DB templates) because these are injection-hardened machinery prompts
 whose exact JSON shape is coupled to a Pydantic response model.
 """
 
+from app.services.ai_prompts.branching import (
+    BRANCHING_SYSTEM,
+    render_branching_prompt,
+)
 from app.services.ai_prompts.fill_gap import (
     FILL_GAP_SYSTEM,
     render_fill_gap_prompt,
+)
+from app.services.ai_prompts.lesson_plan import (
+    FRAMEWORKS,
+    LESSON_PLAN_SYSTEM,
+    render_lesson_plan_prompt,
+)
+from app.services.ai_prompts.quiz_gen import (
+    QUIZ_SYSTEM,
+    render_quiz_prompt,
 )
 from app.services.ai_prompts.remediate import (
     REMEDIATE_SYSTEM,
@@ -52,7 +65,11 @@ from app.services.ai_prompts.visual import (
 )
 
 __all__ = [
+    "BRANCHING_SYSTEM",
     "FILL_GAP_SYSTEM",
+    "FRAMEWORKS",
+    "LESSON_PLAN_SYSTEM",
+    "QUIZ_SYSTEM",
     "REMEDIATE_SYSTEM",
     "SCAFFOLD_UNIT_SYSTEM",
     "SCHEDULE_SYSTEM",
@@ -64,7 +81,10 @@ __all__ = [
     "VIDEO_INTERACTION_SYSTEM",
     "VISUAL_PROMPT_SYSTEM",
     "ValidationCheck",
+    "render_branching_prompt",
     "render_fill_gap_prompt",
+    "render_lesson_plan_prompt",
+    "render_quiz_prompt",
     "render_remediate_prompt",
     "render_scaffold_unit_prompt",
     "render_schedule_prompt",

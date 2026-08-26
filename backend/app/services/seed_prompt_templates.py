@@ -202,6 +202,109 @@ SYSTEM_TEMPLATES: list[dict[str, Any]] = [
         ],
     },
     {
+        "name": "Lesson Plan — Gagné's Nine Events",
+        "description": (
+            "Best for direct instruction of new procedural or conceptual "
+            "content. Nine steps from gaining attention to retention and "
+            "transfer, with timed segments, Bloom-tagged objectives and "
+            "formative checks (ADR-068)."
+        ),
+        "type": "lecture",
+        "template_content": (
+            "Design a lesson plan using Gagné's Nine Events of Instruction "
+            "for {{duration_minutes}} minutes with {{unit_level}} students.\n\n"
+            "Follow the nine events: gain attention, inform objectives, recall "
+            "prior learning, present content, provide guidance, elicit "
+            "performance, provide feedback, assess performance, enhance "
+            "retention and transfer.\n\n"
+            "Include Bloom-tagged objectives, timed segments summing to the "
+            "session length, formative checks with anticipated misconceptions, "
+            "and differentiation notes.\n\n"
+            "Content:\n{{content}}"
+        ),
+        "variables": [
+            {
+                "name": "duration_minutes",
+                "label": "Session Duration (minutes)",
+                "default": "50",
+            },
+            {
+                "name": "unit_level",
+                "label": "Student Level",
+                "default": "undergraduate",
+            },
+            {"name": "content", "label": "Source Content", "default": ""},
+        ],
+    },
+    {
+        "name": "Lesson Plan — BOPPPS",
+        "description": (
+            "Best for compact single-session lessons wanting explicit "
+            "objective signposting — tutorials, labs, flipped classrooms. "
+            "Bridge-in → Objectives → Pre-assessment → Participatory learning "
+            "→ Post-assessment → Summary (ADR-068)."
+        ),
+        "type": "tutorial",
+        "template_content": (
+            "Design a BOPPPS lesson plan for {{duration_minutes}} minutes "
+            "with {{unit_level}} students.\n\n"
+            "Phases: Bridge-in (hook), Objectives, Pre-assessment of prior "
+            "knowledge, Participatory learning (active), Post-assessment "
+            "checked against objectives, Summary.\n\n"
+            "Include Bloom-tagged objectives, timed segments summing to the "
+            "session length, formative checks with anticipated misconceptions, "
+            "and differentiation notes.\n\n"
+            "Content:\n{{content}}"
+        ),
+        "variables": [
+            {
+                "name": "duration_minutes",
+                "label": "Session Duration (minutes)",
+                "default": "50",
+            },
+            {
+                "name": "unit_level",
+                "label": "Student Level",
+                "default": "undergraduate",
+            },
+            {"name": "content", "label": "Source Content", "default": ""},
+        ],
+    },
+    {
+        "name": "Lesson Plan — 5E Constructivist Cycle",
+        "description": (
+            "Best for conceptual topics suited to inquiry where "
+            "misconceptions are common. Engage → Explore → Explain → "
+            "Elaborate → Evaluate (ADR-068)."
+        ),
+        "type": "tutorial",
+        "template_content": (
+            "Design a 5E lesson plan for {{duration_minutes}} minutes with "
+            "{{unit_level}} students.\n\n"
+            "Phases: Engage (hook that surfaces prior conceptions), Explore "
+            "(hands-on discovery before explanation), Explain (consolidate "
+            "findings), Elaborate (apply in a new context), Evaluate "
+            "(formative check).\n\n"
+            "Include Bloom-tagged objectives, timed segments summing to the "
+            "session length, formative checks with anticipated misconceptions, "
+            "and differentiation notes.\n\n"
+            "Content:\n{{content}}"
+        ),
+        "variables": [
+            {
+                "name": "duration_minutes",
+                "label": "Session Duration (minutes)",
+                "default": "50",
+            },
+            {
+                "name": "unit_level",
+                "label": "Student Level",
+                "default": "undergraduate",
+            },
+            {"name": "content", "label": "Source Content", "default": ""},
+        ],
+    },
+    {
         "name": "Marking Calibration Companion",
         "description": "Help calibrate marking by generating sample responses at different grade levels.",
         "type": "rubric",
