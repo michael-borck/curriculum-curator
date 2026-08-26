@@ -55,3 +55,15 @@ export function estimateTokens(
   const text = (top as ContentNode[]).map(nodeText).join(' ');
   return Math.ceil(text.length / 4);
 }
+
+/** Flatten a TipTap document to plain text (for AI prompts). */
+export function flattenToText(
+  contentJson: Record<string, unknown> | undefined | null
+): string {
+  const top = contentJson?.content;
+  if (!Array.isArray(top)) return '';
+  return (top as ContentNode[])
+    .map(nodeText)
+    .filter(text => text.trim() !== '')
+    .join('\n\n');
+}

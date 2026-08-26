@@ -13,8 +13,11 @@ import {
   Layers,
   Droplets,
   Box,
+  ImageIcon,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { generateVisualPrompt } from '../../services/api';
+import { aiApi } from '../../services/aiApi';
 import type {
   VisualPromptStyle,
   VisualPromptAspectRatio,
@@ -25,6 +28,8 @@ interface VisualPromptPanelProps {
   isOpen: boolean;
   onClose: () => void;
   selectedText: string;
+  materialId?: string | undefined;
+  onInsertImage?: ((src: string, alt: string) => void) | undefined;
 }
 
 const STYLES: {
@@ -54,6 +59,8 @@ const VisualPromptPanel: React.FC<VisualPromptPanelProps> = ({
   isOpen,
   onClose,
   selectedText,
+  materialId,
+  onInsertImage,
 }) => {
   const [content, setContent] = useState(selectedText);
   const [style, setStyle] = useState<VisualPromptStyle>('photographic');
@@ -65,6 +72,8 @@ const VisualPromptPanel: React.FC<VisualPromptPanelProps> = ({
   const [copied, setCopied] = useState(false);
   const [showNegative, setShowNegative] = useState(false);
   const [error, setError] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
 
   // Sync selectedText when panel opens with new selection
   const [lastSelectedText, setLastSelectedText] = useState(selectedText);
@@ -101,6 +110,40 @@ const VisualPromptPanel: React.FC<VisualPromptPanelProps> = ({
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   };
+
+  // Generate the image itself (15.5). With a materialId the PNG lands in
+  // the material's image library and returns a durable URL; without one
+  // only a preview data URL comes back.
+  const handleGenerateImage = async () => {
+    const promptText =
+      result?.prompt ??
+      `${content.trim()}${context.trim() ? `. ${context.trim()}` : ''}`;
+    if (!promptText.trim()) return;
+    setImageLoading(true);
+    setError('');
+    try {
+      const { data } = await aiApi.generateImage({
+        prompt: promptText,
+        aspectRatio,
+        style: result?.styleNotes || undefined,
+        materialId,
+      });
+      setImageUrl(data.url);
+      toast.success(
+        data.filename ? 'Image saved to this material' : 'Image ready'
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message.replace(/^Request failed with status code \d+: /, '')
+          : 'Failed to generate image'
+      );
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const canInsert = Boolean(onInsertImage && imageUrl.startsWith('/api/'));
 
   if (!isOpen) return null;
 
@@ -270,6 +313,54 @@ const VisualPromptPanel: React.FC<VisualPromptPanelProps> = ({
             {/* Style notes */}
             <div className='bg-amber-50 border border-amber-200 rounded-md p-3 text-xs text-amber-800'>
               <span className='font-medium'>Tip:</span> {result.styleNotes}
+            </div>
+
+            {/* Generate the image itself (15.5) */}
+            <div className='border-t border-gray-100 pt-3 space-y-2'>
+              <button
+                onClick={handleGenerateImage}
+                disabled={imageLoading}
+                title='Generate an image from this prompt'
+                className='w-full flex items-center justify-center gap-2 bg-purple-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+              >
+                {imageLoading ? (
+                  <>
+                    <Loader2 size={16} className='animate-spin' />
+                    Generating image…
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon size={16} />
+                    Generate Image
+                  </>
+                )}
+              </button>
+
+              {imageUrl && (
+                <div className='space-y-2'>
+                  <img
+                    src={imageUrl}
+                    alt='AI-generated illustration for this material'
+                    className='w-full rounded-md border border-gray-200'
+                  />
+                  {canInsert && (
+                    <button
+                      onClick={() =>
+                        onInsertImage?.(imageUrl, content.slice(0, 80))
+                      }
+                      className='w-full bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors'
+                    >
+                      Insert into document
+                    </button>
+                  )}
+                  {!canInsert && imageUrl.startsWith('data:') && (
+                    <p className='text-xs text-gray-500'>
+                      Preview only — open the editor on a material to save
+                      generated images to its library.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Regenerate */}

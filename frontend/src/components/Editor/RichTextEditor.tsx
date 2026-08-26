@@ -343,6 +343,10 @@ const RichTextEditor = ({
         isOpen={showVisualPrompt}
         onClose={() => setShowVisualPrompt(false)}
         selectedText={visualPromptText}
+        materialId={materialId}
+        onInsertImage={(src, alt) =>
+          editor?.chain().focus().setImage({ src, alt }).run()
+        }
       />
       <EditorContent
         editor={editor}

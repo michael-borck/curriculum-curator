@@ -1,14 +1,31 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save, Sparkles, Wand2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookOpen,
+  GitFork,
+  HelpCircle,
+  Loader2,
+  Save,
+  Sparkles,
+  Wand2,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Editor } from '@tiptap/core';
 import UnifiedEditor from '../components/Editor/UnifiedEditor';
 import SpeakerNotesGenerateDialog from '../components/Editor/SpeakerNotesGenerateDialog';
+import BranchingGenerateDialog from '../components/Editor/BranchingGenerateDialog';
+import QuizGenerateDialog from '../components/Editor/QuizGenerateDialog';
+import LessonPlanDialog from '../components/Editor/LessonPlanDialog';
 import RestructureDialog from '../components/Editor/RestructureDialog';
 import SourceFilesPanel from '../components/Editor/SourceFilesPanel';
 import { materialsApi } from '../services/materialsApi';
-import type { SpeakerNotesDraft } from '../services/aiApi';
+import type {
+  SpeakerNotesDraft,
+  BranchingCardDraft,
+  LessonPlanResponse,
+  QuizQuestionDraft,
+} from '../services/aiApi';
 import type { AttachedSourceFile } from '../services/materialImportApi';
 import type { MaterialResponse } from '../types/unitStructure';
 import { getFormatMeta } from '../constants/sessionFormats';
@@ -16,7 +33,13 @@ import { applySpeakerNotesDrafts } from '../utils/speakerNotes';
 import {
   isPlainParagraphContent,
   estimateTokens,
+  flattenToText,
 } from '../utils/contentStructure';
+import {
+  appendBranchingCards,
+  appendQuizQuestions,
+  lessonPlanToNodes,
+} from '../utils/generatedContent';
 import { useAILevel } from '../hooks/useAILevel';
 
 /**
@@ -45,6 +68,9 @@ const MaterialEditorPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [restructureOpen, setRestructureOpen] = useState(false);
+  const [branchingOpen, setBranchingOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [lessonPlanOpen, setLessonPlanOpen] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -210,6 +236,34 @@ const MaterialEditorPage: React.FC = () => {
               Improve structure
             </button>
           )}
+          {!isAIDisabled && flattenToText(liveJson).trim() && (
+            <>
+              <button
+                onClick={() => setBranchingOpen(true)}
+                className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+                title='Draft a branching scenario from this material with AI, reviewed before applying'
+              >
+                <GitFork className='w-4 h-4' />
+                Scenario with AI
+              </button>
+              <button
+                onClick={() => setQuizOpen(true)}
+                className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+                title='Draft practice quiz questions from this material with AI, reviewed before applying'
+              >
+                <HelpCircle className='w-4 h-4' />
+                Quiz with AI
+              </button>
+              <button
+                onClick={() => setLessonPlanOpen(true)}
+                className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+                title='Generate a timed lesson plan (Gagné / BOPPPS / 5E) from this material, reviewed before inserting'
+              >
+                <BookOpen className='w-4 h-4' />
+                Lesson plan
+              </button>
+            </>
+          )}
           <button
             onClick={handleSave}
             disabled={saving || !dirty}
@@ -297,6 +351,56 @@ const MaterialEditorPage: React.FC = () => {
             toast.success('Structure applied — remember to save');
           }}
           onClose={() => setRestructureOpen(false)}
+        />
+      )}
+
+      {branchingOpen && materialId && editorRef.current && (
+        <BranchingGenerateDialog
+          materialId={materialId}
+          onApply={(cards: BranchingCardDraft[]) => {
+            const editor = editorRef.current;
+            if (!editor) return;
+            const updated = appendBranchingCards(editor.getJSON(), cards);
+            editor.commands.setContent(updated, true);
+            toast.success(
+              `Added ${cards.length} branching card${cards.length === 1 ? '' : 's'} — remember to save`
+            );
+          }}
+          onClose={() => setBranchingOpen(false)}
+        />
+      )}
+
+      {quizOpen && materialId && editorRef.current && (
+        <QuizGenerateDialog
+          materialId={materialId}
+          onApply={(questions: QuizQuestionDraft[]) => {
+            const editor = editorRef.current;
+            if (!editor) return;
+            const updated = appendQuizQuestions(editor.getJSON(), questions);
+            editor.commands.setContent(updated, true);
+            toast.success(
+              `Added ${questions.length} question${questions.length === 1 ? '' : 's'} — remember to save`
+            );
+          }}
+          onClose={() => setQuizOpen(false)}
+        />
+      )}
+
+      {lessonPlanOpen && editorRef.current && (
+        <LessonPlanDialog
+          content={flattenToText(liveJson)}
+          onApply={(plan: LessonPlanResponse) => {
+            const editor = editorRef.current;
+            if (!editor) return;
+            const current = editor.getJSON();
+            const nodes = lessonPlanToNodes(plan);
+            editor.commands.setContent(
+              { ...current, content: [...(current.content ?? []), ...nodes] },
+              true
+            );
+            toast.success('Lesson plan inserted — remember to save');
+          }}
+          onClose={() => setLessonPlanOpen(false)}
         />
       )}
     </div>
