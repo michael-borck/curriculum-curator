@@ -18,6 +18,8 @@ extraResources:
     filter:
       - "**/*"
 
+afterSign: scripts/notarize.js
+
 mac:
   target:
     - target: dmg
@@ -26,14 +28,9 @@ mac:
         - arm64
   entitlementsInherit: build/entitlements.mac.plist
   entitlements: build/entitlements.mac.plist
-  # Unsigned build: no Apple Developer cert configured. `identity: null` skips
-  # code signing; hardenedRuntime + notarize require signing so are disabled.
-  # Users see a Gatekeeper "unidentified developer" prompt (right-click → Open).
-  # To ship signed/notarized, set identity, hardenedRuntime/notarize back to
-  # true, and add the MACOS_CERTIFICATE / APPLE_* repo secrets.
-  identity: null
-  hardenedRuntime: false
+  hardenedRuntime: true
   gatekeeperAssess: false
+  # scripts/notarize.js owns notarization; the built-in wrapper must not run.
   notarize: false
   category: public.app-category.education
 

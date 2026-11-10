@@ -3,6 +3,7 @@ name: Desktop Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +17,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-15
             platform: mac
             pyinstaller_name: curriculum-curator-api
           - os: windows-latest
@@ -162,6 +163,39 @@ jobs:
           cd desktop
           npx electron-vite build
 
+      - name: Import macOS signing certificate
+        if: matrix.platform == 'mac'
+        env:
+          CERT_B64: ${{ secrets.APPLE_CERTIFICATE || secrets.CSC_LINK }}
+          CERT_PWD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD || secrets.CSC_KEY_PASSWORD }}
+        run: |
+          set -e
+          echo "$CERT_B64" | base64 --decode > certificate.p12
+          security create-keychain -p actions build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p actions build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
+          rm certificate.p12
+          security find-identity -v -p codesigning
+
+      - name: Prepare App Store Connect API key
+        if: matrix.platform == 'mac'
+        env:
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          if [ -n "$APPLE_API_KEY_CONTENT" ] && [ -n "$APPLE_API_KEY" ]; then
+            mkdir -p "$RUNNER_TEMP/apple-api"
+            KEY_PATH="$RUNNER_TEMP/apple-api/AuthKey_${APPLE_API_KEY}.p8"
+            printf '%s' "$APPLE_API_KEY_CONTENT" | openssl base64 -d -A > "$KEY_PATH"
+            chmod 600 "$KEY_PATH"
+            echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          else
+            echo "No API key secrets; notarization will fall back to Apple ID"
+          fi
+
       - name: Package Electron app
         run: |
           cd desktop
@@ -169,10 +203,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_OWNER: ${{ github.repository_owner }}
-          # Unsigned builds (no signing certs configured). Passing an empty
-          # CSC_LINK makes electron-builder try to load "" as a cert and fail
-          # ("not a file"), so omit it and disable identity auto-discovery.
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          # The certificate is imported into the keychain above, so do not set
+          # CSC_LINK (electron-builder would create a second temp keychain).
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          NOTARIZE_APPLE_ID: ${{ secrets.APPLE_ID }}
+          NOTARIZE_APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          NOTARIZE_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
