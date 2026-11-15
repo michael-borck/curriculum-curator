@@ -1,4 +1,5 @@
-name: Desktop Release
+# Shared Electron release pipeline: michael-borck/app-hq/.github/workflows/electron-release.yml
+name: Release desktop
 
 on:
   push:
@@ -8,244 +9,41 @@ on:
 permissions:
   contents: write
 
-defaults:
-  run:
-    shell: bash
+concurrency:
+  group: release-desktop-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        include:
-          - os: macos-15
-            platform: mac
-            pyinstaller_name: curriculum-curator-api
-          - os: windows-latest
-            platform: win
-            pyinstaller_name: curriculum-curator-api.exe
-          - os: ubuntu-latest
-            platform: linux
-            pyinstaller_name: curriculum-curator-api
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install Python dependencies
-        run: |
-          cd backend
-          pip install pyinstaller
-          pip install -e .
-
-      - name: Build PyInstaller binary
-        run: |
-          cd backend
-          pyinstaller --onefile --console --name curriculum-curator-api \
-            --hidden-import uvicorn.logging \
-            --hidden-import uvicorn.loops \
-            --hidden-import uvicorn.loops.auto \
-            --hidden-import uvicorn.protocols \
-            --hidden-import uvicorn.protocols.http \
-            --hidden-import uvicorn.protocols.http.auto \
-            --hidden-import uvicorn.protocols.websockets \
-            --hidden-import uvicorn.protocols.websockets.auto \
-            --hidden-import uvicorn.lifespan \
-            --hidden-import uvicorn.lifespan.on \
-            --hidden-import uvicorn.lifespan.off \
-            --hidden-import multipart \
-            --hidden-import email_validator \
-            --hidden-import passlib.handlers.bcrypt \
-            --hidden-import jose \
-            --hidden-import litellm \
-            --hidden-import tiktoken \
-            --hidden-import tiktoken_ext \
-            --hidden-import tiktoken_ext.openai_public \
-            --hidden-import sqlalchemy.dialects.sqlite \
-            --collect-data litellm \
-            --collect-data tiktoken_ext \
-            --collect-data spellchecker \
-            run_server.py
-
-      - name: Test backend executable
-        run: |
-          cd backend
-          ./dist/${{ matrix.pyinstaller_name }} --port 8199 &
-          BACKEND_PID=$!
-          sleep 10
-          for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:8199/health; then
-              echo "Backend healthy"
-              break
-            fi
-            sleep 1
-          done
-          kill $BACKEND_PID || true
-          wait $BACKEND_PID 2>/dev/null || true
-
-      - name: Copy backend binary to desktop
-        run: |
-          mkdir -p desktop/backend-dist
-          cp backend/dist/${{ matrix.pyinstaller_name }} desktop/backend-dist/
-
-      - name: Download Pandoc
-        run: |
-          mkdir -p desktop/vendor/pandoc
-          PANDOC_VERSION="3.6.4"
-          case "${{ matrix.platform }}" in
-            mac)
-              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-arm64-macOS.zip" -o pandoc.zip
-              unzip -q pandoc.zip -d pandoc-tmp
-              cp pandoc-tmp/pandoc-${PANDOC_VERSION}-arm64/bin/pandoc desktop/vendor/pandoc/
-              ;;
-            win)
-              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-windows-x86_64.zip" -o pandoc.zip
-              unzip -q pandoc.zip -d pandoc-tmp
-              cp pandoc-tmp/pandoc-${PANDOC_VERSION}/pandoc.exe desktop/vendor/pandoc/
-              ;;
-            linux)
-              curl -sL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz" -o pandoc.tar.gz
-              tar xzf pandoc.tar.gz
-              cp pandoc-${PANDOC_VERSION}/bin/pandoc desktop/vendor/pandoc/
-              ;;
-          esac
-
-      - name: Download Typst
-        run: |
-          mkdir -p desktop/vendor/typst
-          TYPST_VERSION="v0.13.1"
-          case "${{ matrix.platform }}" in
-            mac)
-              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-aarch64-apple-darwin.tar.xz" -o typst.tar.xz
-              tar xf typst.tar.xz
-              cp typst-aarch64-apple-darwin/typst desktop/vendor/typst/
-              ;;
-            win)
-              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-pc-windows-msvc.zip" -o typst.zip
-              unzip -q typst.zip -d typst-tmp
-              cp typst-tmp/typst-x86_64-pc-windows-msvc/typst.exe desktop/vendor/typst/
-              ;;
-            linux)
-              curl -sL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" -o typst.tar.xz
-              tar xf typst.tar.xz
-              cp typst-x86_64-unknown-linux-musl/typst desktop/vendor/typst/
-              ;;
-          esac
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      - name: Install desktop dependencies
-        run: |
-          cd desktop
-          npm ci
-
-      - name: TypeScript check
-        run: |
-          cd desktop
-          npx tsc --noEmit
-
-      - name: Build Electron app
-        run: |
-          cd desktop
-          npx electron-vite build
-
-      - name: Import macOS signing certificate
-        if: matrix.platform == 'mac'
-        env:
-          CERT_B64: ${{ secrets.APPLE_CERTIFICATE || secrets.CSC_LINK }}
-          CERT_PWD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD || secrets.CSC_KEY_PASSWORD }}
-        run: |
-          set -e
-          echo "$CERT_B64" | base64 --decode > certificate.p12
-          security create-keychain -p actions build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p actions build.keychain
-          security set-keychain-settings -lut 21600 build.keychain
-          security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions build.keychain
-          rm certificate.p12
-          security find-identity -v -p codesigning
-
-      - name: Prepare App Store Connect API key
-        if: matrix.platform == 'mac'
-        env:
-          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-        run: |
-          if [ -n "$APPLE_API_KEY_CONTENT" ] && [ -n "$APPLE_API_KEY" ]; then
-            mkdir -p "$RUNNER_TEMP/apple-api"
-            KEY_PATH="$RUNNER_TEMP/apple-api/AuthKey_${APPLE_API_KEY}.p8"
-            printf '%s' "$APPLE_API_KEY_CONTENT" | openssl base64 -d -A > "$KEY_PATH"
-            chmod 600 "$KEY_PATH"
-            echo "APPLE_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
-          else
-            echo "No API key secrets; notarization will fall back to Apple ID"
-          fi
-
-      - name: Package Electron app
-        run: |
-          cd desktop
-          npx electron-builder --${{ matrix.platform }} --publish never
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_OWNER: ${{ github.repository_owner }}
-          # The certificate is imported into the keychain above, so do not set
-          # CSC_LINK (electron-builder would create a second temp keychain).
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
-          NOTARIZE_APPLE_ID: ${{ secrets.APPLE_ID }}
-          NOTARIZE_APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          NOTARIZE_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-${{ matrix.platform }}
-          path: |
-            desktop/dist/*.dmg
-            desktop/dist/*.exe
-            desktop/dist/*.AppImage
-            desktop/dist/latest*.yml
-          if-no-files-found: ignore
-          retention-days: 5
-
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            artifacts/desktop-mac/*.dmg
-            artifacts/desktop-win/*.exe
-            artifacts/desktop-linux/*.AppImage
-            artifacts/desktop-mac/latest*.yml
-            artifacts/desktop-win/latest*.yml
-            artifacts/desktop-linux/latest*.yml
-          draft: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: michael-borck/app-hq/.github/workflows/electron-release.yml@main
+    with:
+      product-name: Curriculum Curator
+      node-version: '22'
+      cache: ''
+      install-command: |
+        (cd frontend && npm ci)
+        (cd desktop && npm ci)
+      preflight-command: cd desktop && npx tsc --noEmit
+      build-command: cd desktop && npx electron-vite build
+      sidecar-command: bash scripts/build-sidecar.sh
+      package-command: cd desktop && npx electron-builder --$PLATFORM --publish never
+      notarize-check-command: cd desktop && npx electron-builder --mac --publish never
+      notarize-check-artifact-root: desktop/dist
+      signing-mode: custom
+      notarize-mode: hook
+      publish-mode: artifacts
+      artifact-globs: |
+        desktop/dist/*.dmg
+        desktop/dist/*.exe
+        desktop/dist/*.AppImage
+        desktop/dist/*.yml
+        desktop/dist/*.yaml
+        desktop/dist/*.blockmap
+    secrets:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
