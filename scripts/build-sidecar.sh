@@ -48,6 +48,8 @@ pyinstaller --onefile --console --name curriculum-curator-api \
   --collect-data litellm \
   --collect-data tiktoken_ext \
   --collect-data spellchecker \
+  --collect-submodules app \
+  --paths . \
   run_server.py
 
 ./dist/curriculum-curator-api$EXT --port 8199 > server.log 2>&1 &
