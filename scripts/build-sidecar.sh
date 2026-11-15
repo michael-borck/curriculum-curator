@@ -52,7 +52,7 @@ pyinstaller --onefile --console --name curriculum-curator-api \
   --paths . \
   run_server.py
 
-./dist/curriculum-curator-api$EXT --port 8199 > server.log 2>&1 &
+SECRET_KEY=ci-test-secret ./dist/curriculum-curator-api$EXT --port 8199 > server.log 2>&1 &
 PID=$!
 ready=0
 for _ in $(seq 1 30); do
