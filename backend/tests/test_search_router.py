@@ -89,9 +89,7 @@ async def test_cache_expires_after_ttl(monkeypatch):
 
     monkeypatch.setattr(router, "_search_academic", fake_academic)
     now = [1000.0]
-    monkeypatch.setattr(
-        search_router_module.time, "monotonic", lambda: now[0]
-    )
+    monkeypatch.setattr(search_router_module.time, "monotonic", lambda: now[0])
 
     await router.search("query", preferred_tier=1, max_results=5)
     await router.search("query", preferred_tier=1, max_results=5)
@@ -129,9 +127,7 @@ async def test_searxng_uses_the_users_instance_url(monkeypatch):
         seen.update(kwargs)
         return [_result()]
 
-    monkeypatch.setattr(
-        search_router_module.web_search_service, "search", fake_search
-    )
+    monkeypatch.setattr(search_router_module.web_search_service, "search", fake_search)
 
     await router.search(
         "query",

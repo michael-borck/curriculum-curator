@@ -100,9 +100,7 @@ def _branch_response(**overrides) -> GenerateBranchingResponse:
                 BranchingChoiceDraft(
                     id="ch1", text="Click the link", target_card_id="c2"
                 ),
-                BranchingChoiceDraft(
-                    id="ch2", text="Report it", target_card_id="c3"
-                ),
+                BranchingChoiceDraft(id="ch2", text="Report it", target_card_id="c3"),
             ],
         ),
         BranchingCardDraft(
@@ -324,9 +322,7 @@ async def test_lesson_plan_happy_path(test_db: Session, test_user: User):
 
 
 @pytest.mark.asyncio
-async def test_lesson_plan_rejects_unknown_framework(
-    test_db: Session, test_user: User
-):
+async def test_lesson_plan_rejects_unknown_framework(test_db: Session, test_user: User):
     with pytest.raises(HTTPException) as exc_info:
         await generate_lesson_plan(
             request=LessonPlanRequest(
@@ -346,7 +342,9 @@ async def test_lesson_plan_rejects_unknown_framework(
 class TestGenerateImageService:
     @pytest.mark.asyncio
     async def test_no_provider_returns_error(self, test_db: Session):
-        with patch.object(llm_service, "_get_llm_config", return_value=("", "", None, None)):
+        with patch.object(
+            llm_service, "_get_llm_config", return_value=("", "", None, None)
+        ):
             image_bytes, error = await llm_service.generate_image("a fox")
         assert image_bytes is None
         assert "No AI provider configured" in error

@@ -157,9 +157,7 @@ class WebSearchService:
 
         return min(max(score, 0.0), 1.0)
 
-    def _searxng_headers(
-        self, searxng_url: str | None = None
-    ) -> dict[str, str]:
+    def _searxng_headers(self, searxng_url: str | None = None) -> dict[str, str]:
         """Browser-like headers to reduce bot-detection 429s from public SearXNG instances."""
         return {
             "User-Agent": (
@@ -343,9 +341,7 @@ class WebSearchService:
         if time_range:
             params["time_range"] = time_range
 
-        data = await self._fetch_searxng(
-            params, timeout, searxng_url=searxng_url
-        )
+        data = await self._fetch_searxng(params, timeout, searxng_url=searxng_url)
 
         results: list[SearchResult] = []
         for item in data.get("results", [])[:max_results]:

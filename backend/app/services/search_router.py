@@ -101,9 +101,7 @@ class SearchRouter:
         Returns (results, tier_used).
         Falls back to lower tiers if preferred tier is unavailable.
         """
-        cache_key = self._cache_key(
-            query, preferred_tier, max_results, user_settings
-        )
+        cache_key = self._cache_key(query, preferred_tier, max_results, user_settings)
         cached = self._cache_get(cache_key)
         if cached is not None:
             cached_results, cached_tier = cached
@@ -128,9 +126,7 @@ class SearchRouter:
         elif tier == SearchTier.GENERAL_WEB:
             results = await self._search_tier3(query, max_results, user_settings or {})
         elif tier == SearchTier.SEARXNG:
-            results = await self._search_searxng(
-                query, max_results, user_settings
-            )
+            results = await self._search_searxng(query, max_results, user_settings)
         else:
             results = await self._search_academic(query, max_results, user_settings)
             tier = SearchTier.ACADEMIC
@@ -186,13 +182,9 @@ class SearchRouter:
             "searxng_url": settings_dict.get("searxngUrl") or "",
             "user_excluded": user_excluded,
             "user_keys": key_fingerprints,
-            "system_core_key": self._fingerprint(
-                app_settings.CORE_API_KEY or ""
-            ),
+            "system_core_key": self._fingerprint(app_settings.CORE_API_KEY or ""),
             "system_searxng_url": app_settings.SEARXNG_URL or "",
-            "system_excluded": sorted(
-                app_settings.EXCLUDED_SEARCH_DOMAINS or []
-            ),
+            "system_excluded": sorted(app_settings.EXCLUDED_SEARCH_DOMAINS or []),
         }
         encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(encoded).hexdigest()
@@ -413,9 +405,7 @@ class SearchRouter:
         """Tier 4: SearXNG general web search (user's own instance)."""
         user_url = user_settings.get("searxngUrl") if user_settings else None
         searxng_url = (
-            user_url
-            if isinstance(user_url, str) and user_url.strip()
-            else None
+            user_url if isinstance(user_url, str) and user_url.strip() else None
         )
         return await web_search_service.search(
             query,
