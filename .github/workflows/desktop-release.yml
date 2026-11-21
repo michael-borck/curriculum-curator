@@ -23,6 +23,14 @@ jobs:
       install-command: |
         (cd frontend && npm ci)
         (cd desktop && npm ci)
+      # Keep every package version in step with the release tag. Without this,
+      # electron-builder names artifacts and latest*.yml after a stale
+      # package.json version, which breaks auto-update version comparison.
+      setup-command: |
+        export VERSION="${GITHUB_REF_NAME#v}"
+        (cd frontend && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+        (cd desktop && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+        node -e "const fs=require('fs');const p='backend/pyproject.toml';let s=fs.readFileSync(p,'utf8');s=s.replace(/^version = \".*\"$/m,'version = \"'+process.env.VERSION+'\"');fs.writeFileSync(p,s)"
       preflight-command: cd desktop && npx tsc --noEmit
       build-command: cd desktop && npx electron-vite build
       sidecar-command: bash scripts/build-sidecar.sh

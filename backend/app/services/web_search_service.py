@@ -157,7 +157,9 @@ class WebSearchService:
 
         return min(max(score, 0.0), 1.0)
 
-    def _searxng_headers(self) -> dict[str, str]:
+    def _searxng_headers(
+        self, searxng_url: str | None = None
+    ) -> dict[str, str]:
         """Browser-like headers to reduce bot-detection 429s from public SearXNG instances."""
         return {
             "User-Agent": (
@@ -171,7 +173,7 @@ class WebSearchService:
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
-            "Referer": self.searxng_url,
+            "Referer": searxng_url or self.searxng_url,
             "Sec-Ch-Ua": (
                 '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"'
             ),
@@ -213,20 +215,24 @@ class WebSearchService:
             self._request_tracker.update(kept)
 
     async def _fetch_searxng(
-        self, query_params: dict[str, str | int], timeout: int
+        self,
+        query_params: dict[str, str | int],
+        timeout: int,
+        searxng_url: str | None = None,
     ) -> dict[str, Any]:
         """Try each SearXNG endpoint with exponential backoff + jitter on 429/timeout.
 
         Raises WebSearchError with a classified message on final failure.
         """
-        await self._rate_limit_searxng(self.searxng_url)
+        effective_url = (searxng_url or self.searxng_url).rstrip("/")
+        await self._rate_limit_searxng(effective_url)
         qs = urlencode(query_params)
-        headers = self._searxng_headers()
+        headers = self._searxng_headers(effective_url)
         last_err: Exception | None = None
         last_status: int | None = None
 
         for endpoint in self.SEARXNG_ENDPOINTS:
-            url = f"{self.searxng_url}{endpoint}?{qs}"
+            url = f"{effective_url}{endpoint}?{qs}"
 
             for attempt in range(self.SEARXNG_MAX_RETRIES + 1):
                 if attempt > 0:
@@ -268,13 +274,17 @@ class WebSearchService:
                     last_err = e
                     break
 
-        self._raise_classified(last_status, last_err)
+        self._raise_classified(last_status, last_err, effective_url)
         raise WebSearchError("unreachable")  # pragma: no cover
 
     def _raise_classified(
-        self, last_status: int | None, last_err: Exception | None
+        self,
+        last_status: int | None,
+        last_err: Exception | None,
+        searxng_url: str | None = None,
     ) -> NoReturn:
         """Raise WebSearchError with a specific message based on the failure mode."""
+        url_label = searxng_url or self.searxng_url
         if last_status is not None:
             raise WebSearchError(
                 f"SearXNG returned status {last_status} "
@@ -290,11 +300,11 @@ class WebSearchService:
         err_str = str(last_err).lower()
         if any(tok in err_str for tok in ("certificate", "ssl", "tls", "cert_")):
             raise WebSearchError(
-                f"SearXNG SSL/TLS error for {self.searxng_url}: {last_err}"
+                f"SearXNG SSL/TLS error for {url_label}: {last_err}"
             ) from last_err
         if any(tok in err_str for tok in ("nodename", "name or service", "dns")):
             raise WebSearchError(
-                f"Cannot resolve SearXNG host {self.searxng_url}: {last_err}"
+                f"Cannot resolve SearXNG host {url_label}: {last_err}"
             ) from last_err
         raise WebSearchError(f"SearXNG request failed: {last_err}") from last_err
 
@@ -306,6 +316,7 @@ class WebSearchService:
         category: str = "science",
         time_range: str = "year",
         timeout: int = 30,
+        searxng_url: str | None = None,
     ) -> list[SearchResult]:
         """
         Search using SearXNG instance.
@@ -332,7 +343,9 @@ class WebSearchService:
         if time_range:
             params["time_range"] = time_range
 
-        data = await self._fetch_searxng(params, timeout)
+        data = await self._fetch_searxng(
+            params, timeout, searxng_url=searxng_url
+        )
 
         results: list[SearchResult] = []
         for item in data.get("results", [])[:max_results]:

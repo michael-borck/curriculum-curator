@@ -58,6 +58,16 @@ BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
 
 
+@pytest.fixture(autouse=True)
+def _clear_search_cache():
+    """Keep the process-wide search cache from leaking between tests."""
+    from app.services.search_router import clear_search_cache
+
+    clear_search_cache()
+    yield
+    clear_search_cache()
+
+
 def is_backend_running() -> bool:
     """Check that the curriculum-curator backend (not just any server) is on port 8000"""
     try:

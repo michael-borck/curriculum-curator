@@ -210,6 +210,102 @@ const ResearchSettings = () => {
           </div>
         </div>
 
+        {/* Usage and costs */}
+        <div className='p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+          <h3 className='font-medium mb-2'>Usage, quotas and costs</h3>
+          <p className='text-xs text-gray-600 mb-2'>
+            Identical searches are cached for 10 minutes. Provider quotas are
+            per account; check the dashboard before large batches. Searches
+            leave your server and go to the selected provider.
+          </p>
+          <ul className='text-xs text-gray-700 space-y-1 list-disc pl-5'>
+            <li>
+              Google CSE: 100 free queries per day, then paid.{' '}
+              <a
+                href='https://developers.google.com/custom-search/v1/overview'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                pricing
+              </a>
+            </li>
+            <li>
+              Serper: 2,500 free queries, then prepaid credits.{' '}
+              <a
+                href='https://serper.dev/'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                pricing
+              </a>{' '}
+              ·{' '}
+              <a
+                href='https://serper.dev/dashboard'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                usage
+              </a>
+            </li>
+            <li>
+              Brave: $5 free credit each month, then $5 per 1,000 requests.{' '}
+              <a
+                href='https://brave.com/search/api/'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                pricing
+              </a>{' '}
+              ·{' '}
+              <a
+                href='https://api-dashboard.search.brave.com/app/keys'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                usage
+              </a>
+            </li>
+            <li>
+              Tavily: free monthly credits, then paid.{' '}
+              <a
+                href='https://tavily.com/#pricing'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                pricing
+              </a>
+            </li>
+            <li>
+              CORE: free with registration.{' '}
+              <a
+                href='https://core.ac.uk/services/api'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                API
+              </a>
+            </li>
+            <li>
+              SearXNG: free to self-host; upstream engines can rate-limit.{' '}
+              <a
+                href='https://docs.searxng.org/'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-blue-600 hover:underline'
+              >
+                docs
+              </a>
+            </li>
+          </ul>
+        </div>
+
         {/* Excluded Domains */}
         <div>
           <h3 className='font-medium mb-3'>Excluded Domains</h3>

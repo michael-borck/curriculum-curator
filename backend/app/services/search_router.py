@@ -7,7 +7,10 @@ Tier 3: General web (Google CSE, Serper, Brave, Tavily + DuckDuckGo fallback) â€
 Tier 4: SearXNG â€” user's own instance
 """
 
+import hashlib
+import json
 import logging
+import time
 from enum import IntEnum
 from urllib.parse import urlparse
 
@@ -18,6 +21,18 @@ from app.services.academic_search_service import (
 from app.services.web_search_service import SearchResult, web_search_service
 
 logger = logging.getLogger(__name__)
+
+# Identical searches are expensive (paid APIs and shared quotas), so keep a
+# small in-process cache. Keys include a fingerprint of every setting that can
+# change the result, never the raw API keys.
+_CACHE_TTL_SECONDS = 10 * 60
+_CACHE_MAX_ENTRIES = 100
+_SEARCH_CACHE: dict[str, tuple[float, list[SearchResult], "SearchTier"]] = {}
+
+
+def clear_search_cache() -> None:
+    """Clear cached search results (tests and manual cache purge)."""
+    _SEARCH_CACHE.clear()
 
 
 class SearchTier(IntEnum):
@@ -86,6 +101,15 @@ class SearchRouter:
         Returns (results, tier_used).
         Falls back to lower tiers if preferred tier is unavailable.
         """
+        cache_key = self._cache_key(
+            query, preferred_tier, max_results, user_settings
+        )
+        cached = self._cache_get(cache_key)
+        if cached is not None:
+            cached_results, cached_tier = cached
+            logger.debug("search cache hit")
+            return list(cached_results), cached_tier
+
         tiers = self.get_available_tiers(user_settings)
         available = {t.tier: t for t in tiers if t.available}
 
@@ -104,12 +128,110 @@ class SearchRouter:
         elif tier == SearchTier.GENERAL_WEB:
             results = await self._search_tier3(query, max_results, user_settings or {})
         elif tier == SearchTier.SEARXNG:
-            results = await self._search_searxng(query, max_results)
+            results = await self._search_searxng(
+                query, max_results, user_settings
+            )
         else:
             results = await self._search_academic(query, max_results, user_settings)
             tier = SearchTier.ACADEMIC
 
-        return self._filter_excluded(results, user_settings), tier
+        filtered = self._filter_excluded(results, user_settings)
+        if filtered:
+            self._cache_set(cache_key, filtered, tier)
+        return filtered, tier
+
+    @staticmethod
+    def _fingerprint(value: object) -> str:
+        return hashlib.sha256(str(value).encode("utf-8")).hexdigest()
+
+    def _cache_key(
+        self,
+        query: str,
+        preferred_tier: int | None,
+        max_results: int,
+        user_settings: dict[str, object] | None,
+    ) -> str:
+        """Build a cache key without storing raw API keys.
+
+        Every input that can change the result is included: the query, tier,
+        limit, SearXNG URL, excluded domains, and a digest of each configured
+        key. System-level keys/URLs/exclusions are included as well.
+        """
+        from app.core.config import settings as app_settings  # noqa: PLC0415
+
+        settings_dict = user_settings or {}
+        raw_keys = settings_dict.get("searchApiKeys")
+        api_keys = raw_keys if isinstance(raw_keys, dict) else {}
+        key_fingerprints = {
+            name: self._fingerprint(value)
+            for name, value in sorted(api_keys.items())
+            if isinstance(value, str) and value
+        }
+
+        raw_excluded = settings_dict.get("excludedDomains")
+        user_excluded = (
+            sorted(
+                d.strip().lower().lstrip(".")
+                for d in raw_excluded
+                if isinstance(d, str) and d.strip()
+            )
+            if isinstance(raw_excluded, list)
+            else []
+        )
+
+        payload = {
+            "query": " ".join(query.lower().split()),
+            "preferred_tier": preferred_tier,
+            "max_results": max_results,
+            "searxng_url": settings_dict.get("searxngUrl") or "",
+            "user_excluded": user_excluded,
+            "user_keys": key_fingerprints,
+            "system_core_key": self._fingerprint(
+                app_settings.CORE_API_KEY or ""
+            ),
+            "system_searxng_url": app_settings.SEARXNG_URL or "",
+            "system_excluded": sorted(
+                app_settings.EXCLUDED_SEARCH_DOMAINS or []
+            ),
+        }
+        encoded = json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    @staticmethod
+    def _cache_get(
+        key: str,
+    ) -> tuple[list[SearchResult], SearchTier] | None:
+        entry = _SEARCH_CACHE.get(key)
+        if entry is None:
+            return None
+        stored_at, results, tier = entry
+        if time.monotonic() - stored_at >= _CACHE_TTL_SECONDS:
+            _SEARCH_CACHE.pop(key, None)
+            return None
+        return results, tier
+
+    @staticmethod
+    def _cache_set(
+        key: str,
+        results: list[SearchResult],
+        tier: SearchTier,
+    ) -> None:
+        now = time.monotonic()
+        if len(_SEARCH_CACHE) >= _CACHE_MAX_ENTRIES:
+            expired = [
+                cache_key
+                for cache_key, (stored_at, _, _) in _SEARCH_CACHE.items()
+                if now - stored_at >= _CACHE_TTL_SECONDS
+            ]
+            for cache_key in expired:
+                _SEARCH_CACHE.pop(cache_key, None)
+            while len(_SEARCH_CACHE) >= _CACHE_MAX_ENTRIES:
+                oldest = min(
+                    _SEARCH_CACHE,
+                    key=lambda cache_key: _SEARCH_CACHE[cache_key][0],
+                )
+                _SEARCH_CACHE.pop(oldest, None)
+        _SEARCH_CACHE[key] = (now, list(results), tier)
 
     @staticmethod
     def _filter_excluded(
@@ -282,14 +404,26 @@ class SearchRouter:
             logger.exception("%s search failed, trying next", name)
             return []
 
-    async def _search_searxng(self, query: str, max_results: int) -> list[SearchResult]:
+    async def _search_searxng(
+        self,
+        query: str,
+        max_results: int,
+        user_settings: dict[str, object] | None = None,
+    ) -> list[SearchResult]:
         """Tier 4: SearXNG general web search (user's own instance)."""
+        user_url = user_settings.get("searxngUrl") if user_settings else None
+        searxng_url = (
+            user_url
+            if isinstance(user_url, str) and user_url.strip()
+            else None
+        )
         return await web_search_service.search(
             query,
             max_results=max_results,
             academic_only=False,
             category="general",
             time_range="",
+            searxng_url=searxng_url,
         )
 
 

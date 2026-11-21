@@ -1,6 +1,55 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Node 26 exposes a global localStorage getter that returns undefined unless
+// the process is started with --localstorage-file. Vitest's jsdom environment
+// inherits that shadowed value, so provide an in-memory Storage for tests.
+class MemoryStorage implements Storage {
+  private store = new Map<string, string>();
+
+  get length(): number {
+    return this.store.size;
+  }
+
+  clear(): void {
+    this.store.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.store.has(key) ? this.store.get(key)! : null;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.store.keys())[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.store.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.store.set(key, String(value));
+  }
+}
+
+for (const name of ['localStorage', 'sessionStorage'] as const) {
+  if (typeof globalThis[name] === 'undefined') {
+    const storage = new MemoryStorage();
+    Object.defineProperty(globalThis, name, {
+      value: storage,
+      configurable: true,
+      writable: true,
+    });
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, name, {
+        value: storage,
+        configurable: true,
+        writable: true,
+      });
+    }
+  }
+}
+
 // Global test setup
 // Add any global test configuration here
 

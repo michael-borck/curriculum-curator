@@ -68,7 +68,8 @@ Nobody else connects learning design to content production with AI assistance in
 - **Unit Scaffolding**: AI-generated unit structures (ULOs, assessments, weekly topics) from a description
 
 ### Research & Discovery
-- **Tiered Academic Search**: Search OpenAlex and Semantic Scholar (always free, no key needed), or add Google CSE / Brave / Tavily / SearXNG for broader results
+- **Tiered Academic Search**: Search OpenAlex and Semantic Scholar (always free, no key needed), or add Google CSE / Serper / Brave / Tavily / your own SearXNG instance for broader results
+- **Research Caching & Usage**: Identical searches are cached for 10 minutes; Research Settings links each provider's pricing and usage dashboard
 - **URL Import**: Paste URLs from papers, syllabi, or blogs — the app extracts content, classifies type, and summarises key points
 - **AI Outline Synthesis**: Generate a full unit scaffold from research sources, compare sources against an existing unit, or auto-match readings to weekly topics
 - **Propose/Apply Pattern**: AI suggests, you review and correct, then commit — nothing changes without your approval
