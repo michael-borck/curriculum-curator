@@ -14,6 +14,14 @@ import uvicorn
 
 
 def main() -> None:
+    # PyInstaller on Windows inherits the console code page (usually cp1252).
+    # Startup messages include emoji, which would crash the sidecar health
+    # check before uvicorn binds. UTF-8 with replacement keeps logs safe.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
     multiprocessing.freeze_support()
 
     # When running as a frozen PyInstaller binary, set up temp directory
