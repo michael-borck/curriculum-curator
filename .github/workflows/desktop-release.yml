@@ -20,9 +20,9 @@ jobs:
       product-name: Curriculum Curator
       node-version: '22'
       cache: ''
-      install-command: |
-        (cd frontend && npm ci)
-        (cd desktop && npm ci)
+      # Works in bash and PowerShell; the shared workflow's Install step does
+      # not force bash on Windows.
+      install-command: npm ci --prefix frontend && npm ci --prefix desktop
       # Keep every package version in step with the release tag. Without this,
       # electron-builder names artifacts and latest*.yml after a stale
       # package.json version, which breaks auto-update version comparison.
