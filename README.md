@@ -5,7 +5,7 @@
 <!-- BADGES:END -->
 
 > **You choose how to install it. You choose how to teach with it.**
-> Deploy on your institution's server or run it on your laptop. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build, import, and curate curriculum your way.
+> Draft privately on your laptop and share when ready, or deploy on your institution's server for a teaching team. Make one piece of material or a whole curriculum, in any order — no set workflow. Pick your AI provider or go fully offline. Select from 9 teaching philosophies, then build, import, and curate curriculum your way.
 
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
@@ -19,7 +19,8 @@ Curriculum Curator is a **content creation tool, not a presentation tool**. It h
 
 The same philosophy runs through every layer: **you choose**.
 
-- **How to host**: institution VPS, personal Docker, or desktop app
+- **How to host**: institution VPS, personal Docker, or desktop app — draft privately on your own computer, share when ready
+- **How much to make**: one piece of material or a whole unit, starting anywhere, with no forced workflow
 - **Which AI**: OpenAI, Anthropic, Gemini, local Ollama, or none at all
 - **How to teach**: 9 pedagogical styles shape every piece of generated content
 - **What to export**: IMS Common Cartridge, SCORM, PDF, DOCX, PPTX, HTML
@@ -42,9 +43,9 @@ Both modes ship in the same codebase. Flip `LOCAL_MODE=true` for personal use, o
 
 No matter how you deploy, Curriculum Curator never phones home:
 
-- **BYOK**: Bring your own API keys for OpenAI, Anthropic, Google Gemini — or run fully offline with local Ollama models
-- **No telemetry**: Zero analytics, zero tracking, zero external calls beyond the AI provider you choose
-- **Data stays with you**: SQLite in a single file you control — no cloud database, no vendor lock-in
+- **BYOK**: Bring your own API keys for OpenAI, Anthropic, Google Gemini — the text you ask for AI help with is sent to that provider — or run fully offline with local Ollama models
+- **No telemetry**: Zero analytics, zero tracking, zero external calls beyond the AI and search providers you choose
+- **Know where data lives**: SQLite in a single file — on your computer for the desktop app (back it up), or on the institution's server, where that server's administrators can access it
 - **Air-gapped capable**: Ollama + Local Mode means the app works without any internet connection
 
 **Note**: This application uses Australian university terminology where a **Unit** is an individual subject (e.g., "Programming 101") and a **Course** is a degree program.

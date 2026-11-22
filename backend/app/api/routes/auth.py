@@ -5,6 +5,7 @@ Uses SQLAlchemy ORM via repositories.
 """
 
 from datetime import timedelta
+from threading import Lock
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -16,6 +17,7 @@ from app.core.config import settings
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
 from app.core.security_settings import get_security_settings
+from app.core.setup_token import rotate_setup_token, verify_setup_token
 from app.models.user import User
 from app.repositories import security_repo, user_repo
 from app.schemas import (
@@ -39,6 +41,9 @@ from app.services.email_service import email_service
 from app.utils.request_ip import get_client_ip
 
 router = APIRouter()
+
+# Serialises first-user bootstrap; see register().
+_FIRST_USER_LOCK = Lock()
 
 
 # =========================================================================
@@ -82,6 +87,7 @@ async def get_local_session(
     access_token = security.create_access_token(
         data={"sub": deps.LOCAL_USER_ID, "email": deps.LOCAL_USER_EMAIL},
         expires_delta=access_token_expires,
+        token_version=getattr(local_user, "token_version", 0),
     )
 
     return LoginResponse(
@@ -126,13 +132,28 @@ async def register(
             detail="User registration is currently disabled. Please contact your administrator.",
         )
 
-    # Check if email is whitelisted (unless the whitelist is disabled)
-    if security_settings.enable_email_whitelist and not user_repo.is_email_whitelisted(
-        db, email
+    # Check if email is whitelisted (unless the whitelist is disabled).
+    # The first user is the bootstrap admin and has no whitelist to consult.
+    user_count = user_repo.count_users(db)
+    is_first_user = user_count == 0
+    if (
+        not is_first_user
+        and security_settings.enable_email_whitelist
+        and not user_repo.is_email_whitelisted(db, email)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email address is not authorized for registration. Please contact your administrator.",
+        )
+
+    if is_first_user and not verify_setup_token(user_request.setup_token):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "This is the first account and it becomes the administrator. "
+                "Enter the setup token from the server (SETUP_TOKEN or the "
+                "setup_token file beside the database)."
+            ),
         )
 
     # Enhanced password validation
@@ -183,21 +204,28 @@ async def register(
         )
 
     try:
-        # Check if this is the first user (becomes admin)
-        user_count = user_repo.count_users(db)
-        is_first_user = user_count == 0
+        # Serialise first-user promotion so two concurrent registrations cannot
+        # both become admin, and re-check after taking the lock.
+        with _FIRST_USER_LOCK:
+            is_first_user = user_repo.count_users(db) == 0
+            if is_first_user and not verify_setup_token(user_request.setup_token):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="The setup token is no longer valid.",
+                )
 
-        # Create new user
-        user_data = UserCreate(
-            email=email,
-            password=user_request.password,
-            name=user_request.name.strip(),
-        )
-        new_user = user_repo.create_user(db, user_data)
+            # Create new user
+            user_data = UserCreate(
+                email=email,
+                password=user_request.password,
+                name=user_request.name.strip(),
+            )
+            new_user = user_repo.create_user(db, user_data)
 
-        # Update role if first user
-        if is_first_user:
-            user_repo.update_user(db, new_user.id, role="admin", is_verified=True)
+            # Update role if first user
+            if is_first_user:
+                user_repo.update_user(db, new_user.id, role="admin", is_verified=True)
+                rotate_setup_token()
 
             # Log security event
             security_repo.log_security_event(
@@ -304,6 +332,9 @@ async def verify_email(
     access_token = security.create_access_token(
         data={"sub": user.id, "email": user.email},
         expires_delta=access_token_expires,
+        client_ip=_get_client_ip(request),
+        user_role=user.role,
+        token_version=getattr(user, "token_version", 0),
     )
 
     # Refresh user data after verification
@@ -442,6 +473,7 @@ async def login(
         client_ip=client_ip,
         user_role=user.role,
         session_id=None,
+        token_version=getattr(user, "token_version", 0),
     )
 
     # Log successful login
@@ -541,6 +573,12 @@ async def reset_password(
         # Update password
         user_repo.update_password(db, user.id, reset_request.new_password)
 
+        # Invalidate every token issued before this reset.
+        orm_user = db.query(User).filter(User.id == user.id).first()
+        if orm_user is not None:
+            orm_user.token_version = (orm_user.token_version or 0) + 1
+            db.commit()
+
         # Mark reset code as used
         user_repo.mark_password_reset_used(db, user.id, reset_request.code)
 
@@ -605,12 +643,32 @@ async def change_password(
 
     try:
         user_repo.update_password(db, user.id, change_request.new_password)
+        # Invalidate outstanding tokens on every other device.
+        user.token_version = (user.token_version or 0) + 1
+        db.commit()
         return ChangePasswordResponse(message="Password changed successfully")
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to change password. Please try again.",
         ) from None
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    _current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Revoke the caller's access token immediately."""
+    header = request.headers.get("authorization", "")
+    if header.lower().startswith("bearer "):
+        payload = security.decode_access_token(header[7:])
+        if payload:
+            jti = payload.get("jti")
+            exp = payload.get("exp")
+            if jti and exp:
+                security.blacklist_token(jti, float(exp))
+    return {"message": "Logged out"}
 
 
 @router.patch("/profile", response_model=UserResponse)

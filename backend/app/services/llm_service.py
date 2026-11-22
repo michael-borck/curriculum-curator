@@ -20,6 +20,8 @@ from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.secret_crypto import decrypt_secret
+from app.models.llm_config import LLMConfiguration
 from app.models.system_settings import SystemSettings
 from app.models.user import User
 from app.schemas.llm import (
@@ -68,6 +70,8 @@ class LLMService:
             self.providers["openai"] = True
         if settings.ANTHROPIC_API_KEY:
             self.providers["anthropic"] = True
+        if settings.GEMINI_API_KEY:
+            self.providers["gemini"] = True
 
     # =========================================================================
     # Core LLM Methods
@@ -94,7 +98,10 @@ class LLMService:
             .all()
         )
         for setting in system_settings:
-            settings_dict[setting.key] = setting.value
+            value = setting.value
+            if setting.key.endswith("_api_key"):
+                value = decrypt_secret(value)
+            settings_dict[setting.key] = value
         return settings_dict
 
     def _get_user_api_key(
@@ -107,7 +114,7 @@ class LLMService:
             "gemini": "gemini_api_key",
         }
         key_name = key_map.get(provider)
-        return user_config.get(key_name) if key_name else None
+        return decrypt_secret(user_config.get(key_name)) if key_name else None
 
     def _get_system_api_key(
         self, provider: str, system_settings: dict[str, Any]
@@ -153,31 +160,95 @@ class LLMService:
         api_key = self._get_user_api_key(provider, user_config)
         return provider, model, api_key
 
+    @staticmethod
+    def _allow_user_api_keys(system_settings: dict[str, Any]) -> bool:
+        raw = system_settings.get("allow_user_api_keys", True)
+        if isinstance(raw, bool):
+            return raw
+        return str(raw).strip().lower() not in ("false", "0", "no", "off")
+
+    def _stored_config(
+        self, db: Session, user_id: object | None
+    ) -> tuple[str, str | None, str | None, str | None] | None:
+        """Resolve the preferred LLMConfiguration row (default first).
+
+        Returns (provider, model, decrypted_api_key, api_url) or None.
+        This table — written by the Settings UI — is the single source of
+        truth for configured keys; User.llm_config JSON is legacy fallback.
+        """
+        query = db.query(LLMConfiguration).filter(LLMConfiguration.is_active)
+        if user_id is None:
+            query = query.filter(LLMConfiguration.user_id.is_(None))
+        else:
+            query = query.filter(LLMConfiguration.user_id == user_id)
+        config = (
+            query.order_by(
+                LLMConfiguration.is_default.desc(), LLMConfiguration.updated_at.desc()
+            )
+            .first()
+        )
+        if not isinstance(config, LLMConfiguration):
+            # Also guards against test doubles that are truthy but not rows.
+            return None
+        provider = str(getattr(config.provider, "value", config.provider))
+        return (
+            provider,
+            config.model_name,
+            decrypt_secret(config.api_key),
+            config.api_url,
+        )
+
+    def _resolve_configured(
+        self,
+        user: User | None,
+        db: Session | None,
+        allow_user: bool,
+    ) -> tuple[str | None, str | None, str | None, str | None]:
+        """Pick the first configured source: user row, legacy JSON, system row."""
+        if db is not None and user is not None and allow_user:
+            stored = self._stored_config(db, user.id)
+            if stored is not None:
+                return stored
+        if allow_user:
+            provider, model, api_key = self._get_user_llm_config(user)
+            if provider:
+                return provider, model, api_key, None
+        if db is not None:
+            stored = self._stored_config(db, None)
+            if stored is not None:
+                return stored
+        return None, None, None, None
+
+    def _resolve_system_default(
+        self, system_settings: dict[str, Any]
+    ) -> tuple[str | None, str | None, str | None]:
+        default_provider = system_settings.get("default_llm_provider")
+        if default_provider:
+            key = self._get_system_api_key(default_provider, system_settings)
+            if key or default_provider == "ollama":
+                return (
+                    default_provider,
+                    system_settings.get("default_llm_model"),
+                    key,
+                )
+        for candidate in ("anthropic", "openai", "gemini"):
+            key = self._get_system_api_key(candidate, system_settings)
+            if key:
+                return candidate, None, key
+        return None, None, None
+
     def _get_llm_config(
         self, user: User | None = None, db: Session | None = None
     ) -> tuple[str, str, str | None, str | None]:
         """Get LLM configuration based on user preferences and system settings."""
         system_settings = self._get_system_settings(db) if db else {}
-        provider, model, api_key = self._get_user_llm_config(user)
+        allow_user = self._allow_user_api_keys(system_settings)
+        provider, model, api_key, api_base = self._resolve_configured(
+            user, db, allow_user
+        )
 
         if not provider:
-            # Use explicit system default if it has a key
-            default_provider = system_settings.get("default_llm_provider")
-            if default_provider:
-                key = self._get_system_api_key(default_provider, system_settings)
-                if key or default_provider == "ollama":
-                    provider = default_provider
-                    model = system_settings.get("default_llm_model")
-                    api_key = key
-
-            # Otherwise, pick the first provider that has an API key
-            if not provider:
-                for candidate in ("anthropic", "openai", "gemini"):
-                    key = self._get_system_api_key(candidate, system_settings)
-                    if key:
-                        provider = candidate
-                        api_key = key
-                        break
+            provider, model, api_key = self._resolve_system_default(system_settings)
 
         if not provider:
             return "", "", None, None
@@ -190,9 +261,8 @@ class LLMService:
                 model = self.DEFAULT_MODELS.get(provider, "gpt-4")
 
         litellm_model = self._format_model_name(model, provider)
-        api_base = None
-        if provider == "ollama":
-            api_base = system_settings.get("ollama_api_base", "http://localhost:11434")
+        if provider == "ollama" and not api_base:
+            api_base = system_settings.get("ollama_api_base", settings.OLLAMA_BASE_URL)
 
         return litellm_model, provider, api_key, api_base
 

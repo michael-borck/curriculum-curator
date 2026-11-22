@@ -208,6 +208,21 @@ const Login = ({ onBackToLanding }: LoginProps) => {
                 </button>
               </span>
             </div>
+
+            <p className='text-sm text-gray-600 bg-white border border-gray-200 rounded-lg p-4'>
+              You&apos;re signing in to a shared copy of Curriculum Curator. The
+              people who run this server can access the work stored here. Prefer
+              to draft in private first?{' '}
+              <button
+                type='button'
+                onClick={() => navigate('/download')}
+                className='font-medium text-purple-600 hover:text-purple-500'
+              >
+                Install the desktop app
+              </button>{' '}
+              on your own computer — no account needed — and share your work
+              when you&apos;re ready.
+            </p>
           </form>
         </div>
       </div>

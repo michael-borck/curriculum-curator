@@ -62,6 +62,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), default=UserRole.LECTURER.value)
     is_verified: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
+    # Incremented on logout-all / password change / reset; tokens carrying an
+    # older value are rejected, so revocation survives restarts and workers.
+    token_version: Mapped[int] = mapped_column(default=0, server_default="0")
 
     # Institution and academic details
     institution: Mapped[str | None] = mapped_column(String(255), nullable=True)

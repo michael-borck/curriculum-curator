@@ -16,7 +16,8 @@ export default [
       'node_modules',
       '*.config.js',
       'vitest.config.ts',
-      'coverage'
+      'coverage',
+      '**/._*'
     ],
   },
   js.configs.recommended,

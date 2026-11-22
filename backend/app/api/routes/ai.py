@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.models import User
+from app.models.learning_design import LearningDesign
 from app.models.system_settings import SystemSettings
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.ai import (
@@ -168,6 +169,42 @@ def _llm_error_response(e: Exception, operation: str) -> HTTPException:
 router = APIRouter()
 
 
+def _require_context_ownership(
+    db: Session,
+    current_user: User,
+    *,
+    unit_id: str | None = None,
+    design_id: str | None = None,
+    material_ids: list[str] | None = None,
+) -> None:
+    """Reject AI-context requests that reference resources the user does not own.
+
+    Body-supplied IDs must go through the same ownership seam as path IDs, or
+    a user who learns another user's UUIDs could pull their design or material
+    text into streamed LLM output.
+    """
+    if unit_id:
+        deps.require_unit_owner(db, str(unit_id), current_user)
+    if design_id:
+        design = db.query(LearningDesign).filter(LearningDesign.id == design_id).first()
+        if design is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Resource not found or access denied",
+            )
+        deps.require_unit_owner(db, str(design.unit_id), current_user)
+    if material_ids:
+        checked_units: set[str] = set()
+        materials = (
+            db.query(WeeklyMaterial).filter(WeeklyMaterial.id.in_(material_ids)).all()
+        )
+        for material in materials:
+            owner_unit = str(material.unit_id)
+            if owner_unit not in checked_units:
+                deps.require_unit_owner(db, owner_unit, current_user)
+                checked_units.add(owner_unit)
+
+
 # =============================================================================
 # Helpers
 # =============================================================================
@@ -187,6 +224,14 @@ async def generate_content(
     """Generate educational content with AI assistance using streaming."""
     try:
         topic: str = request.topic or request.context or "General educational content"
+
+        _require_context_ownership(
+            db,
+            current_user,
+            unit_id=request.unit_id,
+            design_id=request.design_id,
+            material_ids=request.source_material_ids,
+        )
 
         # Assemble the curriculum context (design spec + week + source materials)
         context = await build_context(
@@ -249,6 +294,12 @@ async def enhance_content(
         # Inject Learning Design context into focus areas
         design_ctx = None
         if request.unit_id or request.design_id:
+            _require_context_ownership(
+                db,
+                current_user,
+                unit_id=request.unit_id,
+                design_id=request.design_id,
+            )
             design_ctx = await get_design_context(
                 db, request.unit_id or "", request.design_id
             )
@@ -624,6 +675,9 @@ async def generate_course_schedule(
 
     Uses AI to create a logical progression of topics across the specified weeks.
     """
+    _require_context_ownership(
+        db, current_user, unit_id=request.unit_id, design_id=request.design_id
+    )
     context = await build_context(
         db, unit_id=request.unit_id, design_id=request.design_id
     )
@@ -782,6 +836,9 @@ async def scaffold_unit(
 
     Returns ULOs, weekly topics, and assessments for human review before saving.
     """
+    _require_context_ownership(
+        db, current_user, unit_id=request.unit_id, design_id=request.design_id
+    )
     context = await build_context(
         db, unit_id=request.unit_id, design_id=request.design_id
     )
@@ -825,6 +882,9 @@ async def fill_gap(
 
     gap_type can be: ulo, material, assessment
     """
+    _require_context_ownership(
+        db, current_user, unit_id=request.unit_id, design_id=request.design_id
+    )
     context = await build_context(
         db, unit_id=request.unit_id, design_id=request.design_id
     )
@@ -939,6 +999,9 @@ async def generate_video_interaction(
             detail=f"Invalid question_type. Must be one of: {', '.join(sorted(VALID_QUESTION_TYPES))}",
         )
 
+    _require_context_ownership(
+        db, current_user, unit_id=request.unit_id, design_id=request.design_id
+    )
     context = await build_context(
         db,
         unit_id=request.unit_id,
@@ -979,6 +1042,9 @@ async def suggest_interaction_points(
     db: Session = Depends(deps.get_db),
 ) -> SuggestInteractionPointsResponse:
     """Scan a full transcript and suggest interaction points with generated questions."""
+    _require_context_ownership(
+        db, current_user, unit_id=request.unit_id, design_id=request.design_id
+    )
     context = await build_context(
         db,
         unit_id=request.unit_id,
@@ -1086,6 +1152,7 @@ async def generate_speaker_notes(
             detail="No slides with content found for the requested indices",
         )
 
+    _require_context_ownership(db, current_user, design_id=request.design_id)
     context = await build_context(
         db, unit_id=str(material.unit_id), design_id=request.design_id
     )

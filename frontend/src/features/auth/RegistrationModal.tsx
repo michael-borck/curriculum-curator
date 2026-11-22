@@ -17,6 +17,7 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  setupToken: string;
 }
 
 interface FormErrors {
@@ -24,6 +25,7 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  setupToken?: string;
   general?: string;
 }
 
@@ -32,6 +34,7 @@ const initialFormData: FormData = {
   email: '',
   password: '',
   confirmPassword: '',
+  setupToken: '',
 };
 
 const RegistrationModal = ({
@@ -81,6 +84,11 @@ const RegistrationModal = ({
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (isFirstUserSetup && !formData.setupToken.trim()) {
+      newErrors.setupToken =
+        'The setup token is required to create the first administrator account';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -96,7 +104,8 @@ const RegistrationModal = ({
       const response = await register(
         formData.email,
         formData.password,
-        formData.name
+        formData.name,
+        isFirstUserSetup ? formData.setupToken.trim() : undefined
       );
 
       setIsRegistered(true);
@@ -253,6 +262,19 @@ const RegistrationModal = ({
           disabled={isDisabled}
           required
         />
+
+        {isFirstUserSetup && (
+          <FormInput
+            label='Setup Token'
+            name='setupToken'
+            value={formData.setupToken}
+            onChange={handleChange}
+            error={errors.setupToken || ''}
+            hint='Find this in the file named setup_token beside the database, or in the SETUP_TOKEN setting.'
+            disabled={isDisabled}
+            required
+          />
+        )}
 
         <FormInput
           label='Email Address'

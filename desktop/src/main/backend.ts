@@ -1,5 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process'
 import { join } from 'path'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { randomBytes } from 'crypto'
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import http from 'http'
@@ -9,6 +11,18 @@ const HOST = '127.0.0.1'
 
 let backendProcess: ChildProcess | null = null
 
+/** Per-install signing key, generated once and kept in userData (0600). */
+function getOrCreateSecretKey(): string {
+  const path = join(app.getPath('userData'), 'secret_key')
+  if (existsSync(path)) {
+    const existing = readFileSync(path, 'utf8').trim()
+    if (existing.length >= 32) return existing
+  }
+  const generated = randomBytes(48).toString('hex')
+  writeFileSync(path, generated + '\n', { mode: 0o600 })
+  return generated
+}
+
 export function getBackendPort(): number {
   return PORT
 }
@@ -17,6 +31,8 @@ export function startBackend(): void {
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
     LOCAL_MODE: 'true',
+    DEBUG: 'false',
+    SECRET_KEY: getOrCreateSecretKey(),
     DATABASE_URL: `sqlite:///${join(app.getPath('userData'), 'curriculum_curator.db')}`
   }
 
@@ -77,7 +93,7 @@ function healthCheck(): Promise<boolean> {
   })
 }
 
-export async function waitForBackend(): Promise<void> {
+export async function waitForBackend(): Promise<boolean> {
   const maxRetries = is.dev ? 30 : 120
   const retryInterval = 1000
 
@@ -85,12 +101,13 @@ export async function waitForBackend(): Promise<void> {
     const healthy = await healthCheck()
     if (healthy) {
       console.log(`[backend] healthy after ${i + 1} attempts`)
-      return
+      return true
     }
     await new Promise((resolve) => setTimeout(resolve, retryInterval))
   }
 
   console.error('[backend] failed to become healthy within timeout')
+  return false
 }
 
 export async function stopBackend(): Promise<void> {

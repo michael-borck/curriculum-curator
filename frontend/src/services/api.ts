@@ -36,8 +36,12 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
-      // Token is invalid or expired
+      // Token is invalid or expired — clear it and reset the auth store so
+      // the UI stops showing a stale signed-in state.
       localStorage.removeItem('token');
+      void import('../stores/authStore').then(({ useAuthStore }) => {
+        useAuthStore.setState({ user: null, isAuthenticated: false });
+      });
       // Let the component handle the redirect via auth store
     }
     return Promise.reject(error);
@@ -51,9 +55,15 @@ export const login = (email: string, password: string): Promise<ApiResponse> =>
 export const register = (
   email: string,
   password: string,
-  name: string
+  name: string,
+  setupToken?: string
 ): Promise<ApiResponse> =>
-  api.post('/auth/register', { email, password, name });
+  api.post('/auth/register', {
+    email,
+    password,
+    name,
+    ...(setupToken ? { setupToken } : {}),
+  });
 
 // Content endpoints (AI-powered)
 export const generateContent = (

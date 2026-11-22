@@ -57,7 +57,7 @@ from app.schemas.material_batch_import import (
 )
 from app.schemas.materials import MaterialCreate
 from app.services.batch_import_service import batch_import_service
-from app.services.import_task_store import get_task
+from app.services.import_task_store import get_owned_task
 from app.services.material_parsers import (
     autodetect,
     get_default_for_format,
@@ -125,6 +125,7 @@ class ImportApplyResponse(CamelModel):
 
 
 _ALLOWED_EXTENSIONS = {"pptx", "docx", "html", "htm", "md", "pdf"}
+_MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MiB per material file
 """File extensions accepted by Mode A. Each extension has a registered
 default parser in ``material_parsers/__init__.py``. Phase 5+ may add
 ``ipynb`` and dialect specialisations (Marp, reveal.js, Quarto)."""
@@ -133,6 +134,24 @@ default parser in ``material_parsers/__init__.py``. Phase 5+ may add
 def _normalise_extension(filename: str) -> str:
     """Return the lowercased extension without the leading dot."""
     return Path(filename).suffix.lower().lstrip(".")
+
+
+async def _read_upload_bounded(file: UploadFile) -> bytes:
+    """Read an upload in chunks, rejecting it once the size cap is exceeded."""
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await file.read(1024 * 1024):
+        total += len(chunk)
+        if total > _MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=(
+                    "File is too large. Maximum is "
+                    f"{_MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+                ),
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
 
 
 async def _read_and_parse(
@@ -161,7 +180,9 @@ async def _read_and_parse(
             ),
         )
 
-    file_bytes = await file.read()
+    # Read in bounded chunks so an oversized upload is rejected before it is
+    # fully materialised in memory.
+    file_bytes = await _read_upload_bounded(file)
     if not file_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -546,10 +567,14 @@ async def apply_batch_materials(
 @router.get("/batch/status/{task_id}", response_model=BatchStatusResponse)
 async def batch_status(
     task_id: str,
-    _current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_user),
 ) -> BatchStatusResponse:
     """Poll progress of a background batch import task."""
-    task = get_task(task_id)
+    task = get_owned_task(
+        task_id,
+        str(current_user.id),
+        is_admin=current_user.role == deps.ROLE_ADMIN,
+    )
     if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

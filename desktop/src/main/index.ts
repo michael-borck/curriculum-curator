@@ -1,4 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import type { IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
@@ -6,6 +7,35 @@ import { startBackend, stopBackend, waitForBackend } from './backend'
 import { startOllama, stopOllama, detectOllama } from './ollama'
 
 let mainWindow: BrowserWindow | null = null
+
+const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['https:', 'http:', 'mailto:'])
+
+function openExternalSafely(url: string): void {
+  try {
+    if (ALLOWED_EXTERNAL_PROTOCOLS.has(new URL(url).protocol)) {
+      shell.openExternal(url)
+    }
+  } catch {
+    // Ignore malformed URLs
+  }
+}
+
+/** IPC handlers only accept messages from our own renderer. */
+function isTrustedSender(event: IpcMainInvokeEvent): boolean {
+  return mainWindow !== null && event.sender === mainWindow.webContents
+}
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+if (!hasSingleInstanceLock) {
+  app.quit()
+}
+
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  }
+})
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -17,7 +47,9 @@ function createWindow(): void {
     titleBarStyle: 'hiddenInset',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
       webviewTag: true
     }
   })
@@ -34,8 +66,21 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    openExternalSafely(details.url)
     return { action: 'deny' }
+  })
+
+  // Keep the main frame on the app itself; send anything else to the browser.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const allowed =
+      url.startsWith('file://') ||
+      (is.dev && process.env['ELECTRON_RENDERER_URL']
+        ? url.startsWith(process.env['ELECTRON_RENDERER_URL'])
+        : false)
+    if (!allowed) {
+      event.preventDefault()
+      openExternalSafely(url)
+    }
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -57,7 +102,16 @@ app.whenReady().then(async () => {
 
   // Start backend before creating the window
   startBackend()
-  await waitForBackend()
+  const healthy = await waitForBackend()
+  if (!healthy) {
+    dialog.showErrorBox(
+      'Curriculum Curator could not start',
+      'The local backend failed to start. Please restart the app. If the ' +
+        'problem continues, reinstall it or check the application logs.'
+    )
+    app.quit()
+    return
+  }
 
   createWindow()
 
@@ -87,13 +141,15 @@ app.on('window-all-closed', async () => {
 // --- IPC Handlers ---
 
 // Ollama info for renderer
-ipcMain.handle('get-ollama-info', () => {
+ipcMain.handle('get-ollama-info', (event) => {
+  if (!isTrustedSender(event)) return { installed: false, binaryPath: null }
   const binaryPath = detectOllama()
   return { installed: binaryPath !== null, binaryPath }
 })
 
 // File export: native Save As dialog
-ipcMain.handle('save-file', async (_event, defaultName: string, data: Buffer | string) => {
+ipcMain.handle('save-file', async (event, defaultName: string, data: Buffer | string) => {
+  if (!isTrustedSender(event)) return null
   const result = await dialog.showSaveDialog({
     defaultPath: defaultName,
     filters: [
@@ -113,15 +169,18 @@ ipcMain.handle('save-file', async (_event, defaultName: string, data: Buffer | s
 })
 
 // Auto-updater IPC
-ipcMain.handle('check-for-updates', () => {
+ipcMain.handle('check-for-updates', (event) => {
+  if (!isTrustedSender(event)) return null
   return autoUpdater.checkForUpdates()
 })
 
-ipcMain.handle('download-update', () => {
+ipcMain.handle('download-update', (event) => {
+  if (!isTrustedSender(event)) return null
   return autoUpdater.downloadUpdate()
 })
 
-ipcMain.handle('install-update', () => {
+ipcMain.handle('install-update', (event) => {
+  if (!isTrustedSender(event)) return
   autoUpdater.quitAndInstall()
 })
 

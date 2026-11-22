@@ -29,7 +29,7 @@ const PACKAGE_OPTIONS: { value: PackageType; label: string }[] = [
 ];
 
 const LMS_OPTIONS = [
-  { value: 'generic', label: 'Generic' },
+  { value: 'generic', label: 'Not sure / another LMS' },
   { value: 'canvas', label: 'Canvas' },
   { value: 'moodle', label: 'Moodle' },
   { value: 'blackboard', label: 'Blackboard' },
@@ -142,13 +142,43 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title='Export Unit' size='2xl'>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title='Export or Share This Unit'
+        size='2xl'
+      >
         <div className='space-y-4'>
+          <div className='text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2'>
+            <p>
+              This downloads this unit as a single file. Nothing is sent
+              anywhere yet — you then upload that file yourself:
+            </p>
+            <ul className='list-disc ml-5 space-y-1'>
+              <li>
+                <strong>To your LMS</strong> (such as Moodle, Canvas, or
+                Blackboard): look there for its option to import or restore a
+                course package, and choose this file.
+              </li>
+              <li>
+                <strong>To another copy of Curriculum Curator</strong>: use
+                Import Package there. The unit&apos;s outcomes, teaching
+                approach, and alignment come with it, so this is also how you
+                move or share a unit drafted on your own computer.
+              </li>
+            </ul>
+            <p>
+              Not sure which file type? Choose IMSCC — it suits most LMSs and
+              moving a unit between copies of Curriculum Curator. Choose SCORM
+              only if your LMS asks for it.
+            </p>
+          </div>
+
           {/* Package options */}
           <div className='flex items-center gap-4'>
             <div className='flex-1'>
               <label className='block text-xs font-medium text-gray-500 mb-1'>
-                Package Format
+                File type
               </label>
               <select
                 value={packageType}
@@ -164,7 +194,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
             </div>
             <div className='flex-1'>
               <label className='block text-xs font-medium text-gray-500 mb-1'>
-                Target LMS
+                Where will you upload it?
               </label>
               <select
                 value={targetLms}
@@ -230,7 +260,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
               disabled={!hasContent || loading}
             >
               <Download className='w-4 h-4 mr-1' />
-              Export
+              Download file
             </Button>
           </div>
         </div>

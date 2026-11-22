@@ -17,6 +17,13 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production"
+    # One-time token required to create the first (admin) account on a fresh
+    # deployment. When unset, a random token is written to a 0600 file beside
+    # the database so the operator can read it on the server.
+    SETUP_TOKEN: str | None = None
+    # Optional dedicated key for encrypting stored secrets (LLM API keys).
+    # A Fernet key or any long random string; derived from SECRET_KEY if unset.
+    ENCRYPTION_KEY: str | None = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
@@ -58,13 +65,14 @@ class Settings(BaseSettings):
 
     # Contact email advertised to third-party APIs (CrossRef/OpenAlex "polite
     # pool" identifiers, which those services use to reach the operator about
-    # misbehaving clients). Falls back to FROM_EMAIL; omitted while both are
-    # unset or still the example.com placeholder.
+    # misbehaving clients). Only sent when the operator sets it explicitly —
+    # it is never derived from FROM_EMAIL, so user search terms are not
+    # linkable to the operator's sign-in address by default.
     CONTACT_EMAIL: str | None = None
 
     @property
     def api_contact_email(self) -> str | None:
-        contact = self.CONTACT_EMAIL or self.FROM_EMAIL
+        contact = self.CONTACT_EMAIL
         if not contact or contact.strip().lower().endswith("@example.com"):
             return None
         return contact.strip()
@@ -98,6 +106,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
     DEFAULT_LLM_PROVIDER: str | None = None
     DEFAULT_LLM_MODEL: str = "gpt-4"
 
@@ -143,9 +152,33 @@ class Settings(BaseSettings):
     ]
 
     @model_validator(mode="after")
-    def validate_secret_key(self) -> "Settings":
-        if not self.DEBUG and self.SECRET_KEY == "dev-secret-key-change-in-production":
-            raise ValueError("SECRET_KEY must be changed from default in production")
+    def validate_security_settings(self) -> "Settings":
+        # TESTING is the only exemption: the test suite uses throwaway keys.
+        if not self.TESTING:
+            known = {
+                "dev-secret-key-change-in-production",
+                "your-secret-key-change-this-in-production",
+                "change-me-to-a-random-string",
+                "ci-test-secret",
+                "test-secret-key-for-testing",
+                "your-secret-key",
+                "secret",
+            }
+            secret = self.SECRET_KEY or ""
+            if (
+                secret in known
+                or secret.startswith("docker-dev-secret-key-")
+                or len(secret) < 32
+            ):
+                raise ValueError(
+                    "SECRET_KEY is missing, a known placeholder, or shorter "
+                    "than 32 characters. Generate one with: openssl rand -hex 32"
+                )
+            if self.LOCAL_MODE and self.public_domains:
+                raise ValueError(
+                    "LOCAL_MODE disables authentication and must never be "
+                    "combined with PUBLIC_DOMAIN (public deployment)."
+                )
         return self
 
     class Config:

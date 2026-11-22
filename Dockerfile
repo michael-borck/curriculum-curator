@@ -1,5 +1,5 @@
 # One Dockerfile for everything - build frontend, serve with backend
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # OCI labels for GHCR metadata
 LABEL org.opencontainers.image.source="https://github.com/michael-borck/curriculum-curator"
@@ -35,7 +35,7 @@ RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -m -s /bin/bash appuser
 
 # Install uv for faster Python package management as root
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN pip install --no-cache-dir uv
 ENV PATH="/root/.local/bin:$PATH"
 
 # Set working directory
@@ -44,20 +44,19 @@ WORKDIR /app
 # Copy everything
 COPY . .
 
-# Pre-install Python dependencies so they're available
+# Install the exact locked dependency set (no dev tooling in the runtime image)
 WORKDIR /app/backend
-RUN uv venv .venv && \
-    . .venv/bin/activate && \
-    uv pip install -e ".[dev]"
+RUN uv sync --frozen --no-dev
 
-# Create a basic .env file ONLY if one doesn't exist
+# Create a basic .env file ONLY if one doesn't exist.
+# SECRET_KEY is deliberately NOT baked in: supply it at runtime
+# (docker compose requires it). Without it the app fails to start.
 RUN if [ ! -f .env ]; then \
     echo "# Auto-generated for Docker environment" > .env && \
-    echo "SECRET_KEY=docker-dev-secret-key-$(date +%s | sha256sum | head -c 32)" >> .env && \
     echo "DATABASE_URL=sqlite:////app/backend/data/curriculum_curator.db" >> .env && \
     echo "ALGORITHM=HS256" >> .env && \
     echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env && \
-    echo "DEBUG=true" >> .env && \
+    echo "DEBUG=false" >> .env && \
     echo "# EMAIL_WHITELIST is set as empty list in config.py default" >> .env; \
     else \
     echo "Using existing .env file with SMTP settings"; \
@@ -65,13 +64,10 @@ RUN if [ ! -f .env ]; then \
 
 WORKDIR /app
 
-# Build the frontend
+# Build the frontend against the committed lockfile so the shipped
+# dependency set matches what CI tested.
 WORKDIR /app/frontend
-# Workaround for npm bug with optional dependencies (https://github.com/npm/cli/issues/4828)
-# Also clear Vite cache to ensure fresh build
-RUN rm -rf node_modules package-lock.json dist .vite && \
-    npm install --force && \
-    npm run build
+RUN npm ci && npm run build
 
 WORKDIR /app/backend
 

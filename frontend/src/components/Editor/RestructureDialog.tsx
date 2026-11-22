@@ -72,8 +72,10 @@ const RestructureDialog: React.FC<RestructureDialogProps> = ({
                 You&apos;ll review the result before anything is applied.
               </p>
               <p className='text-xs text-gray-400'>
-                Roughly {estimatedTokens.toLocaleString()} input tokens will be
-                sent to your configured AI provider.
+                To do this, this text will be sent to the AI service you set up
+                in Settings (about {estimatedTokens.toLocaleString()} tokens —
+                the chunks of text AI services charge by). If that service runs
+                on your own computer, the text stays there.
               </p>
             </div>
           )}

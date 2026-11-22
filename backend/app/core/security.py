@@ -62,6 +62,7 @@ def create_access_token(
     client_ip: str | None = None,
     user_role: str | None = None,
     session_id: str | None = None,
+    token_version: int | None = None,
 ) -> str:
     """
     Create a JWT access token with enhanced security fields.
@@ -96,6 +97,8 @@ def create_access_token(
             "sid": session_id or str(uuid.uuid4()),  # Session ID
         }
     )
+    if token_version is not None:
+        to_encode["tv"] = token_version
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -147,6 +150,10 @@ def decode_access_token(
         # Check if token has been revoked
         jti = payload.get("jti", "")
         if jti and is_token_blacklisted(jti):
+            return None
+
+        # Access tokens only — a refresh token must never be accepted here.
+        if payload.get("type") == "refresh":
             return None
 
         # Verify IP binding if both token IP and verify IP are provided

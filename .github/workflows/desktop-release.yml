@@ -15,7 +15,11 @@ concurrency:
 
 jobs:
   release:
-    uses: michael-borck/app-hq/.github/workflows/electron-release.yml@main
+    # Pin the shared pipeline to a commit, not a movable branch: it receives
+    # Apple signing secrets, so a compromised/rewritten @main must not run.
+    uses: michael-borck/app-hq/.github/workflows/electron-release.yml@14770febcfae6408c00d162233443587d6a5b2e7
+    env:
+      GH_OWNER: michael-borck
     with:
       product-name: Curriculum Curator
       node-version: '22'

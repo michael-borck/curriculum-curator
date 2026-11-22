@@ -32,11 +32,11 @@ class LLMConfiguration(Base):
     provider: Mapped[str] = mapped_column(String(50))
     api_key: Mapped[str | None] = mapped_column(
         Text, nullable=True
-    )  # Encrypted in production
+    )  # Fernet-encrypted via app.core.secret_crypto ("enc:v1:" prefix)
     api_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     bearer_token: Mapped[str | None] = mapped_column(
         Text, nullable=True
-    )  # For Ollama auth
+    )  # For Ollama auth; encrypted like api_key
 
     # Model settings
     model_name: Mapped[str | None] = mapped_column(String(100), nullable=True)

@@ -4,17 +4,21 @@ Pydantic schemas for plugin endpoints
 
 from typing import Any
 
+from pydantic import Field
+
 from app.schemas.base import CamelModel
+
+MAX_PLUGIN_CONTENT_LENGTH = 200_000
 
 
 class PluginValidateRequest(CamelModel):
-    content: str
-    validators: list[str] | None = None
+    content: str = Field(..., max_length=MAX_PLUGIN_CONTENT_LENGTH)
+    validators: list[str] | None = Field(default=None, max_length=50)
 
 
 class PluginRemediateRequest(CamelModel):
-    content: str
-    remediators: list[str] | None = None
+    content: str = Field(..., max_length=MAX_PLUGIN_CONTENT_LENGTH)
+    remediators: list[str] | None = Field(default=None, max_length=50)
 
 
 class PluginConfigUpdate(CamelModel):

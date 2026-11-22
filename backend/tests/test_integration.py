@@ -7,6 +7,7 @@ They will be SKIPPED if the backend is not available.
 Consolidated from test_basic.py, test_auth.py, and test_auth_endpoints.py.
 """
 
+import os
 import time
 import uuid
 
@@ -15,6 +16,13 @@ import requests
 
 BASE_URL = "http://localhost:8000"
 API_URL = f"{BASE_URL}/api"
+
+# Credentials are never committed. Provide them via the environment when
+# running these live-backend tests against an initialized database.
+ADMIN_EMAIL = os.getenv("INTEGRATION_ADMIN_EMAIL")
+ADMIN_PASSWORD = os.getenv("INTEGRATION_ADMIN_PASSWORD")
+KNOWN_EMAIL = os.getenv("INTEGRATION_TEST_EMAIL", "known-user@example.com")
+KNOWN_PASSWORD = os.getenv("INTEGRATION_TEST_PASSWORD")
 
 pytestmark = pytest.mark.integration
 
@@ -62,21 +70,28 @@ class TestAuthEndpoints:
         if response.status_code in [200, 201]:
             return user_data
         elif response.status_code == 403:
-            # Email not whitelisted, return test account
+            # Email not whitelisted; use a known account only if supplied.
+            if not (KNOWN_PASSWORD and KNOWN_EMAIL != "known-user@example.com"):
+                pytest.skip(
+                    "Registration requires a whitelisted email; "
+                    "set INTEGRATION_TEST_EMAIL/PASSWORD for a known account."
+                )
             return {
-                "email": "michael.borck@curtin.edu.au",
-                "password": "password123",
-                "name": "Michael Borck",
+                "email": KNOWN_EMAIL,
+                "password": KNOWN_PASSWORD,
+                "name": "Known Test User",
             }
         else:
             return user_data
 
     def _get_admin_token(self) -> str | None:
-        """Try to get admin token for whitelist management"""
+        """Try to get admin token for whitelist management."""
+        if not (ADMIN_EMAIL and ADMIN_PASSWORD):
+            return None
         try:
             response = requests.post(
                 f"{API_URL}/auth/login",
-                json={"email": "admin@example.com", "password": "admin123"},
+                json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD},
             )
             if response.status_code == 200:
                 return response.json()["access_token"]
@@ -229,7 +244,7 @@ class TestAuthEndpoints:
         """Test login with wrong password"""
         response = requests.post(
             f"{API_URL}/auth/login",
-            json={"email": "michael.borck@curtin.edu.au", "password": "wrongpassword"},
+            json={"email": KNOWN_EMAIL, "password": "wrongpassword"},
         )
         assert response.status_code in [401, 423, 429]
 
@@ -412,7 +427,7 @@ class TestAuthSecurity:
             start = time.time()
             requests.post(
                 f"{API_URL}/auth/login",
-                json={"email": "michael.borck@curtin.edu.au", "password": "wrong"},
+                json={"email": KNOWN_EMAIL, "password": "wrong"},
             )
             times_valid.append(time.time() - start)
 

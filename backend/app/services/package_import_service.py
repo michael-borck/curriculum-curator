@@ -49,9 +49,55 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
+# Archive caps — checked against the zip index before any entry is read.
+_MAX_ZIP_ENTRIES = 10_000
+_MAX_ZIP_ENTRY_BYTES = 256 * 1024 * 1024  # 256 MiB
+_MAX_ZIP_TOTAL_BYTES = 1024 * 1024 * 1024  # 1 GiB uncompressed
+_MAX_ZIP_RATIO = 200  # uncompressed / compressed
+
+# Single allowlist for every piece of untrusted HTML imported from a package.
+_ALLOWED_HTML_TAGS = [
+    "p",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "strong",
+    "em",
+    "br",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "code",
+    "pre",
+    "blockquote",
+    "img",
+    "div",
+    "span",
+]
+_ALLOWED_HTML_ATTRS = {"a": ["href"], "img": ["src", "alt"], "*": ["class"]}
+
+
+def _sanitize_imported_html(html: str) -> str:
+    """Strip scripts/handlers from HTML that came from an untrusted package."""
+    import bleach  # noqa: PLC0415
+
+    return bleach.clean(
+        html, tags=_ALLOWED_HTML_TAGS, attributes=_ALLOWED_HTML_ATTRS, strip=True
+    )
+
+
 # Regex to extract week number from folder names like "week01/", "week12/"
-_WEEK_RE = re.compile(r"^week(\d{2})/")
-# Regex to extract material type prefix from filenames like "lecture_foo.html"
+_WEEK_RE = re.compile(r"^week(\d{2})/")# Regex to extract material type prefix from filenames like "lecture_foo.html"
 _MAT_TYPE_RE = re.compile(r"^([a-z_]+?)_")
 # Regex to guess a unit code pattern like "ICT100", "COMP2010"
 UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
@@ -727,8 +773,12 @@ class PackageImportService:
                     raw_html = _read_resource_content(zf, href)
                     if raw_html:
                         parsed = self._parse_assessment_html(raw_html)
-                        body_html = parsed.get("description", "")
-                        spec_html = parsed.get("specification", "")
+                        body_html = _sanitize_imported_html(
+                            parsed.get("description", "")
+                        )
+                        spec_html = _sanitize_imported_html(
+                            parsed.get("specification", "")
+                        )
 
                 assessment = Assessment(
                     unit_id=str(unit.id),
@@ -757,6 +807,11 @@ class PackageImportService:
 
                 html_content = zf.read(name).decode("utf-8")
                 assessment_data = self._parse_assessment_html(html_content)
+                for field in ("description", "specification"):
+                    if assessment_data.get(field):
+                        assessment_data[field] = _sanitize_imported_html(
+                            assessment_data[field]
+                        )
                 assessment = Assessment(
                     unit_id=str(unit.id),
                     title=assessment_data["title"],
@@ -1218,11 +1273,44 @@ class PackageImportService:
     # ------------------------------------------------------------------
 
     def _open_zip(self, zip_bytes: bytes) -> zipfile.ZipFile:
-        """Open and validate a ZIP file from raw bytes."""
+        """Open and validate a ZIP file from raw bytes.
+
+        Enforces archive caps *before* anything is read: entry count,
+        per-entry uncompressed size, total uncompressed size and compression
+        ratio. A small crafted package must not be able to expand into
+        gigabytes of RAM.
+        """
         try:
-            return zipfile.ZipFile(BytesIO(zip_bytes), "r")
+            zf = zipfile.ZipFile(BytesIO(zip_bytes), "r")
         except zipfile.BadZipFile as e:
             raise PackageImportError(f"Invalid ZIP file: {e}") from e
+
+        infos = zf.infolist()
+        if len(infos) > _MAX_ZIP_ENTRIES:
+            zf.close()
+            raise PackageImportError(
+                f"Package contains too many files (limit {_MAX_ZIP_ENTRIES})"
+            )
+
+        total_uncompressed = 0
+        for info in infos:
+            if info.file_size > _MAX_ZIP_ENTRY_BYTES:
+                zf.close()
+                raise PackageImportError(
+                    f"Package entry too large: {info.filename!r}"
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > _MAX_ZIP_TOTAL_BYTES:
+                zf.close()
+                raise PackageImportError("Package uncompressed size exceeds limit")
+            if info.compress_size > 0:
+                ratio = info.file_size / info.compress_size
+                if ratio > _MAX_ZIP_RATIO:
+                    zf.close()
+                    raise PackageImportError(
+                        f"Suspicious compression ratio in {info.filename!r}"
+                    )
+        return zf
 
     def _read_meta(self, zf: zipfile.ZipFile) -> dict[str, Any]:
         """Read and parse curriculum_curator_meta.json from the ZIP."""
@@ -1266,41 +1354,7 @@ class PackageImportService:
             script.decompose()
 
         inner_html = body.decode_contents().strip()
-
-        import bleach  # noqa: PLC0415
-
-        allowed_tags = [
-            "p",
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "ul",
-            "ol",
-            "li",
-            "a",
-            "strong",
-            "em",
-            "br",
-            "table",
-            "thead",
-            "tbody",
-            "tr",
-            "th",
-            "td",
-            "code",
-            "pre",
-            "blockquote",
-            "img",
-            "div",
-            "span",
-        ]
-        allowed_attrs = {"a": ["href"], "img": ["src", "alt"], "*": ["class"]}
-        inner_html = bleach.clean(
-            inner_html, tags=allowed_tags, attributes=allowed_attrs
-        )
+        inner_html = _sanitize_imported_html(inner_html)
 
         return title, inner_html
 

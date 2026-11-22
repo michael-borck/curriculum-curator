@@ -301,9 +301,11 @@ def is_email_whitelisted(db: Session, email: str) -> bool:
         .all()
     )
 
-    # If no active patterns, allow all emails (open registration)
+    # No active patterns means no one is authorised: fail closed rather than
+    # silently allowing open registration. An enabled-but-empty whitelist is
+    # almost always a configuration mistake.
     if not patterns:
-        return True
+        return False
 
     for (pattern,) in patterns:
         # Full email match

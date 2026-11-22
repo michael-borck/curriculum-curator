@@ -5,12 +5,18 @@ CrossRef DOI lookup endpoint — free metadata enrichment for captured sources.
 import logging
 import re
 from typing import Any
+from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from app.api import deps
 from app.core.config import settings
+from app.core.rate_limiter import RateLimits, limiter
 from app.schemas.capture import CrossRefLookupRequest, CrossRefLookupResponse
+from app.schemas.user import UserResponse
+
+DOI_PATTERN = re.compile(r"^10\.\d{4,9}/\S+$")
 
 logger = logging.getLogger(__name__)
 
@@ -95,23 +101,28 @@ def _parse_crossref_response(data: dict[str, Any]) -> CrossRefLookupResponse:
 
 
 @router.post("/crossref-lookup", response_model=CrossRefLookupResponse)
-async def crossref_lookup(data: CrossRefLookupRequest):
+@limiter.limit(RateLimits.API_READ)
+async def crossref_lookup(
+    request: Request,
+    data: CrossRefLookupRequest,
+    _current_user: UserResponse = Depends(deps.get_current_active_user),
+):
     """
     Look up metadata for a DOI via the CrossRef API.
 
     Free, no API key required. Returns normalized citation metadata.
     """
     doi = _normalise_doi(data.doi)
-    if not doi:
+    if not doi or not DOI_PATTERN.match(doi) or ".." in doi.split("/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="DOI is required",
+            detail="A valid DOI is required (e.g. 10.1000/xyz123)",
         )
 
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(
-                f"{CROSSREF_API}/{doi}",
+                f"{CROSSREF_API}/{quote(doi, safe='/')}",
                 headers=_crossref_headers(),
             )
 

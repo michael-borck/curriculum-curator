@@ -152,8 +152,21 @@ const Download = () => {
             Install Curriculum Curator
           </h1>
           <p className='text-lg md:text-xl text-gray-600 max-w-2xl mx-auto'>
-            Privacy-first, local-first. Your curriculum data stays on your
-            machine.
+            Draft privately, share when ready. No account needed — your work is
+            stored on your own computer, and you export it to your LMS or share
+            it when you choose.
+          </p>
+          <p className='text-sm text-gray-500 max-w-2xl mx-auto mt-4'>
+            Two things to know: because your work lives only on this computer,
+            back it up like any other important files. And if you later connect
+            an online AI service, the text you ask it to work on is sent to that
+            company — the app will remind you at that point. Local AI keeps
+            everything on your computer.
+          </p>
+          <p className='text-xs text-gray-400 max-w-2xl mx-auto mt-3'>
+            Loading this page asks GitHub for the latest release, which shares
+            your IP address with GitHub. The desktop app also checks GitHub for
+            updates shortly after each launch.
           </p>
         </div>
       </section>
@@ -265,7 +278,9 @@ const Download = () => {
             Self-Host with Docker
           </h2>
           <p className='text-gray-600 text-center mb-8'>
-            Run your own instance on any server.
+            Run a shared copy for a teaching team on a server, with sign-in
+            accounts for each person. The people who run that server can access
+            the work stored on it.
           </p>
 
           <div className='bg-gray-900 rounded-xl p-6 relative'>

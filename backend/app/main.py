@@ -3,6 +3,7 @@ Curriculum Curator - Main FastAPI Application
 """
 
 import logging
+import secrets
 from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
@@ -86,15 +87,23 @@ def _seed_local_user() -> None:
 
     db = SessionLocal()
     try:
+        # The local user never logs in with a password (LOCAL_MODE bypasses
+        # auth), so it gets a fresh unusable random password each startup.
+        # This also rotates away the previously shipped known password on
+        # databases created by older versions.
+        unusable = get_password_hash(secrets.token_urlsafe(32))
         existing = db.query(User).filter(User.id == LOCAL_USER_ID).first()
         if existing:
+            existing.password_hash = unusable
+            existing.is_active = True
+            db.commit()
             logger.info(f"✅ Local user already exists: {LOCAL_USER_EMAIL}")
             return
 
         local_user = User(
             id=LOCAL_USER_ID,
             email=LOCAL_USER_EMAIL,
-            password_hash=get_password_hash("local-mode-no-password"),
+            password_hash=unusable,
             name="Local User",
             role="lecturer",
             is_verified=True,
@@ -102,10 +111,31 @@ def _seed_local_user() -> None:
         )
         db.add(local_user)
         db.commit()
-        logger.info(f"✅ Local user created: {LOCAL_USER_EMAIL} (admin)")
+        logger.info(f"✅ Local user created: {LOCAL_USER_EMAIL} (lecturer)")
     except Exception:
         db.rollback()
         logger.exception("Failed to seed local user")
+    finally:
+        db.close()
+
+
+def _disable_local_user() -> None:
+    """Outside LOCAL_MODE the seeded local account must not be loginable."""
+    from app.api.deps import LOCAL_USER_ID  # noqa: PLC0415
+    from app.models.user import User  # noqa: PLC0415
+
+    if SessionLocal is None:
+        return
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.id == LOCAL_USER_ID).first()
+        if existing and existing.is_active:
+            existing.is_active = False
+            db.commit()
+            logger.info("Disabled seeded local user (LOCAL_MODE is off)")
+    except Exception:
+        db.rollback()
+        logger.exception("Failed to disable local user")
     finally:
         db.close()
 
@@ -156,8 +186,14 @@ async def lifespan(app: FastAPI):
 
         # LOCAL_MODE: seed the default local user and Ollama config
         if settings.LOCAL_MODE:
+            logger.warning(
+                "LOCAL_MODE is ON: authentication is bypassed. Only use "
+                "this on a loopback-bound single-user install."
+            )
             _seed_local_user()
             _seed_ollama_config()
+        else:
+            _disable_local_user()
 
     except Exception as e:
         logger.warning(f"Initialization warning: {e}")

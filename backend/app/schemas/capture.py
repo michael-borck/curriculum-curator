@@ -13,7 +13,12 @@ from app.schemas.base import CamelModel
 class CrossRefLookupRequest(CamelModel):
     """Request to look up metadata via CrossRef DOI."""
 
-    doi: str = Field(..., description="DOI to look up (with or without URL prefix)")
+    doi: str = Field(
+        ...,
+        min_length=3,
+        max_length=512,
+        description="DOI to look up (with or without URL prefix)",
+    )
 
 
 class CrossRefLookupResponse(CamelModel):

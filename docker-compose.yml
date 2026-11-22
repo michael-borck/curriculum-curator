@@ -7,7 +7,7 @@ services:
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
-      - "8081:8000"  # Backend serves everything on port 8000
+      - "127.0.0.1:8081:8000"  # loopback only; Caddy reaches it on the network
     networks:
       - caddy_default
     volumes:
@@ -21,8 +21,8 @@ services:
       # Database
       - DATABASE_URL=sqlite:////app/backend/data/curriculum_curator.db
       
-      # Security (CHANGE THESE IN PRODUCTION!)
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-this-in-production}
+      # Security — required, no default. Generate: openssl rand -hex 32
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY (openssl rand -hex 32)}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       
@@ -57,7 +57,7 @@ services:
       - local-ai
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"  # Ollama has no auth; never publish it
     volumes:
       - ollama_data:/root/.ollama
     networks:

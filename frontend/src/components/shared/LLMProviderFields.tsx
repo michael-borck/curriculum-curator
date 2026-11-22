@@ -5,7 +5,7 @@
  * and model selector that are duplicated between user and admin settings.
  */
 
-import { Key, Link, Shield, RefreshCw, Loader2 } from 'lucide-react';
+import { Key, Link, Shield, RefreshCw, Loader2, Info } from 'lucide-react';
 import { LLMProvider, PROVIDER_DISPLAY_NAMES } from '../../types/llm';
 import type { LLMConfigFormData } from '../../types/llm';
 
@@ -41,6 +41,9 @@ export function LLMProviderFields({
   onProviderChange,
 }: LLMProviderFieldsProps) {
   const { provider } = formData;
+  const providerName = provider
+    ? PROVIDER_DISPLAY_NAMES[provider]
+    : 'the AI service';
 
   return (
     <>
@@ -68,6 +71,36 @@ export function LLMProviderFields({
         </select>
       </div>
 
+      {/* Plain-English note on where text goes when AI help is used */}
+      <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2'>
+        <Info className='w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0' />
+        <p className='text-sm text-blue-800'>
+          {provider === 'ollama' ? (
+            <>
+              Ollama runs AI on a computer you choose — usually your own. When
+              you ask for AI help, your text is sent only to the address below,
+              not to an online AI company.
+            </>
+          ) : provider === 'custom' ? (
+            <>
+              When you ask for AI help, the text you are working on will be sent
+              to the service at the address you enter below, and that service
+              will send back a reply. Only use a service you trust, and avoid
+              including personal details about individual students.
+            </>
+          ) : (
+            <>
+              When you ask for AI help, the text you are working on will be sent
+              over the internet to {providerName}, which will send back a reply.
+              Any charges go to the {providerName} account linked to the key
+              below. Avoid including personal details about individual students.
+              To avoid sending text to an online AI company, choose Ollama
+              (Local) instead.
+            </>
+          )}
+        </p>
+      </div>
+
       {/* API Key - for most providers */}
       {provider !== 'ollama' && (
         <div>
@@ -88,6 +121,11 @@ export function LLMProviderFields({
               }
             />
           </div>
+          <p className='mt-1 text-sm text-gray-500'>
+            An API key is like a password that lets Curriculum Curator use the{' '}
+            {providerName} account linked to it. Keep it private, just like a
+            password.
+          </p>
         </div>
       )}
 

@@ -38,14 +38,20 @@ class TestLLMService:
 
     def test_check_providers_with_openai_key(self):
         """Test provider checking with OpenAI API key"""
-        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+        with patch("app.services.llm_service.settings") as mock_settings:
+            mock_settings.OPENAI_API_KEY = "test-key"
+            mock_settings.ANTHROPIC_API_KEY = None
+            mock_settings.GEMINI_API_KEY = None
             service = LLMService()
             assert "openai" in service.providers
             assert service.providers["openai"] is True
 
     def test_check_providers_with_anthropic_key(self):
         """Test provider checking with Anthropic API key"""
-        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"}):
+        with patch("app.services.llm_service.settings") as mock_settings:
+            mock_settings.OPENAI_API_KEY = None
+            mock_settings.ANTHROPIC_API_KEY = "test-key"
+            mock_settings.GEMINI_API_KEY = None
             service = LLMService()
             assert "anthropic" in service.providers
             assert service.providers["anthropic"] is True
@@ -151,7 +157,12 @@ class TestLLMService:
 
                 # Mock database session
                 mock_db = Mock()
-                mock_db.query.return_value.filter.return_value.all.return_value = []
+                mock_query = mock_db.query.return_value
+                mock_query.filter.return_value.all.return_value = []
+                # No stored LLMConfiguration row for this user.
+                mock_query.filter.return_value.order_by.return_value.first.return_value = (
+                    None
+                )
 
                 # Mock user
                 mock_user = Mock()

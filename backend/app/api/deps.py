@@ -105,6 +105,12 @@ def get_current_user(
         logger.error(f"[AUTH] User not found for id: {user_id}")
         raise credentials_exception
 
+    # Tokens minted before a password change / logout-all carry an older
+    # version and are rejected. Old tokens without "tv" are treated as 0.
+    token_version = payload.get("tv", 0)
+    if token_version != getattr(user, "token_version", 0):
+        raise credentials_exception
+
     return user
 
 

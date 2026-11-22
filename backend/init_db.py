@@ -4,6 +4,8 @@ Database initialization script for Curriculum Curator
 Creates tables and loads sample data for development
 """
 
+import os
+import secrets
 import sys
 import traceback
 import uuid
@@ -62,11 +64,18 @@ def init_db():
         # Create sample users
         print("👥 Creating users...")
 
+        # Never ship fixed passwords: use operator-supplied values or generate
+        # one-time random passwords and print them here.
+        admin_password = os.getenv("INIT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
+        lecturer_password = os.getenv("INIT_LECTURER_PASSWORD") or secrets.token_urlsafe(
+            16
+        )
+
         # Admin user
         admin = User(
             id=str(uuid.uuid4()),
             email="admin@curriculum-curator.edu.au",
-            password_hash=get_password_hash("admin123"),
+            password_hash=get_password_hash(admin_password),
             name="System Administrator",
             role=UserRole.ADMIN.value,
             is_verified=True,
@@ -81,7 +90,7 @@ def init_db():
         lecturer = User(
             id=str(uuid.uuid4()),
             email="lecturer@university.edu.au",
-            password_hash=get_password_hash("password123"),
+            password_hash=get_password_hash(lecturer_password),
             name="Dr. Sarah Chen",
             role=UserRole.LECTURER.value,
             is_verified=True,
@@ -123,9 +132,10 @@ def init_db():
         print(f"  - Users: {db.query(User).count()}")
         print(f"  - Units: {db.query(Unit).count()}")
 
-        print("\n🔑 Test Credentials:")
-        print("  Admin: admin@curriculum-curator.edu.au / admin123")
-        print("  Lecturer: lecturer@university.edu.au / password123")
+        print("\n🔑 Test Credentials (shown once — store them now):")
+        print(f"  Admin: admin@curriculum-curator.edu.au / {admin_password}")
+        print(f"  Lecturer: lecturer@university.edu.au / {lecturer_password}")
+        print("\n  Override with INIT_ADMIN_PASSWORD / INIT_LECTURER_PASSWORD.")
 
     except Exception as e:
         print(f"\n❌ Error during initialization: {e}")

@@ -77,7 +77,7 @@ def test_generate_interaction_valid_json(
 
 
 def test_generate_interaction_with_design_context(
-    client: TestClient, mock_generate_structured: AsyncMock
+    client: TestClient, mock_generate_structured: AsyncMock, test_unit
 ):
     """When unit_id is provided, design context is injected into the prompt."""
     mock_generate_structured.return_value = (
@@ -102,7 +102,7 @@ def test_generate_interaction_with_design_context(
             json={
                 "segmentText": "Some transcript text here.",
                 "questionType": "multiple_choice",
-                "unitId": "unit-123",
+                "unitId": str(test_unit.id),
             },
         )
 

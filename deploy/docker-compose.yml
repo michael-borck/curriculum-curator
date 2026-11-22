@@ -7,11 +7,12 @@
 
 services:
   app:
-    image: ghcr.io/michael-borck/curriculum-curator:latest
+    # Pin an exact version — roll forward deliberately, never via :latest.
+    image: ghcr.io/michael-borck/curriculum-curator:0.7.10
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
-      - "8081:8000"
+      - "127.0.0.1:8081:8000"
     env_file: .env
     volumes:
       - ./data/db:/app/backend/data
@@ -20,8 +21,6 @@ services:
       - ./data/content_repo:/app/backend/content_repo
       - ./data/content_repos:/app/backend/content_repos
       - ./data/user_templates:/app/backend/user_templates
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - caddy_default
 
@@ -36,7 +35,7 @@ services:
       - local-ai
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"  # Ollama has no auth; never publish it
     volumes:
       - ollama_data:/root/.ollama
     networks:

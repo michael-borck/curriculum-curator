@@ -9,6 +9,8 @@ import {
   Brain,
   CheckCircle,
   Globe,
+  Shield,
+  Shuffle,
 } from 'lucide-react';
 import type { LandingProps } from '../../types/index';
 
@@ -29,9 +31,9 @@ const Landing = ({ onSignInClick }: LandingProps) => {
     },
     {
       icon: BookOpen,
-      title: 'Flexible Structure',
+      title: 'One Piece, or a Whole Unit',
       description:
-        'Plan learning programs with outcomes, materials, and assessments — from 4-week workshops to full semesters.',
+        'Make a single reading or activity, or plan a full semester. Start anywhere — there is no set order to follow.',
     },
     {
       icon: Upload,
@@ -88,8 +90,9 @@ const Landing = ({ onSignInClick }: LandingProps) => {
             <span className='text-purple-600'>That Teaches Your Way</span>
           </h1>
           <p className='text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto'>
-            An AI-powered platform for educators. Build pedagogically-aligned
-            learning programs with outcomes, materials, and assessments.
+            An AI-powered platform for educators. Make one piece of material or
+            a whole curriculum, draft it in private, and share it when
+            you&apos;re ready.
           </p>
           <button
             onClick={() => navigate('/download')}
@@ -122,6 +125,52 @@ const Landing = ({ onSignInClick }: LandingProps) => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Work Your Way */}
+      <section className='px-6 md:px-8 py-16 bg-white'>
+        <div className='max-w-5xl mx-auto'>
+          <h2 className='text-2xl md:text-3xl font-bold text-gray-900 text-center mb-10'>
+            Work Your Way
+          </h2>
+          <div className='grid md:grid-cols-2 gap-8'>
+            <div className='p-6 border border-gray-200 rounded-xl'>
+              <div className='w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4'>
+                <Shield className='w-5 h-5 text-purple-600' />
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+                Draft privately. Share when ready.
+              </h3>
+              <p className='text-gray-600 mb-4'>
+                Install Curriculum Curator on your own computer and work on
+                half-finished ideas with no account and no audience. When
+                you&apos;re ready, export to your LMS or share with your team.
+                You decide when colleagues first see it.
+              </p>
+              <button
+                onClick={() => navigate('/download')}
+                className='text-purple-600 hover:text-purple-800 font-medium inline-flex items-center gap-1'
+              >
+                Install on your computer
+                <ArrowRight className='w-4 h-4' />
+              </button>
+            </div>
+            <div className='p-6 border border-gray-200 rounded-xl'>
+              <div className='w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-4'>
+                <Shuffle className='w-5 h-5 text-purple-600' />
+              </div>
+              <h3 className='text-xl font-semibold text-gray-900 mb-3'>
+                Start anywhere. No set workflow.
+              </h3>
+              <p className='text-gray-600'>
+                Create a single lecture, reading, or activity — or plan a
+                full-semester unit. Add outcomes, assessments, and alignment
+                when it suits you, in whatever order you like. Nothing forces
+                you through a fixed process.
+              </p>
+            </div>
           </div>
         </div>
       </section>

@@ -2,7 +2,6 @@
 frontend/node_modules
 frontend/dist
 frontend/.vite
-frontend/package-lock.json
 
 # Ignore backend artifacts
 backend/.venv
@@ -16,6 +15,7 @@ backend/.mypy_cache
 # Ignore data directories
 data/
 backend/data/
+backend/content_repos/
 
 # Ignore git
 .git
@@ -31,5 +31,7 @@ backend/data/
 .DS_Store
 Thumbs.db
 
-# Ignore env files (use volume mount instead)
-backend/.env
+# Never bake secrets into the image (examples and templates are fine).
+.env
+**/.env
+!**/.env.example

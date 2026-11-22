@@ -392,8 +392,8 @@ const LLMSettings: React.FC = () => {
                   Local AI
                 </h3>
                 <p className='text-sm text-gray-600 mt-1'>
-                  Run AI models locally on your machine with Ollama. No API keys
-                  needed.
+                  Run AI models on your own computer with Ollama. No API keys
+                  needed, and your text is not sent to an online AI company.
                 </p>
                 {isLoadingLocalAI ? (
                   <div className='flex items-center gap-2 mt-2'>

@@ -24,6 +24,12 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
     // In local mode, logout is a no-op (nowhere to log out to)
     if (get().isLocalMode) return;
 
+    // Ask the server to revoke this token before dropping it locally.
+    // Fire-and-forget: local state clears even if the call fails.
+    if (localStorage.getItem('token')) {
+      api.post('/auth/logout').catch(() => undefined);
+    }
+
     // Clear token and persisted context from localStorage
     // Security note: token stored in localStorage is vulnerable to XSS.
     // TODO: migrate to httpOnly cookies for production hardening.

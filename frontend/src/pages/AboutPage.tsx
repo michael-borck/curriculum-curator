@@ -72,6 +72,13 @@ const AboutPage = () => {
           <li className='flex items-start gap-2'>
             <span className='text-purple-500 mt-1'>•</span>
             <span>
+              <strong>How much to make</strong>: one piece of material, or a
+              whole unit — start anywhere, in any order, with no set workflow
+            </span>
+          </li>
+          <li className='flex items-start gap-2'>
+            <span className='text-purple-500 mt-1'>•</span>
+            <span>
               <strong>What to export</strong>: IMS Common Cartridge, SCORM, PDF,
               DOCX, PPTX, HTML
             </span>
@@ -133,28 +140,39 @@ const AboutPage = () => {
                 <td className='py-2.5 px-4'>
                   Registration, email verification, whitelist
                 </td>
-                <td className='py-2.5 px-4'>
-                  No login needed (LOCAL_MODE=true)
-                </td>
+                <td className='py-2.5 px-4'>No login needed</td>
               </tr>
               <tr className='border-b border-gray-100'>
                 <td className='py-2.5 pr-4 font-medium'>Security</td>
                 <td className='py-2.5 px-4'>
-                  JWT auth, rate limiting, account lockout
+                  Sign-in accounts, with protection against repeated password
+                  guesses
                 </td>
-                <td className='py-2.5 px-4'>Single-user, no auth overhead</td>
+                <td className='py-2.5 px-4'>
+                  Just you on your own computer — no sign-in
+                </td>
               </tr>
               <tr className='border-b border-gray-100'>
-                <td className='py-2.5 pr-4 font-medium'>AI keys</td>
-                <td className='py-2.5 px-4'>Shared keys or BYOK</td>
+                <td className='py-2.5 pr-4 font-medium'>AI account</td>
                 <td className='py-2.5 px-4'>
-                  Your own keys, or offline with Ollama
+                  A shared AI account, or your own
+                </td>
+                <td className='py-2.5 px-4'>
+                  Your own AI account, or AI running on your own computer
+                  (Ollama)
                 </td>
               </tr>
               <tr>
-                <td className='py-2.5 pr-4 font-medium'>Database</td>
-                <td className='py-2.5 px-4'>SQLite on the server</td>
-                <td className='py-2.5 px-4'>SQLite on your machine</td>
+                <td className='py-2.5 pr-4 font-medium'>
+                  Where work is stored
+                </td>
+                <td className='py-2.5 px-4'>
+                  On the institution&apos;s server — the people who run that
+                  server can access it
+                </td>
+                <td className='py-2.5 px-4'>
+                  On your own computer — back it up like other important files
+                </td>
               </tr>
             </tbody>
           </table>
@@ -166,40 +184,54 @@ const AboutPage = () => {
         <div className='flex items-center gap-2 mb-4'>
           <Shield className='w-5 h-5 text-purple-600' />
           <h2 className='text-xl font-semibold text-gray-900'>
-            Privacy-First, Bring Your Own Key
+            Draft Privately, Share When Ready
           </h2>
         </div>
         <p className='text-gray-700 mb-3'>
-          No matter how you deploy, Curriculum Curator never phones home:
+          Curriculum Curator does not track you or send your work anywhere on
+          its own. The only times anything leaves are the ones you choose:
         </p>
         <ul className='space-y-2 text-gray-700'>
           <li className='flex items-start gap-2'>
             <span className='text-purple-500 mt-1'>•</span>
             <span>
-              <strong>BYOK</strong>: Bring your own API keys for OpenAI,
-              Anthropic, Google Gemini — or run fully offline with local Ollama
-              models
+              <strong>Draft in private</strong>: Install the desktop app and
+              work on half-finished ideas on your own computer, with no account
+              and no audience. Export or share only when you are ready.
             </span>
           </li>
           <li className='flex items-start gap-2'>
             <span className='text-purple-500 mt-1'>•</span>
             <span>
-              <strong>No telemetry</strong>: Zero analytics, zero tracking, zero
-              external calls beyond the AI provider you choose
+              <strong>Your choice of AI</strong>: If you connect an online AI
+              service such as OpenAI, Anthropic, or Google Gemini, the text you
+              ask for help with is sent to that company. Or run AI on your own
+              computer with Ollama, and nothing is sent out. You can also use no
+              AI at all.
             </span>
           </li>
           <li className='flex items-start gap-2'>
             <span className='text-purple-500 mt-1'>•</span>
             <span>
-              <strong>Data stays with you</strong>: SQLite in a single file you
-              control — no cloud database, no vendor lock-in
+              <strong>No tracking</strong>: No analytics and no advertising
+              trackers. The only outside connections are the AI and search
+              services you set up.
             </span>
           </li>
           <li className='flex items-start gap-2'>
             <span className='text-purple-500 mt-1'>•</span>
             <span>
-              <strong>Air-gapped capable</strong>: Ollama + Local Mode means the
-              app works without any internet connection
+              <strong>Know where your work lives</strong>: On the desktop app it
+              is stored on your computer — back it up like other important
+              files. On a shared server, the people who run that server can
+              access it.
+            </span>
+          </li>
+          <li className='flex items-start gap-2'>
+            <span className='text-purple-500 mt-1'>•</span>
+            <span>
+              <strong>Works without internet</strong>: The desktop app with
+              local AI (Ollama) works with no internet connection at all.
             </span>
           </li>
         </ul>

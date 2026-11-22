@@ -4,10 +4,12 @@ Plugin management endpoints — validate, remediate, list, and configure plugins
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.api import deps
 from app.core.database import get_db
+from app.core.rate_limiter import RateLimits, limiter
 from app.plugins.base import PluginResult
 from app.plugins.plugin_manager import PluginConfig, plugin_manager
 from app.schemas.plugins import (
@@ -20,6 +22,7 @@ from app.schemas.plugins import (
     PluginValidateRequest,
     PluginValidateResponse,
 )
+from app.schemas.user import UserResponse
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +43,9 @@ def _to_result_data(result: PluginResult) -> PluginResultData:
 
 
 @router.get("", response_model=PluginListResponse)
-async def list_plugins() -> PluginListResponse:
+async def list_plugins(
+    _current_user: UserResponse = Depends(deps.get_current_active_user),
+) -> PluginListResponse:
     """List all available plugins with their enabled/disabled status."""
     validators = plugin_manager.get_available_validators()
     remediators = plugin_manager.get_available_remediators()
@@ -70,8 +75,13 @@ async def list_plugins() -> PluginListResponse:
 
 
 @router.patch("/{name}")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
 async def configure_plugin(
-    name: str, body: PluginConfigUpdate, db: Session = Depends(get_db)
+    request: Request,
+    name: str,
+    body: PluginConfigUpdate,
+    db: Session = Depends(get_db),
+    _admin: UserResponse = Depends(deps.get_current_admin_user),
 ) -> PluginInfo:
     """Update a plugin's configuration and persist to database."""
     # Verify plugin exists
@@ -117,10 +127,13 @@ async def configure_plugin(
 
 
 @router.post("/validate", response_model=PluginValidateResponse)
+@limiter.limit(RateLimits.API_WRITE)
 async def validate_content(
+    request: Request,
     body: PluginValidateRequest,
     material_id: str | None = None,
     db: Session = Depends(get_db),
+    _current_user: UserResponse = Depends(deps.get_current_active_user),
 ) -> PluginValidateResponse:
     """Run validator plugins on content.
 
@@ -150,7 +163,12 @@ async def validate_content(
 
 
 @router.post("/remediate", response_model=PluginRemediateResponse)
-async def remediate_content(body: PluginRemediateRequest) -> PluginRemediateResponse:
+@limiter.limit(RateLimits.API_WRITE)
+async def remediate_content(
+    request: Request,
+    body: PluginRemediateRequest,
+    _current_user: UserResponse = Depends(deps.get_current_active_user),
+) -> PluginRemediateResponse:
     """Run remediator plugins on content."""
     raw_results = await plugin_manager.remediate_content(
         body.content, issues=[], remediators=body.remediators

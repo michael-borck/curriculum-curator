@@ -96,9 +96,15 @@ const ResearchSettings = () => {
   return (
     <div className='bg-white rounded-lg shadow-md p-6'>
       <h2 className='text-xl font-semibold mb-2'>Research Settings</h2>
-      <p className='text-sm text-gray-600 mb-6'>
-        Configure your preferred search tier and API keys for web search
-        providers.
+      <p className='text-sm text-gray-600 mb-3'>
+        Choose which online search services Curriculum Curator uses to find
+        readings and other sources.
+      </p>
+      <p className='text-sm text-gray-600 mb-6 bg-blue-50 border border-blue-200 rounded-lg p-3'>
+        When you run a search, your search words are sent over the internet to
+        the search services chosen below — for example OpenAlex and Semantic
+        Scholar, or Google if you add its key. Search for topics, not for
+        personal details about individual students.
       </p>
 
       {error && (

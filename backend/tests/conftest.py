@@ -31,7 +31,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Set environment variables before importing app modules
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing")
+os.environ.setdefault("SECRET_KEY", "test-only-secret-key-0123456789-abcdefghij")
+os.environ.setdefault("TESTING", "true")
 os.environ.setdefault("DATABASE_URL", "sqlite:///")
 
 from app.core.database import Base
@@ -188,6 +189,7 @@ def client(test_db: Session, test_user: User):
     from fastapi.testclient import TestClient
 
     from app.api import deps
+    from app.core import database as core_database
     from app.main import app
     from app.schemas.user import UserResponse
 
@@ -210,6 +212,9 @@ def client(test_db: Session, test_user: User):
         yield test_db
 
     app.dependency_overrides[deps.get_db] = _override_get_db
+    # Routes import get_db from either module; override both so every route
+    # hits the in-memory test database.
+    app.dependency_overrides[core_database.get_db] = _override_get_db
     app.dependency_overrides[deps.get_current_user] = lambda: user_resp
     app.dependency_overrides[deps.get_current_active_user] = lambda: user_resp
 

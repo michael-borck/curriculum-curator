@@ -17,6 +17,8 @@ class UserRegistrationRequest(CamelModel):
         ..., min_length=8, description="Password must be at least 8 characters"
     )
     name: str = Field(..., min_length=1, max_length=255, description="Full name")
+    # Required only for the first account on a fresh deployment.
+    setup_token: str | None = Field(default=None, max_length=512)
 
     @field_validator("password")
     @classmethod

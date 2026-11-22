@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core.database import get_db
+from app.core.secret_crypto import encrypt_secret
 from app.models.llm_config import LLMConfiguration
 from app.models.user import User
 from app.schemas.llm_config import (
@@ -27,7 +28,7 @@ router = APIRouter()
 @router.post("/test", response_model=LLMTestResponse)
 async def test_llm_connection(
     request: LLMTestRequest,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Test LLM connection with provided configuration"""
@@ -49,7 +50,7 @@ async def list_available_models(
     api_key: str | None = None,
     api_url: str | None = None,
     bearer_token: str | None = None,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
 ):
     """List available models for a provider"""
     provider_str = provider.value if hasattr(provider, "value") else str(provider)
@@ -60,7 +61,7 @@ async def list_available_models(
 
 @router.get("/configurations", response_model=list[LLMConfigResponse])
 def get_user_configurations(
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Get all LLM configurations for the current user"""
@@ -160,7 +161,7 @@ def get_all_user_configurations(
 @router.post("/configurations", response_model=LLMConfigResponse)
 def create_configuration(
     config: LLMConfigCreate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Create a new LLM configuration for the current user"""
@@ -174,9 +175,9 @@ def create_configuration(
     db_config = LLMConfiguration(
         user_id=current_user.id,
         provider=config.provider,
-        api_key=config.api_key,  # Should be encrypted in production
+        api_key=encrypt_secret(config.api_key),
         api_url=config.api_url,
-        bearer_token=config.bearer_token,
+        bearer_token=encrypt_secret(config.bearer_token),
         model_name=config.model_name,
         temperature=config.temperature,
         max_tokens=config.max_tokens,
@@ -218,9 +219,9 @@ def create_system_configuration(
     db_config = LLMConfiguration(
         user_id=None,  # System-wide config
         provider=config.provider,
-        api_key=config.api_key,  # Should be encrypted in production
+        api_key=encrypt_secret(config.api_key),
         api_url=config.api_url,
-        bearer_token=config.bearer_token,
+        bearer_token=encrypt_secret(config.bearer_token),
         model_name=config.model_name,
         temperature=config.temperature,
         max_tokens=config.max_tokens,
@@ -250,7 +251,7 @@ def create_system_configuration(
 def update_configuration(
     config_id: str,
     config_update: LLMConfigUpdate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Update an LLM configuration"""
@@ -277,8 +278,14 @@ def update_configuration(
         ).update({"is_default": False})
 
     update_data = config_update.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_config, field, value)
+    for field, raw_value in update_data.items():
+        if field in ("api_key", "bearer_token"):
+            # Empty string means "leave unchanged" from the settings UI.
+            if raw_value == "":
+                continue
+            setattr(db_config, field, encrypt_secret(raw_value))
+        else:
+            setattr(db_config, field, raw_value)
 
     db.commit()
     db.refresh(db_config)
@@ -301,7 +308,7 @@ def update_configuration(
 @router.delete("/configurations/{config_id}")
 def delete_configuration(
     config_id: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Delete an LLM configuration"""
@@ -328,7 +335,7 @@ def delete_configuration(
 @router.get("/usage/stats", response_model=UserTokenStats)
 def get_token_usage_stats(
     days: int = 30,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """Get token usage statistics for the current user"""

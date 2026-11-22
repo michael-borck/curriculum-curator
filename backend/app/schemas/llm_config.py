@@ -58,7 +58,16 @@ class LLMConfig(LLMConfigBase):
 
 
 def mask_api_key(key: str | None) -> str | None:
-    """Mask an API key for safe display, showing first/last 4 chars."""
+    """Mask an API key for safe display, showing first/last 4 chars.
+
+    Stored keys are encrypted at rest; decrypt first so the preview shows
+    the real key's edges, never ciphertext.
+    """
+    if not key:
+        return None
+    from app.core.secret_crypto import decrypt_secret  # noqa: PLC0415
+
+    key = decrypt_secret(key)
     if not key:
         return None
     if len(key) > 8:

@@ -110,6 +110,8 @@ async def create_research_source(
 
     The source is associated with the current user and optionally with a unit.
     """
+    if data.unit_id:
+        deps.require_unit_owner(db, str(data.unit_id), current_user)
     # Convert authors to JSON
     authors_json = (
         json.dumps([a.model_dump() for a in data.authors]) if data.authors else None
@@ -167,6 +169,8 @@ async def save_from_search(
 
     This is a convenience endpoint that pre-populates fields from search/summarization.
     """
+    if data.unit_id:
+        deps.require_unit_owner(db, str(data.unit_id), current_user)
     key_points_json = json.dumps(data.key_points) if data.key_points else None
     tags_json = json.dumps(data.tags) if data.tags else None
 

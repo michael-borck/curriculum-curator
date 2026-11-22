@@ -6,11 +6,14 @@ Extracts and verifies URLs from content to prevent hallucinated links
 import asyncio
 import re
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 
 from app.plugins.base import PluginResult, ValidatorPlugin
+from app.utils.url_safety import UrlNotAllowedError, assert_public_url
+
+_MAX_REDIRECTS = 5
 
 
 class URLVerifier(ValidatorPlugin):
@@ -192,6 +195,9 @@ class URLVerifier(ValidatorPlugin):
             result["error"] = "Request timeout"
         except httpx.ConnectError:
             result["error"] = "Connection failed"
+        except UrlNotAllowedError:
+            # Server-side request to a private/internal address: refuse it.
+            result["error"] = "URL is not permitted (private or internal address)"
         except httpx.HTTPStatusError as e:
             result["status_code"] = e.response.status_code
             result["error"] = f"HTTP {e.response.status_code}"
@@ -201,10 +207,24 @@ class URLVerifier(ValidatorPlugin):
     async def _make_request(
         self, client: httpx.AsyncClient, url: str, method: str
     ) -> httpx.Response:
-        """Make HTTP request with specified method."""
-        if method == "HEAD":
-            return await client.head(url, follow_redirects=True, timeout=self._timeout)
-        return await client.get(url, follow_redirects=True, timeout=self._timeout)
+        """Request ``url`` following redirects safely.
+
+        Auto-redirects are disabled so every hop is validated by
+        ``assert_public_url`` — otherwise a public URL could redirect the
+        server to loopback or cloud metadata.
+        """
+        current = url
+        for _ in range(_MAX_REDIRECTS + 1):
+            await assert_public_url(current)
+            response = await client.request(
+                method, current, follow_redirects=False, timeout=self._timeout
+            )
+            location = response.headers.get("location")
+            if response.is_redirect and location:
+                current = urljoin(current, location)
+                continue
+            return response
+        raise UrlNotAllowedError("Too many redirects")
 
     def _process_response(
         self, response: httpx.Response, url: str, result: dict[str, Any]
@@ -261,7 +281,6 @@ class URLVerifier(ValidatorPlugin):
         # Create HTTP client with custom headers
         async with httpx.AsyncClient(
             headers={"User-Agent": self._user_agent},
-            verify=False,  # Skip SSL verification for flexibility
         ) as client:
             # Process URLs in batches to avoid overwhelming
             for i in range(0, len(urls), self._max_concurrent):
