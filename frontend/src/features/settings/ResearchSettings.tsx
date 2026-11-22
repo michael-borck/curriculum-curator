@@ -13,6 +13,11 @@ const ResearchSettings = () => {
   const [coreApiKey, setCoreApiKey] = useState('');
   const [searxngUrl, setSearxngUrl] = useState('');
   const [excludedDomainsText, setExcludedDomainsText] = useState('');
+  const [academicProviders, setAcademicProviders] = useState<string[]>([
+    'openalex',
+    'semantic_scholar',
+    'crossref',
+  ]);
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -21,6 +26,14 @@ const ResearchSettings = () => {
 
   const toggleShow = (key: string) => {
     setShowKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleAcademicProvider = (provider: string) => {
+    setAcademicProviders(prev =>
+      prev.includes(provider)
+        ? prev.filter(p => p !== provider)
+        : [...prev, provider]
+    );
   };
 
   const handleSave = async () => {
@@ -46,6 +59,7 @@ const ResearchSettings = () => {
         searxngUrl: searxngUrl || undefined,
         excludedDomains:
           excludedDomains.length > 0 ? excludedDomains : undefined,
+        academicProviders,
       };
       await researchApi.saveResearchSettings(settings);
       setSaved(true);
@@ -134,9 +148,39 @@ const ResearchSettings = () => {
             <option value={4}>Tier 4: SearXNG (requires instance URL)</option>
           </select>
           <p className='text-xs text-gray-500 mt-1'>
-            Tier 1 searches OpenAlex, Semantic Scholar, and CrossRef (always
-            available). Add a CORE API key below for broader coverage.
+            Tier 1 queries only the academic providers ticked below. Add a CORE
+            API key for broader coverage.
           </p>
+        </div>
+
+        {/* Academic provider consent (Tier 1) */}
+        <div>
+          <h3 className='font-medium mb-3'>
+            Academic Search Providers (Tier 1)
+          </h3>
+          <p className='text-xs text-gray-500 mb-3'>
+            Each ticked service receives your search words. Untick a provider to
+            stop sending queries to it.
+          </p>
+          <div className='space-y-2'>
+            {[
+              { id: 'openalex', label: 'OpenAlex' },
+              { id: 'semantic_scholar', label: 'Semantic Scholar' },
+              { id: 'crossref', label: 'CrossRef' },
+            ].map(provider => (
+              <label
+                key={provider.id}
+                className='flex items-center gap-2 text-sm text-gray-700'
+              >
+                <input
+                  type='checkbox'
+                  checked={academicProviders.includes(provider.id)}
+                  onChange={() => toggleAcademicProvider(provider.id)}
+                />
+                {provider.label}
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* CORE API Key (Tier 1 enhancement) */}

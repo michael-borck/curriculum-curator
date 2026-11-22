@@ -251,3 +251,10 @@ class ResearchSettings(CamelModel):
         default_factory=list,
         description="Domains to drop from every tier's results (e.g. youtube.com)",
     )
+    academic_providers: list[str] = Field(
+        default_factory=lambda: ["openalex", "semantic_scholar", "crossref"],
+        description=(
+            "Academic search providers to query. Empty means none; CORE is "
+            "added only when a CORE API key is configured."
+        ),
+    )

@@ -429,39 +429,52 @@ class AcademicSearchService:
         query: str,
         max_results: int = 20,
         core_api_key: str | None = None,
+        providers: list[str] | None = None,
     ) -> list[AcademicWork]:
-        """Run all providers concurrently, deduplicate by DOI, rank by citations.
+        """Run the enabled providers concurrently, deduplicate, rank.
 
-        CORE is only queried if an API key is provided (free registration required).
+        ``providers`` holds user-facing slugs (``openalex``,
+        ``semantic_scholar``, ``crossref``, ``core``). ``None`` keeps the
+        historical behaviour of querying every free provider. CORE is only
+        queried when both selected and given an API key.
         """
-        # Build the list of coroutines to run
+        enabled = (
+            {"openalex", "semantic_scholar", "crossref"}
+            if providers is None
+            else set(providers)
+        )
+
         tasks: list[asyncio.Task[list[AcademicWork]]] = []
+        provider_names: list[str] = []
 
-        tasks.append(
-            asyncio.ensure_future(self.openalex.search_works(query, max_results))
-        )
-        tasks.append(
-            asyncio.ensure_future(
-                self.semantic_scholar.search_papers(query, max_results)
+        if "openalex" in enabled:
+            tasks.append(
+                asyncio.ensure_future(self.openalex.search_works(query, max_results))
             )
-        )
-        tasks.append(
-            asyncio.ensure_future(self.crossref.search_works(query, max_results))
-        )
-
-        # CORE: only if API key provided
-        if core_api_key:
+            provider_names.append("OpenAlex")
+        if "semantic_scholar" in enabled:
+            tasks.append(
+                asyncio.ensure_future(
+                    self.semantic_scholar.search_papers(query, max_results)
+                )
+            )
+            provider_names.append("Semantic Scholar")
+        if "crossref" in enabled:
+            tasks.append(
+                asyncio.ensure_future(self.crossref.search_works(query, max_results))
+            )
+            provider_names.append("CrossRef")
+        if "core" in enabled and core_api_key:
             core_client = CORESearchClient(api_key=core_api_key)
             tasks.append(
                 asyncio.ensure_future(core_client.search_works(query, max_results))
             )
+            provider_names.append("CORE")
+
+        if not tasks:
+            return []
 
         raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Flatten results, handling exceptions gracefully
-        provider_names = ["OpenAlex", "Semantic Scholar", "CrossRef"]
-        if core_api_key:
-            provider_names.append("CORE")
 
         all_works_flat: list[AcademicWork] = []
         for i, result in enumerate(raw_results):

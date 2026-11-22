@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1222 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1226 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**
@@ -96,15 +96,15 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
     settings wording now matches behaviour; operator mailto is only sent when
     `CONTACT_EMAIL` is set explicitly; the Download page discloses its GitHub
     release fetch; quiz, branching, lesson-plan, speaker-notes and AI-assistant
-    panels show a point-of-use recipient notice.
+    panels show a point-of-use recipient notice. Academic search now honours a
+    per-user provider selection (OpenAlex / Semantic Scholar / CrossRef) saved
+    in Research Settings, instead of always querying all three.
 
 **Still open (not yet applied)**
 
-- Per-provider search consent (or softer wording) for the always-on academic
-  search tier; digest-pinned images instead of version tags.
 - Rated LOW/MEDIUM items not in the ten steps (admin limiter re-enable,
   verification-code hashing, transactional import, pagination, Mermaid
-  hardening, etc.).
+  hardening, etc.), plus digest-pinned images instead of version tags.
 
 ## Executive verdict
 

@@ -244,6 +244,7 @@ export interface ResearchSettings {
   searchApiKeys?: SearchApiKeys | undefined;
   searxngUrl?: string | undefined;
   excludedDomains?: string[] | undefined;
+  academicProviders?: string[] | undefined;
 }
 
 // =============================================================================

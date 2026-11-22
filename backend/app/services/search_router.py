@@ -165,6 +165,13 @@ class SearchRouter:
             if isinstance(value, str) and value
         }
 
+        raw_providers = settings_dict.get("academicProviders")
+        user_providers = (
+            sorted(p for p in raw_providers if isinstance(p, str))
+            if isinstance(raw_providers, list)
+            else []
+        )
+
         raw_excluded = settings_dict.get("excludedDomains")
         user_excluded = (
             sorted(
@@ -183,6 +190,7 @@ class SearchRouter:
             "searxng_url": settings_dict.get("searxngUrl") or "",
             "user_excluded": user_excluded,
             "user_keys": key_fingerprints,
+            "academic_providers": user_providers,
             "system_core_key": self._fingerprint(app_settings.CORE_API_KEY or ""),
             "system_searxng_url": app_settings.SEARXNG_URL or "",
             "system_excluded": sorted(app_settings.EXCLUDED_SEARCH_DOMAINS or []),
@@ -287,8 +295,13 @@ class SearchRouter:
 
             core_api_key = settings.CORE_API_KEY
 
+        providers: list[str] | None = None
+        if user_settings is not None:
+            raw_providers = user_settings.get("academicProviders")
+            if isinstance(raw_providers, list):
+                providers = [p for p in raw_providers if isinstance(p, str)]
         works: list[AcademicWork] = await academic_search_service.search(
-            query, max_results, core_api_key=core_api_key
+            query, max_results, core_api_key=core_api_key, providers=providers
         )
         return academic_search_service.to_search_results(works)
 
