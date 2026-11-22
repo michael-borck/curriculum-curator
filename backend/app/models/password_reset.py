@@ -29,9 +29,9 @@ class PasswordReset(Base):
     user_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=False, index=True
     )
-    token: Mapped[str] = mapped_column(
-        String(6), nullable=False, index=True
-    )  # 6-digit reset code
+    token_hash: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )  # HMAC of the 6-digit code; plaintext is never stored
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Failed attempts against this code; capped to stop online guessing.
@@ -55,7 +55,9 @@ class PasswordReset(Base):
         """Initialize with expiration time (30 minutes default for security)"""
         super().__init__(**kwargs)
         self.user_id = str(user_id) if isinstance(user_id, uuid.UUID) else user_id
-        self.token = token
+        from app.core.security import hash_one_time_code  # noqa: PLC0415
+
+        self.token_hash = hash_one_time_code(token)
         self.expires_at = datetime.now(UTC) + timedelta(minutes=expires_minutes)
 
     def __repr__(self) -> str:

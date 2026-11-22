@@ -40,6 +40,14 @@ from app.services.security_logger import SecurityLogger
 router = APIRouter()
 
 
+def _normalise_whitelist_pattern(value: str) -> str:
+    """Store domains as @domain and full addresses unchanged."""
+    pattern = value.lower().strip()
+    if not pattern.startswith("@") and "@" not in pattern:
+        pattern = "@" + pattern
+    return pattern
+
+
 @router.get("/users", response_model=UserListResponse)
 @limiter.limit(RateLimits.DEFAULT)
 async def list_users(
@@ -288,18 +296,16 @@ async def list_pending_verifications(
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
-    """List unverified sign-ups with their current verification code.
+    """List unverified sign-ups whose code has not expired.
 
-    Fallback for instances without SMTP configured: the code is normally
-    emailed to the user, but here an admin can read it and relay it manually.
-    Admin-only; only users with a still-valid (unused, unexpired) code appear.
+    Codes are hashed and never exposed through the API. The admin can verify
+    the user directly from User Management, or the user can request a resend.
     """
     return [
         PendingVerificationResponse(
             user_id=str(user.id),
             email=user.email,
             name=user.name,
-            code=verification.code,
             expires_at=verification.expires_at.isoformat(),
             created_at=user.created_at.isoformat(),
         )
@@ -338,10 +344,12 @@ async def create_whitelist_pattern(
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
     """Create a new email whitelist pattern"""
+    pattern_value = _normalise_whitelist_pattern(pattern_data.pattern)
+
     # Check if pattern already exists
     existing = (
         db.query(EmailWhitelist)
-        .filter(EmailWhitelist.pattern == pattern_data.pattern.lower())
+        .filter(EmailWhitelist.pattern == pattern_value)
         .first()
     )
 
@@ -351,7 +359,7 @@ async def create_whitelist_pattern(
         )
 
     new_pattern = EmailWhitelist(
-        pattern=pattern_data.pattern.lower(),
+        pattern=pattern_value,
         description=pattern_data.description,
         is_active=pattern_data.is_active,
     )
@@ -396,7 +404,7 @@ async def update_whitelist_pattern(
 
     # Update fields if provided
     if pattern_data.pattern is not None:
-        pattern.pattern = pattern_data.pattern.lower()
+        pattern.pattern = _normalise_whitelist_pattern(pattern_data.pattern)
     if pattern_data.description is not None:
         pattern.description = pattern_data.description
     if pattern_data.is_active is not None:

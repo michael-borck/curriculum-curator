@@ -78,9 +78,10 @@ mkdir -p desktop/vendor/pandoc
 PANDOC_VERSION="3.6.4"
 case "$PLATFORM" in
   mac)
-    curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-arm64-macOS.zip" -o pandoc.zip
+    if [ "$(uname -m)" = "arm64" ]; then PANDOC_ARCH="arm64"; else PANDOC_ARCH="x86_64"; fi
+    curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-${PANDOC_ARCH}-macOS.zip" -o pandoc.zip
     unzip -q pandoc.zip -d pandoc-tmp
-    cp "pandoc-tmp/pandoc-${PANDOC_VERSION}-arm64/bin/pandoc" desktop/vendor/pandoc/
+    cp "pandoc-tmp/pandoc-${PANDOC_VERSION}-${PANDOC_ARCH}/bin/pandoc" desktop/vendor/pandoc/
     ;;
   win)
     curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-windows-x86_64.zip" -o pandoc.zip
@@ -98,9 +99,10 @@ mkdir -p desktop/vendor/typst
 TYPST_VERSION="v0.13.1"
 case "$PLATFORM" in
   mac)
-    curl -fsSL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-aarch64-apple-darwin.tar.xz" -o typst.tar.xz
+    if [ "$(uname -m)" = "arm64" ]; then TYPST_MAC="aarch64-apple-darwin"; else TYPST_MAC="x86_64-apple-darwin"; fi
+    curl -fsSL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-${TYPST_MAC}.tar.xz" -o typst.tar.xz
     tar xf typst.tar.xz
-    cp typst-aarch64-apple-darwin/typst desktop/vendor/typst/
+    cp "typst-${TYPST_MAC}/typst" desktop/vendor/typst/
     ;;
   win)
     curl -fsSL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-pc-windows-msvc.zip" -o typst.zip

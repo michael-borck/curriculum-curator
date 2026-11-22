@@ -1,7 +1,6 @@
-"""Tests for the admin pending-verifications relay endpoint.
+"""Tests for the admin pending-verifications endpoint.
 
-The verification code is normally emailed; this admin-only view surfaces it so
-an operator on an instance without SMTP can relay it manually.
+Codes are stored as keyed hashes and are never exposed through the API.
 """
 
 import uuid
@@ -58,7 +57,10 @@ class TestGetPendingVerifications:
         assert len(pending) == 1
         got_user, got_verification = pending[0]
         assert got_user.id == user.id
-        assert got_verification.code == code
+        from app.core.security import verify_one_time_code
+
+        assert got_verification.code_hash != code
+        assert verify_one_time_code(code, got_verification.code_hash)
 
     def test_excludes_verified_users(self, test_db: Session) -> None:
         user = _make_unverified_user(test_db, "pending@example.com")
@@ -91,7 +93,9 @@ class TestGetPendingVerifications:
 
         pending = user_repo.get_pending_verifications(test_db)
         assert len(pending) == 1
-        assert pending[0][1].code == newest
+        from app.core.security import verify_one_time_code
+
+        assert verify_one_time_code(newest, pending[0][1].code_hash)
 
 
 class TestPendingVerificationsEndpoint:
@@ -100,10 +104,9 @@ class TestPendingVerificationsEndpoint:
         self, test_db: Session, admin_user: User
     ) -> None:
         user = _make_unverified_user(test_db, "pending@example.com")
-        code = user_repo.create_verification_code(test_db, user.id)
+        user_repo.create_verification_code(test_db, user.id)
 
         result = await list_pending_verifications(db=test_db, admin_user=admin_user)
         assert len(result) == 1
         assert result[0].email == "pending@example.com"
-        assert result[0].code == code
         assert result[0].user_id == str(user.id)

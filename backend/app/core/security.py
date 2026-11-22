@@ -2,6 +2,8 @@
 Security utilities for authentication and password handling
 """
 
+import hashlib
+import hmac
 import time as _time
 import uuid
 import warnings
@@ -44,6 +46,23 @@ def is_token_blacklisted(jti: str) -> bool:
         # Expired, clean it up
         _blacklisted_jtis.pop(jti, None)
     return False
+
+
+def hash_one_time_code(code: str) -> str:
+    """Keyed hash for short-lived verification/reset codes.
+
+    A plain 6-digit code has only a million possibilities, so an unkeyed hash
+    is reversible offline. HMAC with SECRET_KEY means the database alone is
+    not enough to recover or brute-force the code.
+    """
+    normalized = code.strip().upper()
+    return hmac.new(
+        settings.SECRET_KEY.encode(), normalized.encode(), hashlib.sha256
+    ).hexdigest()
+
+
+def verify_one_time_code(code: str, code_hash: str) -> bool:
+    return hmac.compare_digest(hash_one_time_code(code), code_hash)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

@@ -67,9 +67,25 @@ exports.default = async function notarizing(context) {
     console.log('[notarize] using Apple ID')
     await runNotarize({ tool: 'notarytool', appPath, appleId, appleIdPassword, teamId })
   } else {
+    const inCI =
+      process.env.GITHUB_ACTIONS === 'true' || process.env.CI === 'true'
+    if (inCI && process.env.ALLOW_UNSIGNED !== '1') {
+      throw new Error(
+        '[notarize] signing credentials are missing in CI. Set the APPLE_* ' +
+          'secrets, or set ALLOW_UNSIGNED=1 for an intentional unsigned build.'
+      )
+    }
     console.log('[notarize] skipped (no API key or Apple ID credentials)')
     return
   }
 
   await stapleWithRetry(appPath)
+
+  // Fail the build instead of silently shipping a signed-but-unnotarized app.
+  execFileSync('xcrun', ['stapler', 'validate', appPath], { stdio: 'inherit' })
+  execFileSync(
+    'codesign',
+    ['--verify', '--deep', '--strict', '--verbose=2', appPath],
+    { stdio: 'inherit' }
+  )
 }

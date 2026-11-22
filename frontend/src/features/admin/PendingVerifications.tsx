@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, KeyRound, Copy, Check, Info } from 'lucide-react';
+import { RefreshCw, KeyRound, Info } from 'lucide-react';
 import api from '../../services/api';
 import { LoadingState, Alert, Button, EmptyState } from '../../components/ui';
 
@@ -7,7 +7,6 @@ interface PendingVerification {
   userId: string;
   email: string;
   name: string;
-  code: string;
   expiresAt: string;
   createdAt: string;
 }
@@ -21,7 +20,6 @@ const PendingVerifications = () => {
   const [items, setItems] = useState<PendingVerification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchPending = useCallback(async () => {
     try {
@@ -40,16 +38,6 @@ const PendingVerifications = () => {
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
-
-  const copyCode = async (code: string, userId: string): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopiedId(userId);
-      setTimeout(() => setCopiedId(null), 1500);
-    } catch (err) {
-      console.error('Clipboard unavailable:', err);
-    }
-  };
 
   if (isLoading) {
     return <LoadingState message='Loading pending sign-ups…' />;
@@ -75,10 +63,10 @@ const PendingVerifications = () => {
       <div className='flex items-start gap-2 rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800'>
         <Info className='w-4 h-4 mt-0.5 flex-shrink-0' />
         <p>
-          Verification codes are normally emailed. When email isn&apos;t
-          configured, read the code here and pass it to the user so they can
-          finish signing in. You can also verify a user directly from{' '}
-          <span className='font-medium'>User Management</span>.
+          Codes are emailed to the user and stored only as a hash — they cannot
+          be shown here. If someone cannot receive email, verify them directly
+          from <span className='font-medium'>User Management</span>, or ask them
+          to request a new code.
         </p>
       </div>
 
@@ -99,9 +87,6 @@ const PendingVerifications = () => {
                   User
                 </th>
                 <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
-                  Code
-                </th>
-                <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Registered
                 </th>
                 <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
@@ -117,21 +102,6 @@ const PendingVerifications = () => {
                       {item.name}
                     </div>
                     <div className='text-sm text-gray-500'>{item.email}</div>
-                  </td>
-                  <td className='px-4 py-3'>
-                    <button
-                      type='button'
-                      onClick={() => copyCode(item.code, item.userId)}
-                      title='Copy code'
-                      className='inline-flex items-center gap-2 font-mono text-base tracking-widest text-gray-900 hover:text-purple-700'
-                    >
-                      {item.code}
-                      {copiedId === item.userId ? (
-                        <Check className='w-4 h-4 text-green-600' />
-                      ) : (
-                        <Copy className='w-4 h-4 text-gray-400' />
-                      )}
-                    </button>
                   </td>
                   <td className='px-4 py-3 text-sm text-gray-500'>
                     {formatWhen(item.createdAt)}

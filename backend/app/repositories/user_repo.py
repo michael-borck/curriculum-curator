@@ -11,7 +11,11 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core.security import get_password_hash
+from app.core.security import (
+    get_password_hash,
+    hash_one_time_code,
+    verify_one_time_code,
+)
 from app.models.email_verification import EmailVerification
 from app.models.email_whitelist import EmailWhitelist
 from app.models.password_reset import PasswordReset
@@ -93,14 +97,34 @@ def get_user_with_hash(db: Session, user_id: str) -> UserInDB | None:
     return _user_to_db(user) if user else None
 
 
+_UPDATABLE_USER_FIELDS = frozenset(
+    {
+        "name",
+        "institution",
+        "department",
+        "position_title",
+        "teaching_philosophy",
+        "language_preference",
+        "education_sector",
+        "teaching_preferences",
+        "content_generation_context",
+        "llm_config",
+        "role",
+        "is_verified",
+        "is_active",
+        "token_version",
+    }
+)
+
+
 def update_user(db: Session, user_id: str, **fields) -> UserResponse | None:
-    """Update user fields"""
+    """Update a user's profile fields (mass-assignment safe)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None
 
     for key, value in fields.items():
-        if hasattr(user, key):
+        if key in _UPDATABLE_USER_FIELDS:
             setattr(user, key, value)
 
     user.updated_at = datetime.now(UTC)
@@ -195,7 +219,7 @@ def verify_email_code(db: Session, user_id: str, code: str) -> bool:
 
     if verification is None:
         return False
-    if verification.code != code:
+    if not verify_one_time_code(code, verification.code_hash):
         verification.attempts += 1
         if verification.attempts >= _MAX_CODE_ATTEMPTS:
             verification.used = True
@@ -283,7 +307,7 @@ def verify_password_reset_code(db: Session, user_id: str, code: str) -> bool:
 
     if reset is None:
         return False
-    if reset.token != code:
+    if not verify_one_time_code(code, reset.token_hash):
         reset.attempts += 1
         if reset.attempts >= _MAX_CODE_ATTEMPTS:
             reset.used = True
@@ -298,7 +322,7 @@ def mark_password_reset_used(db: Session, user_id: str, code: str) -> bool:
         db.query(PasswordReset)
         .filter(
             PasswordReset.user_id == user_id,
-            PasswordReset.token == code,
+            PasswordReset.token_hash == hash_one_time_code(code),
         )
         .update({"used": True})
     )

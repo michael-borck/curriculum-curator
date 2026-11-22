@@ -7,16 +7,17 @@
  * - Override for either via the `VITE_API_URL` build env.
  */
 function resolveApiOrigin(): string {
+  // Explicit override wins in every mode.
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
   // Packaged Electron: the renderer is loaded from disk over file://, so a
   // relative `/api` request would resolve to `file:///api/...` and fail.
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
     // The desktop main process picks a free port per launch and passes it in.
     const port = new URLSearchParams(window.location.search).get('backendPort');
     return `http://127.0.0.1:${port || '8000'}`;
-  }
-  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
-  if (envUrl) {
-    return envUrl.replace(/\/$/, '');
   }
   return '';
 }

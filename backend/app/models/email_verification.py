@@ -29,9 +29,9 @@ class EmailVerification(Base):
     user_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=False, index=True
     )
-    code: Mapped[str] = mapped_column(
-        String(6), nullable=False, index=True
-    )  # 6-digit verification code
+    code_hash: Mapped[str] = mapped_column(
+        String(64), nullable=False, index=True
+    )  # HMAC of the 6-digit code; plaintext is never stored
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Failed attempts against this code; capped to stop online guessing.
@@ -55,7 +55,9 @@ class EmailVerification(Base):
         """Initialize with expiration time"""
         super().__init__(**kwargs)
         self.user_id = str(user_id) if isinstance(user_id, uuid.UUID) else user_id
-        self.code = code
+        from app.core.security import hash_one_time_code  # noqa: PLC0415
+
+        self.code_hash = hash_one_time_code(code)
         self.expires_at = datetime.now(UTC) + timedelta(minutes=expires_minutes)
 
     def __repr__(self) -> str:

@@ -79,6 +79,11 @@ class PasswordValidator:
             policy.password_require_special if policy else cls.require_special
         )
 
+        # bcrypt silently truncates at 72 bytes; reject longer passwords so
+        # two different inputs cannot share a hash prefix.
+        if len(password.encode("utf-8")) > 72:
+            errors.append("Password must be at most 72 bytes long")
+
         # Basic length check
         if len(password) < min_length:
             errors.append(f"Password must be at least {min_length} characters long")

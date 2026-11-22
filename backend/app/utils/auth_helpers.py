@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
+from app.core.security import hash_one_time_code, verify_one_time_code
 from app.models import EmailVerification, PasswordReset, User
 from app.services.email_service import email_service
 
@@ -128,27 +129,11 @@ class AuthHelpers:
             if not user:
                 return False, None, "User not found"
 
-            # Check alternative verification methods first
-            from app.core.alternative_verification import (  # noqa: PLC0415
-                AlternativeVerification,
-            )
-
-            alt_valid, _alt_message = AlternativeVerification.verify_alternative_code(
-                email, code
-            )
-
-            if alt_valid:
-                # Mark user as verified
-                user.is_verified = True
-                db.commit()
-                return True, user, None
-
-            # Find valid verification code in database
+            # Find the newest valid code and compare against its keyed hash.
             verification = (
                 db.query(EmailVerification)
                 .filter(
                     EmailVerification.user_id == user.id,
-                    EmailVerification.code == code,
                     EmailVerification.used.is_(False),
                 )
                 .order_by(EmailVerification.created_at.desc())
@@ -156,6 +141,9 @@ class AuthHelpers:
             )
 
             if not verification:
+                return False, None, "Invalid verification code"
+
+            if not verify_one_time_code(code, verification.code_hash):
                 return False, None, "Invalid verification code"
 
             if verification.is_expired:
@@ -192,7 +180,7 @@ class AuthHelpers:
                 db.query(PasswordReset)
                 .filter(
                     PasswordReset.user_id == user.id,
-                    PasswordReset.token == code,
+                    PasswordReset.token_hash == hash_one_time_code(code),
                     PasswordReset.used.is_(False),
                 )
                 .order_by(PasswordReset.created_at.desc())
@@ -223,7 +211,7 @@ class AuthHelpers:
                 db.query(PasswordReset)
                 .filter(
                     PasswordReset.user_id == user.id,
-                    PasswordReset.token == code,
+                    PasswordReset.token_hash == hash_one_time_code(code),
                     PasswordReset.used.is_(False),
                 )
                 .first()

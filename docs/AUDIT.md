@@ -102,9 +102,11 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 
 **Residual LOW/MEDIUM fixes applied**
 
-- Re-enabled admin rate limits; added a per-account attempt cap to
-  verification/reset codes; escaped LIKE wildcards in unit search; made unit
-  totals reflect the full result set, not the page.
+- Re-enabled admin rate limits; verification/reset codes are now stored as
+  keyed HMAC hashes (never plaintext), still single-use with a per-account
+  attempt cap; removed the deterministic "alternative verification" backdoor
+  and the admin plaintext-code relay; escaped LIKE wildcards in unit search;
+  made unit totals reflect the full result set, not the page.
 - Background import and token-usage logging use dedicated sessions; SQLite
   foreign keys are enabled; router import failures now fail startup; the SPA
   file route is path-contained; API docs are disabled outside debug/local/test.
@@ -115,14 +117,19 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
   sandboxed.
 - Docker images and both JS dependency trees are digest/lockfile pinned; the
   Dockerfile is multi-stage with a checksum-verified Typst download.
+- Desktop release follows the app-hq signing model (pinned shared workflow,
+  canonical Apple secrets, `signing-mode: custom`, API-key notarization).
+  `notarize.js` now fails CI when credentials are missing and validates the
+  staple/signature instead of silently shipping an unnotarized app.
+- Password updates reject >72-byte inputs (bcrypt truncation); `update_user`
+  uses a field allowlist; whitelist patterns normalise to `@domain` on edit;
+  the sidecar script picks the host Mac architecture.
 
 **Still open**
 
-- Verification/reset codes are still stored plaintext because the deliberate
-  no-SMTP admin relay reads them; attempts are capped, but hashing would remove
-  that fallback.
-- Transactional git+DB import; notarization hard-fail; dependency CVE scanning
-  beyond Dependabot; remaining LOW items that need product decisions.
+- Transactional git+DB import; dependency CVE scanning beyond Dependabot;
+  passkeys/MFA for admin accounts; magic-link (rather than 6-digit) email
+  verification as a future UX step.
 
 ## Executive verdict
 
