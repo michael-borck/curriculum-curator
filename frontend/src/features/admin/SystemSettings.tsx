@@ -34,6 +34,7 @@ interface SystemSettingsData {
   max_login_attempts: number;
   password_min_length: number;
   require_email_verification: boolean;
+  require_admin_totp: boolean;
 
   // Email Whitelist
   enable_whitelist: boolean;
@@ -63,6 +64,7 @@ const SystemSettings = () => {
     max_login_attempts: 5,
     password_min_length: 8,
     require_email_verification: true,
+    require_admin_totp: false,
     enable_whitelist: true,
     backup_enabled: false,
     backup_schedule: 'daily',
@@ -625,6 +627,34 @@ const SystemSettings = () => {
                   setSettings({
                     ...settings,
                     require_email_verification: e.target.checked,
+                  })
+                }
+                className='sr-only peer'
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+
+          <div className='flex items-center justify-between'>
+            <div>
+              <div className='text-sm font-medium text-gray-700'>
+                Require Two-Factor for Admins
+              </div>
+              <p className='text-xs text-gray-500'>
+                Admins must enable TOTP before using admin tools
+              </p>
+            </div>
+            <label
+              className='relative inline-flex items-center cursor-pointer'
+              aria-label='Require Two-Factor for Admins'
+            >
+              <input
+                type='checkbox'
+                checked={settings.require_admin_totp}
+                onChange={e =>
+                  setSettings({
+                    ...settings,
+                    require_admin_totp: e.target.checked,
                   })
                 }
                 className='sr-only peer'

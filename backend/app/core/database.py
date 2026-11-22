@@ -56,6 +56,61 @@ def get_db() -> Iterator[Session]:
         db.close()
 
 
+def _ensure_sqlite_schema() -> None:
+    """Add columns/rebuild tables that predate the current models.
+
+    ``create_all`` never alters existing tables, and desktop installs keep a
+    long-lived SQLite file. This keeps an upgraded app working without asking
+    users to delete their data.
+    """
+    if "sqlite" not in settings.DATABASE_URL:
+        return
+
+    from sqlalchemy import text
+
+    user_columns = {
+        "token_version": "INTEGER NOT NULL DEFAULT 0",
+        "totp_secret": "TEXT",
+        "totp_enabled": "BOOLEAN NOT NULL DEFAULT 0",
+        "totp_recovery_hashes": "JSON",
+        "totp_last_counter": "INTEGER NOT NULL DEFAULT 0",
+    }
+
+    with engine.begin() as conn:
+        rows = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        existing = {row[1] for row in rows}
+        for name, ddl in user_columns.items():
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {ddl}"))
+
+    # Verification/reset codes changed from plaintext to hashes; the data is
+    # short-lived, so rebuilding these tables is safe and simpler than a
+    # multi-step column rename in SQLite.
+    for table_name, legacy_column, new_column in (
+        ("email_verifications", "code", "code_hash"),
+        ("password_resets", "token", "token_hash"),
+    ):
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(f"PRAGMA table_info({table_name})")
+            ).fetchall()
+            columns = {row[1] for row in rows}
+            if not columns:
+                continue
+            if legacy_column in columns and new_column not in columns:
+                conn.execute(text(f"DROP TABLE {table_name}"))
+                columns = set()
+            if new_column in columns and "attempts" not in columns:
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {table_name} ADD COLUMN attempts "
+                        "INTEGER NOT NULL DEFAULT 0"
+                    )
+                )
+        if not columns:
+            Base.metadata.tables[table_name].create(bind=engine)
+
+
 def init_db() -> None:
     """
     Initialize database by creating all tables defined in models.
@@ -87,6 +142,7 @@ def init_db() -> None:
     )
 
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_schema()
     print(f"Database initialized: {settings.DATABASE_URL}")
 
 

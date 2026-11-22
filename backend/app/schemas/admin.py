@@ -4,7 +4,7 @@ Admin-related Pydantic schemas
 
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from app.schemas.base import CamelModel
 from app.schemas.user import UserResponse
@@ -79,6 +79,7 @@ class SystemSettingsBase(CamelModel):
     # Feature flags
     enable_user_registration: bool = True
     enable_email_whitelist: bool = True
+    require_admin_totp: bool = False
 
 
 class SystemSettingsResponse(SystemSettingsBase):
@@ -86,6 +87,10 @@ class SystemSettingsResponse(SystemSettingsBase):
 
 
 class SystemSettingsUpdate(CamelModel):
+    # The admin UI carries legacy fields the backend does not persist; ignore
+    # them instead of rejecting the whole save.
+    model_config = ConfigDict(extra="ignore")
+
     # All fields optional for partial updates
     password_min_length: int | None = Field(None, ge=6, le=32)
     password_require_uppercase: bool | None = None
@@ -99,6 +104,7 @@ class SystemSettingsUpdate(CamelModel):
 
     enable_user_registration: bool | None = None
     enable_email_whitelist: bool | None = None
+    require_admin_totp: bool | None = None
 
 
 # Audit log schemas

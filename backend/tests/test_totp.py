@@ -32,16 +32,16 @@ def client(test_db: Session):
     app.dependency_overrides.clear()
 
 
-def _make_user(db: Session):
+def _make_user(db: Session, role: str = "lecturer", email: str = "totp-user@example.com"):
     from app.core.security import get_password_hash
     from app.models.user import User
 
     user = User(
         id=str(uuid.uuid4()),
-        email="totp-user@example.com",
+        email=email,
         password_hash=get_password_hash(PASSWORD),
         name="TOTP User",
-        role="lecturer",
+        role=role,
         is_verified=True,
         is_active=True,
     )
@@ -154,3 +154,35 @@ def test_totp_disable_requires_password_and_code(
     )
     assert ok.status_code == 200
     assert ok.json()["enabled"] is False
+
+
+def test_admin_totp_policy_blocks_admin_routes_until_enrolled(
+    client: TestClient, test_db: Session
+) -> None:
+    from app.models.system_config import SystemConfig
+
+    _make_user(test_db, role="admin", email="admin-totp@example.com")
+    test_db.add(
+        SystemConfig(
+            key="security.require_admin_totp",
+            value=True,
+            category="security",
+        )
+    )
+    test_db.commit()
+
+    # Login still works so the admin can reach Settings and enrol.
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "admin-totp@example.com", "password": PASSWORD},
+    )
+    token = login.json()["access_token"]
+
+    blocked = client.get("/api/admin/users", headers=_bearer(token))
+    assert blocked.status_code == 403
+    assert "two-factor" in blocked.text.lower()
+
+    # Enrol, then the same token can use admin routes (role/TOTP read per request).
+    _enable_totp(client, token)
+    allowed = client.get("/api/admin/users", headers=_bearer(token))
+    assert allowed.status_code == 200, allowed.text

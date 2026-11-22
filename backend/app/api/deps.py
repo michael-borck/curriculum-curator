@@ -164,14 +164,26 @@ def get_current_active_user(
 
 def get_current_admin_user(
     current_user: Annotated[UserResponse, Depends(get_current_active_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> UserResponse:
-    """Get current user and verify admin role."""
+    """Get current user and verify admin role and optional TOTP policy."""
     if current_user.role != ROLE_ADMIN:
         logger.error(
             f"[ADMIN DENIED] {current_user.email} role '{current_user.role}' != '{ROLE_ADMIN}'"
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
+        )
+
+    from app.core.security_settings import get_security_settings  # noqa: PLC0415
+
+    if get_security_settings(db).require_admin_totp and not current_user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Administrator access requires two-factor authentication. "
+                "Enable it under Settings → Two-Factor."
+            ),
         )
     return current_user
 

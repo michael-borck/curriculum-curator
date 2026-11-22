@@ -103,3 +103,49 @@ def test_failed_import_cleanup_removes_git_paths(monkeypatch) -> None:
 
     # Deleted newest-first so nested/dependent paths unwind safely.
     assert calls == ["a/image2.png", "a/image1.png"]
+
+
+def test_sqlite_upgrade_adds_new_columns(tmp_path, monkeypatch) -> None:
+    from sqlalchemy import create_engine, text
+
+    from app.core import database as core_database
+    from app.core.config import settings
+
+    db_path = tmp_path / "legacy.db"
+    legacy_engine = create_engine(f"sqlite:///{db_path}")
+    with legacy_engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE users (id VARCHAR PRIMARY KEY, email VARCHAR, "
+                "password_hash VARCHAR, name VARCHAR, role VARCHAR, "
+                "is_verified BOOLEAN, is_active BOOLEAN)"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE email_verifications (id VARCHAR PRIMARY KEY, "
+                "user_id VARCHAR, code VARCHAR(6) NOT NULL, expires_at DATETIME, "
+                "used BOOLEAN, created_at DATETIME)"
+            )
+        )
+
+    monkeypatch.setattr(core_database, "engine", legacy_engine)
+    monkeypatch.setattr(settings, "DATABASE_URL", f"sqlite:///{db_path}")
+    core_database._ensure_sqlite_schema()
+
+    with legacy_engine.begin() as conn:
+        user_cols = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(users)")).fetchall()
+        }
+        verification_cols = {
+            row[1]
+            for row in conn.execute(
+                text("PRAGMA table_info(email_verifications)")
+            ).fetchall()
+        }
+
+    assert {"token_version", "totp_secret", "totp_enabled"} <= user_cols
+    assert "code_hash" in verification_cols
+    assert "code" not in verification_cols
+    assert "attempts" in verification_cols

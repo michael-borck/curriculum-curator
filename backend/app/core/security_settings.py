@@ -29,6 +29,7 @@ class SecuritySettings:
     session_timeout_minutes: int = 30
     enable_user_registration: bool = True
     enable_email_whitelist: bool = True
+    require_admin_totp: bool = False
 
 
 SETTINGS_CONFIG_KEYS: dict[str, str] = {
@@ -42,6 +43,7 @@ SETTINGS_CONFIG_KEYS: dict[str, str] = {
     "session_timeout_minutes": "security.session_timeout",
     "enable_user_registration": "security.enable_user_registration",
     "enable_email_whitelist": "security.enable_email_whitelist",
+    "require_admin_totp": "security.require_admin_totp",
 }
 
 
@@ -100,5 +102,8 @@ def get_security_settings(db: Session) -> SecuritySettings:
         ),
         enable_email_whitelist=_bool_setting(
             stored, "enable_email_whitelist", d.enable_email_whitelist
+        ),
+        require_admin_totp=_bool_setting(
+            stored, "require_admin_totp", d.require_admin_totp
         ),
     )

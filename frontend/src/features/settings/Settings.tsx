@@ -36,7 +36,7 @@ import DesktopSettings from './DesktopSettings';
 import TOTPSettings from './TOTPSettings';
 
 const Settings = () => {
-  const { user } = useAuthStore();
+  const { user, isLocalMode } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -164,7 +164,9 @@ const Settings = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'teaching-style', label: 'Teaching Style', icon: Sparkles },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'mfa', label: 'Two-Factor', icon: ShieldCheck },
+    ...(!isLocalMode
+      ? [{ id: 'mfa', label: 'Two-Factor', icon: ShieldCheck }]
+      : []),
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'research', label: 'Research', icon: Search },
