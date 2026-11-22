@@ -43,6 +43,7 @@ from .learning_outcome import (
 from .llm_config import LLMConfiguration, TokenUsageLog
 from .local_learning_outcome import LocalLearningOutcome
 from .login_attempt import LoginAttempt, LoginAttemptType
+from .login_token import LoginToken
 from .mappings import (
     assessment_material_links,
     assessment_ulo_mappings,
@@ -114,6 +115,7 @@ __all__ = [
     "ContextScope",
     # LLM Configuration
     "LLMConfiguration",
+    "LoginToken",
     "TokenUsageLog",
     # Local Learning Outcomes
     "LocalLearningOutcome",

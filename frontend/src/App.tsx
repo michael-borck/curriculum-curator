@@ -18,6 +18,7 @@ import MaterialEditorPage from './pages/MaterialEditorPage';
 
 // Features
 import Login from './features/auth/Login';
+import MagicLinkPage from './features/auth/MagicLinkPage';
 import Landing from './features/landing/Landing';
 import Download from './features/downloads/Download';
 import AdminDashboard from './features/admin/AdminDashboard';
@@ -247,6 +248,7 @@ function App() {
         <Toaster position='top-right' />
         <Routes>
           <Route path='/download' element={<Download />} />
+          <Route path='/auth/magic' element={<MagicLinkPage />} />
           <Route
             path='*'
             element={

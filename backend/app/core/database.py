@@ -123,6 +123,7 @@ def init_db() -> None:
     from app.models.email_verification import EmailVerification
     from app.models.email_whitelist import EmailWhitelist
     from app.models.login_attempt import LoginAttempt
+    from app.models.login_token import LoginToken
     from app.models.password_reset import PasswordReset
     from app.models.plugin_configuration import PluginConfiguration
     from app.models.security_log import SecurityLog
@@ -134,6 +135,7 @@ def init_db() -> None:
         EmailVerification,
         EmailWhitelist,
         LoginAttempt,
+        LoginToken,
         PasswordReset,
         PluginConfiguration,
         SecurityLog,

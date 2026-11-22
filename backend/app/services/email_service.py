@@ -441,6 +441,45 @@ The {settings.APP_NAME} Team
             SimpleUser(email, name), verification_code, expires_minutes
         )
 
+    async def send_magic_link_email(
+        self, user: UserLike, link: str, expires_minutes: int = 15
+    ) -> bool:
+        """Send a one-time sign-in link."""
+        if (
+            self.smtp_config.dev_mode
+            or self.smtp_config.provider == EmailProvider.DEV_MODE
+        ):
+            print("\n🔗 [DEV MODE] Magic Link")
+            print(f"To: {user.email}")
+            print(f"Link: {link}")
+            print(f"Expires in: {expires_minutes} minutes\n")
+            return True
+
+        recipient = self.smtp_config.test_recipient or user.email
+        html_body = f"""
+        <p>Hello {user.name},</p>
+        <p>Use this one-time link to sign in to {settings.APP_NAME}:</p>
+        <p><a href="{link}">Sign in</a></p>
+        <p>This link expires in {expires_minutes} minutes and can be used once.</p>
+        <p>If you didn't request it, you can ignore this email.</p>
+        """.strip()
+        text_body = (
+            f"Hello {user.name},\n\n"
+            f"Use this one-time link to sign in to {settings.APP_NAME}:\n{link}\n\n"
+            f"This link expires in {expires_minutes} minutes and can be used once."
+        )
+        try:
+            self._deliver(
+                subject=f"Sign in to {settings.APP_NAME}",
+                recipient=recipient,
+                html_body=html_body,
+                text_body=text_body,
+            )
+            return True
+        except Exception:
+            print(f"❌ Failed to send magic link to {recipient}")
+            return False
+
     async def send_password_reset_email(
         self, user: UserLike, reset_code: str, expires_minutes: int = 30
     ) -> bool:

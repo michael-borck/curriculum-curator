@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { setStoredToken } from '../../services/authSession';
+import { isDesktopClient, setStoredToken } from '../../services/authSession';
 import { ArrowLeft, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
   const [isFirstUserSetup, setIsFirstUserSetup] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [mfaCode, setMfaCode] = useState('');
+  const [magicMessage, setMagicMessage] = useState('');
 
   const registrationModal = useModal();
   const passwordResetModal = useModal();
@@ -74,6 +75,25 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const requestMagicLink = async () => {
+    if (!email.trim()) {
+      setError('Enter your email address first');
+      return;
+    }
+    setError('');
+    setMagicMessage('');
+    try {
+      await api.post('/auth/magic-link', { email: email.trim() });
+      setMagicMessage(
+        'If that email can sign in, a one-time link has been sent. Open it on the device where you want to sign in.'
+      );
+    } catch {
+      setMagicMessage(
+        'If that email can sign in, a one-time link has been sent.'
+      );
     }
   };
 
@@ -261,6 +281,21 @@ const Login = ({ onBackToLanding }: LoginProps) => {
                 {mfaToken ? 'Verify code' : 'Sign in'}
               </Button>
             </div>
+
+            {!mfaToken && !isDesktopClient() && (
+              <div className='text-center -mt-2'>
+                <button
+                  type='button'
+                  onClick={() => void requestMagicLink()}
+                  className='text-sm text-purple-600 hover:text-purple-500'
+                >
+                  Email me a one-time sign-in link instead
+                </button>
+                {magicMessage && (
+                  <p className='mt-2 text-xs text-gray-600'>{magicMessage}</p>
+                )}
+              </div>
+            )}
 
             {!mfaToken && (
               <div className='text-center'>

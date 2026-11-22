@@ -21,8 +21,10 @@ from app.core.config import settings
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
 from app.core.secret_crypto import decrypt_secret, encrypt_secret
+from app.core.security import hash_one_time_code
 from app.core.security_settings import get_security_settings
 from app.core.setup_token import rotate_setup_token, verify_setup_token
+from app.models.login_token import LoginToken
 from app.models.user import User
 from app.repositories import security_repo, user_repo
 from app.schemas import (
@@ -32,6 +34,9 @@ from app.schemas import (
     ForgotPasswordResponse,
     LoginRequest,
     LoginResponse,
+    MagicLinkRequest,
+    MagicLinkResponse,
+    MagicLinkVerifyRequest,
     ResendVerificationRequest,
     ResendVerificationResponse,
     ResetPasswordRequest,
@@ -586,6 +591,111 @@ async def login(
         access_token=access_token,
         user=public_user,
     )
+
+
+@router.post("/magic-link", response_model=MagicLinkResponse)
+@limiter.limit(RateLimits.FORGOT_PASSWORD)
+async def request_magic_link(
+    request: Request,
+    body: MagicLinkRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+):
+    """Email a one-time sign-in link. Never reveals whether the account exists."""
+    email = body.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+    if user and user.is_active and user.is_verified:
+        token = secrets.token_urlsafe(32)
+        db.query(LoginToken).filter(
+            LoginToken.user_id == user.id,
+            LoginToken.used == False,  # noqa: E712
+        ).update({"used": True})
+        db.add(
+            LoginToken(
+                user_id=user.id,
+                token_hash=hash_one_time_code(token),
+                expires_minutes=15,
+            )
+        )
+        db.commit()
+        link = f"{settings.frontend_url}/auth/magic#token={token}"
+        await email_service.send_magic_link_email(user, link, expires_minutes=15)
+
+    return MagicLinkResponse(
+        message="If that email can sign in, a one-time link has been sent."
+    )
+
+
+@router.post("/magic-link/verify", response_model=LoginResponse)
+@limiter.limit(RateLimits.LOGIN)
+async def verify_magic_link(
+    request: Request,
+    response: Response,
+    body: MagicLinkVerifyRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+):
+    """Consume a magic-link token and start a session (or the TOTP step)."""
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    invalid = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="This link is invalid or has expired",
+    )
+    row = (
+        db.query(LoginToken)
+        .filter(
+            LoginToken.token_hash == hash_one_time_code(body.token),
+            LoginToken.used == False,  # noqa: E712
+            LoginToken.expires_at > datetime.now(UTC),
+        )
+        .order_by(LoginToken.created_at.desc())
+        .first()
+    )
+    if row is None:
+        raise invalid
+    user = db.query(User).filter(User.id == row.user_id).first()
+    if user is None or not user.is_active or not user.is_verified:
+        raise invalid
+
+    row.used = True
+    db.commit()
+
+    public_user = user_repo.get_user_by_id(db, user.id)
+    if public_user is None:
+        raise HTTPException(status_code=500, detail="Failed to retrieve user data")
+
+    if user.totp_enabled:
+        return LoginResponse(
+            access_token=None,
+            user=public_user,
+            mfa_required=True,
+            mfa_token=security.create_mfa_token(
+                user.id,
+                token_version=getattr(user, "token_version", 0),
+                client_ip=_get_client_ip(request),
+            ),
+        )
+
+    client_ip = _get_client_ip(request)
+    security_repo.record_login_success(
+        db, user.email, client_ip, _get_user_agent(request)
+    )
+    access_token_expires = timedelta(
+        minutes=get_security_settings(db).session_timeout_minutes
+    )
+    access_token = security.create_access_token(
+        data={"sub": user.id, "email": user.email},
+        expires_delta=access_token_expires,
+        client_ip=client_ip,
+        user_role=user.role,
+        token_version=getattr(user, "token_version", 0),
+    )
+    _set_session_cookies(
+        response,
+        request,
+        access_token,
+        get_security_settings(db).session_timeout_minutes,
+    )
+    return LoginResponse(access_token=access_token, user=public_user)
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)

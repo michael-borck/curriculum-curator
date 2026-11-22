@@ -40,6 +40,18 @@ class Settings(BaseSettings):
     # to the CORS allowlist. Localhost is always allowed, so this can stay empty
     # for local development.
     PUBLIC_DOMAIN: str = ""
+    # Where the browser app is served, used for magic-link URLs.
+    # Defaults to the first PUBLIC_DOMAIN, else local Vite.
+    FRONTEND_URL: str = ""
+
+    @property
+    def frontend_url(self) -> str:
+        if self.FRONTEND_URL.strip():
+            return self.FRONTEND_URL.strip().rstrip("/")
+        domains = self.public_domains
+        if domains:
+            return f"https://{domains[0]}"
+        return "http://localhost:5173"
 
     @property
     def public_domains(self) -> list[str]:

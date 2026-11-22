@@ -236,6 +236,18 @@ class TOTPStatusResponse(CamelModel):
     recovery_codes_remaining: int
 
 
+class MagicLinkRequest(CamelModel):
+    email: EmailStr
+
+
+class MagicLinkResponse(CamelModel):
+    message: str
+
+
+class MagicLinkVerifyRequest(CamelModel):
+    token: str = Field(..., min_length=20, max_length=256)
+
+
 class ResendVerificationRequest(CamelModel):
     """Request schema for resending verification email"""
 

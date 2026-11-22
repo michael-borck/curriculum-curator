@@ -186,3 +186,46 @@ def test_admin_totp_policy_blocks_admin_routes_until_enrolled(
     _enable_totp(client, token)
     allowed = client.get("/api/admin/users", headers=_bearer(token))
     assert allowed.status_code == 200, allowed.text
+
+
+def test_magic_link_signs_in_and_is_single_use(
+    client: TestClient, test_db: Session, monkeypatch
+) -> None:
+    from urllib.parse import parse_qs, urlparse
+
+    from app.services.email_service import email_service
+
+    _make_user(test_db)
+    sent: dict[str, str] = {}
+
+    async def fake_send(user, link, expires_minutes=15):
+        sent["link"] = link
+        return True
+
+    monkeypatch.setattr(email_service, "send_magic_link_email", fake_send)
+
+    response = client.post(
+        "/api/auth/magic-link", json={"email": "totp-user@example.com"}
+    )
+    assert response.status_code == 200
+    assert "link" in sent
+
+    fragment = parse_qs(urlparse(sent["link"]).fragment)
+    token = fragment["token"][0]
+
+    verified = client.post("/api/auth/magic-link/verify", json={"token": token})
+    assert verified.status_code == 200, verified.text
+    assert verified.json()["access_token"]
+
+    reused = client.post("/api/auth/magic-link/verify", json={"token": token})
+    assert reused.status_code == 401
+
+
+def test_magic_link_unknown_email_is_generic(
+    client: TestClient, test_db: Session
+) -> None:
+    response = client.post(
+        "/api/auth/magic-link", json={"email": "nobody@example.com"}
+    )
+    assert response.status_code == 200
+    assert "If that email" in response.json()["message"]
