@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Building2,
   Monitor,
+  ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -32,6 +33,7 @@ import ExportTemplates from './ExportTemplates';
 import CurtinSettings from './CurtinSettings';
 import CLOSetManager from './CLOSetManager';
 import DesktopSettings from './DesktopSettings';
+import TOTPSettings from './TOTPSettings';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -162,6 +164,7 @@ const Settings = () => {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'teaching-style', label: 'Teaching Style', icon: Sparkles },
     { id: 'security', label: 'Security', icon: Shield },
+    { id: 'mfa', label: 'Two-Factor', icon: ShieldCheck },
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
     { id: 'research', label: 'Research', icon: Search },
@@ -440,6 +443,8 @@ const Settings = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'mfa' && <TOTPSettings />}
 
           {activeTab === 'llm' && <LLMSettings />}
 

@@ -11,13 +11,16 @@ from threading import Lock
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from pyotp.totp import TOTP
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core import security
+from app.core import totp as totp_utils
 from app.core.config import settings
 from app.core.password_validator import PasswordValidator
 from app.core.rate_limiter import RateLimits, limiter
+from app.core.secret_crypto import decrypt_secret, encrypt_secret
 from app.core.security_settings import get_security_settings
 from app.core.setup_token import rotate_setup_token, verify_setup_token
 from app.models.user import User
@@ -33,6 +36,11 @@ from app.schemas import (
     ResendVerificationResponse,
     ResetPasswordRequest,
     ResetPasswordResponse,
+    TOTPDisableRequest,
+    TOTPEnableRequest,
+    TOTPSetupResponse,
+    TOTPStatusResponse,
+    TOTPVerifyRequest,
     UserRegistrationRequest,
     UserRegistrationResponse,
     UserResponse,
@@ -469,6 +477,24 @@ async def login(
     password_ok = security.verify_password(login_data.password, password_hash)
     login_success = bool(user) and password_ok
 
+    if login_success and user is not None and user.totp_enabled:
+        public_user = user_repo.get_user_by_id(db, user.id)
+        if public_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve user data",
+            )
+        return LoginResponse(
+            access_token=None,
+            user=public_user,
+            mfa_required=True,
+            mfa_token=security.create_mfa_token(
+                user.id,
+                token_version=getattr(user, "token_version", 0),
+                client_ip=client_ip,
+            ),
+        )
+
     if login_success:
         security_repo.record_login_success(db, email, client_ip, user_agent)
     else:
@@ -726,6 +752,209 @@ async def logout(
             if jti and exp:
                 security.blacklist_token(jti, float(exp))
     return {"message": "Logged out"}
+
+
+@router.get("/totp/status", response_model=TOTPStatusResponse)
+async def totp_status(
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    user = db.query(User).filter(User.id == str(current_user.id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return TOTPStatusResponse(
+        enabled=bool(user.totp_enabled),
+        recovery_codes_remaining=len(user.totp_recovery_hashes or []),
+    )
+
+
+@router.post("/totp/setup", response_model=TOTPSetupResponse)
+@limiter.limit(RateLimits.API_WRITE)
+async def totp_setup(
+    request: Request,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Create a pending TOTP secret and one-time recovery codes."""
+    user = db.query(User).filter(User.id == str(current_user.id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.totp_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="TOTP is already enabled. Disable it before setting up again.",
+        )
+
+    secret = totp_utils.generate_secret()
+    recovery_codes = totp_utils.generate_recovery_codes()
+    user.totp_secret = encrypt_secret(secret)
+    user.totp_recovery_hashes = totp_utils.hash_recovery_codes(recovery_codes)
+    user.totp_enabled = False
+    user.totp_last_counter = 0
+    db.commit()
+
+    return TOTPSetupResponse(
+        secret=secret,
+        otpauth_url=totp_utils.provisioning_uri(secret, user.email, settings),
+        recovery_codes=recovery_codes,
+    )
+
+
+@router.post("/totp/enable", response_model=TOTPStatusResponse)
+@limiter.limit(RateLimits.API_WRITE)
+async def totp_enable(
+    request: Request,
+    body: TOTPEnableRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    user = db.query(User).filter(User.id == str(current_user.id)).first()
+    if not user or not user.totp_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Start TOTP setup first",
+        )
+    secret = decrypt_secret(user.totp_secret)
+    if not secret or not TOTP(secret).verify(body.code, valid_window=1):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid code"
+        )
+
+    user.totp_enabled = True
+    db.commit()
+    return TOTPStatusResponse(
+        enabled=True,
+        recovery_codes_remaining=len(user.totp_recovery_hashes or []),
+    )
+
+
+@router.post("/totp/disable", response_model=TOTPStatusResponse)
+@limiter.limit(RateLimits.API_WRITE)
+async def totp_disable(
+    request: Request,
+    body: TOTPDisableRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    user = db.query(User).filter(User.id == str(current_user.id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not security.verify_password(body.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+
+    if user.totp_enabled:
+        valid = False
+        secret = decrypt_secret(user.totp_secret)
+        if secret and body.code and body.code.isdigit():
+            valid, _ = totp_utils.verify_totp(
+                secret, body.code, user.totp_last_counter
+            )
+        if not valid and body.code:
+            valid, remaining = totp_utils.consume_recovery_code(
+                user.totp_recovery_hashes, body.code
+            )
+            if valid:
+                user.totp_recovery_hashes = remaining
+        if not valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A current TOTP or recovery code is required",
+            )
+
+    user.totp_secret = None
+    user.totp_enabled = False
+    user.totp_recovery_hashes = None
+    user.totp_last_counter = 0
+    db.commit()
+    return TOTPStatusResponse(enabled=False, recovery_codes_remaining=0)
+
+
+@router.post("/totp/verify", response_model=LoginResponse)
+@limiter.limit(RateLimits.VERIFY_EMAIL)
+async def totp_verify(
+    request: Request,
+    response: Response,
+    body: TOTPVerifyRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+):
+    """Complete a password login that requires TOTP."""
+    payload = security.decode_mfa_token(
+        body.mfa_token, verify_ip=_get_client_ip(request)
+    )
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired verification session",
+        )
+    user = db.query(User).filter(User.id == payload.get("sub")).first()
+    if (
+        user is None
+        or not user.is_active
+        or not user.is_verified
+        or payload.get("tv", 0) != getattr(user, "token_version", 0)
+        or not user.totp_enabled
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired verification session",
+        )
+
+    valid = False
+    secret = decrypt_secret(user.totp_secret)
+    if secret and body.code.isdigit():
+        valid, counter = totp_utils.verify_totp(
+            secret, body.code, user.totp_last_counter
+        )
+        if valid:
+            user.totp_last_counter = counter
+    if not valid:
+        valid, remaining = totp_utils.consume_recovery_code(
+            user.totp_recovery_hashes, body.code
+        )
+        if valid:
+            user.totp_recovery_hashes = remaining
+
+    if not valid:
+        security_repo.record_login_failure(
+            db,
+            user.email,
+            _get_client_ip(request),
+            _get_user_agent(request),
+            "Invalid TOTP code",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid code",
+        )
+
+    db.commit()
+    client_ip = _get_client_ip(request)
+    security_repo.record_login_success(
+        db, user.email, client_ip, _get_user_agent(request)
+    )
+    access_token_expires = timedelta(
+        minutes=get_security_settings(db).session_timeout_minutes
+    )
+    access_token = security.create_access_token(
+        data={"sub": user.id, "email": user.email},
+        expires_delta=access_token_expires,
+        client_ip=client_ip,
+        user_role=user.role,
+        token_version=getattr(user, "token_version", 0),
+    )
+    public_user = user_repo.get_user_by_id(db, user.id)
+    if not public_user:
+        raise HTTPException(status_code=500, detail="Failed to retrieve user data")
+    _set_session_cookies(
+        response,
+        request,
+        access_token,
+        get_security_settings(db).session_timeout_minutes,
+    )
+    return LoginResponse(access_token=access_token, user=public_user)
 
 
 @router.patch("/profile", response_model=UserResponse)

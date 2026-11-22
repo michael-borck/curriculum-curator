@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1231 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1236 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**
@@ -137,8 +137,9 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 
 - Round-trip package import still uses the package service's own persistence
   (A+B currently covers the unified importer); macOS auto-update manifest
-  merging when arm64 and x64 are released separately; TOTP/passkeys and
-  magic-link email verification; dependency CVE scanning beyond Dependabot.
+  merging when arm64 and x64 are released separately; passkeys and magic-link
+  email verification; an admin-only TOTP enforcement toggle; dependency CVE
+  scanning beyond Dependabot.
 
 ## Executive verdict
 

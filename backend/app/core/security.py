@@ -122,6 +122,46 @@ def create_access_token(
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+def create_mfa_token(
+    user_id: str,
+    token_version: int | None = None,
+    client_ip: str | None = None,
+) -> str:
+    """Short-lived token proving the password step succeeded."""
+    now = datetime.now(UTC)
+    payload = {
+        "sub": user_id,
+        "type": "mfa",
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "jti": str(uuid.uuid4()),
+        "ip": client_ip,
+    }
+    if token_version is not None:
+        payload["tv"] = token_version
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_mfa_token(
+    token: str, verify_ip: str | None = None
+) -> dict[str, Any] | None:
+    """Decode an MFA challenge token; rejects access/refresh tokens."""
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+    except jwt.PyJWTError:
+        return None
+    if payload.get("type") != "mfa":
+        return None
+    if verify_ip and payload.get("ip") and payload.get("ip") != verify_ip:
+        return None
+    jti = payload.get("jti", "")
+    if jti and is_token_blacklisted(jti):
+        return None
+    return payload
+
+
 def create_refresh_token(user_id: str, client_ip: str | None = None) -> str:
     """
     Create a refresh token for JWT token renewal.
@@ -171,8 +211,8 @@ def decode_access_token(
         if jti and is_token_blacklisted(jti):
             return None
 
-        # Access tokens only — a refresh token must never be accepted here.
-        if payload.get("type") == "refresh":
+        # Access tokens only — refresh/MFA challenges are not access tokens.
+        if payload.get("type") in ("refresh", "mfa"):
             return None
 
         # Verify IP binding if both token IP and verify IP are provided

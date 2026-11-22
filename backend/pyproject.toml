@@ -92,6 +92,7 @@ dependencies = [
     "bleach>=6.0.0",
     # Video transcript extraction
     "youtube-transcript-api>=0.6.1",
+    "pyotp>=2.12.1",
 ]
 
 [project.optional-dependencies]

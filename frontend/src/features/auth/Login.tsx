@@ -18,6 +18,8 @@ const Login = ({ onBackToLanding }: LoginProps) => {
   const [error, setError] = useState('');
   const [verificationEmail, setVerificationEmail] = useState('');
   const [isFirstUserSetup, setIsFirstUserSetup] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
 
   const registrationModal = useModal();
   const passwordResetModal = useModal();
@@ -42,6 +44,39 @@ const Login = ({ onBackToLanding }: LoginProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const completeLogin = (data: {
+    access_token: string;
+    user: { role: string };
+  }) => {
+    setStoredToken(data.access_token);
+    login(data.user as Parameters<typeof login>[0]);
+    if (data.user.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setError('');
+    setIsLoading(true);
+    try {
+      const res = await api.post('/auth/totp/verify', {
+        mfaToken,
+        code: mfaCode.trim(),
+      });
+      completeLogin(res.data);
+    } catch {
+      setError(
+        'That code was not accepted. Try the next code or a recovery code.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit: HandleSubmitFunction = async e => {
     e.preventDefault();
     setError('');
@@ -54,16 +89,13 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       });
 
       if (response.status === 200) {
-        const { access_token, user } = response.data;
-
-        setStoredToken(access_token);
-        login(user);
-
-        if (user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
+        if (response.data?.mfaRequired) {
+          setMfaToken(response.data.mfaToken);
+          setMfaCode('');
+          setError('');
+          return;
         }
+        completeLogin(response.data);
       }
     } catch (err: unknown) {
       const error = err as {
@@ -149,43 +181,76 @@ const Login = ({ onBackToLanding }: LoginProps) => {
             </Alert>
           )}
 
-          <form className='mt-8 space-y-6' onSubmit={handleSubmit}>
-            <div className='rounded-md shadow-sm -space-y-px'>
-              <div>
+          <form
+            className='mt-8 space-y-6'
+            onSubmit={mfaToken ? handleMfaSubmit : handleSubmit}
+          >
+            {mfaToken ? (
+              <div className='space-y-2'>
+                <p className='text-sm text-gray-600'>
+                  Enter the 6-digit code from your authenticator, or one of your
+                  recovery codes.
+                </p>
                 <input
-                  type='email'
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  value={mfaCode}
+                  onChange={e => setMfaCode(e.target.value)}
                   required
-                  className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm'
-                  placeholder='Email address'
+                  className='appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm'
+                  placeholder='123456 or recovery code'
                   disabled={isLoading}
                 />
-              </div>
-              <div>
-                <input
-                  type='password'
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm'
-                  placeholder='Password'
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            <div className='flex items-center justify-between'>
-              <div className='text-sm'>
                 <button
                   type='button'
-                  onClick={passwordResetModal.open}
-                  className='font-medium text-purple-600 hover:text-purple-500'
+                  onClick={() => {
+                    setMfaToken(null);
+                    setMfaCode('');
+                    setError('');
+                  }}
+                  className='text-sm text-purple-600 hover:text-purple-500'
                 >
-                  Forgot your password?
+                  Back to sign in
                 </button>
               </div>
-            </div>
+            ) : (
+              <div className='rounded-md shadow-sm -space-y-px'>
+                <div>
+                  <input
+                    type='email'
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm'
+                    placeholder='Email address'
+                    disabled={isLoading}
+                  />
+                </div>
+                <div>
+                  <input
+                    type='password'
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className='appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm'
+                    placeholder='Password'
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!mfaToken && (
+              <div className='flex items-center justify-between'>
+                <div className='text-sm'>
+                  <button
+                    type='button'
+                    onClick={passwordResetModal.open}
+                    className='font-medium text-purple-600 hover:text-purple-500'
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div>
               <Button
@@ -193,22 +258,24 @@ const Login = ({ onBackToLanding }: LoginProps) => {
                 loading={isLoading}
                 className='w-full bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'
               >
-                Sign in
+                {mfaToken ? 'Verify code' : 'Sign in'}
               </Button>
             </div>
 
-            <div className='text-center'>
-              <span className='text-sm text-gray-600'>
-                Don&apos;t have an account?{' '}
-                <button
-                  type='button'
-                  onClick={registrationModal.open}
-                  className='font-medium text-purple-600 hover:text-purple-500'
-                >
-                  Sign up
-                </button>
-              </span>
-            </div>
+            {!mfaToken && (
+              <div className='text-center'>
+                <span className='text-sm text-gray-600'>
+                  Don&apos;t have an account?{' '}
+                  <button
+                    type='button'
+                    onClick={registrationModal.open}
+                    className='font-medium text-purple-600 hover:text-purple-500'
+                  >
+                    Sign up
+                  </button>
+                </span>
+              </div>
+            )}
 
             <p className='text-sm text-gray-600 bg-white border border-gray-200 rounded-lg p-4'>
               You&apos;re signing in to a shared copy of Curriculum Curator. The

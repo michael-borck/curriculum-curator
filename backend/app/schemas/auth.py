@@ -195,12 +195,45 @@ class LoginRequest(CamelModel):
 
 
 class LoginResponse(CamelModel):
-    """Response schema for login"""
+    """Response schema for login.
+
+    When TOTP is enabled, ``access_token`` is null, ``mfa_required`` is true,
+    and ``mfa_token`` is a 5-minute challenge for POST /auth/totp/verify.
+    """
 
     # OAuth2 standard fields - keep as snake_case
-    access_token: str = Field(alias="access_token")
+    access_token: str | None = Field(default=None, alias="access_token")
     token_type: str = Field(default="bearer", alias="token_type")
     user: UserResponse
+    mfa_required: bool = False
+    mfa_token: str | None = None
+
+
+class TOTPSetupResponse(CamelModel):
+    """Secret and one-time recovery codes for a pending TOTP setup."""
+
+    secret: str
+    otpauth_url: str
+    recovery_codes: list[str]
+
+
+class TOTPEnableRequest(CamelModel):
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class TOTPVerifyRequest(CamelModel):
+    mfa_token: str = Field(..., max_length=4096)
+    code: str = Field(..., min_length=6, max_length=32)
+
+
+class TOTPDisableRequest(CamelModel):
+    password: str = Field(..., min_length=1, max_length=256)
+    code: str | None = Field(default=None, max_length=32)
+
+
+class TOTPStatusResponse(CamelModel):
+    enabled: bool
+    recovery_codes_remaining: int
 
 
 class ResendVerificationRequest(CamelModel):

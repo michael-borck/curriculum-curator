@@ -66,6 +66,20 @@ class User(Base):
     # older value are rejected, so revocation survives restarts and workers.
     token_version: Mapped[int] = mapped_column(default=0, server_default="0")
 
+    # TOTP MFA. The secret is encrypted with app.core.secret_crypto; recovery
+    # codes are stored only as keyed hashes. totp_last_counter blocks replay
+    # of the same 30-second code.
+    totp_secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(
+        default=False, server_default="0", nullable=False
+    )
+    totp_recovery_hashes: Mapped[list[str] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    totp_last_counter: Mapped[int] = mapped_column(
+        default=0, server_default="0", nullable=False
+    )
+
     # Institution and academic details
     institution: Mapped[str | None] = mapped_column(String(255), nullable=True)
     department: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -58,6 +58,7 @@ class UserResponse(UserBase):
     role: str
     is_verified: bool
     is_active: bool
+    totp_enabled: bool = False
     institution: str | None = None
     department: str | None = None
     teaching_philosophy: str | None = None
