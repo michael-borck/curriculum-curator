@@ -31,6 +31,8 @@ class CamelModel(BaseModel):
         from_attributes=True,
         # Use enum values in JSON
         use_enum_values=True,
+        # Reject unknown fields instead of silently dropping them.
+        extra="forbid",
         # Include fields even if they're None
         # (you can override this per model if needed)
         json_encoders={

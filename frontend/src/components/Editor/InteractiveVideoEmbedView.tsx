@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { isSafeHttpUrl } from '../../utils/urlSafety';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { Video, ExternalLink } from 'lucide-react';
@@ -183,7 +184,7 @@ const InteractiveVideoEmbedView: React.FC<NodeViewProps> = ({
           >
             {attrs.platform}
           </span>
-          {attrs.url && (
+          {isSafeHttpUrl(attrs.url) && (
             <a
               href={attrs.url}
               target='_blank'
@@ -202,6 +203,8 @@ const InteractiveVideoEmbedView: React.FC<NodeViewProps> = ({
               src={`https://www.youtube.com/embed/${youtubeId}`}
               className='w-full h-full'
               allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+              sandbox='allow-scripts allow-same-origin allow-presentation allow-popups'
+              referrerPolicy='strict-origin-when-cross-origin'
               allowFullScreen
               title={attrs.title}
             />

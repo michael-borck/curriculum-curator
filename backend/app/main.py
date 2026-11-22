@@ -212,11 +212,15 @@ def _resolve_app_version() -> str:
         return "0.0.0"
 
 
+_docs_enabled = settings.DEBUG or settings.LOCAL_MODE or settings.TESTING
 app = FastAPI(
     title="Curriculum Curator",
     description="Pedagogically-aware course content platform",
     version=_resolve_app_version(),
     lifespan=lifespan,
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
 )
 
 # Add rate limiting to app
@@ -641,6 +645,21 @@ try:
 except ImportError as e:
     logger.warning(f"Failed to load curtin_import routes: {e}")
 
+# A swallowed import error otherwise turns a whole route family into silent
+# 404s. Fail fast outside tests so broken deployments never serve.
+if not settings.TESTING:
+    _registered = [getattr(route, "path", "") for route in app.routes]
+    _required = ("/api/auth", "/api/units", "/api/ai", "/api/research")
+    _missing = [
+        prefix
+        for prefix in _required
+        if not any(path.startswith(prefix) for path in _registered)
+    ]
+    if _missing:
+        raise RuntimeError(
+            "Critical API routes failed to load: " + ", ".join(_missing)
+        )
+
 
 # Remove the root API endpoint - let static files handle it
 
@@ -696,11 +715,13 @@ if frontend_path.exists():
         if full_path.startswith("api/"):
             return {"detail": "Not Found"}
 
-        # Serve actual static files (favicon.svg, etc.) if they exist
+        # Serve actual static files (favicon.svg, etc.) if they exist, but
+        # never let a crafted path escape the built frontend directory.
         if full_path:
-            file_path = frontend_path / full_path
-            if file_path.is_file():
-                return FileResponse(str(file_path))
+            root = frontend_path.resolve()
+            candidate = (frontend_path / full_path).resolve()
+            if candidate.is_relative_to(root) and candidate.is_file():
+                return FileResponse(str(candidate))
 
         # Serve index.html for all other routes (SPA routing)
         index_path = frontend_path / "index.html"

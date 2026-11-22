@@ -21,7 +21,8 @@ done
 echo "Data directories ready"
 
 # Show resolved DATABASE_URL for debugging (mask any credentials)
-echo "DATABASE_URL=${DATABASE_URL:-<not set, using config default>}"
+mask_url() { printf '%s' "$1" | sed -E 's#(://)[^/@]+@#\1***@#'; }
+echo "DATABASE_URL=$(mask_url "${DATABASE_URL:-<not set, using config default>}")"
 echo "Working directory: $(pwd)"
 ls -la /app/backend/data/ 2>/dev/null || echo "   /app/backend/data/ not listable"
 
@@ -29,8 +30,9 @@ ls -la /app/backend/data/ 2>/dev/null || echo "   /app/backend/data/ not listabl
 echo "Initializing database..."
 cd /app/backend
 gosu appuser .venv/bin/python -c "
+import re
 from app.core.database import Base, engine, settings
-print(f'Resolved DATABASE_URL: {settings.DATABASE_URL}')
+print('Resolved DATABASE_URL: ' + re.sub(r'(://)[^/@]+@', r'\1***@', settings.DATABASE_URL))
 from app.models import *  # register all models
 Base.metadata.create_all(bind=engine)
 print('Tables ready')

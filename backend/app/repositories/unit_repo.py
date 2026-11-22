@@ -197,6 +197,11 @@ def get_archived_units(db: Session, owner_id: str) -> list[UnitResponse]:
     return [_unit_to_response(unit) for unit in units]
 
 
+def _escape_like(value: str) -> str:
+    """Escape LIKE wildcards so user input is matched literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def search_units(
     db: Session,
     owner_id: str,
@@ -218,17 +223,41 @@ def search_units(
         query = query.filter(Unit.status != "archived")
 
     if search:
-        search_term = f"%{search}%"
+        search_term = f"%{_escape_like(search)}%"
         query = query.filter(
             or_(
-                Unit.title.ilike(search_term),
-                Unit.code.ilike(search_term),
-                Unit.description.ilike(search_term),
+                Unit.title.ilike(search_term, escape="\\"),
+                Unit.code.ilike(search_term, escape="\\"),
+                Unit.description.ilike(search_term, escape="\\"),
             )
         )
 
     units = query.order_by(Unit.created_at.desc()).offset(skip).limit(limit).all()
     return [_unit_to_response(unit) for unit in units]
+
+
+def count_units(
+    db: Session,
+    owner_id: str,
+    search: str | None = None,
+    status: str | None = None,
+) -> int:
+    """Count units matching the same filters as :func:`search_units`."""
+    query = db.query(Unit).filter(Unit.owner_id == owner_id)
+    if status:
+        query = query.filter(Unit.status == status)
+    else:
+        query = query.filter(Unit.status != "archived")
+    if search:
+        search_term = f"%{_escape_like(search)}%"
+        query = query.filter(
+            or_(
+                Unit.title.ilike(search_term, escape="\\"),
+                Unit.code.ilike(search_term, escape="\\"),
+                Unit.description.ilike(search_term, escape="\\"),
+            )
+        )
+    return query.count()
 
 
 def duplicate_unit(

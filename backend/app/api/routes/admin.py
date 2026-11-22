@@ -5,11 +5,12 @@ Admin routes for user management and system configuration
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.rate_limiter import RateLimits, limiter
 from app.core.security_settings import SETTINGS_CONFIG_KEYS, get_security_settings
 from app.models import (
     ConfigCategory,
@@ -40,8 +41,9 @@ router = APIRouter()
 
 
 @router.get("/users", response_model=UserListResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def list_users(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     search: str | None = None,
@@ -94,8 +96,9 @@ async def list_users(
 
 
 @router.post("/users/{user_id}/toggle-status")
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def toggle_user_status(
+    request: Request,
     user_id: str,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
@@ -132,8 +135,9 @@ async def toggle_user_status(
 
 
 @router.post("/users/{user_id}/verify")
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def verify_user(
+    request: Request,
     user_id: str,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
@@ -169,8 +173,9 @@ async def verify_user(
 
 
 @router.delete("/users/{user_id}")
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def delete_user(
+    request: Request,
     user_id: str,
     permanent: bool = Query(False, description="Permanently delete user from database"),
     db: Session = Depends(deps.get_db),
@@ -241,8 +246,9 @@ async def delete_user(
 
 
 @router.get("/users/stats", response_model=UserStatsResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def get_user_statistics(
+    request: Request,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -302,8 +308,9 @@ async def list_pending_verifications(
 
 
 @router.get("/whitelist", response_model=list[EmailWhitelistResponse])
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def list_email_whitelist(
+    request: Request,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -323,8 +330,9 @@ async def list_email_whitelist(
 
 
 @router.post("/whitelist", response_model=EmailWhitelistResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def create_whitelist_pattern(
+    request: Request,
     pattern_data: EmailWhitelistCreate,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
@@ -370,8 +378,9 @@ async def create_whitelist_pattern(
 
 
 @router.put("/whitelist/{pattern_id}", response_model=EmailWhitelistResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def update_whitelist_pattern(
+    request: Request,
     pattern_id: str,
     pattern_data: EmailWhitelistUpdate,
     db: Session = Depends(deps.get_db),
@@ -414,8 +423,9 @@ async def update_whitelist_pattern(
 
 
 @router.delete("/whitelist/{pattern_id}")
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def delete_whitelist_pattern(
+    request: Request,
     pattern_id: str,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
@@ -450,8 +460,9 @@ def _load_system_settings(db: Session) -> SystemSettingsResponse:
 
 
 @router.get("/settings", response_model=SystemSettingsResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def get_system_settings(
+    request: Request,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),
 ):
@@ -460,8 +471,9 @@ async def get_system_settings(
 
 
 @router.put("/settings", response_model=SystemSettingsResponse)
-# @limiter.limit(RateLimits.DEFAULT)
+@limiter.limit(RateLimits.DEFAULT)
 async def update_system_settings(
+    request: Request,
     settings_data: SystemSettingsUpdate,
     db: Session = Depends(deps.get_db),
     admin_user: User = Depends(deps.get_current_admin_user),

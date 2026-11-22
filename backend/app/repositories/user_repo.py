@@ -175,15 +175,17 @@ def create_verification_code(
     return code
 
 
+_MAX_CODE_ATTEMPTS = 5
+
+
 def verify_email_code(db: Session, user_id: str, code: str) -> bool:
-    """Verify email code and mark as used if valid"""
+    """Verify email code, marking it used on success or after too many misses."""
     now = datetime.now(UTC)
 
     verification = (
         db.query(EmailVerification)
         .filter(
             EmailVerification.user_id == user_id,
-            EmailVerification.code == code,
             EmailVerification.used == False,  # noqa: E712
             EmailVerification.expires_at > now,
         )
@@ -191,12 +193,18 @@ def verify_email_code(db: Session, user_id: str, code: str) -> bool:
         .first()
     )
 
-    if verification:
-        verification.used = True
+    if verification is None:
+        return False
+    if verification.code != code:
+        verification.attempts += 1
+        if verification.attempts >= _MAX_CODE_ATTEMPTS:
+            verification.used = True
         db.commit()
-        return True
+        return False
 
-    return False
+    verification.used = True
+    db.commit()
+    return True
 
 
 def get_pending_verifications(
@@ -259,21 +267,29 @@ def create_password_reset_code(
 
 
 def verify_password_reset_code(db: Session, user_id: str, code: str) -> bool:
-    """Verify password reset code (does not mark as used)"""
+    """Verify a password reset code (does not mark it used on success)."""
     now = datetime.now(UTC)
 
     reset = (
         db.query(PasswordReset)
         .filter(
             PasswordReset.user_id == user_id,
-            PasswordReset.token == code,
             PasswordReset.used == False,  # noqa: E712
             PasswordReset.expires_at > now,
         )
+        .order_by(PasswordReset.created_at.desc())
         .first()
     )
 
-    return reset is not None
+    if reset is None:
+        return False
+    if reset.token != code:
+        reset.attempts += 1
+        if reset.attempts >= _MAX_CODE_ATTEMPTS:
+            reset.used = True
+        db.commit()
+        return False
+    return True
 
 
 def mark_password_reset_used(db: Session, user_id: str, code: str) -> bool:

@@ -423,6 +423,20 @@ class UnifiedImportService:
                 if path:
                     edits[path] = e
 
+        # The request-scoped session is closed when the response returns, so
+        # production gets a dedicated session for the background worker. Tests
+        # inject an in-memory session; reuse it because SessionLocal points at
+        # the real (empty) engine there.
+        from app.core import database as core_database  # noqa: PLC0415
+
+        owns_session = db.get_bind() is core_database.engine
+        if owns_session:
+            bg_db = core_database.SessionLocal()
+            if bg_db is None:
+                raise RuntimeError("Database not configured")
+        else:
+            bg_db = db
+
         # Keep a reference so the task isn't garbage-collected
         self._bg_task = asyncio.ensure_future(
             self._run_import(
@@ -430,13 +444,16 @@ class UnifiedImportService:
                 zip_bytes,
                 user_id=user_id,
                 user_email=user_email,
-                db=db,
+                db=bg_db,
                 unit_code=unit_code,
                 unit_title=unit_title,
                 duration_weeks=duration_weeks,
                 edits=edits,
             )
         )
+
+        if owns_session:
+            self._bg_task.add_done_callback(lambda _future: bg_db.close())
 
         return UnifiedImportResult(
             unit_id="",

@@ -1164,7 +1164,11 @@ class PackageImportService:
             return []
 
         raw = zf.read(path).decode("utf-8", errors="replace")
-        root = ET.fromstring(raw)
+        try:
+            root = ET.fromstring(raw)
+        except ET.ParseError:
+            logger.warning("Ignoring malformed Canvas module_meta.xml")
+            return []
 
         # Canvas module_meta uses a default namespace
         ns = ""

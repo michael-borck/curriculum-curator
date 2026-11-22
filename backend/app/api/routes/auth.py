@@ -90,6 +90,8 @@ async def get_local_session(
     access_token = security.create_access_token(
         data={"sub": deps.LOCAL_USER_ID, "email": deps.LOCAL_USER_EMAIL},
         expires_delta=access_token_expires,
+        client_ip=_get_client_ip(request),
+        user_role=local_user.role,
         token_version=getattr(local_user, "token_version", 0),
     )
 

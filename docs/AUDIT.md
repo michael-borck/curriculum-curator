@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1226 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1231 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**
@@ -100,11 +100,29 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
     per-user provider selection (OpenAlex / Semantic Scholar / CrossRef) saved
     in Research Settings, instead of always querying all three.
 
-**Still open (not yet applied)**
+**Residual LOW/MEDIUM fixes applied**
 
-- Rated LOW/MEDIUM items not in the ten steps (admin limiter re-enable,
-  verification-code hashing, transactional import, pagination, Mermaid
-  hardening, etc.), plus digest-pinned images instead of version tags.
+- Re-enabled admin rate limits; added a per-account attempt cap to
+  verification/reset codes; escaped LIKE wildcards in unit search; made unit
+  totals reflect the full result set, not the page.
+- Background import and token-usage logging use dedicated sessions; SQLite
+  foreign keys are enabled; router import failures now fail startup; the SPA
+  file route is path-contained; API docs are disabled outside debug/local/test.
+- `CamelModel` rejects unknown fields; Canvas `module_meta.xml` parse failures
+  no longer 500 an import; raw parser/LLM exception text is no longer returned.
+- Mermaid renders at `securityLevel: strict` and its SVG is DOMPurify-sanitised;
+  YouTube/embed links are http(s)/YouTube-embed allowlisted and iframes are
+  sandboxed.
+- Docker images and both JS dependency trees are digest/lockfile pinned; the
+  Dockerfile is multi-stage with a checksum-verified Typst download.
+
+**Still open**
+
+- Verification/reset codes are still stored plaintext because the deliberate
+  no-SMTP admin relay reads them; attempts are capped, but hashing would remove
+  that fallback.
+- Transactional git+DB import; notarization hard-fail; dependency CVE scanning
+  beyond Dependabot; remaining LOW items that need product decisions.
 
 ## Executive verdict
 

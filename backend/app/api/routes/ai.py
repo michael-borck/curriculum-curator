@@ -152,17 +152,19 @@ def _llm_error_response(e: Exception, operation: str) -> HTTPException:
             detail=f"{operation}: LLM provider unavailable",
         )
 
-    # Input validation
+    # Input validation — log the detail server-side, keep the response generic.
     if isinstance(e, (ValueError, TypeError)):
+        logger.warning("%s rejected invalid input: %s", operation, error_msg)
         return HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"{operation}: {error_msg}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{operation}: invalid request",
         )
 
-    # Unexpected errors — log and return 500
+    # Unexpected errors — log and return 500 without internal details.
     logger.exception("%s failed unexpectedly", operation)
     return HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"{operation} failed: {error_msg}",
+        detail=f"{operation} failed",
     )
 
 

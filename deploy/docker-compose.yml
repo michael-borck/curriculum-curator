@@ -8,7 +8,7 @@
 services:
   app:
     # Pin an exact version — roll forward deliberately, never via :latest.
-    image: ghcr.io/michael-borck/curriculum-curator:0.7.10
+    image: ghcr.io/michael-borck/curriculum-curator:0.7.10@sha256:85023c6119f8b3304742d9b99fa5fb66c26ef355c0ec57ec2b0cf24e0312f2bd
     container_name: curriculum-curator
     restart: unless-stopped
     ports:
@@ -29,7 +29,7 @@ services:
   # so any label-filtered Watchtower will pick it up automatically.
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest@sha256:ccc42bcd3d5fcf7ab0d532b300382154e1a4da56fc666bdb313b78ebdd912754
     container_name: curriculum-curator-ollama
     profiles:
       - local-ai

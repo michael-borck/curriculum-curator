@@ -2,8 +2,15 @@ import React, { useState, useEffect, useRef, useId, useCallback } from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import mermaid from 'mermaid';
+import DOMPurify from 'dompurify';
 
-mermaid.initialize({ startOnLoad: false, theme: 'default' });
+// Strict mode makes Mermaid encode labels; sanitising the generated SVG adds
+// a second layer in case a diagram syntax bypasses it.
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'strict',
+});
 
 const MermaidView: React.FC<NodeViewProps> = ({ node, updateAttributes }) => {
   const source: string = node.attrs.source ?? '';
@@ -18,7 +25,10 @@ const MermaidView: React.FC<NodeViewProps> = ({ node, updateAttributes }) => {
     async (src: string) => {
       try {
         const { svg } = await mermaid.render(`mermaid_${uniqueId}`, src);
-        setSvgHtml(svg);
+        const safeSvg = DOMPurify.sanitize(svg, {
+          USE_PROFILES: { svg: true, svgFilters: true, html: true },
+        });
+        setSvgHtml(safeSvg);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Invalid Mermaid syntax');

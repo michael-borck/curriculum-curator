@@ -11,6 +11,7 @@ with support for:
 """
 
 import json
+import logging
 from collections.abc import AsyncGenerator
 from typing import Any, ClassVar, cast
 
@@ -32,6 +33,8 @@ from app.schemas.llm import (
 )
 from app.services.prompt_templates import PromptTemplate
 from app.utils.url_safety import UrlNotAllowedError, assert_public_url
+
+logger = logging.getLogger(__name__)
 
 # Configure LiteLLM
 litellm.drop_params = True  # Automatically drop unsupported params per provider
@@ -1099,8 +1102,14 @@ Format as JSON."""
             cost = completion_cost(completion_response=response)
         except Exception:
             cost = None
+        from app.core.database import SessionLocal  # noqa: PLC0415
         from app.models.llm_config import TokenUsageLog  # noqa: PLC0415
 
+        # Use a dedicated session: committing the caller's transaction here
+        # would end it mid-request and drop uncommitted work.
+        if SessionLocal is None:
+            return
+        log_db = SessionLocal()
         try:
             log = TokenUsageLog(
                 user_id=user.id,
@@ -1112,10 +1121,12 @@ Format as JSON."""
                 cost_estimate=cost,
                 feature=feature,
             )
-            db.add(log)
-            db.commit()
+            log_db.add(log)
+            log_db.commit()
         except Exception:
-            db.rollback()
+            log_db.rollback()
+        finally:
+            log_db.close()
 
     # =========================================================================
     # Utility Methods
@@ -1246,11 +1257,11 @@ Format as JSON."""
                 "available_models": available_models,
                 "response_text": result.choices[0].message.content or "",
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("LLM connection test failed")
             return {
                 "success": False,
-                "message": f"Connection failed: {e!s}",
-                "error": str(e),
+                "message": "Connection failed",
             }
 
     def get_token_stats(

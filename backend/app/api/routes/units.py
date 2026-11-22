@@ -67,7 +67,13 @@ async def get_units(
         limit=limit,
     )
 
-    return UnitList(units=units, total=len(units))
+    total = unit_repo.count_units(
+        db,
+        owner_id=current_user.id,
+        search=search,
+        status=status.value if status else None,
+    )
+    return UnitList(units=units, total=total)
 
 
 @router.get("/archived", response_model=UnitList)

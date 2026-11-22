@@ -233,7 +233,8 @@ class TestLLMService:
                 mock_acompletion.side_effect = Exception("Connection failed")
                 result = await service.test_connection("openai", api_key="test-key")
                 assert result["success"] is False
-                assert "Connection failed" in result["error"]
+                assert result["success"] is False
+                assert "Connection failed" in result["message"]
 
     @pytest.mark.asyncio
     async def test_list_available_models(self):

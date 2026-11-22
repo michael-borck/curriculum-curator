@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { isSafeYoutubeEmbed } from '../../utils/urlSafety';
 
 /**
  * Extract a YouTube video ID from various URL formats.
@@ -36,7 +37,8 @@ export const YoutubeNode = Node.create({
         tag: 'div[data-youtube-video]',
         getAttrs(node) {
           const iframe = (node as HTMLElement).querySelector('iframe');
-          return iframe ? { src: iframe.getAttribute('src') } : false;
+          const src = iframe?.getAttribute('src');
+          return isSafeYoutubeEmbed(src) ? { src } : false;
         },
       },
     ];
@@ -49,6 +51,9 @@ export const YoutubeNode = Node.create({
       height: number;
       [key: string]: unknown;
     };
+    if (!isSafeYoutubeEmbed(src)) {
+      return ['div', mergeAttributes(rest, { 'data-youtube-video': '' })];
+    }
     return [
       'div',
       mergeAttributes(rest, { 'data-youtube-video': '' }),
@@ -61,6 +66,9 @@ export const YoutubeNode = Node.create({
           allowfullscreen: 'true',
           allow:
             'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+          sandbox:
+            'allow-scripts allow-same-origin allow-presentation allow-popups',
+          referrerpolicy: 'strict-origin-when-cross-origin',
           style: 'border:0;',
         },
       ],

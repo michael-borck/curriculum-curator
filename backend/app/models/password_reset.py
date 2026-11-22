@@ -8,7 +8,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -34,6 +34,8 @@ class PasswordReset(Base):
     )  # 6-digit reset code
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Failed attempts against this code; capped to stop online guessing.
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

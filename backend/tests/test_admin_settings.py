@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy.orm import Session
+from starlette.requests import Request
 
 from app.api.routes.admin import (
     _load_system_settings,
@@ -13,6 +14,12 @@ from app.api.routes.admin import (
 )
 from app.models import ConfigCategory, SystemConfig, User, UserRole
 from app.schemas.admin import SystemSettingsUpdate
+
+
+def _request() -> Request:
+    return Request(
+        {"type": "http", "method": "GET", "path": "/admin", "headers": []}
+    )
 
 
 @pytest.fixture
@@ -36,7 +43,9 @@ def admin_user(test_db: Session) -> User:
 async def test_get_settings_returns_defaults_on_empty_db(
     test_db: Session, admin_user: User
 ):
-    settings = await get_system_settings(db=test_db, admin_user=admin_user)
+    settings = await get_system_settings(
+        request=_request(), db=test_db, admin_user=admin_user
+    )
 
     assert settings.password_min_length == 8
     assert settings.max_login_attempts == 5
@@ -56,7 +65,9 @@ async def test_get_settings_reads_stored_config_values(
     )
     test_db.commit()
 
-    settings = await get_system_settings(db=test_db, admin_user=admin_user)
+    settings = await get_system_settings(
+        request=_request(), db=test_db, admin_user=admin_user
+    )
 
     assert settings.max_login_attempts == 3
     # Unstored fields still fall back to schema defaults
@@ -68,6 +79,7 @@ async def test_update_settings_persists_and_round_trips(
     test_db: Session, admin_user: User
 ):
     updated = await update_system_settings(
+        request=_request(),
         settings_data=SystemSettingsUpdate(
             password_min_length=12, enable_user_registration=False
         ),
@@ -108,6 +120,7 @@ async def test_update_settings_overwrites_existing_config_row(
     test_db.commit()
 
     await update_system_settings(
+        request=_request(),
         settings_data=SystemSettingsUpdate(lockout_duration_minutes=45),
         db=test_db,
         admin_user=admin_user,

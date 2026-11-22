@@ -6,7 +6,7 @@ Provides database engine, session management, and Base class for ORM models.
 
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from app.core.config import settings
@@ -20,6 +20,16 @@ engine = create_engine(
     else {},
     echo=False,  # Set True temporarily to debug SQL queries
 )
+
+if "sqlite" in settings.DATABASE_URL:
+
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
+        """SQLite ignores foreign keys unless enabled per connection."""
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
 
 # Session factory - creates new database sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

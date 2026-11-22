@@ -219,14 +219,14 @@ async def _read_and_parse(
         logger.exception("Material parser failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Parser failed: {exc}",
+            detail="Material parser failed",
         ) from exc
     except Exception as exc:
         # Anything else from the parser is treated as a malformed file
         logger.exception("Material parser raised on file %s", file.filename)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Could not parse file: {exc}",
+            detail="Could not parse file",
         ) from exc
 
     return result, file_bytes
