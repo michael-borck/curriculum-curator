@@ -75,6 +75,21 @@ class TestCookieSession:
         assert resp.status_code == 200
         assert resp.json()["email"] == "cookie-user@example.com"
 
+    def test_bearer_token_authenticates_without_cookie(
+        self, raw_client: TestClient, test_db: Session
+    ) -> None:
+        _make_user(test_db)
+        login = raw_client.post(
+            "/api/auth/login",
+            json={"email": "cookie-user@example.com", "password": "Str0ng-Passw0rd!23"},
+        )
+        token = login.json()["access_token"]
+        raw_client.cookies.clear()
+        resp = raw_client.get(
+            "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
+        assert resp.status_code == 200
+
     def test_cookie_mutation_requires_csrf_header(
         self, raw_client: TestClient, test_db: Session
     ) -> None:

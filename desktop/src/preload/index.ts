@@ -16,6 +16,11 @@ const api = {
     return ipcRenderer.invoke('get-ollama-info')
   },
 
+  // Desktop preferences
+  getAutoUpdate: (): Promise<boolean> => ipcRenderer.invoke('get-auto-update'),
+  setAutoUpdate: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('set-auto-update', enabled),
+
   // Auto-updater
   checkForUpdates: (): Promise<unknown> => {
     return ipcRenderer.invoke('check-for-updates')

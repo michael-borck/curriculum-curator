@@ -124,12 +124,21 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 - Password updates reject >72-byte inputs (bcrypt truncation); `update_user`
   uses a field allowlist; whitelist patterns normalise to `@domain` on edit;
   the sidecar script picks the host Mac architecture.
+- Unified import aborts on git failure and removes git content written before
+  a DB rollback (A+B). Registration responses no longer reveal whether an
+  address exists; login timing is equalised; lockout checks all rows and IP
+  limits count attempts, not rows; search cache is per user.
+- Bandit (`ruff S`) is enabled with documented exceptions; CI enforces a 60%
+  backend coverage floor. Desktop has an auto-update opt-out in Settings and
+  the release matrix builds signed/notarized arm64 and x64 Macs separately
+  (Windows remains intentionally unsigned pending Azure Trusted Signing).
 
 **Still open**
 
-- Transactional git+DB import; dependency CVE scanning beyond Dependabot;
-  passkeys/MFA for admin accounts; magic-link (rather than 6-digit) email
-  verification as a future UX step.
+- Round-trip package import still uses the package service's own persistence
+  (A+B currently covers the unified importer); macOS auto-update manifest
+  merging when arm64 and x64 are released separately; TOTP/passkeys and
+  magic-link email verification; dependency CVE scanning beyond Dependabot.
 
 ## Executive verdict
 

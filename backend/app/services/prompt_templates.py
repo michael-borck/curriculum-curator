@@ -24,7 +24,8 @@ class PromptTemplate:
         """
         self.template = template
         self.description = description
-        self.env = Environment()
+        # Templates are LLM prompts, not HTML; escaping would corrupt them.
+        self.env = Environment()  # noqa: S701
         self.compiled = self.env.from_string(template)
 
         # Extract variables from template if not provided

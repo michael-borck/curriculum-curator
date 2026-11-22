@@ -84,3 +84,22 @@ def test_password_reset_code_locks_after_repeated_misses(
     assert (
         user_repo.verify_password_reset_code(test_db, test_user.id, code) is False
     )
+
+
+def test_failed_import_cleanup_removes_git_paths(monkeypatch) -> None:
+    import app.services.unified_import_service as service_module
+
+    calls: list[str] = []
+
+    class FakeGit:
+        def delete_file(self, unit_id, path, user_email, message=None):
+            calls.append(path)
+
+    monkeypatch.setattr(service_module, "get_git_service", FakeGit)
+
+    service_module.unified_import_service._cleanup_written_paths(
+        "unit-1", ["a/image1.png", "a/image2.png"], "user@example.com"
+    )
+
+    # Deleted newest-first so nested/dependent paths unwind safely.
+    assert calls == ["a/image2.png", "a/image1.png"]

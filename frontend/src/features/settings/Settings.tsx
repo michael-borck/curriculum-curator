@@ -15,6 +15,7 @@ import {
   HardDriveDownload,
   GraduationCap,
   Building2,
+  Monitor,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -30,6 +31,7 @@ import ResearchSettings from './ResearchSettings';
 import ExportTemplates from './ExportTemplates';
 import CurtinSettings from './CurtinSettings';
 import CLOSetManager from './CLOSetManager';
+import DesktopSettings from './DesktopSettings';
 
 const Settings = () => {
   const { user } = useAuthStore();
@@ -167,6 +169,9 @@ const Settings = () => {
     { id: 'clo-sets', label: 'CLO Sets', icon: GraduationCap },
     { id: 'curtin', label: 'Curtin', icon: Building2 },
     { id: 'plugins', label: 'Quality Plugins', icon: Plug },
+    ...(window.api?.getAutoUpdate
+      ? [{ id: 'desktop', label: 'Desktop App', icon: Monitor }]
+      : []),
   ];
 
   return (
@@ -441,6 +446,8 @@ const Settings = () => {
           {activeTab === 'quality-rating' && <QualityRatingSettings />}
 
           {activeTab === 'research' && <ResearchSettings />}
+
+          {activeTab === 'desktop' && <DesktopSettings />}
 
           {activeTab === 'export' && <ExportTemplates />}
 

@@ -192,14 +192,15 @@ class LoginAttempt(Base):
         """Check if IP address should be rate limited based on recent attempts"""
         cutoff_time = datetime.now(UTC) - timedelta(minutes=window_minutes)
 
-        attempt_count = (
-            db_session.query(cls)
+        # Count actual failures, not rows: one email retried 20 times is one
+        # row but twenty attempts.
+        total = (
+            db_session.query(func.coalesce(func.sum(cls.failed_attempts), 0))
             .filter(cls.ip_address == ip_address)
             .filter(cls.last_attempt >= cutoff_time)
-            .count()
+            .scalar()
         )
-
-        return attempt_count >= max_attempts
+        return int(total or 0) >= max_attempts
 
     @classmethod
     def get_recent_suspicious_activity(

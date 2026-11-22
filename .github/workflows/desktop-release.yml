@@ -38,12 +38,30 @@ jobs:
       preflight-command: cd desktop && npx tsc --noEmit
       build-command: cd desktop && npx electron-vite build
       sidecar-command: bash scripts/build-sidecar.sh
-      package-command: cd desktop && npx electron-builder --$PLATFORM --publish never
-      notarize-check-command: cd desktop && npx electron-builder --mac --publish never
+      # Windows builds are intentionally unsigned until Azure Trusted Signing
+      # is configured; macOS is signed and notarized on both architectures.
+      # One macOS leg per architecture: the sidecar (PyInstaller + pandoc/typst)
+      # is host-arch specific, so x64 and arm64 cannot share one build.
+      package-command: |
+        cd desktop
+        if [ "$PLATFORM" = "mac" ]; then
+          if [ "$TARGET_OS" = "macos-15-intel" ]; then ARCH_FLAG=--x64; else ARCH_FLAG=--arm64; fi
+          npx electron-builder --mac "$ARCH_FLAG" --publish never
+        else
+          npx electron-builder --$PLATFORM --publish never
+        fi
+      notarize-check-command: cd desktop && npx electron-builder --mac --arm64 --publish never
       notarize-check-artifact-root: desktop/dist
       signing-mode: custom
       notarize-mode: hook
       publish-mode: artifacts
+      matrix: |
+        [
+          {"os":"macos-15","platform":"mac"},
+          {"os":"macos-15-intel","platform":"mac"},
+          {"os":"ubuntu-latest","platform":"linux"},
+          {"os":"windows-latest","platform":"win"}
+        ]
       artifact-globs: |
         desktop/dist/*.dmg
         desktop/dist/*.exe

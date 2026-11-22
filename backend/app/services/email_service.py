@@ -177,7 +177,7 @@ class EmailService:
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=20) as response:
+            with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - fixed https://api.resend.com URL
                 return response.status in (200, 202)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")

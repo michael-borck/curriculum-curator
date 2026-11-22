@@ -30,6 +30,7 @@ from app.schemas.package_import import (
     UnifiedImportResult,
 )
 from app.services.file_import_service import FileImportService
+from app.services.git_content_service import get_git_service
 from app.services.import_task_store import ImportTask, create_task
 from app.services.material_parsers import get_default_for_format
 from app.services.material_parsers.persistence import (
@@ -489,6 +490,9 @@ class UnifiedImportService:
             task.errors.append(f"Invalid ZIP: {e}")
             return
 
+        written_paths: list[str] = []
+        unit_for_cleanup: Unit | None = None
+
         try:
             preview = self.analyze(zip_bytes)
             task.total_files = preview.total_processable
@@ -507,13 +511,22 @@ class UnifiedImportService:
                 title=unit_title or preview.unit_title or "Imported Unit",
                 weeks=duration_weeks or preview.duration_weeks or 12,
             )
+            unit_for_cleanup = unit
 
             task.unit_id = str(unit.id)
             task.unit_code = unit.code
             task.unit_title = unit.title
 
             await self._process_files(
-                task, zf, preview, outline, unit, db, edits, user_email
+                task,
+                zf,
+                preview,
+                outline,
+                unit,
+                db,
+                edits,
+                user_email,
+                written_paths,
             )
 
             db.commit()
@@ -525,6 +538,27 @@ class UnifiedImportService:
             task.status = "failed"
             task.errors.append(str(exc))
             db.rollback()
+            if unit_for_cleanup is not None and written_paths:
+                self._cleanup_written_paths(
+                    str(unit_for_cleanup.id), written_paths, user_email
+                )
+
+    @staticmethod
+    def _cleanup_written_paths(
+        unit_id: str, written_paths: list[str], user_email: str
+    ) -> None:
+        """Best-effort removal of git content left by a failed DB import."""
+        git = get_git_service()
+        for path in reversed(written_paths):
+            try:
+                git.delete_file(
+                    unit_id,
+                    path,
+                    user_email,
+                    message="Rollback failed import",
+                )
+            except Exception:
+                logger.warning("Could not clean up imported file %s", path)
 
     def _import_round_trip(
         self,
@@ -597,6 +631,7 @@ class UnifiedImportService:
         db: Session,
         edits: dict[str, dict[str, object]],
         user_email: str,
+        written_paths: list[str],
     ) -> None:
         """Process each file in the preview, creating DB records.
 
@@ -691,6 +726,7 @@ class UnifiedImportService:
                         unit=unit,
                         db=db,
                         user_email=user_email,
+                        written_paths=written_paths,
                     )
                 else:
                     db.add(
@@ -731,6 +767,7 @@ class UnifiedImportService:
         unit: Unit,
         db: Session,
         user_email: str,
+        written_paths: list[str],
     ) -> None:
         """Create a WeeklyMaterial from a structural parser result.
 
@@ -751,20 +788,15 @@ class UnifiedImportService:
         db.add(material)
         db.flush()  # populates material.id without committing the txn
 
-        try:
-            rewrites = persist_extracted_images(
-                images=parsed.images,
-                unit_id=str(unit.id),
-                material=material,
-                user_email=user_email,
-            )
-        except Exception:
-            logger.exception(
-                "Failed to persist images for imported material %s — "
-                "saving content_json without image rewrites",
-                material.id,
-            )
-            rewrites = {}
+        # Let a git failure abort the import; the caller rolls the DB back
+        # and removes any content already written (see _run_import).
+        rewrites = persist_extracted_images(
+            images=parsed.images,
+            unit_id=str(unit.id),
+            material=material,
+            user_email=user_email,
+            written_paths=written_paths,
+        )
 
         material.content_json = rewrite_image_src(parsed.content_json, rewrites)
 

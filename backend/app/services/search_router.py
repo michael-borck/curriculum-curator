@@ -96,13 +96,16 @@ class SearchRouter:
         preferred_tier: int | None = None,
         max_results: int = 20,
         user_settings: dict[str, object] | None = None,
+        cache_scope: str | None = None,
     ) -> tuple[list[SearchResult], SearchTier]:
         """Execute search on the best available tier.
 
         Returns (results, tier_used).
         Falls back to lower tiers if preferred tier is unavailable.
         """
-        cache_key = self._cache_key(query, preferred_tier, max_results, user_settings)
+        cache_key = self._cache_key(
+            query, preferred_tier, max_results, user_settings, cache_scope
+        )
         cached = self._cache_get(cache_key)
         if cached is not None:
             cached_results, cached_tier = cached
@@ -147,6 +150,7 @@ class SearchRouter:
         preferred_tier: int | None,
         max_results: int,
         user_settings: dict[str, object] | None,
+        cache_scope: str | None = None,
     ) -> str:
         """Build a cache key without storing raw API keys.
 
@@ -185,6 +189,7 @@ class SearchRouter:
 
         payload = {
             "query": " ".join(query.lower().split()),
+            "scope": cache_scope or "shared",
             "preferred_tier": preferred_tier,
             "max_results": max_results,
             "searxng_url": settings_dict.get("searxngUrl") or "",

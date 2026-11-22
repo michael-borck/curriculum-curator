@@ -163,6 +163,7 @@ select = [
     "FLY", # flynt
     "PERF", # perflint
     "RUF", # ruff-specific rules
+    "S",   # bandit security checks
 ]
 ignore = [
     "E501",    # line too long, handled by formatter
@@ -171,6 +172,16 @@ ignore = [
     "PLR0917", # too many positional args (mirrors PLR0913)
     "UP042",   # keep existing (str, Enum) classes; StrEnum is a separate refactor
     "A003",    # SQLAlchemy models intentionally define `id`/`type` attributes
+    "S101",    # asserts are used for internal invariants, not security checks
+    "S104",    # 0.0.0.0 appears in a blocked-host list, not a bind address
+    "S105",    # names like SECRET_KEY/PASSWORD_* are labels, not secrets
+    "S106",    # test/arg names such as password_hash
+    "S108",    # configured temp export directory
+    "S110",    # best-effort cleanup; failures are intentionally ignored
+    "S112",    # best-effort per-file import loop
+    "S311",    # non-crypto jitter/backoff randomness
+    "S324",    # md5 used for a cache fingerprint, not security
+    "S603",    # subprocess calls use argv arrays with fixed executables
     "PLR2004", # magic value used in comparison
     "TRY003",  # avoid specifying long messages outside exception class
     "B008",    # function call in argument defaults - standard FastAPI pattern
@@ -216,7 +227,7 @@ known-first-party = ["app"]
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/**/*" = ["S101", "PLR2004", "ARG", "PLC0415", "N806"]
-"test_*.py" = ["S101", "PLR2004", "ARG", "PTH", "W293", "F401", "RET505", "W292", "W291", "I001", "PLC0415", "N806"]
+"test_*.py" = ["S101", "S105", "S106", "S107", "S113", "S314", "S603", "PLR2004", "ARG", "PTH", "W293", "F401", "RET505", "W292", "W291", "I001", "PLC0415", "N806"]
 "app/core/database.py" = ["F401", "PLC0415"]  # SQLAlchemy model imports must be inside function
 "migrations/**/*" = ["F401", "ERA001", "W291", "UP035", "I001"]  # Migration files have specific patterns
 

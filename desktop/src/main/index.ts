@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
 import {
@@ -12,6 +13,43 @@ import {
 import { startOllama, stopOllama, detectOllama } from './ollama'
 
 let mainWindow: BrowserWindow | null = null
+
+const PREFERENCES_PATH = () => join(app.getPath('userData'), 'preferences.json')
+
+function readPreferences(): Record<string, unknown> {
+  try {
+    const path = PREFERENCES_PATH()
+    if (!existsSync(path)) return {}
+    return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+function writePreferences(patch: Record<string, unknown>): void {
+  try {
+    writeFileSync(
+      PREFERENCES_PATH(),
+      JSON.stringify({ ...readPreferences(), ...patch }, null, 2),
+      { mode: 0o600 }
+    )
+  } catch (error) {
+    console.error('[preferences] failed to save', error)
+  }
+}
+
+let autoUpdateEnabled =
+  readPreferences().autoUpdateEnabled !== false
+
+function scheduleAutoUpdateCheck(): void {
+  if (!autoUpdateEnabled || is.dev) return
+  autoUpdater.autoDownload = false
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((error) => {
+      console.error('[updater] check failed', error)
+    })
+  }, 3000)
+}
 
 const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['https:', 'http:', 'mailto:'])
 
@@ -126,13 +164,7 @@ app.whenReady().then(async () => {
 
   createWindow()
 
-  // Auto-updater: check 3s after window is shown (skip in dev)
-  if (!is.dev) {
-    autoUpdater.autoDownload = false
-    setTimeout(() => {
-      autoUpdater.checkForUpdates()
-    }, 3000)
-  }
+  scheduleAutoUpdateCheck()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -177,6 +209,19 @@ ipcMain.handle('save-file', async (event, defaultName: string, data: Buffer | st
   const fs = await import('fs/promises')
   await fs.writeFile(result.filePath, data)
   return result.filePath
+})
+
+// Desktop preferences
+ipcMain.handle('get-auto-update', (event) => {
+  if (!isTrustedSender(event)) return true
+  return autoUpdateEnabled
+})
+
+ipcMain.handle('set-auto-update', (event, enabled: boolean) => {
+  if (!isTrustedSender(event)) return false
+  autoUpdateEnabled = Boolean(enabled)
+  writePreferences({ autoUpdateEnabled })
+  return autoUpdateEnabled
 })
 
 // Auto-updater IPC

@@ -13,6 +13,9 @@ declare global {
         defaultName: string,
         data: ArrayBuffer | string
       ) => Promise<string | null>;
+      getAutoUpdate?: () => Promise<boolean>;
+      setAutoUpdate?: (enabled: boolean) => Promise<boolean>;
+      checkForUpdates?: () => Promise<unknown>;
     };
   }
 }

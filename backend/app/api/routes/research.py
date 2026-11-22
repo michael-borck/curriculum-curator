@@ -83,6 +83,7 @@ async def search_academic(
         preferred_tier=request.preferred_tier,
         max_results=request.max_results,
         user_settings=user_settings,
+        cache_scope=str(current_user.id),
     )
 
     items = [

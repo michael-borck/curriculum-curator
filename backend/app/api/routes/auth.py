@@ -4,6 +4,7 @@ Authentication routes with complete user registration and verification system.
 Uses SQLAlchemy ORM via repositories.
 """
 
+import logging
 import secrets
 from datetime import timedelta
 from threading import Lock
@@ -41,7 +42,13 @@ from app.schemas.user import ProfileUpdateRequest, UserCreate
 from app.services.email_service import email_service
 from app.utils.request_ip import get_client_ip
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# Used to equalise bcrypt work when the account does not exist, so login
+# timing does not reveal which emails are registered.
+_DUMMY_PASSWORD_HASH = security.get_password_hash(secrets.token_urlsafe(32))
 
 # Serialises first-user bootstrap; see register().
 _FIRST_USER_LOCK = Lock()
@@ -227,27 +234,24 @@ async def register(
             },
         )
 
-    # Check if user already exists
+    # Enumeration-resistant: the response never reveals whether the address
+    # already has an account. A verified account simply gets no new email.
+    generic_message = (
+        "If this email address can be registered, a verification code has "
+        "been sent to it."
+    )
+
     existing_user = user_repo.get_user_by_email(db, email)
     if existing_user:
-        if existing_user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists",
+        if not existing_user.is_verified:
+            verification_code = user_repo.create_verification_code(
+                db, existing_user.id
             )
-        # User exists but not verified - resend verification
-        verification_code = user_repo.create_verification_code(db, existing_user.id)
-        email_sent = await email_service.send_verification_email(
-            existing_user, verification_code, expires_minutes=60
-        )
-        if email_sent:
-            return UserRegistrationResponse(
-                message="Verification email sent. Please check your inbox for the 6-digit code.",
-                user_email=existing_user.email,
+            await email_service.send_verification_email(
+                existing_user, verification_code, expires_minutes=60
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification email. Please try again.",
+        return UserRegistrationResponse(
+            message=generic_message, user_email=existing_user.email
         )
 
     try:
@@ -318,17 +322,10 @@ async def register(
                 severity="info",
                 success="success",
             )
-            return UserRegistrationResponse(
-                message="Registration successful! Please check your email for the verification code.",
-                user_email=email,
-            )
+        else:
+            logger.warning("Verification email delivery failed for a new sign-up")
 
-        # Email failed - we should still allow the user to exist
-        # They can request resend
-        return UserRegistrationResponse(
-            message="Registration successful but email delivery failed. Please use 'Resend Verification' to get your code.",
-            user_email=email,
-        )
+        return UserRegistrationResponse(message=generic_message, user_email=email)
 
     except HTTPException:
         raise
@@ -468,9 +465,9 @@ async def login(
         )
 
     user = user_repo.get_user_by_email(db, email)
-    login_success = user and security.verify_password(
-        login_data.password, user.password_hash
-    )
+    password_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
+    password_ok = security.verify_password(login_data.password, password_hash)
+    login_success = bool(user) and password_ok
 
     if login_success:
         security_repo.record_login_success(db, email, client_ip, user_agent)

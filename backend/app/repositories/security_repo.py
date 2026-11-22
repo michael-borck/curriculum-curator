@@ -63,20 +63,6 @@ def record_login_success(
 
     db.commit()
 
-    # Also reset other attempts from same email (different IPs)
-    db.query(LoginAttempt).filter(
-        LoginAttempt.email == email,
-        LoginAttempt.ip_address != ip_address,
-    ).update(
-        {
-            "failed_attempts": 0,
-            "consecutive_failures": 0,
-            "is_locked": False,
-            "locked_until": None,
-        }
-    )
-    db.commit()
-
 
 def record_login_failure(
     db: Session,
@@ -136,22 +122,39 @@ def check_account_lockout(
     email = email.lower().strip()
     now = datetime.now(UTC)
 
-    # Check email-based lockout
+    # Check every row for this email, not just the first one.
     attempt = (
         db.query(LoginAttempt)
-        .filter(LoginAttempt.email == email, LoginAttempt.is_locked == True)  # noqa: E712
+        .filter(
+            LoginAttempt.email == email,
+            LoginAttempt.is_locked == True,  # noqa: E712
+            LoginAttempt.locked_until > now,
+        )
+        .order_by(LoginAttempt.locked_until.desc())
         .first()
     )
 
     if attempt and attempt.locked_until:
-        if attempt.locked_until > now:
-            minutes_remaining = (
-                int((attempt.locked_until - now).total_seconds() / 60) + 1
-            )
-            return True, attempt.lockout_reason, minutes_remaining
-        # Lock expired, clear it
-        attempt.unlock_account("Lockout expired")
-        db.commit()
+        minutes_remaining = (
+            int((attempt.locked_until - now).total_seconds() / 60) + 1
+        )
+        return True, attempt.lockout_reason, minutes_remaining
+
+    # Clear expired locks for this email.
+    db.query(LoginAttempt).filter(
+        LoginAttempt.email == email,
+        LoginAttempt.is_locked == True,  # noqa: E712
+        LoginAttempt.locked_until <= now,
+    ).update(
+        {
+            "is_locked": False,
+            "locked_until": None,
+            "lockout_reason": None,
+            "consecutive_failures": 0,
+            "failed_attempts": 0,
+        }
+    )
+    db.commit()
 
     # Check IP-based rate limiting using model method
     if LoginAttempt.is_ip_rate_limited(db, ip_address):

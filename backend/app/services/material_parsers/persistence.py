@@ -96,6 +96,7 @@ def persist_extracted_images(
     unit_id: str,
     material: WeeklyMaterial,
     user_email: str,
+    written_paths: list[str] | None = None,
 ) -> dict[str, str]:
     """Write extracted images to git and return a {original_filename: url} map.
 
@@ -135,6 +136,8 @@ def persist_extracted_images(
             user_email=user_email,
             message=f"Imported image {safe_name} for {material.title}",
         )
+        if written_paths is not None:
+            written_paths.append(image_path)
 
         url = (
             f"/api/materials/units/{unit_id}/materials/{material.id}/images/{safe_name}"

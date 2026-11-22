@@ -196,6 +196,23 @@ async def lifespan(app: FastAPI):
         else:
             _disable_local_user()
 
+        # Server deployments need real email for self-service verification.
+        if not settings.LOCAL_MODE:
+            from app.services.email_service import (  # noqa: PLC0415
+                EmailProvider,
+                email_service,
+            )
+
+            if (
+                email_service.smtp_config.dev_mode
+                or email_service.smtp_config.provider == EmailProvider.DEV_MODE
+            ):
+                logger.warning(
+                    "EMAIL IS NOT CONFIGURED: verification/reset codes are only "
+                    "written to the server log. Set EMAIL_PROVIDER (e.g. resend) "
+                    "and credentials, or verify users from User Management."
+                )
+
     except Exception as e:
         logger.warning(f"Initialization warning: {e}")
     yield

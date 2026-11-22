@@ -21,11 +21,10 @@ extraResources:
 afterSign: scripts/notarize.js
 
 mac:
+  # Architecture is chosen per CI leg (--x64 or --arm64); the sidecar binaries
+  # are arch-specific, so never build both from one runner.
   target:
     - target: dmg
-      arch:
-        - x64
-        - arm64
   entitlementsInherit: build/entitlements.mac.plist
   entitlements: build/entitlements.mac.plist
   hardenedRuntime: true
