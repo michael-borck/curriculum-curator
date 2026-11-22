@@ -143,6 +143,7 @@ const VideoInteractionView: React.FC<NodeViewProps> = ({
 
     // Find nearest transcript segment before this interaction
     const myPos = getPos();
+    if (myPos === undefined) return;
     let nearestText = '';
     editor.state.doc.descendants((n, pos) => {
       if (n.type.name === 'transcriptSegment' && pos < myPos) {

@@ -806,7 +806,7 @@ class CurtinOutlineParser(OutlineParser):
             logger.info(
                 "Document does not appear to be a Curtin outline - falling back to generic."
             )
-            from app.services.outline_parsers.generic_parser import GenericOutlineParser  # noqa: PLC0415, I001
+            from app.services.outline_parsers.generic_parser import GenericOutlineParser  # noqa: PLC0415
 
             result = await GenericOutlineParser().parse(
                 file_content, filename, file_type, user_context=user_context

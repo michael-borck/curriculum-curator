@@ -331,7 +331,7 @@ const MaterialEditorPage: React.FC = () => {
             const editor = editorRef.current;
             if (!editor) return;
             const updated = applySpeakerNotesDrafts(editor.getJSON(), drafts);
-            editor.commands.setContent(updated, true);
+            editor.commands.setContent(updated, { emitUpdate: true });
             toast.success(
               `Applied notes to ${drafts.length} slide${drafts.length === 1 ? '' : 's'} — remember to save`
             );
@@ -347,7 +347,9 @@ const MaterialEditorPage: React.FC = () => {
             editorRef.current?.getJSON() ?? liveJson
           )}
           onApply={contentJson => {
-            editorRef.current?.commands.setContent(contentJson, true);
+            editorRef.current?.commands.setContent(contentJson, {
+              emitUpdate: true,
+            });
             toast.success('Structure applied — remember to save');
           }}
           onClose={() => setRestructureOpen(false)}
@@ -361,7 +363,7 @@ const MaterialEditorPage: React.FC = () => {
             const editor = editorRef.current;
             if (!editor) return;
             const updated = appendBranchingCards(editor.getJSON(), cards);
-            editor.commands.setContent(updated, true);
+            editor.commands.setContent(updated, { emitUpdate: true });
             toast.success(
               `Added ${cards.length} branching card${cards.length === 1 ? '' : 's'} — remember to save`
             );
@@ -377,7 +379,7 @@ const MaterialEditorPage: React.FC = () => {
             const editor = editorRef.current;
             if (!editor) return;
             const updated = appendQuizQuestions(editor.getJSON(), questions);
-            editor.commands.setContent(updated, true);
+            editor.commands.setContent(updated, { emitUpdate: true });
             toast.success(
               `Added ${questions.length} question${questions.length === 1 ? '' : 's'} — remember to save`
             );
@@ -396,7 +398,7 @@ const MaterialEditorPage: React.FC = () => {
             const nodes = lessonPlanToNodes(plan);
             editor.commands.setContent(
               { ...current, content: [...(current.content ?? []), ...nodes] },
-              true
+              { emitUpdate: true }
             );
             toast.success('Lesson plan inserted — remember to save');
           }}

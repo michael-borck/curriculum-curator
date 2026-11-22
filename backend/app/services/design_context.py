@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import desc
-
 from app.models.learning_design import DesignStatus, LearningDesign
 
 if TYPE_CHECKING:
@@ -43,7 +41,7 @@ async def get_design_context(
                 LearningDesign.unit_id == unit_id,
                 LearningDesign.status == DesignStatus.APPROVED.value,
             )
-            .order_by(desc(LearningDesign.updated_at))
+            .order_by(LearningDesign.updated_at.desc())
             .first()
         )
         # Fallback to draft
@@ -54,7 +52,7 @@ async def get_design_context(
                     LearningDesign.unit_id == unit_id,
                     LearningDesign.status == DesignStatus.DRAFT.value,
                 )
-                .order_by(desc(LearningDesign.updated_at))
+                .order_by(LearningDesign.updated_at.desc())
                 .first()
             )
 

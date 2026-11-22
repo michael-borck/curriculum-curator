@@ -1,7 +1,7 @@
 {
   "name": "curriculum-curator-desktop",
   "version": "0.7.10",
-  "description": "Curriculum Curator — Desktop edition",
+  "description": "Curriculum Curator \u2014 Desktop edition",
   "main": "./out/main/index.js",
   "author": "Curriculum Curator Team",
   "license": "MIT",
@@ -19,7 +19,8 @@
   },
   "overrides": {
     "minimatch@>=10.0.0 <10.2.3": "10.2.3",
-    "ip-address": "^10.1.1"
+    "ip-address": "^10.1.1",
+    "minimatch": "^11.0.9"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -27,8 +28,8 @@
     "@electron/notarize": "^2.5.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.16",
-    "electron": "^41.10.4",
-    "electron-builder": "^26.8.1",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^5.0.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",

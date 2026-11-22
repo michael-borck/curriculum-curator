@@ -74,7 +74,7 @@ class AnalyticsService:
         material_stats = {
             "total": sum(count for _, count in material_counts),
             "by_status": {
-                (status.value if hasattr(status, "value") else status): count
+                getattr(status, "value", status): count
                 for status, count in material_counts
             },
         }
@@ -93,7 +93,7 @@ class AnalyticsService:
         assessment_stats = {
             "total": sum(count for _, count in assessment_counts),
             "by_status": {
-                (status.value if hasattr(status, "value") else status): count
+                getattr(status, "value", status): count
                 for status, count in assessment_counts
             },
         }
@@ -265,8 +265,16 @@ class AnalyticsService:
             "ulo_completion": ulo_completion,
             "ulos_fully_covered": sum(1 for u in ulo_completion if u["is_complete"]),
             "ulos_total": len(ulo_completion),
-            "weeks_with_materials": sorted([w[0] for w in weeks_with_materials]),
-            "weeks_with_assessments": sorted([w[0] for w in weeks_with_assessments]),
+            "weeks_with_materials": sorted(
+                value
+                for value in (w[0] for w in weeks_with_materials)
+                if value is not None
+            ),
+            "weeks_with_assessments": sorted(
+                value
+                for value in (w[0] for w in weeks_with_assessments)
+                if value is not None
+            ),
             "completion_percentage": (
                 (
                     sum(1 for u in ulo_completion if u["is_complete"])

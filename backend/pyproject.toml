@@ -38,17 +38,17 @@ dependencies = [
     "websockets>=12.0",
     "uvloop>=0.19.0; sys_platform != 'win32'",
     # Authentication & Security
-    "pyjwt>=2.10.1",
+    "pyjwt>=2.15.1",
     "passlib[bcrypt]>=1.7.4",
     "bcrypt<4.0",  # Pinned to 3.x for passlib compatibility - avoids __about__ error
-    "cryptography>=46.0.7",
+    "cryptography>=50.0.2",
     "slowapi>=0.1.9", # Rate limiting
     "redis>=5.0.1", # Rate limiting storage (optional)
     # Database
     "sqlalchemy>=2.0.25",
     "alembic>=1.13.1",
     # Document Processing
-    "pypdf>=6.15.0",  # PDF processing (maintained successor of PyPDF2)
+    "pypdf>=7.1.1",  # PDF processing (maintained successor of PyPDF2)
     "pdfplumber>=0.10.3",  # Advanced PDF text extraction
     # pymupdf moved to [pdf-advanced] optional extra for PyInstaller compatibility
     "python-docx>=1.1.0",  # DOCX processing
@@ -71,7 +71,7 @@ dependencies = [
     # <=1.82.6 ceiling has been removed now that 1.83.x addresses new CVEs
     # (CVE-2026-35029, CVE-2026-35030, GHSA-69x8-hrgq-fjj8, GHSA-xqmj-j6mv-4862).
     # 1.84.0 additionally fixes the auth bypass via Host header injection.
-    "litellm>=1.84.0,!=1.82.7,!=1.82.8",
+    "litellm>=1.110.2,!=1.82.7,!=1.82.8",
     "tiktoken>=0.5.2",  # Token counting
     # File Processing
     "python-docx>=1.1.0",
@@ -168,6 +168,9 @@ ignore = [
     "E501",    # line too long, handled by formatter
     "PLR0913", # too many arguments
     "PLR0915", # too many statements
+    "PLR0917", # too many positional args (mirrors PLR0913)
+    "UP042",   # keep existing (str, Enum) classes; StrEnum is a separate refactor
+    "A003",    # SQLAlchemy models intentionally define `id`/`type` attributes
     "PLR2004", # magic value used in comparison
     "TRY003",  # avoid specifying long messages outside exception class
     "B008",    # function call in argument defaults - standard FastAPI pattern

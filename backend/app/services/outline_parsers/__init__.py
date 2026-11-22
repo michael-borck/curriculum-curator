@@ -14,7 +14,7 @@ _registry_cache: dict[str, type[OutlineParser]] = {}
 
 
 def _build_registry() -> dict[str, type[OutlineParser]]:
-    from app.services.outline_parsers.curtin_parser import CurtinOutlineParser  # noqa: PLC0415, I001
+    from app.services.outline_parsers.curtin_parser import CurtinOutlineParser  # noqa: PLC0415
     from app.services.outline_parsers.generic_parser import GenericOutlineParser  # noqa: PLC0415
 
     return {

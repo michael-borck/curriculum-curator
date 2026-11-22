@@ -16,13 +16,14 @@ function formatTime(seconds: number): string {
 /** Collect all transcript segment texts (with neighbours) from the editor doc. */
 function gatherSegmentContext(
   editor: NodeViewProps['editor'],
-  getPos: () => number,
+  getPos: () => number | undefined,
   node: NodeViewProps['node']
 ): string {
   if (!editor) return node.textContent;
 
   const doc = editor.state.doc;
   const myPos = getPos();
+  if (myPos === undefined) return node.textContent;
   const segments: { pos: number; text: string }[] = [];
 
   doc.descendants((n, pos) => {
@@ -82,7 +83,9 @@ const TranscriptSegmentView: React.FC<NodeViewProps> = ({
   const handleInsertInteraction = () => {
     if (!editor || typeof getPos !== 'function') return;
 
-    const pos = getPos() + node.nodeSize;
+    const anchor = getPos();
+    if (anchor === undefined) return;
+    const pos = anchor + node.nodeSize;
     const interactionNode = editor.schema.nodes.videoInteraction;
     if (!interactionNode) return;
 
@@ -132,7 +135,9 @@ const TranscriptSegmentView: React.FC<NodeViewProps> = ({
       });
       const data = resp.data;
 
-      const pos = getPos() + node.nodeSize;
+      const anchor = getPos();
+      if (anchor === undefined) return;
+      const pos = anchor + node.nodeSize;
       editor
         .chain()
         .focus()
@@ -269,10 +274,7 @@ const TranscriptSegmentView: React.FC<NodeViewProps> = ({
 
         {/* Transcript text — read-only content */}
         <div className='flex-1 min-w-0'>
-          <NodeViewContent
-            as='span'
-            className='text-sm text-gray-500 leading-relaxed'
-          />
+          <NodeViewContent className='text-sm text-gray-500 leading-relaxed' />
         </div>
       </div>
 

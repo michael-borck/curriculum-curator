@@ -4,24 +4,16 @@
  * pattern from ADR-068. Nothing here mutates the editor directly; callers
  * pass the result to `editor.commands.setContent`.
  */
+import type { JSONContent } from '@tiptap/core';
 import type {
   BranchingCardDraft,
   LessonPlanResponse,
   QuizQuestionDraft,
 } from '../services/aiApi';
 
-/** Structural subset of a TipTap JSON node we build or read. */
-interface JsonNode {
-  type?: string;
-  attrs?: Record<string, unknown>;
-  content?: JsonNode[];
-  text?: string;
-}
-
-interface DocJson {
-  type?: string;
-  content?: JsonNode[];
-}
+/** TipTap's own document/node JSON types. */
+type JsonNode = JSONContent;
+type DocJson = JSONContent;
 
 const uuid = (): string =>
   globalThis.crypto?.randomUUID?.() ??

@@ -185,13 +185,13 @@ class PasswordValidator:
 
         # Check email components
         if user_email:
-            email_user = user_email.split("@")[0].lower()
+            email_user = user_email.split("@", maxsplit=1)[0].lower()
             if len(email_user) >= 3 and email_user in password_lower:
                 errors.append("Password cannot contain parts of your email address")
 
             # Check domain name (without TLD)
             if "@" in user_email:
-                domain = user_email.split("@")[1].split(".")[0].lower()
+                domain = user_email.split("@")[1].split(".", maxsplit=1)[0].lower()
                 if len(domain) >= 3 and domain in password_lower:
                     errors.append("Password cannot contain your email domain")
 
