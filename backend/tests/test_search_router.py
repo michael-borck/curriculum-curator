@@ -128,6 +128,7 @@ async def test_searxng_uses_the_users_instance_url(monkeypatch):
         return [_result()]
 
     monkeypatch.setattr(search_router_module.web_search_service, "search", fake_search)
+    monkeypatch.setattr(search_router_module, "assert_public_url", AsyncMock())
 
     await router.search(
         "query",

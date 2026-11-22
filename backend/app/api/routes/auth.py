@@ -4,11 +4,12 @@ Authentication routes with complete user registration and verification system.
 Uses SQLAlchemy ORM via repositories.
 """
 
+import secrets
 from datetime import timedelta
 from threading import Lock
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.api import deps
@@ -62,6 +63,8 @@ async def get_auth_config(
 
 @router.get("/local-session")
 async def get_local_session(
+    request: Request,
+    response: Response,
     db: Annotated[Session, Depends(deps.get_db)],
 ):
     """
@@ -90,6 +93,12 @@ async def get_local_session(
         token_version=getattr(local_user, "token_version", 0),
     )
 
+    _set_session_cookies(
+        response,
+        request,
+        access_token,
+        settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+    )
     return LoginResponse(
         access_token=access_token,
         user=local_user,
@@ -113,6 +122,42 @@ def _get_client_ip(request: Request) -> str:
 def _get_user_agent(request: Request) -> str:
     """Get user agent from request"""
     return request.headers.get("User-Agent", "Unknown")[:500]
+
+
+def _is_https(request: Request) -> bool:
+    forwarded = request.headers.get("x-forwarded-proto", "").lower()
+    return request.url.scheme == "https" or forwarded == "https"
+
+
+def _set_session_cookies(
+    response: Response, request: Request, token: str, minutes: int
+) -> None:
+    """Store the access token in an httpOnly cookie plus a readable CSRF token."""
+    secure = _is_https(request)
+    max_age = minutes * 60
+    response.set_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        value=token,
+        max_age=max_age,
+        httponly=True,
+        samesite="lax",
+        secure=secure,
+        path="/",
+    )
+    response.set_cookie(
+        key=settings.CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(32),
+        max_age=max_age,
+        httponly=False,
+        samesite="lax",
+        secure=secure,
+        path="/",
+    )
+
+
+def _clear_session_cookies(response: Response) -> None:
+    response.delete_cookie(settings.SESSION_COOKIE_NAME, path="/")
+    response.delete_cookie(settings.CSRF_COOKIE_NAME, path="/")
 
 
 @router.post("/register", response_model=UserRegistrationResponse)
@@ -296,6 +341,7 @@ async def register(
 @limiter.limit(RateLimits.VERIFY_EMAIL)
 async def verify_email(
     request: Request,
+    response: Response,
     verification_request: EmailVerificationRequest,
     db: Annotated[Session, Depends(deps.get_db)],
 ):
@@ -345,6 +391,12 @@ async def verify_email(
             detail="Failed to retrieve verified user",
         )
 
+    _set_session_cookies(
+        response,
+        request,
+        access_token,
+        get_security_settings(db).session_timeout_minutes,
+    )
     return EmailVerificationResponse(
         access_token=access_token,
         user=verified_user,
@@ -388,6 +440,7 @@ async def resend_verification(
 @limiter.limit(RateLimits.LOGIN)
 async def login(
     request: Request,
+    response: Response,
     login_data: LoginRequest,
     db: Annotated[Session, Depends(deps.get_db)],
 ):
@@ -501,6 +554,9 @@ async def login(
             detail="Failed to retrieve user data",
         )
 
+    _set_session_cookies(
+        response, request, access_token, security_settings.session_timeout_minutes
+    )
     return LoginResponse(
         access_token=access_token,
         user=public_user,
@@ -657,9 +713,11 @@ async def change_password(
 @router.post("/logout")
 async def logout(
     request: Request,
+    response: Response,
     _current_user: UserResponse = Depends(deps.get_current_active_user),
 ):
     """Revoke the caller's access token immediately."""
+    _clear_session_cookies(response)
     header = request.headers.get("authorization", "")
     if header.lower().startswith("bearer "):
         payload = security.decode_access_token(header[7:])

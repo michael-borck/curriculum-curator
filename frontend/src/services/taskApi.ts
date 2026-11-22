@@ -5,6 +5,7 @@
  */
 
 import { API_ORIGIN } from './apiBase';
+import { fetchWithAuth } from './authSession';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -21,19 +22,10 @@ export interface TaskStatus {
   createdAt: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────
-
-const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 // ─── Poll ────────────────────────────────────────────────────────────
 
 export async function getTaskStatus(taskId: string): Promise<TaskStatus> {
-  const resp = await window.fetch(`${API_ORIGIN}/api/bg-tasks/${taskId}`, {
-    headers: getAuthHeaders(),
-  });
+  const resp = await fetchWithAuth(`${API_ORIGIN}/api/bg-tasks/${taskId}`);
   if (!resp.ok) throw new Error(`Task not found (${resp.status})`);
   return (await resp.json()) as TaskStatus;
 }
@@ -49,12 +41,9 @@ export function streamTaskProgress(
 
   void (async () => {
     try {
-      const resp = await window.fetch(
+      const resp = await fetchWithAuth(
         `${API_ORIGIN}/api/bg-tasks/${taskId}/events`,
-        {
-          headers: getAuthHeaders(),
-          signal: controller.signal,
-        }
+        { signal: controller.signal }
       );
       if (!resp.ok) {
         onError(`SSE connection failed (${resp.status})`);
@@ -105,11 +94,8 @@ export function streamTaskProgress(
 // ─── Download ────────────────────────────────────────────────────────
 
 export async function downloadTaskResult(taskId: string): Promise<string> {
-  const resp = await window.fetch(
-    `${API_ORIGIN}/api/bg-tasks/${taskId}/download`,
-    {
-      headers: getAuthHeaders(),
-    }
+  const resp = await fetchWithAuth(
+    `${API_ORIGIN}/api/bg-tasks/${taskId}/download`
   );
   if (!resp.ok) throw new Error(`Download failed (${resp.status})`);
 

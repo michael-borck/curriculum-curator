@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { setStoredToken } from '../../services/authSession';
 import { ArrowLeft, RefreshCw, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
@@ -114,7 +115,7 @@ const EmailVerificationForm = ({
         setSuccessMessage('Email verified successfully!');
 
         const { access_token, user } = response.data;
-        localStorage.setItem('token', access_token);
+        setStoredToken(access_token);
         login(user);
 
         window.setTimeout(() => {

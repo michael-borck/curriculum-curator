@@ -4,6 +4,7 @@
 
 import api from './api';
 import { API_ORIGIN } from './apiBase';
+import { fetchWithAuth } from './authSession';
 import type {
   OllamaStatus,
   OllamaRecommendation,
@@ -33,18 +34,15 @@ class OllamaApiService {
     onComplete: () => void
   ): AbortController {
     const controller = new AbortController();
-    const token = localStorage.getItem('token');
 
-    window
-      .fetch(`${API_ORIGIN}/api/ollama/pull`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ model }),
-        signal: controller.signal,
-      })
+    fetchWithAuth(`${API_ORIGIN}/api/ollama/pull`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model }),
+      signal: controller.signal,
+    })
       .then(async response => {
         if (!response.ok) {
           const text = await response.text();

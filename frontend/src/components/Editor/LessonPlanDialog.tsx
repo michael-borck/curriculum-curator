@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AiDataNotice } from '../shared/AiDataNotice';
 import {
   aiApi,
   type LessonPlanFramework,
@@ -92,6 +93,7 @@ const LessonPlanDialog: React.FC<LessonPlanDialogProps> = ({
                 Builds a timed, framework-structured lesson plan from this
                 material&apos;s content. Reviewed before anything is saved.
               </p>
+              <AiDataNotice className='mb-3' />
 
               <label className='block text-xs font-medium text-gray-600 mb-2'>
                 Framework

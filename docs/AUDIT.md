@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1212 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1222 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**
@@ -68,19 +68,25 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 5. **Ownership** — every AI-context entry point validates body-supplied
    `unitId`, `designId` and `sourceMaterialIds`; research sources require unit
    ownership; batch task status is owner-scoped.
-6. **Session (partial)** — access tokens reject `type=refresh`; tokens carry a
-   `tv` claim checked against `User.token_version`, which is bumped on password
-   change/reset; `/auth/logout` revokes the JTI; the 401 interceptor resets the
-   auth store; verify-email tokens are now IP-bound.
-7. **Desktop (partial)** — a per-install `SECRET_KEY` is generated into
-   `userData` (0600) and `DEBUG=false`; single-instance lock; sandbox and
-   context isolation on, node integration off; `openExternal` and
+6. **Session** — web logins now set an httpOnly `cc_session` cookie plus a
+   readable `cc_csrf` double-submit token; cookie-authenticated state changes
+   require `X-CSRF-Token`; desktop keeps the Bearer token. Access tokens reject
+   `type=refresh`; tokens carry a `tv` claim checked against
+   `User.token_version`, which is bumped on password change/reset;
+   `/auth/logout` revokes the JTI and clears cookies; the 401 interceptor resets
+   the auth store; verify-email tokens are now IP-bound.
+7. **Desktop** — a per-install `SECRET_KEY` is generated into `userData`
+   (0600) and `DEBUG=false`; production uses a fresh free loopback port and a
+   per-launch `X-Desktop-Token` required by `LOCAL_MODE`; single-instance lock;
+   sandbox and context isolation on, node integration off; `openExternal` and
    `will-navigate` allowlist http/https/mailto; IPC handlers check the sender;
    startup fails visibly instead of showing a dead window.
-8. **Deploy/CI (partial)** — both compose files bind app and Ollama to
-   127.0.0.1; production compose pins image `0.7.10` and drops the Watchtower
-   auto-update label; Dockerfile uses `python:3.13-slim`, `uv sync --frozen
-   --no-dev`, `npm ci`, and `.dockerignore` excludes `**/.env`; the reusable
+8. **Deploy/CI** — both compose files bind app and Ollama to 127.0.0.1;
+   production compose pins image `0.7.10` and drops the Watchtower auto-update
+   label; Dockerfile uses `python:3.13-slim`, `uv sync --frozen --no-dev`,
+   `npm ci`, and `.dockerignore` excludes `**/.env`; CI actions are pinned by
+   commit SHA, PRs build the Docker image and desktop app, image publishing
+   reuses CI as a required job, and pushes carry SBOM/provenance; the reusable
    release workflow is pinned to a commit SHA and passes `GH_OWNER`.
 9. **LLM store** — `LLMConfiguration` is authoritative (default-first), with
    legacy `User.llm_config` fallback and the `allow_user_api_keys` kill-switch
@@ -89,18 +95,13 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 10. **Privacy copy** — README, landing, download, login, about, export and LLM
     settings wording now matches behaviour; operator mailto is only sent when
     `CONTACT_EMAIL` is set explicitly; the Download page discloses its GitHub
-    release fetch.
+    release fetch; quiz, branching, lesson-plan, speaker-notes and AI-assistant
+    panels show a point-of-use recipient notice.
 
 **Still open (not yet applied)**
 
-- httpOnly cookie session + CSRF (JWT still in `localStorage`); desktop
-  ephemeral port and per-launch renderer token.
-- SSRF guards for user-supplied custom LLM `api_url` and per-user SearXNG URLs.
-- CI: pin third-party actions by SHA, build Docker/desktop on PRs, gate image
-  publishing on CI, SBOM/provenance; digest-pinned images instead of version
-  tags.
-- Per-provider search consent (or softer wording) and point-of-use AI recipient
-  notices in quiz/branching/lesson-plan/assistant panels.
+- Per-provider search consent (or softer wording) for the always-on academic
+  search tier; digest-pinned images instead of version tags.
 - Rated LOW/MEDIUM items not in the ten steps (admin limiter re-enable,
   verification-code hashing, transactional import, pagination, Mermaid
   hardening, etc.).

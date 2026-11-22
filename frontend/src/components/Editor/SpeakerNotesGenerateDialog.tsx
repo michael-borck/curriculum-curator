@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Loader2, Sparkles, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AiDataNotice } from '../shared/AiDataNotice';
 import { aiApi, type SpeakerNotesDraft } from '../../services/aiApi';
 import { getSlideSegments, type SlideSegment } from '../../utils/speakerNotes';
 
@@ -108,6 +109,7 @@ const SpeakerNotesGenerateDialog: React.FC<SpeakerNotesGenerateDialogProps> = ({
                 Choose which slides to draft notes for. Drafts are reviewed
                 before anything is saved.
               </p>
+              <AiDataNotice className='mb-3' />
               <div className='space-y-2'>
                 {segments.map((segment, index) => (
                   <label

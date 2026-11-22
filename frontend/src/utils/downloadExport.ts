@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { API_ORIGIN } from '../services/apiBase';
+import { getAuthHeaders } from '../services/authSession';
 
 /**
  * Downloads an export file from the backend and triggers a browser download.
@@ -11,7 +12,6 @@ export async function downloadExport(
   format: string,
   targetLms?: string | undefined
 ): Promise<string> {
-  const token = localStorage.getItem('token');
   const lmsParam =
     format !== 'html' && targetLms && targetLms !== 'generic'
       ? `?target_lms=${targetLms}`
@@ -21,7 +21,8 @@ export async function downloadExport(
     `${API_ORIGIN}/api/units/${unitId}/export/${format}${lmsParam}`,
     {
       responseType: 'blob',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: getAuthHeaders(),
+      withCredentials: true,
     }
   );
 
@@ -58,13 +59,12 @@ export async function downloadMaterialExport(
   materialId: string,
   format: string
 ): Promise<string> {
-  const token = localStorage.getItem('token');
-
   const response = await axios.get(
     `${API_ORIGIN}/api/materials/${materialId}/export/${format}`,
     {
       responseType: 'blob',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: getAuthHeaders(),
+      withCredentials: true,
     }
   );
 
@@ -93,13 +93,12 @@ export async function downloadMaterialsExport(
   unitId: string,
   format: 'html' | 'pdf' | 'docx' | 'pptx'
 ): Promise<string> {
-  const token = localStorage.getItem('token');
-
   const response = await axios.get(
     `${API_ORIGIN}/api/units/${unitId}/export/materials?format=${format}`,
     {
       responseType: 'blob',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: getAuthHeaders(),
+      withCredentials: true,
     }
   );
 

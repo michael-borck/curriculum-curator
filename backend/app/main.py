@@ -18,7 +18,8 @@ from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
-# CSRF removed - using JWT + CORS instead
+# CSRF: cookie sessions use a double-submit token (see deps.get_current_user);
+# Bearer-token clients (desktop) are not cookie-authenticated.
 from app.core.config import settings
 from app.core.database import SessionLocal, init_db
 from app.core.password_validator import PasswordValidator
@@ -314,7 +315,14 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "X-Request-ID",
+        "X-CSRF-Token",
+        "X-Desktop-Token",
+    ],
 )
 
 # Import and include routers with individual error handling

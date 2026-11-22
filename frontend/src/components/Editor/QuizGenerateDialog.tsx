@@ -6,6 +6,7 @@ import {
   type QuizQuestionDraft,
   type QuizQuestionType,
 } from '../../services/aiApi';
+import { AiDataNotice } from '../shared/AiDataNotice';
 
 interface QuizGenerateDialogProps {
   materialId: string;
@@ -115,6 +116,7 @@ const QuizGenerateDialog: React.FC<QuizGenerateDialogProps> = ({
                 Drafts practice questions from this material&apos;s content as
                 structured quiz blocks. Reviewed before anything is saved.
               </p>
+              <AiDataNotice className='mb-3' />
               <label className='block text-xs font-medium text-gray-600 mb-1'>
                 Question types
               </label>

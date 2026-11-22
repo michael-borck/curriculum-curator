@@ -5,11 +5,36 @@ import { randomBytes } from 'crypto'
 import { app } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import http from 'http'
+import net from 'net'
 
-const PORT = 8000
+const DEV_PORT = 8000
 const HOST = '127.0.0.1'
 
 let backendProcess: ChildProcess | null = null
+let backendPort = DEV_PORT
+let desktopToken: string | null = null
+
+export interface BackendInfo {
+  port: number
+  token: string | null
+}
+
+/** Ask the OS for an unused loopback port (production only). */
+function findFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer()
+    server.once('error', reject)
+    server.listen(0, HOST, () => {
+      const address = server.address()
+      if (address && typeof address === 'object') {
+        const port = address.port
+        server.close(() => resolve(port))
+      } else {
+        server.close(() => reject(new Error('Could not allocate a port')))
+      }
+    })
+  })
+}
 
 /** Per-install signing key, generated once and kept in userData (0600). */
 function getOrCreateSecretKey(): string {
@@ -23,11 +48,20 @@ function getOrCreateSecretKey(): string {
   return generated
 }
 
-export function getBackendPort(): number {
-  return PORT
+export function getBackendInfo(): BackendInfo {
+  return { port: backendPort, token: desktopToken }
 }
 
-export function startBackend(): void {
+export function getBackendPort(): number {
+  return backendPort
+}
+
+export async function startBackend(): Promise<BackendInfo> {
+  // Dev keeps a predictable port so the Vite proxy can reach it. Production
+  // uses a fresh port and token per launch on loopback only.
+  backendPort = is.dev ? DEV_PORT : await findFreePort()
+  desktopToken = is.dev ? null : randomBytes(32).toString('hex')
+
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
     LOCAL_MODE: 'true',
@@ -35,13 +69,14 @@ export function startBackend(): void {
     SECRET_KEY: getOrCreateSecretKey(),
     DATABASE_URL: `sqlite:///${join(app.getPath('userData'), 'curriculum_curator.db')}`
   }
+  if (desktopToken) env.DESKTOP_TOKEN = desktopToken
 
   if (is.dev) {
     // Dev mode: run uvicorn via uv from the backend directory
     const backendDir = join(app.getAppPath(), '..', 'backend')
     backendProcess = spawn('uv', [
       'run', 'uvicorn', 'app.main:app',
-      '--port', String(PORT),
+      '--port', String(backendPort),
       '--host', HOST
     ], {
       cwd: backendDir,
@@ -58,7 +93,7 @@ export function startBackend(): void {
     env.TYPST_PATH = typstPath
 
     backendProcess = spawn(backendBin, [
-      '--port', String(PORT),
+      '--port', String(backendPort),
       '--host', HOST
     ], {
       env,
@@ -78,11 +113,13 @@ export function startBackend(): void {
     console.log(`[backend] process exited with code ${code}`)
     backendProcess = null
   })
+
+  return getBackendInfo()
 }
 
 function healthCheck(): Promise<boolean> {
   return new Promise((resolve) => {
-    const req = http.get(`http://${HOST}:${PORT}/health`, (res) => {
+    const req = http.get(`http://${HOST}:${backendPort}/health`, (res) => {
       resolve(res.statusCode === 200)
     })
     req.on('error', () => resolve(false))

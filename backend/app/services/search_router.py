@@ -19,6 +19,7 @@ from app.services.academic_search_service import (
     academic_search_service,
 )
 from app.services.web_search_service import SearchResult, web_search_service
+from app.utils.url_safety import UrlNotAllowedError, assert_public_url
 
 logger = logging.getLogger(__name__)
 
@@ -407,6 +408,17 @@ class SearchRouter:
         searxng_url = (
             user_url if isinstance(user_url, str) and user_url.strip() else None
         )
+        if searxng_url:
+            from app.core.config import settings  # noqa: PLC0415
+
+            if not settings.LOCAL_MODE:
+                try:
+                    await assert_public_url(searxng_url)
+                except UrlNotAllowedError:
+                    logger.warning(
+                        "Refusing user SearXNG URL in a private/internal range"
+                    )
+                    return []
         return await web_search_service.search(
             query,
             max_results=max_results,

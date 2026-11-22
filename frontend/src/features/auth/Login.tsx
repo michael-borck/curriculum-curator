@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { setStoredToken } from '../../services/authSession';
 import { ArrowLeft, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +56,7 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       if (response.status === 200) {
         const { access_token, user } = response.data;
 
-        localStorage.setItem('token', access_token);
+        setStoredToken(access_token);
         login(user);
 
         if (user.role === 'admin') {

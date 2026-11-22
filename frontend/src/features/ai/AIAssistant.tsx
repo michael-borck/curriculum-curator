@@ -13,6 +13,7 @@ import {
   Check,
 } from 'lucide-react';
 import api from '../../services/api';
+import { AiDataNotice } from '../../components/shared/AiDataNotice';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkingContextStore } from '../../stores/workingContextStore';
 import {
@@ -790,6 +791,7 @@ const AIAssistant = ({
 
         {/* Input Area */}
         <div className='p-4 border-t border-gray-200'>
+          <AiDataNotice className='mb-3' />
           <div className='flex space-x-2'>
             <input
               type='text'

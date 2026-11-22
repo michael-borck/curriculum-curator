@@ -5,6 +5,7 @@ Uses SQLAlchemy ORM for database access via dependency injection.
 """
 
 import logging
+import secrets
 from collections.abc import Generator
 from typing import Annotated, Any, cast
 
@@ -30,10 +31,10 @@ logger = logging.getLogger(__name__)
 LOCAL_USER_ID = "00000000-0000-0000-0000-000000000001"
 LOCAL_USER_EMAIL = "local@curriculum-curator.app"
 
-# Use HTTPBearer for JWT authentication
-# In LOCAL_MODE, make it optional (auto_error=False) so requests without
-# Authorization header don't get rejected before reaching get_current_user
-security = HTTPBearer(auto_error=not settings.LOCAL_MODE)
+# Use HTTPBearer for JWT authentication. auto_error is off so a browser
+# request that authenticates via the httpOnly session cookie still reaches
+# get_current_user; it raises 401 itself when neither form is present.
+security = HTTPBearer(auto_error=False)
 
 # User role constants
 ROLE_ADMIN = "admin"
@@ -52,6 +53,26 @@ def get_db() -> Generator[Session]:
         db.close()
 
 
+_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
+
+
+def _require_csrf(request: Request) -> None:
+    """Reject cookie-authenticated state changes without a matching CSRF token."""
+    if request.method in _SAFE_METHODS:
+        return
+    header_token = request.headers.get("x-csrf-token", "")
+    cookie_token = request.cookies.get(settings.CSRF_COOKIE_NAME, "")
+    if (
+        not header_token
+        or not cookie_token
+        or not secrets.compare_digest(header_token, cookie_token)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF validation failed",
+        )
+
+
 def get_current_user(
     request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
@@ -60,6 +81,14 @@ def get_current_user(
     """Get current user from JWT token, or return local user in LOCAL_MODE."""
     # LOCAL_MODE: bypass JWT, return the local default user
     if settings.LOCAL_MODE:
+        required_token = getattr(settings, "DESKTOP_TOKEN", None)
+        if required_token:
+            provided = request.headers.get("x-desktop-token", "")
+            if not provided or not secrets.compare_digest(provided, required_token):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Could not validate credentials",
+                )
         local_user = user_repo.get_user_by_id(db, LOCAL_USER_ID)
         if local_user is None:
             raise HTTPException(
@@ -68,21 +97,31 @@ def get_current_user(
             )
         return local_user
 
-    # Normal mode: require valid JWT
-    if credentials is None:
+    # Normal mode: require a Bearer token or the httpOnly session cookie.
+    used_cookie = False
+    if credentials is not None:
+        token = credentials.credentials
+    else:
+        token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+        used_cookie = bool(token)
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = credentials.credentials
-
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # Cookie-authenticated state changes need the double-submit CSRF token,
+    # because browsers attach cookies to cross-site requests automatically.
+    if used_cookie:
+        _require_csrf(request)
 
     from app.core import security as security_module  # noqa: PLC0415
 

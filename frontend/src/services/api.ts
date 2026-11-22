@@ -9,17 +9,20 @@ import type {
   VisualPromptResponse,
 } from '../types/index';
 import { API_BASE_URL } from './apiBase';
+import { clearStoredToken, fetchWithAuth, getAuthHeaders } from './authSession';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  // Web sessions ride on the httpOnly cookie; desktop also sends Bearer.
+  withCredentials: true,
 });
 
-// Add auth token to requests
+// Add auth token (desktop) and the CSRF header (web cookie sessions)
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('token');
-
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (config.headers) {
+    for (const [key, value] of Object.entries(getAuthHeaders())) {
+      config.headers.set(key, value);
+    }
   }
 
   // Don't set Content-Type - let axios handle it based on the data type
@@ -38,7 +41,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token is invalid or expired — clear it and reset the auth store so
       // the UI stops showing a stale signed-in state.
-      localStorage.removeItem('token');
+      clearStoredToken();
       void import('../stores/authStore').then(({ useAuthStore }) => {
         useAuthStore.setState({ user: null, isAuthenticated: false });
       });
@@ -171,14 +174,11 @@ export const generateContentStream = async (
     pedagogyOverride?: string | undefined;
   }
 ): Promise<void> => {
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await window.fetch(`${API_BASE_URL}/ai/generate`, {
+    const response = await fetchWithAuth(`${API_BASE_URL}/ai/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         content_type: type,
@@ -260,14 +260,11 @@ export const remediateContentStream = async (
   onComplete?: () => void,
   onError?: (error: Error) => void
 ): Promise<void> => {
-  const token = localStorage.getItem('token');
-
   try {
-    const response = await window.fetch(`${API_BASE_URL}/ai/remediate`, {
+    const response = await fetchWithAuth(`${API_BASE_URL}/ai/remediate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         content,

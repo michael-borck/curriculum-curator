@@ -5,6 +5,7 @@
 import axios from 'axios';
 
 import { API_ORIGIN } from './apiBase';
+import { getAuthHeaders } from './authSession';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -43,17 +44,12 @@ export interface ExportPackageRequest {
 
 // ─── API functions ───────────────────────────────────────────────────
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 export async function fetchExportPreview(
   unitId: string
 ): Promise<ExportPreviewResponse> {
   const { data } = await axios.get<ExportPreviewResponse>(
     `${API_ORIGIN}/api/units/${unitId}/export/preview`,
-    { headers: getAuthHeaders() }
+    { headers: getAuthHeaders(), withCredentials: true }
   );
   return data;
 }
@@ -63,7 +59,7 @@ export async function fetchMaterialExportPreview(
 ): Promise<MaterialExportPreview> {
   const { data } = await axios.get<MaterialExportPreview>(
     `${API_ORIGIN}/api/materials/${materialId}/export/preview`,
-    { headers: getAuthHeaders() }
+    { headers: getAuthHeaders(), withCredentials: true }
   );
   return data;
 }
@@ -84,6 +80,7 @@ export async function startPackageExport(
         ...getAuthHeaders(),
         'Content-Type': 'application/json',
       },
+      withCredentials: true,
     }
   );
   return data.taskId;

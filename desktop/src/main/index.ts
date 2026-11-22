@@ -3,7 +3,12 @@ import type { IpcMainInvokeEvent } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
-import { startBackend, stopBackend, waitForBackend } from './backend'
+import {
+  getBackendInfo,
+  startBackend,
+  stopBackend,
+  waitForBackend
+} from './backend'
 import { startOllama, stopOllama, detectOllama } from './ollama'
 
 let mainWindow: BrowserWindow | null = null
@@ -86,7 +91,13 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    const info = getBackendInfo()
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      query: {
+        backendPort: String(info.port),
+        ...(info.token ? { desktopToken: info.token } : {})
+      }
+    })
   }
 }
 
@@ -101,7 +112,7 @@ app.whenReady().then(async () => {
   await startOllama()
 
   // Start backend before creating the window
-  startBackend()
+  await startBackend()
   const healthy = await waitForBackend()
   if (!healthy) {
     dialog.showErrorBox(

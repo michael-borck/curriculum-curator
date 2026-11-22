@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import type { User, AuthState } from '../types/index';
 import api from '../services/api';
+import {
+  clearStoredToken,
+  getStoredToken,
+  isDesktopClient,
+  setStoredToken,
+} from '../services/authSession';
 import { useTeachingStyleStore } from './teachingStyleStore';
 import { useWorkingContextStore } from './workingContextStore';
 
@@ -24,16 +30,11 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
     // In local mode, logout is a no-op (nowhere to log out to)
     if (get().isLocalMode) return;
 
-    // Ask the server to revoke this token before dropping it locally.
+    // Ask the server to revoke this token/cookie before dropping it locally.
     // Fire-and-forget: local state clears even if the call fails.
-    if (localStorage.getItem('token')) {
-      api.post('/auth/logout').catch(() => undefined);
-    }
+    api.post('/auth/logout').catch(() => undefined);
 
-    // Clear token and persisted context from localStorage
-    // Security note: token stored in localStorage is vulnerable to XSS.
-    // TODO: migrate to httpOnly cookies for production hardening.
-    localStorage.removeItem('token');
+    clearStoredToken();
     useWorkingContextStore.getState().clearContext();
     set({ user: null, isAuthenticated: false });
   },
@@ -52,9 +53,8 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
         const sessionResponse = await api.get('/auth/local-session');
         if (sessionResponse.status === 200 && sessionResponse.data) {
           const { access_token, user } = sessionResponse.data;
-          // Security note: storing JWT in localStorage — XSS risk accepted
-          // for now. Future: migrate to httpOnly cookie-based auth.
-          localStorage.setItem('token', access_token);
+          // Desktop stores the token; web relies on the httpOnly cookie.
+          setStoredToken(access_token);
           set({
             user,
             isAuthenticated: true,
@@ -78,12 +78,10 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
       // Config endpoint failed — not in local mode, continue normally
     }
 
-    // Normal mode: check for existing token
-    // Security note: token in localStorage is accessible to any JS on the page.
-    // Future hardening: use httpOnly cookies instead.
-    const token = localStorage.getItem('token');
+    // Normal mode: desktop needs a stored token; web authenticates by cookie.
+    const token = getStoredToken();
 
-    if (!token) {
+    if (!token && isDesktopClient()) {
       set({ isInitialized: true, isLoading: false });
       return;
     }
@@ -109,9 +107,8 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
         }
       }
     } catch {
-      // Token is invalid or expired - clear it
-      // Security note: clearing localStorage token on auth failure
-      localStorage.removeItem('token');
+      // Token/cookie is invalid or expired - clear local state.
+      clearStoredToken();
       useWorkingContextStore.getState().clearContext();
       set({
         user: null,

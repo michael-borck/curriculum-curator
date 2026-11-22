@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { clearStoredToken } from '../../services/authSession';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
@@ -104,7 +105,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     logout();
-    localStorage.removeItem('token');
+    clearStoredToken();
     navigate('/login');
   };
 

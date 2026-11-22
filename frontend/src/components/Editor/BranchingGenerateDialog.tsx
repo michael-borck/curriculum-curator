@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GitFork, Loader2, AlertTriangle, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { AiDataNotice } from '../shared/AiDataNotice';
 import { aiApi, type BranchingCardDraft } from '../../services/aiApi';
 
 interface BranchingGenerateDialogProps {
@@ -92,6 +93,7 @@ const BranchingGenerateDialog: React.FC<BranchingGenerateDialogProps> = ({
                 content as editable branching cards. Reviewed before anything is
                 saved.
               </p>
+              <AiDataNotice className='mb-3' />
               <label className='block text-xs font-medium text-gray-600 mb-1'>
                 Approximate number of cards
               </label>

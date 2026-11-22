@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { setStoredToken } from '../../services/authSession';
 import { CheckCircle } from 'lucide-react';
 import api, { register } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
@@ -126,7 +127,7 @@ const RegistrationModal = ({
             });
             if (loginResponse.status === 200) {
               const { access_token, user } = loginResponse.data;
-              localStorage.setItem('token', access_token);
+              setStoredToken(access_token);
               login(user);
             }
           } catch {

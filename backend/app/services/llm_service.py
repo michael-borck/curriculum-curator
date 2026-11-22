@@ -31,6 +31,7 @@ from app.schemas.llm import (
     PedagogyAnalysisResponse,
 )
 from app.services.prompt_templates import PromptTemplate
+from app.utils.url_safety import UrlNotAllowedError, assert_public_url
 
 # Configure LiteLLM
 litellm.drop_params = True  # Automatically drop unsupported params per provider
@@ -167,6 +168,23 @@ class LLMService:
             return raw
         return str(raw).strip().lower() not in ("false", "0", "no", "off")
 
+    @staticmethod
+    async def _assert_safe_api_base(provider: str, api_base: str | None) -> None:
+        """Block user-supplied custom AI endpoints that point inside the network.
+
+        Local mode and Ollama are exempt: they intentionally target a
+        developer's own machine or a compose service. A ``custom`` provider
+        URL on a shared server must be a public http(s) address.
+        """
+        if not api_base or provider != "custom" or settings.LOCAL_MODE:
+            return
+        try:
+            await assert_public_url(api_base)
+        except UrlNotAllowedError as exc:
+            raise ValueError(
+                "Custom AI endpoint must be a public http(s) address"
+            ) from exc
+
     def _stored_config(
         self, db: Session, user_id: object | None
     ) -> tuple[str, str | None, str | None, str | None] | None:
@@ -286,6 +304,7 @@ class LLMService:
     ) -> AsyncGenerator[str] | str:
         """Generate text from a prompt with optional streaming."""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
+        await self._assert_safe_api_base(provider, api_base)
 
         if not provider or (not api_key and provider != "ollama"):
             error_msg = (
@@ -374,6 +393,7 @@ class LLMService:
     ) -> AsyncGenerator[str]:
         """Generate educational content using LLM with streaming"""
         model, provider, api_key, api_base = self._get_llm_config(user, db)
+        await self._assert_safe_api_base(provider, api_base)
 
         if not provider or (not api_key and provider != "ollama"):
             yield (
@@ -494,6 +514,7 @@ Provide ONLY the JSON object, no additional text or markdown formatting."""
                 full unit scaffold).
         """
         model, provider, api_key, api_base = self._get_llm_config(user, db)
+        await self._assert_safe_api_base(provider, api_base)
 
         if not provider or (not api_key and provider != "ollama"):
             return None, (
@@ -1185,6 +1206,7 @@ Format as JSON."""
         try:
             model = model_name or self.DEFAULT_MODELS.get(provider, "gpt-3.5-turbo")
             litellm_model = self._format_model_name(model, provider)
+            await self._assert_safe_api_base(provider, api_url)
 
             available_models: list[str] = []
             if provider == "ollama":

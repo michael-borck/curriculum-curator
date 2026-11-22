@@ -14,6 +14,10 @@ class Settings(BaseSettings):
 
     # Local Mode - privacy-first local deployment (no login required)
     LOCAL_MODE: bool = False
+    # When set, LOCAL_MODE requests must also present this token in the
+    # X-Desktop-Token header. The desktop app generates a fresh one per launch
+    # so other local processes cannot use the unauthenticated API.
+    DESKTOP_TOKEN: str | None = None
 
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production"
@@ -26,6 +30,9 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str | None = None
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # httpOnly session cookie (web) + readable double-submit CSRF cookie.
+    SESSION_COOKIE_NAME: str = "cc_session"
+    CSRF_COOKIE_NAME: str = "cc_csrf"
 
     # Public domain(s) the app is served from — bare hostnames, comma-separated
     # (e.g. "curriculum.example.com" or "app.example.com,www.example.com").
