@@ -27,6 +27,8 @@ from app.schemas.ai import (
     FillGapResponse,
     GenerateBranchingRequest,
     GenerateBranchingResponse,
+    GenerateFlashcardsRequest,
+    GenerateFlashcardsResponse,
     GenerateImageRequest,
     GenerateImageResponse,
     GenerateQuizRequest,
@@ -37,6 +39,7 @@ from app.schemas.ai import (
     GenerateVideoInteractionResponse,
     LessonPlanRequest,
     LessonPlanResponse,
+    RefineLessonPlanRequest,
     RestructureContentRequest,
     RestructureContentResponse,
     ScaffoldUnitRequest,
@@ -71,6 +74,7 @@ from app.schemas.llm import (
 from app.services.ai_prompts import (
     BRANCHING_SYSTEM,
     FILL_GAP_SYSTEM,
+    FLASHCARDS_SYSTEM,
     FRAMEWORKS,
     LESSON_PLAN_SYSTEM,
     QUIZ_SYSTEM,
@@ -87,8 +91,10 @@ from app.services.ai_prompts import (
     ValidationCheck,
     render_branching_prompt,
     render_fill_gap_prompt,
+    render_flashcards_prompt,
     render_lesson_plan_prompt,
     render_quiz_prompt,
+    render_refine_lesson_plan_prompt,
     render_remediate_prompt,
     render_scaffold_unit_prompt,
     render_schedule_prompt,
@@ -1403,6 +1409,44 @@ async def generate_branching(
 
 
 @router.post(
+    "/materials/{material_id}/generate-flashcards",
+    response_model=GenerateFlashcardsResponse,
+)
+async def generate_flashcards(
+    body: GenerateFlashcardsRequest,
+    material: WeeklyMaterial = Depends(deps.get_user_material),
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+) -> GenerateFlashcardsResponse:
+    """Draft study flashcards from a material for retrieval practice."""
+    text = flatten_content_to_text(material.content_json)
+    if not text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Material has no text content to write flashcards from",
+        )
+    pedagogy_instruction = build_pedagogy_instruction(
+        fallback_style=material.unit.pedagogy_type
+    )
+    prompt = render_flashcards_prompt(text, body.count, pedagogy_instruction)
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=GenerateFlashcardsResponse,
+        system_prompt=FLASHCARDS_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=6000,
+    )
+    if error or result is None:
+        logger.error("Flashcard generation failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Flashcard generation failed",
+        )
+    return result
+
+
+@router.post(
     "/materials/{material_id}/generate-quiz",
     response_model=GenerateQuizResponse,
 )
@@ -1459,6 +1503,33 @@ async def generate_quiz(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=error or "Quiz generation produced no questions",
+        )
+    return result
+
+
+@router.post("/refine-lesson-plan", response_model=LessonPlanResponse)
+async def refine_lesson_plan(
+    body: RefineLessonPlanRequest,
+    current_user: User = Depends(deps.get_current_active_user),
+    db: Session = Depends(deps.get_db),
+) -> LessonPlanResponse:
+    """Revise an existing lesson plan with a natural-language instruction."""
+    prompt = render_refine_lesson_plan_prompt(
+        body.plan.model_dump_json(), body.instruction
+    )
+    result, error = await llm_service.generate_structured_content(
+        prompt=prompt,
+        response_model=LessonPlanResponse,
+        system_prompt=LESSON_PLAN_SYSTEM,
+        user=current_user,
+        db=db,
+        max_tokens=8192,
+    )
+    if error or result is None:
+        logger.error("Lesson-plan refinement failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Lesson-plan refinement failed",
         )
     return result
 

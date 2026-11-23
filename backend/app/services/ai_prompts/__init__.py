@@ -15,10 +15,15 @@ from app.services.ai_prompts.fill_gap import (
     FILL_GAP_SYSTEM,
     render_fill_gap_prompt,
 )
+from app.services.ai_prompts.flashcards import (
+    FLASHCARDS_SYSTEM,
+    render_flashcards_prompt,
+)
 from app.services.ai_prompts.lesson_plan import (
     FRAMEWORKS,
     LESSON_PLAN_SYSTEM,
     render_lesson_plan_prompt,
+    render_refine_lesson_plan_prompt,
 )
 from app.services.ai_prompts.quiz_gen import (
     QUIZ_SYSTEM,
@@ -67,6 +72,7 @@ from app.services.ai_prompts.visual import (
 __all__ = [
     "BRANCHING_SYSTEM",
     "FILL_GAP_SYSTEM",
+    "FLASHCARDS_SYSTEM",
     "FRAMEWORKS",
     "LESSON_PLAN_SYSTEM",
     "QUIZ_SYSTEM",
@@ -83,8 +89,10 @@ __all__ = [
     "ValidationCheck",
     "render_branching_prompt",
     "render_fill_gap_prompt",
+    "render_flashcards_prompt",
     "render_lesson_plan_prompt",
     "render_quiz_prompt",
+    "render_refine_lesson_plan_prompt",
     "render_remediate_prompt",
     "render_scaffold_unit_prompt",
     "render_schedule_prompt",

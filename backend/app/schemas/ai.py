@@ -331,6 +331,20 @@ class QuizOptionDraft(CamelModel):
     correct: bool
 
 
+class Flashcard(CamelModel):
+    front: str
+    back: str
+
+
+class GenerateFlashcardsRequest(CamelModel):
+    count: int = Field(default=10, ge=1, le=30)
+
+
+class GenerateFlashcardsResponse(CamelModel):
+    title: str
+    cards: list[Flashcard]
+
+
 class QuizQuestionDraft(CamelModel):
     question_type: str
     question_text: str
@@ -394,3 +408,8 @@ class LessonPlanResponse(CamelModel):
     differentiation_notes: str
     materials_checklist: list[str]
     homework_bridge: str
+
+
+class RefineLessonPlanRequest(CamelModel):
+    plan: LessonPlanResponse
+    instruction: str = Field(..., min_length=1, max_length=2000)

@@ -9,6 +9,7 @@ import {
   Save,
   Sparkles,
   Wand2,
+  Layers,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Editor } from '@tiptap/core';
@@ -17,6 +18,7 @@ import SpeakerNotesGenerateDialog from '../components/Editor/SpeakerNotesGenerat
 import BranchingGenerateDialog from '../components/Editor/BranchingGenerateDialog';
 import QuizGenerateDialog from '../components/Editor/QuizGenerateDialog';
 import LessonPlanDialog from '../components/Editor/LessonPlanDialog';
+import FlashcardGenerateDialog from '../components/Editor/FlashcardGenerateDialog';
 import RestructureDialog from '../components/Editor/RestructureDialog';
 import SourceFilesPanel from '../components/Editor/SourceFilesPanel';
 import { materialsApi } from '../services/materialsApi';
@@ -38,6 +40,7 @@ import {
 import {
   appendBranchingCards,
   appendQuizQuestions,
+  flashcardsToNodes,
   lessonPlanToNodes,
 } from '../utils/generatedContent';
 import { useAILevel } from '../hooks/useAILevel';
@@ -71,6 +74,7 @@ const MaterialEditorPage: React.FC = () => {
   const [branchingOpen, setBranchingOpen] = useState(false);
   const [quizOpen, setQuizOpen] = useState(false);
   const [lessonPlanOpen, setLessonPlanOpen] = useState(false);
+  const [flashcardsOpen, setFlashcardsOpen] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -255,6 +259,14 @@ const MaterialEditorPage: React.FC = () => {
                 Quiz with AI
               </button>
               <button
+                onClick={() => setFlashcardsOpen(true)}
+                className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
+                title='Draft study flashcards from this material with AI, reviewed before inserting'
+              >
+                <Layers className='w-4 h-4' />
+                Flashcards
+              </button>
+              <button
                 onClick={() => setLessonPlanOpen(true)}
                 className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100'
                 title='Generate a timed lesson plan (Gagné / BOPPPS / 5E) from this material, reviewed before inserting'
@@ -385,6 +397,24 @@ const MaterialEditorPage: React.FC = () => {
             );
           }}
           onClose={() => setQuizOpen(false)}
+        />
+      )}
+
+      {flashcardsOpen && materialId && editorRef.current && (
+        <FlashcardGenerateDialog
+          materialId={materialId}
+          onApply={deck => {
+            const editor = editorRef.current;
+            if (!editor) return;
+            const current = editor.getJSON();
+            const nodes = flashcardsToNodes(deck);
+            editor.commands.setContent(
+              { ...current, content: [...(current.content ?? []), ...nodes] },
+              { emitUpdate: true }
+            );
+            toast.success('Flashcards inserted — remember to save');
+          }}
+          onClose={() => setFlashcardsOpen(false)}
         />
       )}
 

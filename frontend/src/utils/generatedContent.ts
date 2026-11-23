@@ -62,6 +62,30 @@ export function appendBranchingCards(
 }
 
 /** Append generated quiz questions to the end of the document. */
+export function flashcardsToNodes(deck: {
+  title: string;
+  cards: { front: string; back: string }[];
+}): JsonNode[] {
+  const cell = (text: string, header = false): JsonNode => ({
+    type: header ? 'tableHeader' : 'tableCell',
+    content: [paragraph(text)],
+  });
+  const rows: JsonNode[] = [
+    {
+      type: 'tableRow',
+      content: [cell('Front', true), cell('Back', true)],
+    },
+    ...deck.cards.map(card => ({
+      type: 'tableRow',
+      content: [cell(card.front), cell(card.back)],
+    })),
+  ];
+  return [
+    heading(2, deck.title || 'Study flashcards'),
+    { type: 'table', content: rows },
+  ];
+}
+
 export function appendQuizQuestions(
   contentJson: DocJson,
   questions: QuizQuestionDraft[]

@@ -35,6 +35,8 @@ const LessonPlanDialog: React.FC<LessonPlanDialogProps> = ({
   const [classSize, setClassSize] = useState('');
   const [deliveryMode, setDeliveryMode] = useState('');
   const [plan, setPlan] = useState<LessonPlanResponse | null>(null);
+  const [refinement, setRefinement] = useState('');
+  const [refining, setRefining] = useState(false);
 
   useEffect(() => {
     aiApi
@@ -66,6 +68,21 @@ const LessonPlanDialog: React.FC<LessonPlanDialogProps> = ({
     } catch {
       toast.error('Failed to generate lesson plan');
       setStage('options');
+    }
+  };
+
+  const handleRefine = async () => {
+    if (!plan || !refinement.trim()) return;
+    setRefining(true);
+    try {
+      const { data } = await aiApi.refineLessonPlan(plan, refinement.trim());
+      setPlan(data);
+      setRefinement('');
+      toast.success('Plan updated');
+    } catch {
+      toast.error('Could not refine the plan');
+    } finally {
+      setRefining(false);
     }
   };
 
@@ -219,6 +236,30 @@ const LessonPlanDialog: React.FC<LessonPlanDialogProps> = ({
                   ))}
                 </ul>
               </div>
+              <div className='border border-gray-200 rounded-lg p-3 space-y-2'>
+                <label className='block text-xs font-medium text-gray-600'>
+                  Refine this plan
+                </label>
+                <textarea
+                  value={refinement}
+                  onChange={e => setRefinement(e.target.value)}
+                  rows={2}
+                  placeholder='e.g. shorten the lecture, add a pair activity, more scaffolding for the final task'
+                  className='w-full border border-gray-300 rounded-md px-3 py-2 text-sm'
+                />
+                <button
+                  type='button'
+                  onClick={() => void handleRefine()}
+                  disabled={refining || !refinement.trim()}
+                  className='inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 disabled:opacity-50'
+                >
+                  {refining ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : null}
+                  Apply refinement
+                </button>
+              </div>
+
               {plan.differentiationNotes && (
                 <div className='bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800'>
                   <span className='font-medium'>Differentiation: </span>

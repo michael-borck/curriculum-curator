@@ -161,6 +161,16 @@ export interface LessonPlanFormativeCheck {
   misconceptions: string[];
 }
 
+export interface Flashcard {
+  front: string;
+  back: string;
+}
+
+export interface FlashcardDeck {
+  title: string;
+  cards: Flashcard[];
+}
+
 export interface LessonPlanResponse {
   title: string;
   objectives: LessonPlanObjective[];
@@ -247,6 +257,14 @@ export const aiApi = {
     );
   },
 
+  /** Draft study flashcards from a material. */
+  generateFlashcards(materialId: string, count: number) {
+    return api.post<FlashcardDeck>(
+      `/ai/materials/${materialId}/generate-flashcards`,
+      { count }
+    );
+  },
+
   /** List lesson-plan frameworks with when-to-use guidance (5.13). */
   listLessonPlanFrameworks() {
     return api.get<Record<string, LessonPlanFramework>>(
@@ -263,5 +281,13 @@ export const aiApi = {
     deliveryMode?: string | undefined;
   }) {
     return api.post<LessonPlanResponse>('/ai/generate-lesson-plan', data);
+  },
+
+  /** Revise a generated plan with a natural-language instruction. */
+  refineLessonPlan(plan: LessonPlanResponse, instruction: string) {
+    return api.post<LessonPlanResponse>('/ai/refine-lesson-plan', {
+      plan,
+      instruction,
+    });
   },
 };
