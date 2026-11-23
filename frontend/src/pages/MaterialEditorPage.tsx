@@ -45,7 +45,10 @@ import {
   lessonPlanToNodes,
 } from '../utils/generatedContent';
 import { useAILevel } from '../hooks/useAILevel';
-import { downloadNarratedDeck } from '../utils/downloadExport';
+import {
+  downloadBranchingStory,
+  downloadNarratedDeck,
+} from '../utils/downloadExport';
 
 /**
  * Full-page content editor for a single weekly material.
@@ -78,6 +81,7 @@ const MaterialEditorPage: React.FC = () => {
   const [lessonPlanOpen, setLessonPlanOpen] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
   const [narrating, setNarrating] = useState(false);
+  const [exportingStory, setExportingStory] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -277,6 +281,49 @@ const MaterialEditorPage: React.FC = () => {
                 <BookOpen className='w-4 h-4' />
                 Lesson plan
               </button>
+              {materialId &&
+                JSON.stringify(liveJson).includes('"branchingCard"') && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        setExportingStory(true);
+                        try {
+                          await downloadBranchingStory(materialId, 'html');
+                          toast.success('Playable story downloaded');
+                        } catch {
+                          toast.error('Could not export the story');
+                        } finally {
+                          setExportingStory(false);
+                        }
+                      }}
+                      disabled={exportingStory}
+                      className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50'
+                      title='Download a self-contained playable HTML story'
+                    >
+                      <Download className='w-4 h-4' />
+                      Story HTML
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setExportingStory(true);
+                        try {
+                          await downloadBranchingStory(materialId, 'ink');
+                          toast.success('Ink source downloaded');
+                        } catch {
+                          toast.error('Could not export the story');
+                        } finally {
+                          setExportingStory(false);
+                        }
+                      }}
+                      disabled={exportingStory}
+                      className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50'
+                      title='Download an Ink source file'
+                    >
+                      <Download className='w-4 h-4' />
+                      Story Ink
+                    </button>
+                  </>
+                )}
               {materialId && (
                 <button
                   onClick={async () => {

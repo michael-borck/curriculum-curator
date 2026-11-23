@@ -135,6 +135,39 @@ const BranchingMapDialog: React.FC<BranchingMapDialogProps> = ({
     return { deadEnds: deadEndSet, orphans: orphanSet };
   }, [cards, edges]);
 
+  // Structural health beyond the visual dead-end/orphan markers.
+  const health = useMemo(() => {
+    const ids = cards.map(card => card.cardId);
+    const idSet = new Set(ids);
+    const duplicateIds = [
+      ...new Set(ids.filter((id, i) => ids.indexOf(id) !== i)),
+    ];
+    const brokenTargets: string[] = [];
+    const emptyChoiceCards = new Set<string>();
+    for (const edge of edges) {
+      if (!idSet.has(edge.to)) brokenTargets.push(`${edge.from} → ${edge.to}`);
+    }
+    editor.state.doc.descendants(node => {
+      if (node.type.name !== 'branchingCard') return;
+      const cardId = node.attrs.cardId as string;
+      for (const choice of (node.attrs.choices || []) as BranchingChoice[]) {
+        if (
+          !(choice.text || '').trim() ||
+          !(choice.targetCardId || '').trim()
+        ) {
+          emptyChoiceCards.add(cardId);
+        }
+      }
+    });
+    const endings = cards.filter(card => card.cardType === 'ending').length;
+    return {
+      duplicateIds,
+      brokenTargets,
+      emptyChoiceCards: [...emptyChoiceCards],
+      endings,
+    };
+  }, [cards, edges, editor.state.doc]);
+
   // Layout with dagre
   const layout = useMemo(() => {
     const g = new dagre.graphlib.Graph();
@@ -250,6 +283,39 @@ const BranchingMapDialog: React.FC<BranchingMapDialogProps> = ({
                   Orphan
                 </span>
               )}
+            </div>
+
+            <div
+              className={`mb-3 rounded-lg border p-3 text-xs ${
+                deadEnds.size === 0 &&
+                orphans.size === 0 &&
+                health.brokenTargets.length === 0 &&
+                health.emptyChoiceCards.length === 0 &&
+                health.duplicateIds.length === 0 &&
+                health.endings > 0
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : 'border-amber-200 bg-amber-50 text-amber-800'
+              }`}
+            >
+              <div className='font-medium mb-1'>Story health</div>
+              <div className='grid gap-1 sm:grid-cols-2'>
+                <span>Cards: {cards.length}</span>
+                <span>Endings: {health.endings}</span>
+                <span>Dead ends: {deadEnds.size}</span>
+                <span>Unreachable: {orphans.size}</span>
+                <span>Broken targets: {health.brokenTargets.length}</span>
+                <span>Empty choices: {health.emptyChoiceCards.length}</span>
+                <span>Duplicate IDs: {health.duplicateIds.length}</span>
+              </div>
+              {health.brokenTargets.length > 0 && (
+                <p className='mt-1'>
+                  Broken: {health.brokenTargets.join(', ')}
+                </p>
+              )}
+              {health.emptyChoiceCards.length > 0 && (
+                <p>Empty choices on: {health.emptyChoiceCards.join(', ')}</p>
+              )}
+              {health.endings === 0 && <p>No ending cards yet.</p>}
             </div>
 
             <svg

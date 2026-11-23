@@ -19,6 +19,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_user_material, get_user_unit
 from app.models.weekly_material import WeeklyMaterial
 from app.schemas.unit import UnitResponse
+from app.services.branching_export_service import (
+    build_ink_source,
+    build_playable_html,
+)
 from app.services.export import (
     ExportContentError,
     ExportOptions,
@@ -93,6 +97,35 @@ async def export_unit(
     """Export a whole unit in the given format (e.g. scorm, imscc, qti, html)."""
     return await _dispatch(
         export_format, ExportScope.UNIT, str(unit.id), db, target_lms
+    )
+
+
+@router.get("/materials/{material_id}/export/branching")
+async def export_branching_story(
+    material: Annotated[WeeklyMaterial, Depends(get_user_material)],
+    export_format: str = Query("html", alias="format", pattern="^(html|ink)$"),
+):
+    """Download a playable HTML story or an Ink source file."""
+    html = export_format == "html"
+    content = build_playable_html(material) if html else build_ink_source(material)
+    if not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This material has no branching cards",
+        )
+    safe_title = "".join(
+        char if char.isalnum() or char in " -_" else "_"
+        for char in (material.title or "branching-story")
+    ).strip() or "branching-story"
+    extension = "html" if html else "ink"
+    return Response(
+        content=content,
+        media_type="text/html" if html else "text/plain",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{safe_title}-story.{extension}"'
+            )
+        },
     )
 
 

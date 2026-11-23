@@ -147,3 +147,34 @@ export async function downloadNarratedDeck(
   a.remove();
   return filename;
 }
+
+/** Download a branching story as playable HTML or Ink source. */
+export async function downloadBranchingStory(
+  materialId: string,
+  format: 'html' | 'ink'
+): Promise<string> {
+  const response = await axios.get(
+    `${API_ORIGIN}/api/materials/${materialId}/export/branching`,
+    {
+      params: { format },
+      responseType: 'blob',
+      headers: getAuthHeaders(),
+      withCredentials: true,
+    }
+  );
+  const disposition = response.headers['content-disposition'] as
+    | string
+    | undefined;
+  const filename =
+    disposition?.match(/filename="?([^"]+)"?/)?.[1] ??
+    `branching-story.${format}`;
+  const url = URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+  return filename;
+}
