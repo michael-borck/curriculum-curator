@@ -8,7 +8,7 @@
 services:
   app:
     # Pin an exact version — roll forward deliberately, never via :latest.
-    image: ghcr.io/michael-borck/curriculum-curator:0.7.10@sha256:85023c6119f8b3304742d9b99fa5fb66c26ef355c0ec57ec2b0cf24e0312f2bd
+    image: ghcr.io/michael-borck/curriculum-curator:0.8.0@sha256:696b68fb19b3da616af290c9b6d4c43d7d5a035b8ea65379bd000105b422e0e1
     container_name: curriculum-curator
     restart: unless-stopped
     ports:

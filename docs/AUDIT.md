@@ -82,7 +82,7 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
    `will-navigate` allowlist http/https/mailto; IPC handlers check the sender;
    startup fails visibly instead of showing a dead window.
 8. **Deploy/CI** — both compose files bind app and Ollama to 127.0.0.1;
-   production compose pins image `0.7.10` and drops the Watchtower auto-update
+   production compose pins image `0.8.0` and drops the Watchtower auto-update
    label; Dockerfile uses `python:3.13-slim`, `uv sync --frozen --no-dev`,
    `npm ci`, and `.dockerignore` excludes `**/.env`; CI actions are pinned by
    commit SHA, PRs build the Docker image and desktop app, image publishing
