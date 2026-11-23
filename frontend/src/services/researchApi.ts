@@ -18,6 +18,8 @@ import type {
   ApplyReadingListRequest,
   ApplyReadingListResponse,
   ResearchSettings,
+  SourceVerification,
+  VerifySourcesResponse,
 } from '../types/research';
 
 // Phase 1: Academic Search
@@ -27,6 +29,15 @@ export const searchAcademic = async (
 ): Promise<AcademicSearchResponse> => {
   const res = await api.post('/research/search', req);
   return res.data;
+};
+
+export const verifySources = async (
+  items: { title: string; url?: string; doi?: string }[]
+): Promise<SourceVerification[]> => {
+  const res = await api.post<VerifySourcesResponse>('/research/verify', {
+    items,
+  });
+  return res.data.results;
 };
 
 export const getAvailableTiers = async (): Promise<AvailableTiersResponse> => {

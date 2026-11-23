@@ -5,6 +5,10 @@ export interface SaveFromSearchRequest {
   title: string;
   summary?: string | undefined;
   academicScore?: number | undefined;
+  doi?: string | undefined;
+  verificationStatus?: string | undefined;
+  verificationNote?: string | undefined;
+  verifiedUrl?: string | undefined;
   tags?: string[] | undefined;
   unitId?: string | undefined;
 }
@@ -17,6 +21,9 @@ export interface ResearchSourceResponse {
   title: string;
   summary?: string | undefined;
   academicScore: number;
+  verificationStatus?: string | undefined;
+  verificationNote?: string | undefined;
+  verifiedUrl?: string | undefined;
   isFavorite: boolean;
   createdAt: string;
   updatedAt?: string | undefined;

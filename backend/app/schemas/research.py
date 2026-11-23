@@ -241,6 +241,29 @@ class SearchApiKeys(CamelModel):
     core_api_key: str | None = None
 
 
+class VerifySourceItem(CamelModel):
+    title: str = Field(default="", max_length=1000)
+    url: str | None = Field(default=None, max_length=2000)
+    doi: str | None = Field(default=None, max_length=300)
+
+
+class SourceVerification(CamelModel):
+    title: str = ""
+    status: str  # verified | restricted | not_found | unchecked | error
+    reason: str = ""
+    doi: str | None = None
+    resolved_url: str | None = None
+    checked_url: str | None = None
+
+
+class VerifySourcesRequest(CamelModel):
+    items: list[VerifySourceItem] = Field(..., min_length=1, max_length=20)
+
+
+class VerifySourcesResponse(CamelModel):
+    results: list[SourceVerification]
+
+
 class ResearchSettings(CamelModel):
     """User's research preferences."""
 

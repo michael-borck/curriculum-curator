@@ -12,6 +12,9 @@ import {
   Award,
   Bookmark,
   BookmarkCheck,
+  BadgeCheck,
+  ShieldAlert,
+  ShieldQuestion,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import * as researchApi from '../../services/researchApi';
@@ -21,6 +24,7 @@ import ProposalReview from './ProposalReview';
 import type { ActionParams } from './SourceSelector';
 import type {
   AcademicSearchResultItem,
+  SourceVerification,
   TierInfo,
   SourceInput,
   ResearchStage,
@@ -44,6 +48,10 @@ const SearchPanel = () => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
+  const [verifications, setVerifications] = useState<
+    Record<string, SourceVerification>
+  >({});
+  const [verifying, setVerifying] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [proposing, setProposing] = useState(false);
@@ -95,13 +103,53 @@ const SearchPanel = () => {
     });
   };
 
+  const handleVerify = async () => {
+    const batch = results.slice(0, 20);
+    setVerifying(true);
+    try {
+      const verified = await researchApi.verifySources(
+        batch.map(item => ({
+          title: item.title,
+          url: item.url,
+          ...(item.doi ? { doi: item.doi } : {}),
+        }))
+      );
+      const next: Record<string, SourceVerification> = {};
+      batch.forEach((item, index) => {
+        if (verified[index]) next[item.url] = verified[index];
+      });
+      setVerifications(prev => ({ ...prev, ...next }));
+      toast.success(`Checked ${verified.length} source(s)`);
+    } catch {
+      toast.error('Could not verify sources');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleSaveSource = async (item: AcademicSearchResultItem) => {
     try {
+      const verification = verifications[item.url];
       await saveFromSearch({
         url: item.url,
         title: item.title,
         summary: item.abstract,
         academicScore: item.academicScore,
+        ...(item.doi ? { doi: item.doi } : {}),
+        ...(verification
+          ? {
+              verificationStatus: verification.status,
+              verificationNote: verification.reason,
+              ...(verification.resolvedUrl || verification.checkedUrl
+                ? {
+                    verifiedUrl:
+                      verification.resolvedUrl ||
+                      verification.checkedUrl ||
+                      undefined,
+                  }
+                : {}),
+            }
+          : {}),
       });
       setSavedUrls(prev => new Set(prev).add(item.url));
       toast.success('Source saved');
@@ -315,6 +363,13 @@ const SearchPanel = () => {
                 </button>
               )}
               <button
+                onClick={() => void handleVerify()}
+                disabled={verifying || results.length === 0}
+                className='px-4 py-1.5 text-sm border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-50 disabled:opacity-50'
+              >
+                {verifying ? 'Verifying…' : 'Verify sources'}
+              </button>
+              <button
                 onClick={handleReset}
                 className='px-4 py-1.5 text-gray-600 text-sm border rounded-lg hover:bg-gray-50 transition'
               >
@@ -357,6 +412,29 @@ const SearchPanel = () => {
                             <Award className='w-3 h-3' />
                             {(item.academicScore * 100).toFixed(0)}
                           </span>
+                          {verifications[item.url] && (
+                            <span
+                              title={verifications[item.url].reason}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                                verifications[item.url].status === 'verified'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : verifications[item.url].status ===
+                                      'restricted'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-red-50 text-red-700'
+                              }`}
+                            >
+                              {verifications[item.url].status === 'verified' ? (
+                                <BadgeCheck className='w-3 h-3' />
+                              ) : verifications[item.url].status ===
+                                'restricted' ? (
+                                <ShieldAlert className='w-3 h-3' />
+                              ) : (
+                                <ShieldQuestion className='w-3 h-3' />
+                              )}
+                              {verifications[item.url].status.replace('_', ' ')}
+                            </span>
+                          )}
                           <button
                             onClick={e => {
                               e.stopPropagation();

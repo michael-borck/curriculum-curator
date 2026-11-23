@@ -101,6 +101,14 @@ class ResearchSource(Base):
     )  # JSON array of strings
     academic_score: Mapped[float] = mapped_column(Float, default=0.0)
 
+    # Verification (reading lists): whether the DOI/URL actually resolves.
+    verification_status: Mapped[str] = mapped_column(
+        String(20), default="unchecked", nullable=False
+    )
+    verification_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    verified_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     # Usage tracking
     usage_count: Mapped[int] = mapped_column(Integer, default=0)
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

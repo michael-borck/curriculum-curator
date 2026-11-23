@@ -89,6 +89,10 @@ class ResearchSourceResponse(ResearchSourceBase):
     user_id: str
     unit_id: str | None
     academic_score: float = Field(default=0.0, description="Academic credibility score")
+    verification_status: str = "unchecked"
+    verification_note: str | None = None
+    verified_url: str | None = None
+    verified_at: datetime | None = None
     usage_count: int = Field(default=0, description="Number of times source was used")
     last_used_at: datetime | None = None
     is_favorite: bool = False
@@ -154,7 +158,11 @@ class SaveFromSearchRequest(CamelModel):
 
     url: str = Field(..., description="URL of the source")
     title: str = Field(..., description="Title from search results")
+    doi: str | None = Field(None, max_length=300)
     summary: str | None = Field(None, description="Summary from search/AI")
+    verification_status: str | None = Field(None, max_length=20)
+    verification_note: str | None = Field(None, max_length=2000)
+    verified_url: str | None = Field(None, max_length=2000)
     key_points: list[str] = Field(
         default_factory=list, description="Key points from AI summarization"
     )

@@ -4,11 +4,14 @@ Research routes — academic search, URL extraction, outline synthesis, settings
 
 import logging
 import uuid
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.rate_limiter import RateLimits, limiter
 from app.models.assessment import Assessment
 from app.models.learning_outcome import UnitLearningOutcome
 from app.models.research_source import ResearchSource
@@ -31,13 +34,18 @@ from app.schemas.research import (
     MatchReadingListRequest,
     ResearchSettings,
     ScaffoldFromSourcesRequest,
+    SourceVerification,
     TierInfo,
     UrlExtractRequest,
     UrlExtractResponse,
+    VerifySourceItem,
+    VerifySourcesRequest,
+    VerifySourcesResponse,
 )
 from app.schemas.user import UserResponse
 from app.services.outline_synthesis_service import outline_synthesis_service
 from app.services.search_router import SearchTier, search_router
+from app.services.source_verification_service import verify_source
 from app.services.url_extraction_service import url_extraction_service
 
 logger = logging.getLogger(__name__)
@@ -377,11 +385,17 @@ async def apply_reading_list(
     unit = deps.require_unit_owner(db, str(proposal.unit_id), current_user)
 
     saved_sources: list[dict[str, object]] = []
+    verification_counts: dict[str, int] = {}
 
     for match in proposal.matches:
         week = match.assigned_week or match.suggested_week
         if match.skipped:
             continue
+
+        verification = await verify_source(match.title, match.url, None)
+        verification_counts[verification["status"]] = (
+            verification_counts.get(verification["status"], 0) + 1
+        )
 
         if request.save_as_sources:
             source = ResearchSource(
@@ -393,6 +407,13 @@ async def apply_reading_list(
                 source_type="website",
                 academic_score=match.confidence,
                 notes=match.reasoning,
+                verification_status=verification["status"],
+                verification_note=verification.get("reason"),
+                verified_url=verification.get("resolved_url")
+                or verification.get("checked_url"),
+                verified_at=datetime.now(UTC)
+                if verification["status"] == "verified"
+                else None,
             )
             db.add(source)
             db.flush()
@@ -429,7 +450,37 @@ async def apply_reading_list(
 
     db.commit()
 
-    return {"saved_sources": saved_sources}
+    return {
+        "saved_sources": saved_sources,
+        "verification": verification_counts,
+    }
+
+
+# =============================================================================
+# Source verification (reading lists)
+# =============================================================================
+
+
+@router.post("/verify", response_model=VerifySourcesResponse)
+@limiter.limit(RateLimits.API_READ)
+async def verify_sources(
+    request: Request,
+    body: VerifySourcesRequest,
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Check that a batch of sources exists (DOI via Crossref, else URL)."""
+    import asyncio  # noqa: PLC0415
+
+    semaphore = asyncio.Semaphore(5)
+
+    async def one(item: VerifySourceItem) -> dict[str, Any]:
+        async with semaphore:
+            return await verify_source(item.title, item.url, item.doi)
+
+    results = await asyncio.gather(*(one(item) for item in body.items))
+    return VerifySourcesResponse(
+        results=[SourceVerification(**result) for result in results]
+    )
 
 
 # =============================================================================

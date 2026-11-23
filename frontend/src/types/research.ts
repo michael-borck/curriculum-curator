@@ -54,6 +54,19 @@ export interface TierInfo {
   reason?: string | undefined;
 }
 
+export interface SourceVerification {
+  title: string;
+  status: 'verified' | 'restricted' | 'not_found' | 'unchecked' | 'error';
+  reason: string;
+  doi?: string | null;
+  resolvedUrl?: string | null;
+  checkedUrl?: string | null;
+}
+
+export interface VerifySourcesResponse {
+  results: SourceVerification[];
+}
+
 export interface AvailableTiersResponse {
   tiers: TierInfo[];
 }

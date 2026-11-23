@@ -83,6 +83,21 @@ def _ensure_sqlite_schema() -> None:
             if name not in existing:
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {ddl}"))
 
+    research_columns = {
+        "verification_status": "VARCHAR(20) NOT NULL DEFAULT 'unchecked'",
+        "verification_note": "TEXT",
+        "verified_url": "VARCHAR(2000)",
+        "verified_at": "DATETIME",
+    }
+    with engine.begin() as conn:
+        rows = conn.execute(text("PRAGMA table_info(research_sources)")).fetchall()
+        existing = {row[1] for row in rows}
+        for name, ddl in research_columns.items():
+            if rows and name not in existing:
+                conn.execute(
+                    text(f"ALTER TABLE research_sources ADD COLUMN {name} {ddl}")
+                )
+
     # Verification/reset codes changed from plaintext to hashes; the data is
     # short-lived, so rebuilding these tables is safe and simpler than a
     # multi-step column rename in SQLite.
