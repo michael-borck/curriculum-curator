@@ -93,6 +93,7 @@ dependencies = [
     # Video transcript extraction
     "youtube-transcript-api>=0.6.1",
     "pyotp>=2.12.1",
+    "webauthn>=3.0.1",
 ]
 
 [project.optional-dependencies]

@@ -17,6 +17,7 @@ import {
   Building2,
   Monitor,
   ShieldCheck,
+  Fingerprint,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -34,6 +35,8 @@ import CurtinSettings from './CurtinSettings';
 import CLOSetManager from './CLOSetManager';
 import DesktopSettings from './DesktopSettings';
 import TOTPSettings from './TOTPSettings';
+import PasskeySettings from './PasskeySettings';
+import { isDesktopClient } from '../../services/authSession';
 
 const Settings = () => {
   const { user, isLocalMode } = useAuthStore();
@@ -166,6 +169,9 @@ const Settings = () => {
     { id: 'security', label: 'Security', icon: Shield },
     ...(!isLocalMode
       ? [{ id: 'mfa', label: 'Two-Factor', icon: ShieldCheck }]
+      : []),
+    ...(!isLocalMode && !isDesktopClient()
+      ? [{ id: 'passkeys', label: 'Passkeys', icon: Fingerprint }]
       : []),
     { id: 'llm', label: 'AI/LLM Settings', icon: Brain },
     { id: 'quality-rating', label: 'Quality Rating', icon: Star },
@@ -447,6 +453,8 @@ const Settings = () => {
           )}
 
           {activeTab === 'mfa' && <TOTPSettings />}
+
+          {activeTab === 'passkeys' && <PasskeySettings />}
 
           {activeTab === 'llm' && <LLMSettings />}
 

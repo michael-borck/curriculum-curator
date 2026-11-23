@@ -57,6 +57,9 @@ jobs:
           uv run --frozen pytest -q -m "not slow" \
             --cov=app --cov-report=term-missing --cov-fail-under=60
 
+      - name: Dependency audit (Python)
+        run: uv run --with pip-audit -- pip-audit
+
   frontend:
     name: Frontend (lint, types, build, tests)
     runs-on: ubuntu-latest
@@ -76,6 +79,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -109,6 +115,9 @@ jobs:
         run: |
           npm ci --prefix frontend
           npm ci --prefix desktop
+
+      - name: Dependency audit (desktop)
+        run: npm audit --prefix desktop --audit-level=high
 
       - name: Type check desktop
         run: npm run type-check --prefix desktop

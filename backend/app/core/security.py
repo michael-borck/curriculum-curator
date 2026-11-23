@@ -162,6 +162,38 @@ def decode_mfa_token(
     return payload
 
 
+def create_webauthn_challenge(
+    kind: str, challenge_b64: str, user_id: str | None = None
+) -> str:
+    """Short-lived signed challenge for a WebAuthn options/verify round-trip."""
+    now = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "type": f"webauthn:{kind}",
+        "challenge": challenge_b64,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=5)).timestamp()),
+        "jti": str(uuid.uuid4()),
+    }
+    if user_id:
+        payload["sub"] = user_id
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_webauthn_challenge(token: str, kind: str) -> dict[str, Any] | None:
+    try:
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
+    except jwt.PyJWTError:
+        return None
+    if payload.get("type") != f"webauthn:{kind}":
+        return None
+    jti = payload.get("jti", "")
+    if jti and is_token_blacklisted(jti):
+        return None
+    return payload
+
+
 def create_refresh_token(user_id: str, client_ip: str | None = None) -> str:
     """
     Create a refresh token for JWT token renewal.

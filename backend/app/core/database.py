@@ -129,6 +129,7 @@ def init_db() -> None:
     from app.models.security_log import SecurityLog
     from app.models.unit import Unit
     from app.models.user import User
+    from app.models.webauthn_credential import WebAuthnCredential
 
     # Reference all models to satisfy linters (imports have side effects)
     _ = (
@@ -137,6 +138,7 @@ def init_db() -> None:
         LoginAttempt,
         LoginToken,
         PasswordReset,
+        WebAuthnCredential,
         PluginConfiguration,
         SecurityLog,
         Unit,

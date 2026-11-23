@@ -4,6 +4,7 @@ import { ArrowLeft, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { startAuthentication } from '@simplewebauthn/browser';
 import RegistrationModal from './RegistrationModal';
 import PasswordResetFlow from './PasswordResetFlow';
 import VerificationModal from './VerificationModal';
@@ -73,6 +74,26 @@ const Login = ({ onBackToLanding }: LoginProps) => {
       setError(
         'That code was not accepted. Try the next code or a recovery code.'
       );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithPasskey = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const optionsRes = await api.post('/auth/passkeys/login/options');
+      const credential = await startAuthentication({
+        optionsJSON: optionsRes.data.options,
+      });
+      const res = await api.post('/auth/passkeys/login/verify', {
+        credential,
+        challengeToken: optionsRes.data.challengeToken,
+      });
+      completeLogin(res.data);
+    } catch {
+      setError('Passkey sign-in was cancelled or failed');
     } finally {
       setIsLoading(false);
     }
@@ -283,17 +304,29 @@ const Login = ({ onBackToLanding }: LoginProps) => {
             </div>
 
             {!mfaToken && !isDesktopClient() && (
-              <div className='text-center -mt-2'>
-                <button
-                  type='button'
-                  onClick={() => void requestMagicLink()}
-                  className='text-sm text-purple-600 hover:text-purple-500'
-                >
-                  Email me a one-time sign-in link instead
-                </button>
-                {magicMessage && (
-                  <p className='mt-2 text-xs text-gray-600'>{magicMessage}</p>
-                )}
+              <div className='text-center -mt-2 space-y-2'>
+                {typeof window !== 'undefined' &&
+                  window.PublicKeyCredential && (
+                    <button
+                      type='button'
+                      onClick={() => void signInWithPasskey()}
+                      className='text-sm font-medium text-purple-600 hover:text-purple-500'
+                    >
+                      Sign in with a passkey
+                    </button>
+                  )}
+                <div>
+                  <button
+                    type='button'
+                    onClick={() => void requestMagicLink()}
+                    className='text-sm text-purple-600 hover:text-purple-500'
+                  >
+                    Email me a one-time sign-in link instead
+                  </button>
+                  {magicMessage && (
+                    <p className='mt-2 text-xs text-gray-600'>{magicMessage}</p>
+                  )}
+                </div>
               </div>
             )}
 

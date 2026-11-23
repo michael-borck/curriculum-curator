@@ -23,6 +23,7 @@ afterSign: scripts/notarize.js
 mac:
   # Architecture is chosen per CI leg (--x64 or --arm64); the sidecar binaries
   # are arch-specific, so never build both from one runner.
+  artifactName: ${productName}-${version}-${arch}.${ext}
   target:
     - target: dmg
   entitlementsInherit: build/entitlements.mac.plist

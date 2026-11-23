@@ -6,13 +6,31 @@ Uses SQLAlchemy ORM via repositories.
 
 import logging
 import secrets
-from datetime import timedelta
+import uuid
+from datetime import UTC, datetime, timedelta
 from threading import Lock
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pyotp.totp import TOTP
 from sqlalchemy.orm import Session
+from webauthn import (
+    generate_authentication_options,
+    generate_registration_options,
+    verify_authentication_response,
+    verify_registration_response,
+)
+from webauthn.helpers import (
+    base64url_to_bytes,
+    bytes_to_base64url,
+    options_to_json_dict,
+)
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria,
+    PublicKeyCredentialDescriptor,
+    ResidentKeyRequirement,
+    UserVerificationRequirement,
+)
 
 from app.api import deps
 from app.core import security
@@ -26,6 +44,7 @@ from app.core.security_settings import get_security_settings
 from app.core.setup_token import rotate_setup_token, verify_setup_token
 from app.models.login_token import LoginToken
 from app.models.user import User
+from app.models.webauthn_credential import WebAuthnCredential
 from app.repositories import security_repo, user_repo
 from app.schemas import (
     EmailVerificationRequest,
@@ -37,6 +56,11 @@ from app.schemas import (
     MagicLinkRequest,
     MagicLinkResponse,
     MagicLinkVerifyRequest,
+    PasskeyListResponse,
+    PasskeyLoginVerifyRequest,
+    PasskeyOptionsResponse,
+    PasskeyRegisterVerifyRequest,
+    PasskeyResponse,
     ResendVerificationRequest,
     ResendVerificationResponse,
     ResetPasswordRequest,
@@ -689,6 +713,243 @@ async def verify_magic_link(
         user_role=user.role,
         token_version=getattr(user, "token_version", 0),
     )
+    _set_session_cookies(
+        response,
+        request,
+        access_token,
+        get_security_settings(db).session_timeout_minutes,
+    )
+    return LoginResponse(access_token=access_token, user=public_user)
+
+
+@router.get("/passkeys", response_model=PasskeyListResponse)
+async def list_passkeys(
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    rows = (
+        db.query(WebAuthnCredential)
+        .filter(WebAuthnCredential.user_id == str(current_user.id))
+        .order_by(WebAuthnCredential.created_at.desc())
+        .all()
+    )
+    return PasskeyListResponse(
+        passkeys=[
+            PasskeyResponse(
+                id=str(row.id),
+                name=row.name,
+                created_at=row.created_at.isoformat(),
+                last_used_at=row.last_used_at.isoformat()
+                if row.last_used_at
+                else None,
+            )
+            for row in rows
+        ]
+    )
+
+
+@router.post("/passkeys/register/options", response_model=PasskeyOptionsResponse)
+@limiter.limit(RateLimits.API_WRITE)
+async def passkey_register_options(
+    request: Request,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    rows = (
+        db.query(WebAuthnCredential)
+        .filter(WebAuthnCredential.user_id == str(current_user.id))
+        .all()
+    )
+    options = generate_registration_options(
+        rp_id=settings.webauthn_rp_id,
+        rp_name=settings.APP_NAME,
+        user_name=current_user.email,
+        user_id=uuid.UUID(str(current_user.id)).bytes,
+        exclude_credentials=[
+            PublicKeyCredentialDescriptor(id=base64url_to_bytes(row.credential_id))
+            for row in rows
+        ],
+        authenticator_selection=AuthenticatorSelectionCriteria(
+            resident_key=ResidentKeyRequirement.PREFERRED,
+            user_verification=UserVerificationRequirement.PREFERRED,
+        ),
+    )
+    options_dict = options_to_json_dict(options)
+    return PasskeyOptionsResponse(
+        options=options_dict,
+        challenge_token=security.create_webauthn_challenge(
+            "register", options_dict["challenge"], user_id=str(current_user.id)
+        ),
+    )
+
+
+@router.post("/passkeys/register/verify", response_model=PasskeyResponse)
+@limiter.limit(RateLimits.API_WRITE)
+async def passkey_register_verify(
+    request: Request,
+    body: PasskeyRegisterVerifyRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    payload = security.decode_webauthn_challenge(body.challenge_token, "register")
+    if not payload or payload.get("sub") != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Registration challenge is invalid or expired",
+        )
+    try:
+        verified = verify_registration_response(
+            credential=body.credential,
+            expected_challenge=base64url_to_bytes(payload["challenge"]),
+            expected_rp_id=settings.webauthn_rp_id,
+            expected_origin=settings.webauthn_origin,
+        )
+    except Exception as exc:
+        logger.warning("Passkey registration failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passkey registration failed",
+        ) from exc
+
+    credential_id = bytes_to_base64url(verified.credential_id)
+    if (
+        db.query(WebAuthnCredential)
+        .filter(WebAuthnCredential.credential_id == credential_id)
+        .first()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Passkey already registered"
+        )
+
+    row = WebAuthnCredential(
+        user_id=str(current_user.id),
+        credential_id=credential_id,
+        public_key=bytes_to_base64url(verified.credential_public_key),
+        sign_count=verified.sign_count,
+        name=(body.name or "Passkey")[:100],
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return PasskeyResponse(
+        id=str(row.id), name=row.name, created_at=row.created_at.isoformat()
+    )
+
+
+@router.delete("/passkeys/{passkey_id}")
+@limiter.limit(RateLimits.API_WRITE)
+async def delete_passkey(
+    request: Request,
+    passkey_id: str,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    row = (
+        db.query(WebAuthnCredential)
+        .filter(
+            WebAuthnCredential.id == passkey_id,
+            WebAuthnCredential.user_id == str(current_user.id),
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Passkey not found")
+    db.delete(row)
+    db.commit()
+    return {"deleted": True}
+
+
+@router.post("/passkeys/login/options", response_model=PasskeyOptionsResponse)
+@limiter.limit(RateLimits.LOGIN)
+async def passkey_login_options(request: Request):
+    options = generate_authentication_options(
+        rp_id=settings.webauthn_rp_id,
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+    options_dict = options_to_json_dict(options)
+    return PasskeyOptionsResponse(
+        options=options_dict,
+        challenge_token=security.create_webauthn_challenge(
+            "login", options_dict["challenge"]
+        ),
+    )
+
+
+@router.post("/passkeys/login/verify", response_model=LoginResponse)
+@limiter.limit(RateLimits.LOGIN)
+async def passkey_login_verify(
+    request: Request,
+    response: Response,
+    body: PasskeyLoginVerifyRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+):
+    payload = security.decode_webauthn_challenge(body.challenge_token, "login")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passkey sign-in failed",
+        )
+
+    raw_id = body.credential.get("rawId") or body.credential.get("id")
+    if not isinstance(raw_id, str):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passkey sign-in failed",
+        )
+    row = (
+        db.query(WebAuthnCredential)
+        .filter(WebAuthnCredential.credential_id == raw_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passkey sign-in failed",
+        )
+    user = db.query(User).filter(User.id == row.user_id).first()
+    if user is None or not user.is_active or not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passkey sign-in failed",
+        )
+
+    try:
+        verified = verify_authentication_response(
+            credential=body.credential,
+            expected_challenge=base64url_to_bytes(payload["challenge"]),
+            expected_rp_id=settings.webauthn_rp_id,
+            expected_origin=settings.webauthn_origin,
+            credential_public_key=base64url_to_bytes(row.public_key),
+            credential_current_sign_count=row.sign_count,
+        )
+    except Exception as exc:
+        logger.warning("Passkey authentication failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Passkey sign-in failed",
+        ) from exc
+
+    row.sign_count = verified.new_sign_count
+    row.last_used_at = datetime.now(UTC)
+    db.commit()
+
+    client_ip = _get_client_ip(request)
+    security_repo.record_login_success(
+        db, user.email, client_ip, _get_user_agent(request)
+    )
+    access_token_expires = timedelta(
+        minutes=get_security_settings(db).session_timeout_minutes
+    )
+    access_token = security.create_access_token(
+        data={"sub": user.id, "email": user.email},
+        expires_delta=access_token_expires,
+        client_ip=client_ip,
+        user_role=user.role,
+        token_version=getattr(user, "token_version", 0),
+    )
+    public_user = user_repo.get_user_by_id(db, user.id)
+    if public_user is None:
+        raise HTTPException(status_code=500, detail="Failed to retrieve user data")
     _set_session_cookies(
         response,
         request,

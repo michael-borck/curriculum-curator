@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1240 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1243 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**
@@ -135,10 +135,9 @@ were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
 
 **Still open**
 
-- Round-trip package import still uses the package service's own persistence
-  (A+B currently covers the unified importer); macOS auto-update manifest
-  merging when arm64 and x64 are released separately; passkeys; dependency CVE
-  scanning beyond Dependabot.
+- The long tail of LOW items that need product decisions (lockout edge cases,
+  admin UI polish, import performance), plus Azure Trusted Signing for Windows
+  when it becomes practical.
 
 ## Executive verdict
 

@@ -46,15 +46,15 @@ jobs:
         cd desktop
         if [ "$PLATFORM" = "mac" ]; then
           if [ "$TARGET_OS" = "macos-15-intel" ]; then ARCH_FLAG=--x64; else ARCH_FLAG=--arm64; fi
-          npx electron-builder --mac "$ARCH_FLAG" --publish never
+          npx electron-builder --mac "$ARCH_FLAG" --publish always
         else
-          npx electron-builder --$PLATFORM --publish never
+          npx electron-builder --$PLATFORM --publish always
         fi
       notarize-check-command: cd desktop && npx electron-builder --mac --arm64 --publish never
       notarize-check-artifact-root: desktop/dist
       signing-mode: custom
       notarize-mode: hook
-      publish-mode: artifacts
+      publish-mode: builder
       matrix: |
         [
           {"os":"macos-15","platform":"mac"},
@@ -77,3 +77,56 @@ jobs:
       APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+
+  merge-mac-manifest:
+    # electron-builder writes latest-mac.yml per arch; merge both so updater
+    # clients on arm64 and x64 both see a valid file.
+    if: github.event_name == 'push'
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Merge macOS update manifests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p mac-assets
+          gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --pattern '*.dmg' --dir mac-assets
+          VERSION="$version" python3 - <<'PY'
+          import base64, datetime, hashlib, os, pathlib
+
+          files = []
+          for path in sorted(pathlib.Path("mac-assets").glob("*.dmg")):
+              data = path.read_bytes()
+              files.append({
+                  "url": path.name,
+                  "sha512": base64.b64encode(hashlib.sha512(data).digest()).decode(),
+                  "size": len(data),
+              })
+          if not files:
+              raise SystemExit("No macOS DMGs found to merge")
+
+          primary = next((f for f in files if "arm64" in f["url"]), files[0])
+          released = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+          lines = [f"version: {os.environ['VERSION']}", "files:"]
+          for item in files:
+              lines += [
+                  f"  - url: {item['url']}",
+                  f"    sha512: {item['sha512']}",
+                  f"    size: {item['size']}",
+              ]
+          lines += [
+              f"path: {primary['url']}",
+              f"sha512: {primary['sha512']}",
+              f"releaseDate: '{released}'",
+              "",
+          ]
+          pathlib.Path("latest-mac.yml").write_text("\n".join(lines))
+          PY
+          gh release upload "$GITHUB_REF_NAME" latest-mac.yml \
+            --clobber --repo "$GITHUB_REPOSITORY"

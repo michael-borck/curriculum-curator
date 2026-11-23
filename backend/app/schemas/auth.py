@@ -3,6 +3,7 @@ Authentication API schemas
 """
 
 import re
+from typing import Any
 
 from pydantic import EmailStr, Field, field_validator
 
@@ -246,6 +247,33 @@ class MagicLinkResponse(CamelModel):
 
 class MagicLinkVerifyRequest(CamelModel):
     token: str = Field(..., min_length=20, max_length=256)
+
+
+class PasskeyOptionsResponse(CamelModel):
+    options: dict[str, Any]
+    challenge_token: str
+
+
+class PasskeyRegisterVerifyRequest(CamelModel):
+    credential: dict[str, Any]
+    challenge_token: str = Field(..., max_length=4096)
+    name: str | None = Field(default=None, max_length=100)
+
+
+class PasskeyLoginVerifyRequest(CamelModel):
+    credential: dict[str, Any]
+    challenge_token: str = Field(..., max_length=4096)
+
+
+class PasskeyResponse(CamelModel):
+    id: str
+    name: str
+    created_at: str
+    last_used_at: str | None = None
+
+
+class PasskeyListResponse(CamelModel):
+    passkeys: list[PasskeyResponse]
 
 
 class ResendVerificationRequest(CamelModel):

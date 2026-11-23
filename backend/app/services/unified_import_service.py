@@ -569,13 +569,20 @@ class UnifiedImportService:
         unit_code: str,
         unit_title: str,
     ) -> None:
-        result = self._pkg_svc.create_unit_from_package(
-            zip_bytes,
-            user_id,
-            db,
-            unit_code_override=unit_code or None,
-            unit_title_override=unit_title or None,
-        )
+        # Round-trip import is DB-only (no git writes), and the package service
+        # commits once at the end; roll back explicitly if it raises so the
+        # caller never leaves a partially-created unit.
+        try:
+            result = self._pkg_svc.create_unit_from_package(
+                zip_bytes,
+                user_id,
+                db,
+                unit_code_override=unit_code or None,
+                unit_title_override=unit_title or None,
+            )
+        except Exception:
+            db.rollback()
+            raise
         task.unit_id = result.unit_id
         task.unit_code = result.unit_code
         task.unit_title = result.unit_title

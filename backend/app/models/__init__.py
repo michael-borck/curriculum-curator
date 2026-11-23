@@ -63,6 +63,7 @@ from .udl_audit import UDLAuditResponse
 from .unit import DifficultyLevel, PedagogyType, Semester, Unit, UnitStatus
 from .unit_outline import UnitOutline, UnitStructureStatus
 from .user import TeachingPhilosophy, User, UserRole
+from .webauthn_credential import WebAuthnCredential
 from .weekly_material import MaterialStatus, WeeklyMaterial
 from .weekly_topic import WeeklyTopic, WeekType
 
@@ -116,6 +117,7 @@ __all__ = [
     # LLM Configuration
     "LLMConfiguration",
     "LoginToken",
+    "WebAuthnCredential",
     "TokenUsageLog",
     # Local Learning Outcomes
     "LocalLearningOutcome",

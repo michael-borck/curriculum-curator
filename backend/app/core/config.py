@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
@@ -40,9 +42,12 @@ class Settings(BaseSettings):
     # to the CORS allowlist. Localhost is always allowed, so this can stay empty
     # for local development.
     PUBLIC_DOMAIN: str = ""
-    # Where the browser app is served, used for magic-link URLs.
+    # Where the browser app is served, used for magic-link and passkey URLs.
     # Defaults to the first PUBLIC_DOMAIN, else local Vite.
     FRONTEND_URL: str = ""
+    # WebAuthn relying-party settings. Defaults derive from FRONTEND_URL.
+    WEBAUTHN_RP_ID: str = ""
+    WEBAUTHN_ORIGIN: str = ""
 
     @property
     def frontend_url(self) -> str:
@@ -52,6 +57,18 @@ class Settings(BaseSettings):
         if domains:
             return f"https://{domains[0]}"
         return "http://localhost:5173"
+
+    @property
+    def webauthn_rp_id(self) -> str:
+        if self.WEBAUTHN_RP_ID.strip():
+            return self.WEBAUTHN_RP_ID.strip()
+        return urlparse(self.frontend_url).hostname or "localhost"
+
+    @property
+    def webauthn_origin(self) -> str:
+        if self.WEBAUTHN_ORIGIN.strip():
+            return self.WEBAUTHN_ORIGIN.strip()
+        return self.frontend_url
 
     @property
     def public_domains(self) -> list[str]:
