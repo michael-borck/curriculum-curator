@@ -22,6 +22,7 @@ from app.models import (
     SystemConfig,
     User,
     UserRole,
+    WebAuthnCredential,
 )
 from app.repositories import user_repo
 from app.schemas.admin import (
@@ -251,6 +252,42 @@ async def delete_user(
     )
 
     return {"message": f"User {user_email} has been deactivated", "permanent": False}
+
+
+@router.post("/users/{user_id}/reset-mfa")
+@limiter.limit(RateLimits.ADMIN_ACTIONS)
+async def reset_user_mfa(
+    request: Request,
+    user_id: str,
+    db: Session = Depends(deps.get_db),
+    admin_user: User = Depends(deps.get_current_admin_user),
+):
+    """Clear a user's TOTP secret and passkeys (account recovery)."""
+    if user_id == str(admin_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use Settings → Two-Factor to change your own MFA",
+        )
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.totp_secret = None
+    user.totp_enabled = False
+    user.totp_recovery_hashes = None
+    user.totp_last_counter = 0
+    user.token_version = (user.token_version or 0) + 1
+    db.query(WebAuthnCredential).filter(
+        WebAuthnCredential.user_id == user_id
+    ).delete()
+    db.commit()
+
+    SecurityLogger.log_admin_action(
+        db=db,
+        admin_user=admin_user,
+        action=f"Reset MFA for user: {user.email}",
+    )
+    return {"reset": True}
 
 
 @router.get("/users/stats", response_model=UserStatsResponse)

@@ -229,3 +229,43 @@ def test_magic_link_unknown_email_is_generic(
     )
     assert response.status_code == 200
     assert "If that email" in response.json()["message"]
+
+
+def test_admin_can_reset_another_users_mfa(
+    client: TestClient, test_db: Session, monkeypatch
+) -> None:
+    from app.models.webauthn_credential import WebAuthnCredential
+
+    admin = _make_user(test_db, role="admin", email="admin@example.com")
+    target = _make_user(test_db, role="lecturer", email="target@example.com")
+    target.totp_enabled = True
+    target.totp_secret = "encrypted"
+    test_db.add(
+        WebAuthnCredential(
+            user_id=str(target.id),
+            credential_id="cred",
+            public_key="key",
+            sign_count=0,
+            name="Laptop",
+        )
+    )
+    test_db.commit()
+
+    login = client.post(
+        "/api/auth/login",
+        json={"email": admin.email, "password": PASSWORD},
+    )
+    token = login.json()["access_token"]
+    response = client.post(
+        f"/api/admin/users/{target.id}/reset-mfa", headers=_bearer(token)
+    )
+    assert response.status_code == 200, response.text
+    test_db.refresh(target)
+    assert target.totp_enabled is False
+    assert target.totp_secret is None
+    assert (
+        test_db.query(WebAuthnCredential)
+        .filter(WebAuthnCredential.user_id == str(target.id))
+        .count()
+        == 0
+    )

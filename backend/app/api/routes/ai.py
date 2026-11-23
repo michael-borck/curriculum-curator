@@ -15,6 +15,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api import deps
+from app.core.ai_rate_limit import enforce_ai_rate_limit
 from app.models import User
 from app.models.learning_design import LearningDesign
 from app.models.system_settings import SystemSettings
@@ -174,7 +175,7 @@ def _llm_error_response(e: Exception, operation: str) -> HTTPException:
     )
 
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(enforce_ai_rate_limit)])
 
 
 def _require_context_ownership(

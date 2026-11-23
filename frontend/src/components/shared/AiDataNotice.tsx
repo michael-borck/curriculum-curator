@@ -16,9 +16,10 @@ export function AiDataNotice({ className = '' }: AiDataNoticeProps) {
       <Info className='mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600' />
       <p>
         The text you enter here is sent to the AI service configured in Settings
-        to generate a reply. If that service is Ollama running on your own
-        computer, the text stays there. Avoid including personal details about
-        individual students.
+        to generate a reply. If the unit has a learning design, its outcomes and
+        teaching approach are included as context too. If that service is Ollama
+        running on your own computer, the text stays there. Avoid including
+        personal details about individual students.
       </p>
     </div>
   );
