@@ -35,3 +35,6 @@ Thumbs.db
 .env
 **/.env
 !**/.env.example
+
+# macOS AppleDouble metadata files
+**/._*

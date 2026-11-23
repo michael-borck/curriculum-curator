@@ -665,7 +665,9 @@ except ImportError as e:
 # A swallowed import error otherwise turns a whole route family into silent
 # 404s. Fail fast outside tests so broken deployments never serve.
 if not settings.TESTING:
-    _registered = [getattr(route, "path", "") for route in app.routes]
+    # Newer FastAPI keeps included routers nested, so inspect the generated
+    # OpenAPI paths rather than the top-level route objects.
+    _registered = app.openapi().get("paths", {})
     _required = ("/api/auth", "/api/units", "/api/ai", "/api/research")
     _missing = [
         prefix

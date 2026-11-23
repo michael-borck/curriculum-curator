@@ -20,6 +20,8 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 # Install system deps and document export tools (Pandoc + Typst)
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
     gcc \
     g++ \
     git \
