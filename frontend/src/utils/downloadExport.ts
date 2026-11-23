@@ -178,3 +178,32 @@ export async function downloadBranchingStory(
   a.remove();
   return filename;
 }
+
+/** Render and download a narrated MP4 using the server's local voice/ffmpeg. */
+export async function downloadNarratedVideo(
+  materialId: string
+): Promise<string> {
+  const response = await axios.get(
+    `${API_ORIGIN}/api/materials/${materialId}/export/video`,
+    {
+      responseType: 'blob',
+      headers: getAuthHeaders(),
+      withCredentials: true,
+      timeout: 15 * 60 * 1000,
+    }
+  );
+  const disposition = response.headers['content-disposition'] as
+    | string
+    | undefined;
+  const filename =
+    disposition?.match(/filename="?([^"]+)"?/)?.[1] ?? 'narrated-deck.mp4';
+  const url = URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+  return filename;
+}

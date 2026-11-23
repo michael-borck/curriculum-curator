@@ -27,6 +27,9 @@ RUN apt-get update && apt-get install -y \
     procps \
     gosu \
     pandoc \
+    ffmpeg \
+    espeak-ng \
+    fonts-dejavu-core \
     xz-utils \
     && rm -rf /var/lib/apt/lists/*
 

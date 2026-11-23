@@ -94,6 +94,7 @@ dependencies = [
     "youtube-transcript-api>=0.6.1",
     "pyotp>=2.12.1",
     "webauthn>=3.0.1",
+    "imageio-ffmpeg>=0.8.1",
 ]
 
 [project.optional-dependencies]
@@ -184,6 +185,7 @@ ignore = [
     "S311",    # non-crypto jitter/backoff randomness
     "S324",    # md5 used for a cache fingerprint, not security
     "S603",    # subprocess calls use argv arrays with fixed executables
+    "S607",    # system binaries (ffmpeg/powershell/say/espeak) resolved on PATH
     "PLR2004", # magic value used in comparison
     "TRY003",  # avoid specifying long messages outside exception class
     "B008",    # function call in argument defaults - standard FastAPI pattern

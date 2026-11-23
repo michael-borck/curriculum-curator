@@ -10,11 +10,16 @@ and missing content map to clean HTTP status codes.
 """
 
 import logging
+import os
+import tempfile
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
+from starlette.concurrency import run_in_threadpool
 
 from app.api.deps import get_db, get_user_material, get_user_unit
 from app.models.weekly_material import WeeklyMaterial
@@ -35,6 +40,13 @@ from app.services.export import (
 )
 from app.services.lms_terminology import TargetLMS
 from app.services.narrated_deck_service import build_narrated_deck
+from app.services.video_export_service import (
+    VideoExportUnavailableError,
+    build_video,
+)
+from app.services.video_export_service import (
+    capabilities as video_capabilities,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +109,51 @@ async def export_unit(
     """Export a whole unit in the given format (e.g. scorm, imscc, qti, html)."""
     return await _dispatch(
         export_format, ExportScope.UNIT, str(unit.id), db, target_lms
+    )
+
+
+@router.get("/materials/{material_id}/export/video-capabilities")
+async def video_export_capabilities() -> dict[str, object]:
+    """Report whether the local video pipeline is available."""
+    return video_capabilities()
+
+
+@router.get("/materials/{material_id}/export/video")
+async def export_narrated_video(
+    material: Annotated[WeeklyMaterial, Depends(get_user_material)],
+):
+    """Render a narrated MP4 using local system TTS and ffmpeg."""
+    fd, path = tempfile.mkstemp(prefix="cc-video-", suffix=".mp4")
+    os.close(fd)
+    try:
+        await run_in_threadpool(
+            build_video,
+            material.title or "Narrated deck",
+            material.content_json or {},
+            path,
+        )
+    except VideoExportUnavailableError as exc:
+        Path(path).unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        Path(path).unlink(missing_ok=True)
+        logger.exception("Video export failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Video export failed",
+        ) from exc
+
+    safe_title = "".join(
+        char if char.isalnum() or char in " -_" else "_"
+        for char in (material.title or "narrated-deck")
+    ).strip() or "narrated-deck"
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+        filename=f"{safe_title}.mp4",
+        background=BackgroundTask(lambda: Path(path).unlink(missing_ok=True)),
     )
 
 

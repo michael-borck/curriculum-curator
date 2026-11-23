@@ -48,6 +48,7 @@ import { useAILevel } from '../hooks/useAILevel';
 import {
   downloadBranchingStory,
   downloadNarratedDeck,
+  downloadNarratedVideo,
 } from '../utils/downloadExport';
 
 /**
@@ -82,6 +83,7 @@ const MaterialEditorPage: React.FC = () => {
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
   const [narrating, setNarrating] = useState(false);
   const [exportingStory, setExportingStory] = useState(false);
+  const [renderingVideo, setRenderingVideo] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -347,6 +349,38 @@ const MaterialEditorPage: React.FC = () => {
                     <Download className='w-4 h-4' />
                   )}
                   Narrated deck
+                </button>
+              )}
+              {materialId && (
+                <button
+                  onClick={async () => {
+                    setRenderingVideo(true);
+                    toast('Rendering the video with the local voice…', {
+                      duration: 6000,
+                    });
+                    try {
+                      await downloadNarratedVideo(materialId);
+                      toast.success('Narrated video downloaded');
+                    } catch (err: unknown) {
+                      const detail =
+                        (err as { response?: { data?: { detail?: string } } })
+                          .response?.data?.detail ||
+                        'Video export is unavailable on this machine';
+                      toast.error(detail);
+                    } finally {
+                      setRenderingVideo(false);
+                    }
+                  }}
+                  disabled={renderingVideo}
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50'
+                  title='Render an MP4 with slides and spoken speaker notes using this computer’s voice'
+                >
+                  {renderingVideo ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <Download className='w-4 h-4' />
+                  )}
+                  {renderingVideo ? 'Rendering…' : 'Narrated video'}
                 </button>
               )}
             </>
