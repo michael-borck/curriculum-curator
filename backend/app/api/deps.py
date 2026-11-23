@@ -176,15 +176,23 @@ def get_current_admin_user(
         )
 
     from app.core.security_settings import get_security_settings  # noqa: PLC0415
+    from app.models.webauthn_credential import WebAuthnCredential  # noqa: PLC0415
 
     if get_security_settings(db).require_admin_totp and not current_user.totp_enabled:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "Administrator access requires two-factor authentication. "
-                "Enable it under Settings → Two-Factor."
-            ),
+        has_passkey = (
+            db.query(WebAuthnCredential.id)
+            .filter(WebAuthnCredential.user_id == str(current_user.id))
+            .first()
+            is not None
         )
+        if not has_passkey:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Administrator access requires two-factor authentication. "
+                    "Enable TOTP under Settings → Two-Factor, or add a passkey."
+                ),
+            )
     return current_user
 
 
