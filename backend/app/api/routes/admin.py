@@ -14,11 +14,7 @@ from app.core.rate_limiter import RateLimits, limiter
 from app.core.security_settings import SETTINGS_CONFIG_KEYS, get_security_settings
 from app.models import (
     ConfigCategory,
-    EmailVerification,
     EmailWhitelist,
-    LoginAttempt,
-    PasswordReset,
-    SecurityLog,
     SystemConfig,
     User,
     UserRole,
@@ -36,6 +32,7 @@ from app.schemas.admin import (
     UserStatsResponse,
 )
 from app.schemas.user import UserResponse
+from app.services.account_deletion_service import delete_user_account
 from app.services.security_logger import SecurityLogger
 
 router = APIRouter()
@@ -207,34 +204,20 @@ async def delete_user(
     user_email = user.email
 
     if permanent:
-        # Hard delete - remove from database permanently
-        # First delete related records
-        # Delete email verifications
-        db.query(EmailVerification).filter(
-            EmailVerification.user_id == user.id
-        ).delete()
-
-        # Delete password resets
-        db.query(PasswordReset).filter(PasswordReset.user_id == user.id).delete()
-
-        # Delete security logs
-        db.query(SecurityLog).filter(SecurityLog.user_id == user.id).delete()
-
-        # Delete login attempts (uses email, not user_id)
-        db.query(LoginAttempt).filter(LoginAttempt.email == user.email).delete()
-
-        # Delete the user
-        db.delete(user)
-        db.commit()
-
-        # Log the action
+        if user.role == "admin":
+            admins = db.query(User).filter(User.role == "admin").count()
+            if admins <= 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot delete the last administrator",
+                )
+        delete_user_account(db, str(user.id))
         SecurityLogger.log_admin_action(
             db=db,
             admin_user=admin_user,
             action=f"Permanently deleted user {user_email}",
-            target_user_id=None,  # User no longer exists
+            target_user_id=None,
         )
-
         return {
             "message": f"User {user_email} has been permanently deleted",
             "permanent": True,

@@ -47,6 +47,7 @@ from app.models.user import User
 from app.models.webauthn_credential import WebAuthnCredential
 from app.repositories import security_repo, user_repo
 from app.schemas import (
+    DeleteAccountRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
     ForgotPasswordRequest,
@@ -76,6 +77,7 @@ from app.schemas import (
 )
 from app.schemas.auth import ChangePasswordRequest, ChangePasswordResponse
 from app.schemas.user import ProfileUpdateRequest, UserCreate
+from app.services.account_deletion_service import delete_user_account
 from app.services.email_service import email_service
 from app.utils.request_ip import get_client_ip
 
@@ -1123,6 +1125,46 @@ async def logout(
             if jti and exp:
                 security.blacklist_token(jti, float(exp))
     return {"message": "Logged out"}
+
+
+@router.delete("/account")
+async def delete_account(
+    request: Request,
+    response: Response,
+    body: DeleteAccountRequest,
+    db: Annotated[Session, Depends(deps.get_db)],
+    current_user: UserResponse = Depends(deps.get_current_active_user),
+):
+    """Permanently delete this account, owned units and content."""
+    if settings.LOCAL_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The local desktop account cannot be deleted this way",
+        )
+    if body.confirmation.strip().upper() != "DELETE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Type DELETE to confirm',
+        )
+    user = db.query(User).filter(User.id == str(current_user.id)).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not security.verify_password(body.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is incorrect",
+        )
+    if user.role == "admin":
+        admins = db.query(User).filter(User.role == "admin").count()
+        if admins <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Create another administrator before deleting the last one",
+            )
+
+    delete_user_account(db, str(user.id))
+    _clear_session_cookies(response)
+    return {"deleted": True}
 
 
 @router.get("/totp/status", response_model=TOTPStatusResponse)

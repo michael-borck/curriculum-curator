@@ -29,6 +29,7 @@ from .admin import (
     UserStatsResponse,
 )
 from .auth import (
+    DeleteAccountRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
     ForgotPasswordRequest,
@@ -69,6 +70,7 @@ __all__ = [
     "BulkAoLMappingCreate",
     "BulkGraduateCapabilityMappingCreate",
     "DatabaseBackupResponse",
+    "DeleteAccountRequest",
     # Auth schemas
     "EmailVerificationRequest",
     "EmailVerificationResponse",

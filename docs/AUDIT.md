@@ -37,7 +37,7 @@ the service no longer resolves providers that way.
 
 Fixes applied in the working tree, in the suggested order. All listed gates
 were re-run after the changes: backend `ruff`, `basedpyright`, `pytest`
-(**1252 passed, 24 skipped**); frontend `lint`, `type-check`,
+(**1253 passed, 24 skipped**); frontend `lint`, `type-check`,
 `format:check`, `vitest`.
 
 **Done**

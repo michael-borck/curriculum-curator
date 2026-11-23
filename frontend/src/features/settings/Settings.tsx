@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   Shield,
@@ -39,7 +40,8 @@ import PasskeySettings from './PasskeySettings';
 import { isDesktopClient } from '../../services/authSession';
 
 const Settings = () => {
-  const { user, isLocalMode } = useAuthStore();
+  const { user, isLocalMode, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -59,6 +61,9 @@ const Settings = () => {
   });
 
   const [downloading, setDownloading] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const [pluginList, setPluginList] = useState<PluginInfo[]>([]);
   const [pluginsLoading, setPluginsLoading] = useState(false);
@@ -448,6 +453,66 @@ const Settings = () => {
                     Update Password
                   </button>
                 </div>
+
+                {!isLocalMode && (
+                  <div className='border-t border-red-100 pt-6'>
+                    <h3 className='font-medium text-red-700 mb-2'>
+                      Delete account
+                    </h3>
+                    <p className='text-sm text-gray-600 mb-3'>
+                      This permanently deletes your account and every unit you
+                      own, including its content and git history. It cannot be
+                      undone. Security logs are kept only in anonymised form.
+                    </p>
+                    <div className='grid gap-3 max-w-md'>
+                      <input
+                        type='password'
+                        value={deletePassword}
+                        onChange={e => setDeletePassword(e.target.value)}
+                        placeholder='Current password'
+                        className='px-3 py-2 border border-gray-300 rounded-lg'
+                      />
+                      <input
+                        value={deleteConfirmation}
+                        onChange={e => setDeleteConfirmation(e.target.value)}
+                        placeholder='Type DELETE to confirm'
+                        className='px-3 py-2 border border-gray-300 rounded-lg'
+                      />
+                      <button
+                        onClick={async () => {
+                          setDeleting(true);
+                          try {
+                            await api.delete('/auth/account', {
+                              data: {
+                                password: deletePassword,
+                                confirmation: deleteConfirmation,
+                              },
+                            });
+                            logout();
+                            navigate('/', { replace: true });
+                          } catch (e: unknown) {
+                            const detail = (
+                              e as {
+                                response?: { data?: { detail?: string } };
+                              }
+                            ).response?.data?.detail;
+                            toast.error(detail || 'Could not delete account');
+                          } finally {
+                            setDeleting(false);
+                          }
+                        }}
+                        disabled={
+                          deleting ||
+                          !deletePassword ||
+                          deleteConfirmation.trim().toUpperCase() !== 'DELETE'
+                        }
+                        className='px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50'
+                      >
+                        {deleting ? 'Deleting…' : 'Delete my account'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

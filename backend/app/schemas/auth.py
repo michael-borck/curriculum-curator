@@ -232,6 +232,11 @@ class TOTPDisableRequest(CamelModel):
     code: str | None = Field(default=None, max_length=32)
 
 
+class DeleteAccountRequest(CamelModel):
+    password: str = Field(..., min_length=1, max_length=256)
+    confirmation: str = Field(..., max_length=20)
+
+
 class TOTPStatusResponse(CamelModel):
     enabled: bool
     recovery_codes_remaining: int
