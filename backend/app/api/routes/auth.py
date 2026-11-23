@@ -283,9 +283,7 @@ async def register(
     existing_user = user_repo.get_user_by_email(db, email)
     if existing_user:
         if not existing_user.is_verified:
-            verification_code = user_repo.create_verification_code(
-                db, existing_user.id
-            )
+            verification_code = user_repo.create_verification_code(db, existing_user.id)
             await email_service.send_verification_email(
                 existing_user, verification_code, expires_minutes=60
             )
@@ -741,9 +739,7 @@ async def list_passkeys(
                 id=str(row.id),
                 name=row.name,
                 created_at=row.created_at.isoformat(),
-                last_used_at=row.last_used_at.isoformat()
-                if row.last_used_at
-                else None,
+                last_used_at=row.last_used_at.isoformat() if row.last_used_at else None,
             )
             for row in rows
         ]
@@ -1144,7 +1140,7 @@ async def delete_account(
     if body.confirmation.strip().upper() != "DELETE":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Type DELETE to confirm',
+            detail="Type DELETE to confirm",
         )
     user = db.query(User).filter(User.id == str(current_user.id)).first()
     if user is None:
@@ -1262,9 +1258,7 @@ async def totp_disable(
         valid = False
         secret = decrypt_secret(user.totp_secret)
         if secret and body.code and body.code.isdigit():
-            valid, _ = totp_utils.verify_totp(
-                secret, body.code, user.totp_last_counter
-            )
+            valid, _ = totp_utils.verify_totp(secret, body.code, user.totp_last_counter)
         if not valid and body.code:
             valid, remaining = totp_utils.consume_recovery_code(
                 user.totp_recovery_hashes, body.code

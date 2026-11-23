@@ -67,9 +67,9 @@ def init_db():
         # Never ship fixed passwords: use operator-supplied values or generate
         # one-time random passwords and print them here.
         admin_password = os.getenv("INIT_ADMIN_PASSWORD") or secrets.token_urlsafe(16)
-        lecturer_password = os.getenv("INIT_LECTURER_PASSWORD") or secrets.token_urlsafe(
-            16
-        )
+        lecturer_password = os.getenv(
+            "INIT_LECTURER_PASSWORD"
+        ) or secrets.token_urlsafe(16)
 
         # Admin user
         admin = User(

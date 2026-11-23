@@ -24,9 +24,7 @@ def generate_secret() -> str:
 
 
 def provisioning_uri(secret: str, email: str, settings: Settings) -> str:
-    return TOTP(secret).provisioning_uri(
-        name=email, issuer_name=settings.APP_NAME
-    )
+    return TOTP(secret).provisioning_uri(name=email, issuer_name=settings.APP_NAME)
 
 
 def current_counter() -> int:

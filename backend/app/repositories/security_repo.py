@@ -135,9 +135,7 @@ def check_account_lockout(
     )
 
     if attempt and attempt.locked_until:
-        minutes_remaining = (
-            int((attempt.locked_until - now).total_seconds() / 60) + 1
-        )
+        minutes_remaining = int((attempt.locked_until - now).total_seconds() / 60) + 1
         return True, attempt.lockout_reason, minutes_remaining
 
     # Clear expired locks for this email.

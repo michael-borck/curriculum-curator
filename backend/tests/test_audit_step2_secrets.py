@@ -114,7 +114,9 @@ class TestLLMConfigStorageAndResolution:
         from app.services.llm_service import LLMService
 
         db_user = test_db.query(type(test_user)).filter_by(id=test_user.id).one()
-        _model, provider, api_key, _base = LLMService()._get_llm_config(db_user, test_db)
+        _model, provider, api_key, _base = LLMService()._get_llm_config(
+            db_user, test_db
+        )
         assert provider == "openai"
         assert api_key == "sk-user-secret-9999"
 

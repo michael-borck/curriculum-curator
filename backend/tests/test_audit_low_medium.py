@@ -44,9 +44,7 @@ def test_unit_count_is_not_page_size(test_db: Session, test_user) -> None:
         )
     test_db.commit()
 
-    page = unit_repo.search_units(
-        test_db, owner_id=test_user.id, skip=0, limit=1
-    )
+    page = unit_repo.search_units(test_db, owner_id=test_user.id, skip=0, limit=1)
     total = unit_repo.count_units(test_db, owner_id=test_user.id)
 
     assert len(page) == 1
@@ -77,13 +75,10 @@ def test_password_reset_code_locks_after_repeated_misses(
 
     for _ in range(5):
         assert (
-            user_repo.verify_password_reset_code(test_db, test_user.id, wrong)
-            is False
+            user_repo.verify_password_reset_code(test_db, test_user.id, wrong) is False
         )
 
-    assert (
-        user_repo.verify_password_reset_code(test_db, test_user.id, code) is False
-    )
+    assert user_repo.verify_password_reset_code(test_db, test_user.id, code) is False
 
 
 def test_failed_import_cleanup_removes_git_paths(monkeypatch) -> None:
@@ -135,8 +130,7 @@ def test_sqlite_upgrade_adds_new_columns(tmp_path, monkeypatch) -> None:
 
     with legacy_engine.begin() as conn:
         user_cols = {
-            row[1]
-            for row in conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            row[1] for row in conn.execute(text("PRAGMA table_info(users)")).fetchall()
         }
         verification_cols = {
             row[1]

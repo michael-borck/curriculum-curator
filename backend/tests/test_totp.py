@@ -32,7 +32,9 @@ def client(test_db: Session):
     app.dependency_overrides.clear()
 
 
-def _make_user(db: Session, role: str = "lecturer", email: str = "totp-user@example.com"):
+def _make_user(
+    db: Session, role: str = "lecturer", email: str = "totp-user@example.com"
+):
     from app.core.security import get_password_hash
     from app.models.user import User
 
@@ -105,9 +107,7 @@ def test_totp_login_challenge_and_replay(client: TestClient, test_db: Session) -
     assert replay.status_code == 401
 
 
-def test_totp_recovery_code_is_single_use(
-    client: TestClient, test_db: Session
-) -> None:
+def test_totp_recovery_code_is_single_use(client: TestClient, test_db: Session) -> None:
     _make_user(test_db)
     token = _login(client).json()["access_token"]
     _, recovery = _enable_totp(client, token)
@@ -224,9 +224,7 @@ def test_magic_link_signs_in_and_is_single_use(
 def test_magic_link_unknown_email_is_generic(
     client: TestClient, test_db: Session
 ) -> None:
-    response = client.post(
-        "/api/auth/magic-link", json={"email": "nobody@example.com"}
-    )
+    response = client.post("/api/auth/magic-link", json={"email": "nobody@example.com"})
     assert response.status_code == 200
     assert "If that email" in response.json()["message"]
 

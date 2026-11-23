@@ -43,7 +43,9 @@ def story_health(cards: list[dict[str, Any]]) -> dict[str, Any]:
             if not target:
                 broken.append(f"{card_id} has a choice with no target")
 
-    endings = [card for card in cards if (card.get("attrs") or {}).get("cardType") == "ending"]
+    endings = [
+        card for card in cards if (card.get("attrs") or {}).get("cardType") == "ending"
+    ]
     orphans: list[str] = []
     if cards:
         reachable = {str((cards[0].get("attrs") or {}).get("cardId") or "")}

@@ -29,9 +29,7 @@ def _fernet() -> Fernet:
     try:
         return Fernet(raw.encode())
     except Exception:
-        digest = hashlib.sha256(
-            f"curriculum-curator-secret-v1:{raw}".encode()
-        ).digest()
+        digest = hashlib.sha256(f"curriculum-curator-secret-v1:{raw}".encode()).digest()
         return Fernet(base64.urlsafe_b64encode(digest))
 
 

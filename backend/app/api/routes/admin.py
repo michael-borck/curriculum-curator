@@ -260,9 +260,7 @@ async def reset_user_mfa(
     user.totp_recovery_hashes = None
     user.totp_last_counter = 0
     user.token_version = (user.token_version or 0) + 1
-    db.query(WebAuthnCredential).filter(
-        WebAuthnCredential.user_id == user_id
-    ).delete()
+    db.query(WebAuthnCredential).filter(WebAuthnCredential.user_id == user_id).delete()
     db.commit()
 
     SecurityLogger.log_admin_action(
@@ -368,9 +366,7 @@ async def create_whitelist_pattern(
 
     # Check if pattern already exists
     existing = (
-        db.query(EmailWhitelist)
-        .filter(EmailWhitelist.pattern == pattern_value)
-        .first()
+        db.query(EmailWhitelist).filter(EmailWhitelist.pattern == pattern_value).first()
     )
 
     if existing:

@@ -24,8 +24,18 @@ def _material() -> SimpleNamespace:
                     "cardTitle": "Start",
                     "cardContent": "A tricky situation.",
                     "choices": [
-                        {"id": "a", "text": "Act", "targetCardId": "c2", "feedback": "ok"},
-                        {"id": "b", "text": "Wait", "targetCardId": "missing", "feedback": ""},
+                        {
+                            "id": "a",
+                            "text": "Act",
+                            "targetCardId": "c2",
+                            "feedback": "ok",
+                        },
+                        {
+                            "id": "b",
+                            "text": "Wait",
+                            "targetCardId": "missing",
+                            "feedback": "",
+                        },
                     ],
                     "endScore": 0,
                     "endMessage": "",

@@ -142,9 +142,7 @@ def create_mfa_token(
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def decode_mfa_token(
-    token: str, verify_ip: str | None = None
-) -> dict[str, Any] | None:
+def decode_mfa_token(token: str, verify_ip: str | None = None) -> dict[str, Any] | None:
     """Decode an MFA challenge token; rejects access/refresh tokens."""
     try:
         payload = jwt.decode(

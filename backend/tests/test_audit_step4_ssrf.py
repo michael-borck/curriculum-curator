@@ -10,7 +10,9 @@ from app.services.search_router import SearchRouter
 
 
 @pytest.mark.asyncio
-async def test_custom_api_base_rejects_loopback(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_custom_api_base_rejects_loopback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(settings, "LOCAL_MODE", False)
     with pytest.raises(ValueError):
         await LLMService._assert_safe_api_base("custom", "http://127.0.0.1:9000/v1")

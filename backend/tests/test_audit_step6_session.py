@@ -153,7 +153,5 @@ class TestDesktopToken:
         test_db.commit()
 
         assert raw_client.get("/api/auth/me").status_code == 401
-        ok = raw_client.get(
-            "/api/auth/me", headers={"X-Desktop-Token": "launch-token"}
-        )
+        ok = raw_client.get("/api/auth/me", headers={"X-Desktop-Token": "launch-token"})
         assert ok.status_code == 200

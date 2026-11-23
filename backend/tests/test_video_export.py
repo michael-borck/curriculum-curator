@@ -18,11 +18,23 @@ def test_slide_text_and_notes_are_separated() -> None:
     segment = {
         "type": "doc",
         "content": [
-            {"type": "heading", "attrs": {"level": 1}, "content": [{"type": "text", "text": "Title"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Visible body"}]},
+            {
+                "type": "heading",
+                "attrs": {"level": 1},
+                "content": [{"type": "text", "text": "Title"}],
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "Visible body"}],
+            },
             {
                 "type": "speakerNotes",
-                "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Say this"}]}],
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Say this"}],
+                    }
+                ],
             },
         ],
     }

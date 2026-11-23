@@ -217,9 +217,7 @@ def _synthesize(text: str, path: Path, backend: str, ffmpeg: str) -> None:
             path.with_suffix(".ps1").unlink()
 
 
-def build_video(
-    title: str, content_json: dict[str, Any], output_path: str
-) -> str:
+def build_video(title: str, content_json: dict[str, Any], output_path: str) -> str:
     """Render a narrated MP4 and return its path."""
     ffmpeg = _ffmpeg()
     backend = _tts_backend()
@@ -295,5 +293,3 @@ def build_video(
             capture_output=True,
         )
     return output_path
-
-

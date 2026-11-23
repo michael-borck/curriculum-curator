@@ -673,9 +673,7 @@ if not settings.TESTING:
         if not any(path.startswith(prefix) for path in _registered)
     ]
     if _missing:
-        raise RuntimeError(
-            "Critical API routes failed to load: " + ", ".join(_missing)
-        )
+        raise RuntimeError("Critical API routes failed to load: " + ", ".join(_missing))
 
 
 # Remove the root API endpoint - let static files handle it

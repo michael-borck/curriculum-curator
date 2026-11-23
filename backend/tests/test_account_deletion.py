@@ -93,8 +93,13 @@ def test_hard_delete_removes_owned_content_and_reassigns_audit(
 
     assert test_db.query(User).filter(User.id == user.id).first() is None
     assert test_db.query(Unit).filter(Unit.id == owned_id).first() is None
-    assert test_db.query(UnitOutline).filter(UnitOutline.id == outline_id).first() is None
-    assert test_db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first() is None
+    assert (
+        test_db.query(UnitOutline).filter(UnitOutline.id == outline_id).first() is None
+    )
+    assert (
+        test_db.query(WeeklyMaterial).filter(WeeklyMaterial.id == material_id).first()
+        is None
+    )
 
     remaining = test_db.query(Unit).filter(Unit.id == kept_id).one()
     assert remaining.owner_id == other.id

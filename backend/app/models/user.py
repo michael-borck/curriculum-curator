@@ -73,9 +73,7 @@ class User(Base):
     totp_enabled: Mapped[bool] = mapped_column(
         default=False, server_default="0", nullable=False
     )
-    totp_recovery_hashes: Mapped[list[str] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    totp_recovery_hashes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     totp_last_counter: Mapped[int] = mapped_column(
         default=0, server_default="0", nullable=False
     )

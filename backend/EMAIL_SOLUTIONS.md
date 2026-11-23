@@ -36,14 +36,15 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+
 async def send_smtp_email(to_email: str, subject: str, html_content: str):
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['From'] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>"
-    msg['To'] = to_email
-    
-    msg.attach(MIMEText(html_content, 'html'))
-    
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>"
+    msg["To"] = to_email
+
+    msg.attach(MIMEText(html_content, "html"))
+
     with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
         if settings.SMTP_USE_TLS:
             server.starttls()
@@ -61,15 +62,15 @@ Add an admin endpoint to manually verify users:
 async def admin_verify_user(
     user_id: UUID,
     current_user: User = Depends(deps.get_current_admin_user),
-    db: Session = Depends(deps.get_db)
+    db: Session = Depends(deps.get_db),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404, "User not found")
-    
+
     user.is_verified = True
     db.commit()
-    
+
     return {"message": f"User {user.email} verified by admin"}
 ```
 
@@ -101,19 +102,16 @@ verification_link = f"https://your-domain.com/verify?token={verification_token}"
 import boto3
 
 ses_client = boto3.client(
-    'ses',
-    region_name='us-east-1',
-    aws_access_key_id='YOUR_KEY',
-    aws_secret_access_key='YOUR_SECRET'
+    "ses",
+    region_name="us-east-1",
+    aws_access_key_id="YOUR_KEY",
+    aws_secret_access_key="YOUR_SECRET",
 )
 
 ses_client.send_email(
-    Source='noreply@your-domain.edu.au',
-    Destination={'ToAddresses': [user_email]},
-    Message={
-        'Subject': {'Data': subject},
-        'Body': {'Html': {'Data': html_content}}
-    }
+    Source="noreply@your-domain.edu.au",
+    Destination={"ToAddresses": [user_email]},
+    Message={"Subject": {"Data": subject}, "Body": {"Html": {"Data": html_content}}},
 )
 ```
 
@@ -166,33 +164,37 @@ Add email tracking to see what's happening:
 async def send_verification_email_with_tracking(user: User, code: str):
     # Log attempt
     logger.info(f"Attempting to send verification to {user.email}")
-    
+
     try:
         result = await send_email(...)
-        
+
         # Log success with message ID
         logger.info(f"Email sent successfully to {user.email}, ID: {result.message_id}")
-        
+
         # Store in database for tracking
-        db.add(EmailLog(
-            user_id=user.id,
-            email_type="verification",
-            status="sent",
-            message_id=result.message_id,
-            sent_at=datetime.utcnow()
-        ))
-        
+        db.add(
+            EmailLog(
+                user_id=user.id,
+                email_type="verification",
+                status="sent",
+                message_id=result.message_id,
+                sent_at=datetime.utcnow(),
+            )
+        )
+
     except Exception as e:
         logger.error(f"Failed to send to {user.email}: {str(e)}")
-        
+
         # Store failure
-        db.add(EmailLog(
-            user_id=user.id,
-            email_type="verification", 
-            status="failed",
-            error_message=str(e),
-            attempted_at=datetime.utcnow()
-        ))
+        db.add(
+            EmailLog(
+                user_id=user.id,
+                email_type="verification",
+                status="failed",
+                error_message=str(e),
+                attempted_at=datetime.utcnow(),
+            )
+        )
 ```
 
 ## Immediate Action Items

@@ -86,13 +86,9 @@ async def _verify_url(  # noqa: PLR0911 - one clear return per verification outc
         for _ in range(_MAX_REDIRECTS + 1):
             await assert_public_url(current)
             checked.append(current)
-            response = await client.request(
-                "HEAD", current, follow_redirects=False
-            )
+            response = await client.request("HEAD", current, follow_redirects=False)
             if response.status_code in (405, 501):
-                response = await client.request(
-                    "GET", current, follow_redirects=False
-                )
+                response = await client.request("GET", current, follow_redirects=False)
             location = response.headers.get("location")
             if response.is_redirect and location:
                 current = str(response.url.join(location))
@@ -140,9 +136,7 @@ async def _verify_url(  # noqa: PLR0911 - one clear return per verification outc
     }
 
 
-async def verify_source(
-    title: str, url: str | None, doi: str | None
-) -> dict[str, Any]:
+async def verify_source(title: str, url: str | None, doi: str | None) -> dict[str, Any]:
     """Return a verification result for one source."""
     normalised = normalise_doi(doi or url)
     async with httpx.AsyncClient(timeout=8.0, headers=_HEADERS) as client:

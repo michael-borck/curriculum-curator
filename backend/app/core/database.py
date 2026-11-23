@@ -106,9 +106,7 @@ def _ensure_sqlite_schema() -> None:
         ("password_resets", "token", "token_hash"),
     ):
         with engine.begin() as conn:
-            rows = conn.execute(
-                text(f"PRAGMA table_info({table_name})")
-            ).fetchall()
+            rows = conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
             columns = {row[1] for row in rows}
             if not columns:
                 continue

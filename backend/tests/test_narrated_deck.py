@@ -11,17 +11,31 @@ def test_narrated_deck_uses_speaker_notes_and_splits_slides() -> None:
     content = {
         "type": "doc",
         "content": [
-            {"type": "heading", "attrs": {"level": 1}, "content": [{"type": "text", "text": "First"}]},
+            {
+                "type": "heading",
+                "attrs": {"level": 1},
+                "content": [{"type": "text", "text": "First"}],
+            },
             {"type": "paragraph", "content": [{"type": "text", "text": "Visible"}]},
             {
                 "type": "speakerNotes",
                 "content": [
-                    {"type": "paragraph", "content": [{"type": "text", "text": "Say this aloud."}]}
+                    {
+                        "type": "paragraph",
+                        "content": [{"type": "text", "text": "Say this aloud."}],
+                    }
                 ],
             },
             {"type": "slideBreak"},
-            {"type": "heading", "attrs": {"level": 1}, "content": [{"type": "text", "text": "Second"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Also visible"}]},
+            {
+                "type": "heading",
+                "attrs": {"level": 1},
+                "content": [{"type": "text", "text": "Second"}],
+            },
+            {
+                "type": "paragraph",
+                "content": [{"type": "text", "text": "Also visible"}],
+            },
         ],
     }
     material = SimpleNamespace(title="Demo", content_json=content)

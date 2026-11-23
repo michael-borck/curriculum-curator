@@ -50,7 +50,10 @@ def _table(name: str) -> Any:
 
 def _ids(db: Session, table_name: str, column: str, value: str) -> list[str]:
     table = _table(table_name)
-    return [str(row[0]) for row in db.execute(select(table.c.id).where(table.c[column] == value))]
+    return [
+        str(row[0])
+        for row in db.execute(select(table.c.id).where(table.c[column] == value))
+    ]
 
 
 def _delete_unit_subtree(db: Session, unit_ids: list[str]) -> None:
@@ -75,14 +78,10 @@ def _delete_unit_subtree(db: Session, unit_ids: list[str]) -> None:
                 if id_column is None:
                     # Association table with a composite key: delete by FK.
                     exists = db.execute(
-                        select(column)
-                        .where(column.in_(list(parent_ids)))
-                        .limit(1)
+                        select(column).where(column.in_(list(parent_ids))).limit(1)
                     ).first()
                     if exists:
-                        db.execute(
-                            delete(table).where(column.in_(list(parent_ids)))
-                        )
+                        db.execute(delete(table).where(column.in_(list(parent_ids))))
                         changed = True
                     continue
                 ids = [
@@ -135,9 +134,7 @@ def _delete_user_owned_rows(db: Session, user_id: str, email: str) -> None:
             )
         )
         db.execute(
-            delete(_table("clo_sets")).where(
-                _table("clo_sets").c.id.in_(clo_set_ids)
-            )
+            delete(_table("clo_sets")).where(_table("clo_sets").c.id.in_(clo_set_ids))
         )
 
     for table_name, column in _USER_OWNED:

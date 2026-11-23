@@ -202,12 +202,9 @@ class LLMService:
             query = query.filter(LLMConfiguration.user_id.is_(None))
         else:
             query = query.filter(LLMConfiguration.user_id == user_id)
-        config = (
-            query.order_by(
-                LLMConfiguration.is_default.desc(), LLMConfiguration.updated_at.desc()
-            )
-            .first()
-        )
+        config = query.order_by(
+            LLMConfiguration.is_default.desc(), LLMConfiguration.updated_at.desc()
+        ).first()
         if not isinstance(config, LLMConfiguration):
             # Also guards against test doubles that are truthy but not rows.
             return None

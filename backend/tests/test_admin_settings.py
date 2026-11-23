@@ -17,9 +17,7 @@ from app.schemas.admin import SystemSettingsUpdate
 
 
 def _request() -> Request:
-    return Request(
-        {"type": "http", "method": "GET", "path": "/admin", "headers": []}
-    )
+    return Request({"type": "http", "method": "GET", "path": "/admin", "headers": []})
 
 
 @pytest.fixture

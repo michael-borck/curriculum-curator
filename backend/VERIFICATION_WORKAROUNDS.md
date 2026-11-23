@@ -50,11 +50,13 @@ If using a non-Curtin email:
 import hashlib
 from datetime import datetime
 
+
 def generate_code(email):
     secret = "CurriculumCurator2025"
-    today = datetime.utcnow().strftime('%Y-%m-%d')
+    today = datetime.utcnow().strftime("%Y-%m-%d")
     token = f"{email.lower()}{secret}{today}"
     return hashlib.sha256(token.encode()).hexdigest()[:8].upper()
+
 
 # Example
 print(generate_code("user@example.com"))
@@ -65,10 +67,12 @@ print(generate_code("user@example.com"))
 ```python
 import hashlib
 
+
 def generate_override(email):
     secret = "ADMIN_OVERRIDE_2025"
     code = f"{email.lower()}{secret}"
     return hashlib.md5(code.encode()).hexdigest()[:6].upper()
+
 
 # Example
 print(generate_override("user@example.com"))
@@ -84,11 +88,12 @@ Instead of email, send verification codes via:
 # Slack webhook
 import requests
 
+
 def send_slack_verification(user_email, code):
     webhook_url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-    requests.post(webhook_url, json={
-        "text": f"Verification code for {user_email}: {code}"
-    })
+    requests.post(
+        webhook_url, json={"text": f"Verification code for {user_email}: {code}"}
+    )
 ```
 
 ### Option 2: QR Code Verification
@@ -96,6 +101,7 @@ Display a QR code after registration that contains the verification token:
 
 ```python
 import qrcode
+
 
 def generate_verification_qr(email, code):
     verification_url = f"http://localhost:3000/verify?email={email}&code={code}"
@@ -118,13 +124,13 @@ users = [
     {"email": "user2@curtin.edu.au", "name": "User Two"},
 ]
 
-with open('verified_users.csv', 'w') as f:
+with open("verified_users.csv", "w") as f:
     writer = csv.writer(f)
-    writer.writerow(['email', 'name', 'verification_code', 'pre_verified'])
-    
+    writer.writerow(["email", "name", "verification_code", "pre_verified"])
+
     for user in users:
         code = hashlib.md5(f"{user['email']}BATCH2025".encode()).hexdigest()[:8]
-        writer.writerow([user['email'], user['name'], code, 'true'])
+        writer.writerow([user["email"], user["name"], code, "true"])
 ```
 
 ### Option 4: Microsoft Power Automate
@@ -158,9 +164,9 @@ Instead of email, print codes to console:
 # In email_service.py
 async def send_verification_email(user: User, code: str):
     if settings.DEBUG_MODE:
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print(f"VERIFICATION CODE for {user.email}: {code}")
-        print(f"{'='*50}\n")
+        print(f"{'=' * 50}\n")
         return True, code
     # ... rest of email logic
 ```

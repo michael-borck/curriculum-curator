@@ -97,7 +97,9 @@ def _sanitize_imported_html(html: str) -> str:
 
 
 # Regex to extract week number from folder names like "week01/", "week12/"
-_WEEK_RE = re.compile(r"^week(\d{2})/")# Regex to extract material type prefix from filenames like "lecture_foo.html"
+_WEEK_RE = re.compile(
+    r"^week(\d{2})/"
+)  # Regex to extract material type prefix from filenames like "lecture_foo.html"
 _MAT_TYPE_RE = re.compile(r"^([a-z_]+?)_")
 # Regex to guess a unit code pattern like "ICT100", "COMP2010"
 UNIT_CODE_RE = re.compile(r"\b([A-Z]{2,6}\d{3,5})\b")
@@ -1300,9 +1302,7 @@ class PackageImportService:
         for info in infos:
             if info.file_size > _MAX_ZIP_ENTRY_BYTES:
                 zf.close()
-                raise PackageImportError(
-                    f"Package entry too large: {info.filename!r}"
-                )
+                raise PackageImportError(f"Package entry too large: {info.filename!r}")
             total_uncompressed += info.file_size
             if total_uncompressed > _MAX_ZIP_TOTAL_BYTES:
                 zf.close()

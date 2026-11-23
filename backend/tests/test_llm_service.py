@@ -160,9 +160,7 @@ class TestLLMService:
                 mock_query = mock_db.query.return_value
                 mock_query.filter.return_value.all.return_value = []
                 # No stored LLMConfiguration row for this user.
-                mock_query.filter.return_value.order_by.return_value.first.return_value = (
-                    None
-                )
+                mock_query.filter.return_value.order_by.return_value.first.return_value = None
 
                 # Mock user
                 mock_user = Mock()

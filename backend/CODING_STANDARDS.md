@@ -27,13 +27,19 @@ When skipping tests:
 def test_something():
     pass
 
+
 # GOOD
-@pytest.mark.skip(reason="OAuth2PasswordRequestForm incompatible with TestClient - see KNOWN_ISSUES.md")
+@pytest.mark.skip(
+    reason="OAuth2PasswordRequestForm incompatible with TestClient - see KNOWN_ISSUES.md"
+)
 def test_something():
     pass
 
+
 # BETTER - Add ticket reference
-@pytest.mark.skip(reason="DEBT-002: OAuth2PasswordRequestForm issue - see KNOWN_ISSUES.md")
+@pytest.mark.skip(
+    reason="DEBT-002: OAuth2PasswordRequestForm issue - see KNOWN_ISSUES.md"
+)
 def test_something():
     pass
 ```

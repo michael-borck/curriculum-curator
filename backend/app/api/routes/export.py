@@ -145,10 +145,13 @@ async def export_narrated_video(
             detail="Video export failed",
         ) from exc
 
-    safe_title = "".join(
-        char if char.isalnum() or char in " -_" else "_"
-        for char in (material.title or "narrated-deck")
-    ).strip() or "narrated-deck"
+    safe_title = (
+        "".join(
+            char if char.isalnum() or char in " -_" else "_"
+            for char in (material.title or "narrated-deck")
+        ).strip()
+        or "narrated-deck"
+    )
     return FileResponse(
         path,
         media_type="video/mp4",
@@ -170,10 +173,13 @@ async def export_branching_story(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="This material has no branching cards",
         )
-    safe_title = "".join(
-        char if char.isalnum() or char in " -_" else "_"
-        for char in (material.title or "branching-story")
-    ).strip() or "branching-story"
+    safe_title = (
+        "".join(
+            char if char.isalnum() or char in " -_" else "_"
+            for char in (material.title or "branching-story")
+        ).strip()
+        or "branching-story"
+    )
     extension = "html" if html else "ink"
     return Response(
         content=content,
@@ -192,10 +198,13 @@ async def export_narrated_deck(
 ):
     """Download a self-contained narrated HTML deck (browser speech playback)."""
     html = build_narrated_deck(material)
-    safe_title = "".join(
-        char if char.isalnum() or char in " -_" else "_"
-        for char in (material.title or "narrated-deck")
-    ).strip() or "narrated-deck"
+    safe_title = (
+        "".join(
+            char if char.isalnum() or char in " -_" else "_"
+            for char in (material.title or "narrated-deck")
+        ).strip()
+        or "narrated-deck"
+    )
     return Response(
         content=html,
         media_type="text/html",
