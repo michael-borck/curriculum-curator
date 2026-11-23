@@ -13,7 +13,7 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_user_material, get_user_unit
@@ -30,6 +30,7 @@ from app.services.export import (
     export_registry,
 )
 from app.services.lms_terminology import TargetLMS
+from app.services.narrated_deck_service import build_narrated_deck
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,25 @@ async def export_unit(
     """Export a whole unit in the given format (e.g. scorm, imscc, qti, html)."""
     return await _dispatch(
         export_format, ExportScope.UNIT, str(unit.id), db, target_lms
+    )
+
+
+@router.get("/materials/{material_id}/export/narrated")
+async def export_narrated_deck(
+    material: Annotated[WeeklyMaterial, Depends(get_user_material)],
+):
+    """Download a self-contained narrated HTML deck (browser speech playback)."""
+    html = build_narrated_deck(material)
+    safe_title = "".join(
+        char if char.isalnum() or char in " -_" else "_"
+        for char in (material.title or "narrated-deck")
+    ).strip() or "narrated-deck"
+    return Response(
+        content=html,
+        media_type="text/html",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_title}-narrated.html"'
+        },
     )
 
 

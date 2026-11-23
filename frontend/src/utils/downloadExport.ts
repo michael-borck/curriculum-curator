@@ -119,3 +119,31 @@ export async function downloadMaterialsExport(
 
   return filename;
 }
+
+/** Download a self-contained narrated HTML deck for a material. */
+export async function downloadNarratedDeck(
+  materialId: string
+): Promise<string> {
+  const response = await axios.get(
+    `${API_ORIGIN}/api/materials/${materialId}/export/narrated`,
+    {
+      responseType: 'blob',
+      headers: getAuthHeaders(),
+      withCredentials: true,
+    }
+  );
+  const disposition = response.headers['content-disposition'] as
+    | string
+    | undefined;
+  const filename =
+    disposition?.match(/filename="?([^"]+)"?/)?.[1] ?? 'narrated-deck.html';
+  const url = URL.createObjectURL(response.data as Blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(url);
+  a.remove();
+  return filename;
+}

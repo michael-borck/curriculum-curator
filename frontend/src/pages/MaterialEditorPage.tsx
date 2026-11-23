@@ -10,6 +10,7 @@ import {
   Sparkles,
   Wand2,
   Layers,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Editor } from '@tiptap/core';
@@ -44,6 +45,7 @@ import {
   lessonPlanToNodes,
 } from '../utils/generatedContent';
 import { useAILevel } from '../hooks/useAILevel';
+import { downloadNarratedDeck } from '../utils/downloadExport';
 
 /**
  * Full-page content editor for a single weekly material.
@@ -75,6 +77,7 @@ const MaterialEditorPage: React.FC = () => {
   const [quizOpen, setQuizOpen] = useState(false);
   const [lessonPlanOpen, setLessonPlanOpen] = useState(false);
   const [flashcardsOpen, setFlashcardsOpen] = useState(false);
+  const [narrating, setNarrating] = useState(false);
   const [hasSlides, setHasSlides] = useState(false);
   const [tipDismissed, setTipDismissed] = useState(
     () => localStorage.getItem('speaker-notes-tip-dismissed') === 'true'
@@ -274,6 +277,31 @@ const MaterialEditorPage: React.FC = () => {
                 <BookOpen className='w-4 h-4' />
                 Lesson plan
               </button>
+              {materialId && (
+                <button
+                  onClick={async () => {
+                    setNarrating(true);
+                    try {
+                      await downloadNarratedDeck(materialId);
+                      toast.success('Narrated deck downloaded');
+                    } catch {
+                      toast.error('Could not build the narrated deck');
+                    } finally {
+                      setNarrating(false);
+                    }
+                  }}
+                  disabled={narrating}
+                  className='flex items-center gap-2 px-4 py-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 disabled:opacity-50'
+                  title='Download a self-contained HTML deck that reads the speaker notes aloud in the browser'
+                >
+                  {narrating ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <Download className='w-4 h-4' />
+                  )}
+                  Narrated deck
+                </button>
+              )}
             </>
           )}
           <button
