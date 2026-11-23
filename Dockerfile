@@ -66,7 +66,7 @@ WORKDIR /app
 # Copy backend sources and install the exact locked dependency set
 COPY backend/ ./backend/
 WORKDIR /app/backend
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra pdf-advanced
 
 # Create a basic .env file ONLY if one doesn't exist. SECRET_KEY is supplied
 # at runtime; without it the app fails to start.
