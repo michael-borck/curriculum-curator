@@ -105,6 +105,13 @@ export const useAuthStore = create<ExtendedAuthState>((set, get) => ({
               response.data.teachingPreferences?.aiAssistLevel
             );
         }
+      } else {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isInitialized: true,
+          isLoading: false,
+        });
       }
     } catch {
       // Token/cookie is invalid or expired - clear local state.
